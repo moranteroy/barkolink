@@ -1,0 +1,7 @@
+{
+  "name": "barkolink",
+  "integrations": {
+    "capacitor": {}
+  },
+  "type": "vue-vite"
+}
