@@ -1,0 +1,5 @@
+connectorId: staff
+generate:
+  javascriptSdk:
+    outputDir: ../../src/dataconnect-generated/staff
+    package: "@barkolink/dataconnect-staff"

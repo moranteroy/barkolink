@@ -1,0 +1,117 @@
+type User @table(key: "uid") {
+  uid: String! @default(expr: "auth.uid")
+  email: String! @unique
+  fullName: String!
+  phone: String
+  role: String! @default(value: "PASSENGER")
+  createdAt: Timestamp! @default(expr: "request.time")
+  updatedAt: Timestamp! @default(expr: "request.time")
+}
+
+type Port @table {
+  id: UUID! @default(expr: "uuidV4()")
+  code: String! @unique
+  name: String!
+  city: String!
+  region: String
+  isActive: Boolean! @default(value: true)
+}
+
+type Vessel @table {
+  id: UUID! @default(expr: "uuidV4()")
+  code: String! @unique
+  name: String!
+  passengerCapacity: Int!
+  isActive: Boolean! @default(value: true)
+}
+
+type FareSettings @table(key: "code") {
+  code: String!
+  regularFare: Int!
+  studentDiscount: Int!
+  seniorDiscount: Int!
+  childDiscount: Int!
+  pwdDiscount: Int!
+  updatedAt: Timestamp! @default(expr: "request.time")
+}
+
+type Sailing @table(key: "code") @index(fields: ["departureAt", "status"]) {
+  code: String!
+  origin: Port! @ref(fields: "originPortId")
+  originPortId: UUID!
+  destination: Port! @ref(fields: "destinationPortId")
+  destinationPortId: UUID!
+  vessel: Vessel! @ref(fields: "vesselId")
+  vesselId: UUID!
+  departureAt: Timestamp!
+  arrivalAt: Timestamp!
+  durationMinutes: Int!
+  regularFare: Int!
+  studentFare: Int!
+  seniorFare: Int!
+  childFare: Int!
+  pwdFare: Int!
+  availableSeats: Int!
+  status: String! @default(value: "SCHEDULED")
+  createdAt: Timestamp! @default(expr: "request.time")
+  updatedAt: Timestamp! @default(expr: "request.time")
+}
+
+type Booking @table {
+  id: UUID! @default(expr: "uuidV4()")
+  reference: String! @unique
+  owner: User! @ref(fields: "ownerUid", references: "uid")
+  ownerUid: String!
+  sailing: Sailing!
+  sailingCode: String!
+  status: String! @default(value: "PENDING")
+  passengerCount: Int!
+  passengerFareTotal: Int!
+  serviceFee: Int! @default(value: 0)
+  total: Int!
+  currency: String! @default(value: "PHP")
+  bookingChannel: String! @default(value: "ONLINE")
+  paymentStatus: String! @default(value: "UNPAID")
+  paymentMethod: String
+  paidAt: Timestamp
+  collectedByUid: String
+  createdAt: Timestamp! @default(expr: "request.time")
+  updatedAt: Timestamp! @default(expr: "request.time")
+}
+
+type BookingPassenger @table {
+  id: UUID! @default(expr: "uuidV4()")
+  booking: Booking!
+  fullName: String!
+  passengerType: String! @default(value: "REGULAR")
+  birthDate: Date
+  sex: String
+  phone: String
+  nationality: String
+  fare: Int!
+  ticketCode: UUID! @default(expr: "uuidV4()") @unique
+  ticketStatus: String! @default(value: "PENDING")
+  issuedAt: Timestamp! @default(expr: "request.time")
+  checkedInAt: Timestamp
+  boardedAt: Timestamp
+  createdAt: Timestamp! @default(expr: "request.time")
+}
+
+type Notification @table {
+  id: UUID! @default(expr: "uuidV4()")
+  owner: User! @ref(fields: "ownerUid", references: "uid")
+  ownerUid: String!
+  title: String!
+  message: String!
+  category: String! @default(value: "TRIP")
+  readAt: Timestamp
+  createdAt: Timestamp! @default(expr: "request.time")
+}
+
+type BoardingEvent @table {
+  id: UUID! @default(expr: "uuidV4()")
+  passenger: BookingPassenger!
+  staffUid: String!
+  eventType: String!
+  createdAt: Timestamp! @default(expr: "request.time")
+}

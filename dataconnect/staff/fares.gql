@@ -1,0 +1,23 @@
+query AdminFareSettings @auth(expr: "auth.token.role == 'ADMIN'") {
+  fareSettings(key: { code: "DEFAULT" }) {
+    regularFare studentDiscount seniorDiscount childDiscount pwdDiscount
+  }
+  vesselFareSettings: fareSettingss(where: { code: { ne: "DEFAULT" } }) {
+    code regularFare studentDiscount seniorDiscount childDiscount pwdDiscount
+  }
+}
+
+mutation AdminSaveFareSettings($vesselId: UUID!, $regularFare: Int!, $studentDiscount: Int!, $seniorDiscount: Int!, $childDiscount: Int!, $pwdDiscount: Int!) @auth(expr: "auth.token.role == 'ADMIN'") @transaction {
+  query @check(expr: "response.query.vessels.size() == 1 && vars.regularFare > 0 && vars.studentDiscount >= 0 && vars.studentDiscount < 100 && vars.seniorDiscount >= 0 && vars.seniorDiscount < 100 && vars.childDiscount >= 0 && vars.childDiscount < 100 && vars.pwdDiscount >= 0 && vars.pwdDiscount < 100", message: "Select an active vessel, a positive regular fare, and discounts from 0 to 99 percent.") {
+    vessels(where: { id: { eq: $vesselId }, isActive: { eq: true } }) { id }
+  }
+  fareSettings_upsert(data: {
+    code_expr: "vars.vesselId"
+    regularFare: $regularFare
+    studentDiscount: $studentDiscount
+    seniorDiscount: $seniorDiscount
+    childDiscount: $childDiscount
+    pwdDiscount: $pwdDiscount
+    updatedAt_expr: "request.time"
+  }) @check(expr: "vars.regularFare > 0 && vars.studentDiscount >= 0 && vars.studentDiscount < 100 && vars.seniorDiscount >= 0 && vars.seniorDiscount < 100 && vars.childDiscount >= 0 && vars.childDiscount < 100 && vars.pwdDiscount >= 0 && vars.pwdDiscount < 100", message: "Enter a positive regular fare and discounts from 0 to 99 percent.")
+}

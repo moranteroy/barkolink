@@ -1,0 +1,17 @@
+mutation SetUserRole($uid: String!, $role: String!) @auth(level: NO_ACCESS) {
+  user_update(
+    key: { uid: $uid }
+    data: { role: $role, updatedAt_expr: "request.time" }
+  ) {
+    uid
+    role
+  }
+}
+
+query VerifyUserRole($uid: String!) @auth(level: NO_ACCESS) {
+  user(key: { uid: $uid }) {
+    uid
+    email
+    role
+  }
+}

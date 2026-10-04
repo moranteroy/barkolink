@@ -1,2 +1,62 @@
-/* For information on how to create your own theme, please refer to:
-http://ionicframework.com/docs/theming/ */
+:root {
+	--deep: #0b1f3a;
+	--ocean: #1565c0;
+	--primary: #2196f3;
+	--light-blue: #eaf4ff;
+	--cloud: #f5f7fa;
+	--ink: #172033;
+	--muted: #667085;
+	--line: #e4e7ec;
+	--surface: #ffffff;
+	--surface-soft: #fbfcfe;
+	--ion-font-family: 'Avenir Next', 'Trebuchet MS', sans-serif;
+	--ion-background-color: var(--cloud);
+	--ion-text-color: var(--ink);
+}
+
+* { box-sizing: border-box; }
+body { background: var(--cloud); }
+ion-content { --background: var(--cloud); }
+
+:root[data-theme='dark'] {
+	--deep: #08182d;
+	--ocean: #53a9ee;
+	--primary: #66b8f5;
+	--light-blue: #102d4b;
+	--cloud: #0d1726;
+	--ink: #eff6fb;
+	--muted: #9aafc0;
+	--line: #263b50;
+	--surface: #142235;
+	--surface-soft: #101d2d;
+	--ion-background-color: var(--cloud);
+	--ion-text-color: var(--ink);
+}
+
+:root[data-theme='dark'] body,
+:root[data-theme='dark'] ion-content { background: var(--cloud); --background: var(--cloud); }
+:root[data-theme='dark'] .search-card,
+:root[data-theme='dark'] .upcoming-card,
+:root[data-theme='dark'] .trip-card,
+:root[data-theme='dark'] .panel,
+:root[data-theme='dark'] .flow-aside,
+:root[data-theme='dark'] .journey-card,
+:root[data-theme='dark'] .passenger-card,
+:root[data-theme='dark'] .summary-card,
+:root[data-theme='dark'] .confirmed-card,
+:root[data-theme='dark'] .profile-card,
+:root[data-theme='dark'] .ticket,
+:root[data-theme='dark'] .stat-card,
+:root[data-theme='dark'] .list-panel { background: var(--surface); border-color: var(--line); }
+:root[data-theme='dark'] .field-button,
+:root[data-theme='dark'] input,
+:root[data-theme='dark'] select,
+:root[data-theme='dark'] .search-tool,
+:root[data-theme='dark'] .search-box,
+:root[data-theme='dark'] .filters button,
+:root[data-theme='dark'] .back-button,
+:root[data-theme='dark'] .filter-button { background: var(--surface-soft); color: var(--ink); border-color: var(--line); }
+:root[data-theme='dark'] .bottom-nav { background: rgba(20,34,53,.94); }
+:root[data-theme='dark'] .inspiration,
+:root[data-theme='dark'] .date-chip,
+:root[data-theme='dark'] .ticket-head { background: #07182c; }

@@ -1,0 +1,724 @@
+query BrowseActivePorts @auth(level: PUBLIC, insecureReason: "Active port names are public so passengers can plan a trip before signing in.") {
+  ports(where: { isActive: { eq: true } }, orderBy: [{ name: ASC }], limit: 100) {
+    id
+    code
+    name
+    city
+  }
+}
+
+query BrowseSailings @auth(level: PUBLIC, insecureReason: "Sailing schedules and fares are public so passengers can search before signing in.") {
+  sailings(where: { status: { eq: "SCHEDULED" }, departureAt: { gt_expr: "request.time" } }, orderBy: [{ departureAt: ASC }], limit: 50) {
+    code
+    departureAt
+    arrivalAt
+    durationMinutes
+    regularFare
+    studentFare
+    seniorFare
+    childFare
+    pwdFare
+    availableSeats
+    status
+    origin { id code name city }
+    destination { id code name city }
+    vessel { id code name passengerCapacity }
+  }
+}
+
+query MyProfile @auth(level: USER) {
+  user(key: { uid_expr: "auth.uid" }) {
+    uid
+    email
+    fullName
+    phone
+    role
+  }
+}
+
+mutation CreateMyProfile($email: String!, $fullName: String!, $phone: String) @auth(level: USER) {
+  user_insert(data: {
+    uid_expr: "auth.uid"
+    email: $email
+    fullName: $fullName
+    phone: $phone
+    role: "PASSENGER"
+  })
+}
+
+mutation UpdateMyProfile($fullName: String!, $phone: String) @auth(level: USER) {
+  user_update(
+    key: { uid_expr: "auth.uid" }
+    data: { fullName: $fullName, phone: $phone, updatedAt_expr: "request.time" }
+  )
+}
+
+query MyBookings @auth(level: USER) {
+  bookings(where: { ownerUid: { eq_expr: "auth.uid" } }, orderBy: [{ createdAt: DESC }]) {
+    id
+    reference
+    status
+    passengerCount
+    passengerFareTotal
+    serviceFee
+    paymentStatus
+    paymentMethod
+    paidAt
+    bookingChannel
+    total
+    currency
+    createdAt
+    sailing {
+      code
+      departureAt
+      arrivalAt
+      origin { name city }
+      destination { name city }
+      vessel { name }
+    }
+    bookingPassengers_on_booking {
+      id
+      fullName
+      passengerType
+      fare
+      ticketCode
+      ticketStatus
+      issuedAt
+      checkedInAt
+      boardedAt
+    }
+  }
+}
+
+mutation ReserveSailing1($sailingCode: String!, $reference: String!, $passenger1Name: String!, $passenger1Type: String!, $passenger1BirthDate: Date, $passenger1Sex: String, $passenger1Phone: String, $passenger1Nationality: String) @auth(level: USER) @transaction {
+  query @check(expr: "response.query.sailings.size() == 1", message: "This sailing is no longer available.") {
+    sailings(where: { code: { eq: $sailingCode }, status: { eq: "SCHEDULED" }, departureAt: { gt_expr: "request.time" } }) { regularFare studentFare seniorFare childFare pwdFare }
+  }
+  sailing_update(
+    first: { where: { code: { eq: $sailingCode }, status: { eq: "SCHEDULED" }, availableSeats: { ge: 1 }, departureAt: { gt_expr: "request.time" } } }
+    data: { availableSeats_update: { dec: 1 }, updatedAt_expr: "request.time" }
+  ) @check(expr: "this != null", message: "This sailing no longer has enough available seats.")
+  booking_insert(data: {
+    reference: $reference
+    ownerUid_expr: "auth.uid"
+    sailingCode: $sailingCode
+    status: "PENDING"
+    passengerCount: 1
+    passengerFareTotal_expr: "(vars.passenger1Type == 'STUDENT' ? response.query.sailings[0].studentFare : vars.passenger1Type == 'SENIOR' ? response.query.sailings[0].seniorFare : vars.passenger1Type == 'CHILD' ? response.query.sailings[0].childFare : vars.passenger1Type == 'PWD' ? response.query.sailings[0].pwdFare : response.query.sailings[0].regularFare)"
+    total_expr: "(vars.passenger1Type == 'STUDENT' ? response.query.sailings[0].studentFare : vars.passenger1Type == 'SENIOR' ? response.query.sailings[0].seniorFare : vars.passenger1Type == 'CHILD' ? response.query.sailings[0].childFare : vars.passenger1Type == 'PWD' ? response.query.sailings[0].pwdFare : response.query.sailings[0].regularFare)"
+  })
+  notification_insert(data: {
+    ownerUid_expr: "auth.uid"
+    title: "Reservation awaiting payment"
+    message: "Your seat is reserved. Pay at the ticketing desk to receive your e-ticket."
+    category: "BOOKING"
+  })
+  passenger1: bookingPassenger_insert(data: {
+    bookingId_expr: "response.booking_insert.id"
+    fullName: $passenger1Name
+    passengerType: $passenger1Type
+    birthDate: $passenger1BirthDate
+    sex: $passenger1Sex
+    phone: $passenger1Phone
+    nationality: $passenger1Nationality
+    fare_expr: "vars.passenger1Type == 'STUDENT' ? response.query.sailings[0].studentFare : vars.passenger1Type == 'SENIOR' ? response.query.sailings[0].seniorFare : vars.passenger1Type == 'CHILD' ? response.query.sailings[0].childFare : vars.passenger1Type == 'PWD' ? response.query.sailings[0].pwdFare : response.query.sailings[0].regularFare"
+  })
+}
+
+mutation ReserveSailing2($sailingCode: String!, $reference: String!, $passenger1Name: String!, $passenger1Type: String!, $passenger1BirthDate: Date, $passenger1Sex: String, $passenger1Phone: String, $passenger1Nationality: String, $passenger2Name: String!, $passenger2Type: String!, $passenger2BirthDate: Date, $passenger2Sex: String, $passenger2Phone: String, $passenger2Nationality: String) @auth(level: USER) @transaction {
+  query @check(expr: "response.query.sailings.size() == 1", message: "This sailing is no longer available.") {
+    sailings(where: { code: { eq: $sailingCode }, status: { eq: "SCHEDULED" }, departureAt: { gt_expr: "request.time" } }) { regularFare studentFare seniorFare childFare pwdFare }
+  }
+  sailing_update(
+    first: { where: { code: { eq: $sailingCode }, status: { eq: "SCHEDULED" }, availableSeats: { ge: 2 }, departureAt: { gt_expr: "request.time" } } }
+    data: { availableSeats_update: { dec: 2 }, updatedAt_expr: "request.time" }
+  ) @check(expr: "this != null", message: "This sailing no longer has enough available seats.")
+  booking_insert(data: {
+    reference: $reference
+    ownerUid_expr: "auth.uid"
+    sailingCode: $sailingCode
+    status: "PENDING"
+    passengerCount: 2
+    passengerFareTotal_expr: "(vars.passenger1Type == 'STUDENT' ? response.query.sailings[0].studentFare : vars.passenger1Type == 'SENIOR' ? response.query.sailings[0].seniorFare : vars.passenger1Type == 'CHILD' ? response.query.sailings[0].childFare : vars.passenger1Type == 'PWD' ? response.query.sailings[0].pwdFare : response.query.sailings[0].regularFare) + (vars.passenger2Type == 'STUDENT' ? response.query.sailings[0].studentFare : vars.passenger2Type == 'SENIOR' ? response.query.sailings[0].seniorFare : vars.passenger2Type == 'CHILD' ? response.query.sailings[0].childFare : vars.passenger2Type == 'PWD' ? response.query.sailings[0].pwdFare : response.query.sailings[0].regularFare)"
+    total_expr: "(vars.passenger1Type == 'STUDENT' ? response.query.sailings[0].studentFare : vars.passenger1Type == 'SENIOR' ? response.query.sailings[0].seniorFare : vars.passenger1Type == 'CHILD' ? response.query.sailings[0].childFare : vars.passenger1Type == 'PWD' ? response.query.sailings[0].pwdFare : response.query.sailings[0].regularFare) + (vars.passenger2Type == 'STUDENT' ? response.query.sailings[0].studentFare : vars.passenger2Type == 'SENIOR' ? response.query.sailings[0].seniorFare : vars.passenger2Type == 'CHILD' ? response.query.sailings[0].childFare : vars.passenger2Type == 'PWD' ? response.query.sailings[0].pwdFare : response.query.sailings[0].regularFare)"
+  })
+  notification_insert(data: {
+    ownerUid_expr: "auth.uid"
+    title: "Reservation awaiting payment"
+    message: "Your seat is reserved. Pay at the ticketing desk to receive your e-ticket."
+    category: "BOOKING"
+  })
+  passenger1: bookingPassenger_insert(data: {
+    bookingId_expr: "response.booking_insert.id"
+    fullName: $passenger1Name
+    passengerType: $passenger1Type
+    birthDate: $passenger1BirthDate
+    sex: $passenger1Sex
+    phone: $passenger1Phone
+    nationality: $passenger1Nationality
+    fare_expr: "vars.passenger1Type == 'STUDENT' ? response.query.sailings[0].studentFare : vars.passenger1Type == 'SENIOR' ? response.query.sailings[0].seniorFare : vars.passenger1Type == 'CHILD' ? response.query.sailings[0].childFare : vars.passenger1Type == 'PWD' ? response.query.sailings[0].pwdFare : response.query.sailings[0].regularFare"
+  })
+  passenger2: bookingPassenger_insert(data: {
+    bookingId_expr: "response.booking_insert.id"
+    fullName: $passenger2Name
+    passengerType: $passenger2Type
+    birthDate: $passenger2BirthDate
+    sex: $passenger2Sex
+    phone: $passenger2Phone
+    nationality: $passenger2Nationality
+    fare_expr: "vars.passenger2Type == 'STUDENT' ? response.query.sailings[0].studentFare : vars.passenger2Type == 'SENIOR' ? response.query.sailings[0].seniorFare : vars.passenger2Type == 'CHILD' ? response.query.sailings[0].childFare : vars.passenger2Type == 'PWD' ? response.query.sailings[0].pwdFare : response.query.sailings[0].regularFare"
+  })
+}
+
+mutation ReserveSailing3($sailingCode: String!, $reference: String!, $passenger1Name: String!, $passenger1Type: String!, $passenger1BirthDate: Date, $passenger1Sex: String, $passenger1Phone: String, $passenger1Nationality: String, $passenger2Name: String!, $passenger2Type: String!, $passenger2BirthDate: Date, $passenger2Sex: String, $passenger2Phone: String, $passenger2Nationality: String, $passenger3Name: String!, $passenger3Type: String!, $passenger3BirthDate: Date, $passenger3Sex: String, $passenger3Phone: String, $passenger3Nationality: String) @auth(level: USER) @transaction {
+  query @check(expr: "response.query.sailings.size() == 1", message: "This sailing is no longer available.") {
+    sailings(where: { code: { eq: $sailingCode }, status: { eq: "SCHEDULED" }, departureAt: { gt_expr: "request.time" } }) { regularFare studentFare seniorFare childFare pwdFare }
+  }
+  sailing_update(
+    first: { where: { code: { eq: $sailingCode }, status: { eq: "SCHEDULED" }, availableSeats: { ge: 3 }, departureAt: { gt_expr: "request.time" } } }
+    data: { availableSeats_update: { dec: 3 }, updatedAt_expr: "request.time" }
+  ) @check(expr: "this != null", message: "This sailing no longer has enough available seats.")
+  booking_insert(data: {
+    reference: $reference
+    ownerUid_expr: "auth.uid"
+    sailingCode: $sailingCode
+    status: "PENDING"
+    passengerCount: 3
+    passengerFareTotal_expr: "(vars.passenger1Type == 'STUDENT' ? response.query.sailings[0].studentFare : vars.passenger1Type == 'SENIOR' ? response.query.sailings[0].seniorFare : vars.passenger1Type == 'CHILD' ? response.query.sailings[0].childFare : vars.passenger1Type == 'PWD' ? response.query.sailings[0].pwdFare : response.query.sailings[0].regularFare) + (vars.passenger2Type == 'STUDENT' ? response.query.sailings[0].studentFare : vars.passenger2Type == 'SENIOR' ? response.query.sailings[0].seniorFare : vars.passenger2Type == 'CHILD' ? response.query.sailings[0].childFare : vars.passenger2Type == 'PWD' ? response.query.sailings[0].pwdFare : response.query.sailings[0].regularFare) + (vars.passenger3Type == 'STUDENT' ? response.query.sailings[0].studentFare : vars.passenger3Type == 'SENIOR' ? response.query.sailings[0].seniorFare : vars.passenger3Type == 'CHILD' ? response.query.sailings[0].childFare : vars.passenger3Type == 'PWD' ? response.query.sailings[0].pwdFare : response.query.sailings[0].regularFare)"
+    total_expr: "(vars.passenger1Type == 'STUDENT' ? response.query.sailings[0].studentFare : vars.passenger1Type == 'SENIOR' ? response.query.sailings[0].seniorFare : vars.passenger1Type == 'CHILD' ? response.query.sailings[0].childFare : vars.passenger1Type == 'PWD' ? response.query.sailings[0].pwdFare : response.query.sailings[0].regularFare) + (vars.passenger2Type == 'STUDENT' ? response.query.sailings[0].studentFare : vars.passenger2Type == 'SENIOR' ? response.query.sailings[0].seniorFare : vars.passenger2Type == 'CHILD' ? response.query.sailings[0].childFare : vars.passenger2Type == 'PWD' ? response.query.sailings[0].pwdFare : response.query.sailings[0].regularFare) + (vars.passenger3Type == 'STUDENT' ? response.query.sailings[0].studentFare : vars.passenger3Type == 'SENIOR' ? response.query.sailings[0].seniorFare : vars.passenger3Type == 'CHILD' ? response.query.sailings[0].childFare : vars.passenger3Type == 'PWD' ? response.query.sailings[0].pwdFare : response.query.sailings[0].regularFare)"
+  })
+  notification_insert(data: {
+    ownerUid_expr: "auth.uid"
+    title: "Reservation awaiting payment"
+    message: "Your seat is reserved. Pay at the ticketing desk to receive your e-ticket."
+    category: "BOOKING"
+  })
+  passenger1: bookingPassenger_insert(data: {
+    bookingId_expr: "response.booking_insert.id"
+    fullName: $passenger1Name
+    passengerType: $passenger1Type
+    birthDate: $passenger1BirthDate
+    sex: $passenger1Sex
+    phone: $passenger1Phone
+    nationality: $passenger1Nationality
+    fare_expr: "vars.passenger1Type == 'STUDENT' ? response.query.sailings[0].studentFare : vars.passenger1Type == 'SENIOR' ? response.query.sailings[0].seniorFare : vars.passenger1Type == 'CHILD' ? response.query.sailings[0].childFare : vars.passenger1Type == 'PWD' ? response.query.sailings[0].pwdFare : response.query.sailings[0].regularFare"
+  })
+  passenger2: bookingPassenger_insert(data: {
+    bookingId_expr: "response.booking_insert.id"
+    fullName: $passenger2Name
+    passengerType: $passenger2Type
+    birthDate: $passenger2BirthDate
+    sex: $passenger2Sex
+    phone: $passenger2Phone
+    nationality: $passenger2Nationality
+    fare_expr: "vars.passenger2Type == 'STUDENT' ? response.query.sailings[0].studentFare : vars.passenger2Type == 'SENIOR' ? response.query.sailings[0].seniorFare : vars.passenger2Type == 'CHILD' ? response.query.sailings[0].childFare : vars.passenger2Type == 'PWD' ? response.query.sailings[0].pwdFare : response.query.sailings[0].regularFare"
+  })
+  passenger3: bookingPassenger_insert(data: {
+    bookingId_expr: "response.booking_insert.id"
+    fullName: $passenger3Name
+    passengerType: $passenger3Type
+    birthDate: $passenger3BirthDate
+    sex: $passenger3Sex
+    phone: $passenger3Phone
+    nationality: $passenger3Nationality
+    fare_expr: "vars.passenger3Type == 'STUDENT' ? response.query.sailings[0].studentFare : vars.passenger3Type == 'SENIOR' ? response.query.sailings[0].seniorFare : vars.passenger3Type == 'CHILD' ? response.query.sailings[0].childFare : vars.passenger3Type == 'PWD' ? response.query.sailings[0].pwdFare : response.query.sailings[0].regularFare"
+  })
+}
+
+mutation ReserveSailing4($sailingCode: String!, $reference: String!, $passenger1Name: String!, $passenger1Type: String!, $passenger1BirthDate: Date, $passenger1Sex: String, $passenger1Phone: String, $passenger1Nationality: String, $passenger2Name: String!, $passenger2Type: String!, $passenger2BirthDate: Date, $passenger2Sex: String, $passenger2Phone: String, $passenger2Nationality: String, $passenger3Name: String!, $passenger3Type: String!, $passenger3BirthDate: Date, $passenger3Sex: String, $passenger3Phone: String, $passenger3Nationality: String, $passenger4Name: String!, $passenger4Type: String!, $passenger4BirthDate: Date, $passenger4Sex: String, $passenger4Phone: String, $passenger4Nationality: String) @auth(level: USER) @transaction {
+  query @check(expr: "response.query.sailings.size() == 1", message: "This sailing is no longer available.") {
+    sailings(where: { code: { eq: $sailingCode }, status: { eq: "SCHEDULED" }, departureAt: { gt_expr: "request.time" } }) { regularFare studentFare seniorFare childFare pwdFare }
+  }
+  sailing_update(
+    first: { where: { code: { eq: $sailingCode }, status: { eq: "SCHEDULED" }, availableSeats: { ge: 4 }, departureAt: { gt_expr: "request.time" } } }
+    data: { availableSeats_update: { dec: 4 }, updatedAt_expr: "request.time" }
+  ) @check(expr: "this != null", message: "This sailing no longer has enough available seats.")
+  booking_insert(data: {
+    reference: $reference
+    ownerUid_expr: "auth.uid"
+    sailingCode: $sailingCode
+    status: "PENDING"
+    passengerCount: 4
+    passengerFareTotal_expr: "(vars.passenger1Type == 'STUDENT' ? response.query.sailings[0].studentFare : vars.passenger1Type == 'SENIOR' ? response.query.sailings[0].seniorFare : vars.passenger1Type == 'CHILD' ? response.query.sailings[0].childFare : vars.passenger1Type == 'PWD' ? response.query.sailings[0].pwdFare : response.query.sailings[0].regularFare) + (vars.passenger2Type == 'STUDENT' ? response.query.sailings[0].studentFare : vars.passenger2Type == 'SENIOR' ? response.query.sailings[0].seniorFare : vars.passenger2Type == 'CHILD' ? response.query.sailings[0].childFare : vars.passenger2Type == 'PWD' ? response.query.sailings[0].pwdFare : response.query.sailings[0].regularFare) + (vars.passenger3Type == 'STUDENT' ? response.query.sailings[0].studentFare : vars.passenger3Type == 'SENIOR' ? response.query.sailings[0].seniorFare : vars.passenger3Type == 'CHILD' ? response.query.sailings[0].childFare : vars.passenger3Type == 'PWD' ? response.query.sailings[0].pwdFare : response.query.sailings[0].regularFare) + (vars.passenger4Type == 'STUDENT' ? response.query.sailings[0].studentFare : vars.passenger4Type == 'SENIOR' ? response.query.sailings[0].seniorFare : vars.passenger4Type == 'CHILD' ? response.query.sailings[0].childFare : vars.passenger4Type == 'PWD' ? response.query.sailings[0].pwdFare : response.query.sailings[0].regularFare)"
+    total_expr: "(vars.passenger1Type == 'STUDENT' ? response.query.sailings[0].studentFare : vars.passenger1Type == 'SENIOR' ? response.query.sailings[0].seniorFare : vars.passenger1Type == 'CHILD' ? response.query.sailings[0].childFare : vars.passenger1Type == 'PWD' ? response.query.sailings[0].pwdFare : response.query.sailings[0].regularFare) + (vars.passenger2Type == 'STUDENT' ? response.query.sailings[0].studentFare : vars.passenger2Type == 'SENIOR' ? response.query.sailings[0].seniorFare : vars.passenger2Type == 'CHILD' ? response.query.sailings[0].childFare : vars.passenger2Type == 'PWD' ? response.query.sailings[0].pwdFare : response.query.sailings[0].regularFare) + (vars.passenger3Type == 'STUDENT' ? response.query.sailings[0].studentFare : vars.passenger3Type == 'SENIOR' ? response.query.sailings[0].seniorFare : vars.passenger3Type == 'CHILD' ? response.query.sailings[0].childFare : vars.passenger3Type == 'PWD' ? response.query.sailings[0].pwdFare : response.query.sailings[0].regularFare) + (vars.passenger4Type == 'STUDENT' ? response.query.sailings[0].studentFare : vars.passenger4Type == 'SENIOR' ? response.query.sailings[0].seniorFare : vars.passenger4Type == 'CHILD' ? response.query.sailings[0].childFare : vars.passenger4Type == 'PWD' ? response.query.sailings[0].pwdFare : response.query.sailings[0].regularFare)"
+  })
+  notification_insert(data: {
+    ownerUid_expr: "auth.uid"
+    title: "Reservation awaiting payment"
+    message: "Your seat is reserved. Pay at the ticketing desk to receive your e-ticket."
+    category: "BOOKING"
+  })
+  passenger1: bookingPassenger_insert(data: {
+    bookingId_expr: "response.booking_insert.id"
+    fullName: $passenger1Name
+    passengerType: $passenger1Type
+    birthDate: $passenger1BirthDate
+    sex: $passenger1Sex
+    phone: $passenger1Phone
+    nationality: $passenger1Nationality
+    fare_expr: "vars.passenger1Type == 'STUDENT' ? response.query.sailings[0].studentFare : vars.passenger1Type == 'SENIOR' ? response.query.sailings[0].seniorFare : vars.passenger1Type == 'CHILD' ? response.query.sailings[0].childFare : vars.passenger1Type == 'PWD' ? response.query.sailings[0].pwdFare : response.query.sailings[0].regularFare"
+  })
+  passenger2: bookingPassenger_insert(data: {
+    bookingId_expr: "response.booking_insert.id"
+    fullName: $passenger2Name
+    passengerType: $passenger2Type
+    birthDate: $passenger2BirthDate
+    sex: $passenger2Sex
+    phone: $passenger2Phone
+    nationality: $passenger2Nationality
+    fare_expr: "vars.passenger2Type == 'STUDENT' ? response.query.sailings[0].studentFare : vars.passenger2Type == 'SENIOR' ? response.query.sailings[0].seniorFare : vars.passenger2Type == 'CHILD' ? response.query.sailings[0].childFare : vars.passenger2Type == 'PWD' ? response.query.sailings[0].pwdFare : response.query.sailings[0].regularFare"
+  })
+  passenger3: bookingPassenger_insert(data: {
+    bookingId_expr: "response.booking_insert.id"
+    fullName: $passenger3Name
+    passengerType: $passenger3Type
+    birthDate: $passenger3BirthDate
+    sex: $passenger3Sex
+    phone: $passenger3Phone
+    nationality: $passenger3Nationality
+    fare_expr: "vars.passenger3Type == 'STUDENT' ? response.query.sailings[0].studentFare : vars.passenger3Type == 'SENIOR' ? response.query.sailings[0].seniorFare : vars.passenger3Type == 'CHILD' ? response.query.sailings[0].childFare : vars.passenger3Type == 'PWD' ? response.query.sailings[0].pwdFare : response.query.sailings[0].regularFare"
+  })
+  passenger4: bookingPassenger_insert(data: {
+    bookingId_expr: "response.booking_insert.id"
+    fullName: $passenger4Name
+    passengerType: $passenger4Type
+    birthDate: $passenger4BirthDate
+    sex: $passenger4Sex
+    phone: $passenger4Phone
+    nationality: $passenger4Nationality
+    fare_expr: "vars.passenger4Type == 'STUDENT' ? response.query.sailings[0].studentFare : vars.passenger4Type == 'SENIOR' ? response.query.sailings[0].seniorFare : vars.passenger4Type == 'CHILD' ? response.query.sailings[0].childFare : vars.passenger4Type == 'PWD' ? response.query.sailings[0].pwdFare : response.query.sailings[0].regularFare"
+  })
+}
+
+mutation ReserveSailing5($sailingCode: String!, $reference: String!, $passenger1Name: String!, $passenger1Type: String!, $passenger1BirthDate: Date, $passenger1Sex: String, $passenger1Phone: String, $passenger1Nationality: String, $passenger2Name: String!, $passenger2Type: String!, $passenger2BirthDate: Date, $passenger2Sex: String, $passenger2Phone: String, $passenger2Nationality: String, $passenger3Name: String!, $passenger3Type: String!, $passenger3BirthDate: Date, $passenger3Sex: String, $passenger3Phone: String, $passenger3Nationality: String, $passenger4Name: String!, $passenger4Type: String!, $passenger4BirthDate: Date, $passenger4Sex: String, $passenger4Phone: String, $passenger4Nationality: String, $passenger5Name: String!, $passenger5Type: String!, $passenger5BirthDate: Date, $passenger5Sex: String, $passenger5Phone: String, $passenger5Nationality: String) @auth(level: USER) @transaction {
+  query @check(expr: "response.query.sailings.size() == 1", message: "This sailing is no longer available.") {
+    sailings(where: { code: { eq: $sailingCode }, status: { eq: "SCHEDULED" }, departureAt: { gt_expr: "request.time" } }) { regularFare studentFare seniorFare childFare pwdFare }
+  }
+  sailing_update(
+    first: { where: { code: { eq: $sailingCode }, status: { eq: "SCHEDULED" }, availableSeats: { ge: 5 }, departureAt: { gt_expr: "request.time" } } }
+    data: { availableSeats_update: { dec: 5 }, updatedAt_expr: "request.time" }
+  ) @check(expr: "this != null", message: "This sailing no longer has enough available seats.")
+  booking_insert(data: {
+    reference: $reference
+    ownerUid_expr: "auth.uid"
+    sailingCode: $sailingCode
+    status: "PENDING"
+    passengerCount: 5
+    passengerFareTotal_expr: "(vars.passenger1Type == 'STUDENT' ? response.query.sailings[0].studentFare : vars.passenger1Type == 'SENIOR' ? response.query.sailings[0].seniorFare : vars.passenger1Type == 'CHILD' ? response.query.sailings[0].childFare : vars.passenger1Type == 'PWD' ? response.query.sailings[0].pwdFare : response.query.sailings[0].regularFare) + (vars.passenger2Type == 'STUDENT' ? response.query.sailings[0].studentFare : vars.passenger2Type == 'SENIOR' ? response.query.sailings[0].seniorFare : vars.passenger2Type == 'CHILD' ? response.query.sailings[0].childFare : vars.passenger2Type == 'PWD' ? response.query.sailings[0].pwdFare : response.query.sailings[0].regularFare) + (vars.passenger3Type == 'STUDENT' ? response.query.sailings[0].studentFare : vars.passenger3Type == 'SENIOR' ? response.query.sailings[0].seniorFare : vars.passenger3Type == 'CHILD' ? response.query.sailings[0].childFare : vars.passenger3Type == 'PWD' ? response.query.sailings[0].pwdFare : response.query.sailings[0].regularFare) + (vars.passenger4Type == 'STUDENT' ? response.query.sailings[0].studentFare : vars.passenger4Type == 'SENIOR' ? response.query.sailings[0].seniorFare : vars.passenger4Type == 'CHILD' ? response.query.sailings[0].childFare : vars.passenger4Type == 'PWD' ? response.query.sailings[0].pwdFare : response.query.sailings[0].regularFare) + (vars.passenger5Type == 'STUDENT' ? response.query.sailings[0].studentFare : vars.passenger5Type == 'SENIOR' ? response.query.sailings[0].seniorFare : vars.passenger5Type == 'CHILD' ? response.query.sailings[0].childFare : vars.passenger5Type == 'PWD' ? response.query.sailings[0].pwdFare : response.query.sailings[0].regularFare)"
+    total_expr: "(vars.passenger1Type == 'STUDENT' ? response.query.sailings[0].studentFare : vars.passenger1Type == 'SENIOR' ? response.query.sailings[0].seniorFare : vars.passenger1Type == 'CHILD' ? response.query.sailings[0].childFare : vars.passenger1Type == 'PWD' ? response.query.sailings[0].pwdFare : response.query.sailings[0].regularFare) + (vars.passenger2Type == 'STUDENT' ? response.query.sailings[0].studentFare : vars.passenger2Type == 'SENIOR' ? response.query.sailings[0].seniorFare : vars.passenger2Type == 'CHILD' ? response.query.sailings[0].childFare : vars.passenger2Type == 'PWD' ? response.query.sailings[0].pwdFare : response.query.sailings[0].regularFare) + (vars.passenger3Type == 'STUDENT' ? response.query.sailings[0].studentFare : vars.passenger3Type == 'SENIOR' ? response.query.sailings[0].seniorFare : vars.passenger3Type == 'CHILD' ? response.query.sailings[0].childFare : vars.passenger3Type == 'PWD' ? response.query.sailings[0].pwdFare : response.query.sailings[0].regularFare) + (vars.passenger4Type == 'STUDENT' ? response.query.sailings[0].studentFare : vars.passenger4Type == 'SENIOR' ? response.query.sailings[0].seniorFare : vars.passenger4Type == 'CHILD' ? response.query.sailings[0].childFare : vars.passenger4Type == 'PWD' ? response.query.sailings[0].pwdFare : response.query.sailings[0].regularFare) + (vars.passenger5Type == 'STUDENT' ? response.query.sailings[0].studentFare : vars.passenger5Type == 'SENIOR' ? response.query.sailings[0].seniorFare : vars.passenger5Type == 'CHILD' ? response.query.sailings[0].childFare : vars.passenger5Type == 'PWD' ? response.query.sailings[0].pwdFare : response.query.sailings[0].regularFare)"
+  })
+  notification_insert(data: {
+    ownerUid_expr: "auth.uid"
+    title: "Reservation awaiting payment"
+    message: "Your seat is reserved. Pay at the ticketing desk to receive your e-ticket."
+    category: "BOOKING"
+  })
+  passenger1: bookingPassenger_insert(data: {
+    bookingId_expr: "response.booking_insert.id"
+    fullName: $passenger1Name
+    passengerType: $passenger1Type
+    birthDate: $passenger1BirthDate
+    sex: $passenger1Sex
+    phone: $passenger1Phone
+    nationality: $passenger1Nationality
+    fare_expr: "vars.passenger1Type == 'STUDENT' ? response.query.sailings[0].studentFare : vars.passenger1Type == 'SENIOR' ? response.query.sailings[0].seniorFare : vars.passenger1Type == 'CHILD' ? response.query.sailings[0].childFare : vars.passenger1Type == 'PWD' ? response.query.sailings[0].pwdFare : response.query.sailings[0].regularFare"
+  })
+  passenger2: bookingPassenger_insert(data: {
+    bookingId_expr: "response.booking_insert.id"
+    fullName: $passenger2Name
+    passengerType: $passenger2Type
+    birthDate: $passenger2BirthDate
+    sex: $passenger2Sex
+    phone: $passenger2Phone
+    nationality: $passenger2Nationality
+    fare_expr: "vars.passenger2Type == 'STUDENT' ? response.query.sailings[0].studentFare : vars.passenger2Type == 'SENIOR' ? response.query.sailings[0].seniorFare : vars.passenger2Type == 'CHILD' ? response.query.sailings[0].childFare : vars.passenger2Type == 'PWD' ? response.query.sailings[0].pwdFare : response.query.sailings[0].regularFare"
+  })
+  passenger3: bookingPassenger_insert(data: {
+    bookingId_expr: "response.booking_insert.id"
+    fullName: $passenger3Name
+    passengerType: $passenger3Type
+    birthDate: $passenger3BirthDate
+    sex: $passenger3Sex
+    phone: $passenger3Phone
+    nationality: $passenger3Nationality
+    fare_expr: "vars.passenger3Type == 'STUDENT' ? response.query.sailings[0].studentFare : vars.passenger3Type == 'SENIOR' ? response.query.sailings[0].seniorFare : vars.passenger3Type == 'CHILD' ? response.query.sailings[0].childFare : vars.passenger3Type == 'PWD' ? response.query.sailings[0].pwdFare : response.query.sailings[0].regularFare"
+  })
+  passenger4: bookingPassenger_insert(data: {
+    bookingId_expr: "response.booking_insert.id"
+    fullName: $passenger4Name
+    passengerType: $passenger4Type
+    birthDate: $passenger4BirthDate
+    sex: $passenger4Sex
+    phone: $passenger4Phone
+    nationality: $passenger4Nationality
+    fare_expr: "vars.passenger4Type == 'STUDENT' ? response.query.sailings[0].studentFare : vars.passenger4Type == 'SENIOR' ? response.query.sailings[0].seniorFare : vars.passenger4Type == 'CHILD' ? response.query.sailings[0].childFare : vars.passenger4Type == 'PWD' ? response.query.sailings[0].pwdFare : response.query.sailings[0].regularFare"
+  })
+  passenger5: bookingPassenger_insert(data: {
+    bookingId_expr: "response.booking_insert.id"
+    fullName: $passenger5Name
+    passengerType: $passenger5Type
+    birthDate: $passenger5BirthDate
+    sex: $passenger5Sex
+    phone: $passenger5Phone
+    nationality: $passenger5Nationality
+    fare_expr: "vars.passenger5Type == 'STUDENT' ? response.query.sailings[0].studentFare : vars.passenger5Type == 'SENIOR' ? response.query.sailings[0].seniorFare : vars.passenger5Type == 'CHILD' ? response.query.sailings[0].childFare : vars.passenger5Type == 'PWD' ? response.query.sailings[0].pwdFare : response.query.sailings[0].regularFare"
+  })
+}
+
+mutation ReserveSailing6($sailingCode: String!, $reference: String!, $passenger1Name: String!, $passenger1Type: String!, $passenger1BirthDate: Date, $passenger1Sex: String, $passenger1Phone: String, $passenger1Nationality: String, $passenger2Name: String!, $passenger2Type: String!, $passenger2BirthDate: Date, $passenger2Sex: String, $passenger2Phone: String, $passenger2Nationality: String, $passenger3Name: String!, $passenger3Type: String!, $passenger3BirthDate: Date, $passenger3Sex: String, $passenger3Phone: String, $passenger3Nationality: String, $passenger4Name: String!, $passenger4Type: String!, $passenger4BirthDate: Date, $passenger4Sex: String, $passenger4Phone: String, $passenger4Nationality: String, $passenger5Name: String!, $passenger5Type: String!, $passenger5BirthDate: Date, $passenger5Sex: String, $passenger5Phone: String, $passenger5Nationality: String, $passenger6Name: String!, $passenger6Type: String!, $passenger6BirthDate: Date, $passenger6Sex: String, $passenger6Phone: String, $passenger6Nationality: String) @auth(level: USER) @transaction {
+  query @check(expr: "response.query.sailings.size() == 1", message: "This sailing is no longer available.") {
+    sailings(where: { code: { eq: $sailingCode }, status: { eq: "SCHEDULED" }, departureAt: { gt_expr: "request.time" } }) { regularFare studentFare seniorFare childFare pwdFare }
+  }
+  sailing_update(
+    first: { where: { code: { eq: $sailingCode }, status: { eq: "SCHEDULED" }, availableSeats: { ge: 6 }, departureAt: { gt_expr: "request.time" } } }
+    data: { availableSeats_update: { dec: 6 }, updatedAt_expr: "request.time" }
+  ) @check(expr: "this != null", message: "This sailing no longer has enough available seats.")
+  booking_insert(data: {
+    reference: $reference
+    ownerUid_expr: "auth.uid"
+    sailingCode: $sailingCode
+    status: "PENDING"
+    passengerCount: 6
+    passengerFareTotal_expr: "(vars.passenger1Type == 'STUDENT' ? response.query.sailings[0].studentFare : vars.passenger1Type == 'SENIOR' ? response.query.sailings[0].seniorFare : vars.passenger1Type == 'CHILD' ? response.query.sailings[0].childFare : vars.passenger1Type == 'PWD' ? response.query.sailings[0].pwdFare : response.query.sailings[0].regularFare) + (vars.passenger2Type == 'STUDENT' ? response.query.sailings[0].studentFare : vars.passenger2Type == 'SENIOR' ? response.query.sailings[0].seniorFare : vars.passenger2Type == 'CHILD' ? response.query.sailings[0].childFare : vars.passenger2Type == 'PWD' ? response.query.sailings[0].pwdFare : response.query.sailings[0].regularFare) + (vars.passenger3Type == 'STUDENT' ? response.query.sailings[0].studentFare : vars.passenger3Type == 'SENIOR' ? response.query.sailings[0].seniorFare : vars.passenger3Type == 'CHILD' ? response.query.sailings[0].childFare : vars.passenger3Type == 'PWD' ? response.query.sailings[0].pwdFare : response.query.sailings[0].regularFare) + (vars.passenger4Type == 'STUDENT' ? response.query.sailings[0].studentFare : vars.passenger4Type == 'SENIOR' ? response.query.sailings[0].seniorFare : vars.passenger4Type == 'CHILD' ? response.query.sailings[0].childFare : vars.passenger4Type == 'PWD' ? response.query.sailings[0].pwdFare : response.query.sailings[0].regularFare) + (vars.passenger5Type == 'STUDENT' ? response.query.sailings[0].studentFare : vars.passenger5Type == 'SENIOR' ? response.query.sailings[0].seniorFare : vars.passenger5Type == 'CHILD' ? response.query.sailings[0].childFare : vars.passenger5Type == 'PWD' ? response.query.sailings[0].pwdFare : response.query.sailings[0].regularFare) + (vars.passenger6Type == 'STUDENT' ? response.query.sailings[0].studentFare : vars.passenger6Type == 'SENIOR' ? response.query.sailings[0].seniorFare : vars.passenger6Type == 'CHILD' ? response.query.sailings[0].childFare : vars.passenger6Type == 'PWD' ? response.query.sailings[0].pwdFare : response.query.sailings[0].regularFare)"
+    total_expr: "(vars.passenger1Type == 'STUDENT' ? response.query.sailings[0].studentFare : vars.passenger1Type == 'SENIOR' ? response.query.sailings[0].seniorFare : vars.passenger1Type == 'CHILD' ? response.query.sailings[0].childFare : vars.passenger1Type == 'PWD' ? response.query.sailings[0].pwdFare : response.query.sailings[0].regularFare) + (vars.passenger2Type == 'STUDENT' ? response.query.sailings[0].studentFare : vars.passenger2Type == 'SENIOR' ? response.query.sailings[0].seniorFare : vars.passenger2Type == 'CHILD' ? response.query.sailings[0].childFare : vars.passenger2Type == 'PWD' ? response.query.sailings[0].pwdFare : response.query.sailings[0].regularFare) + (vars.passenger3Type == 'STUDENT' ? response.query.sailings[0].studentFare : vars.passenger3Type == 'SENIOR' ? response.query.sailings[0].seniorFare : vars.passenger3Type == 'CHILD' ? response.query.sailings[0].childFare : vars.passenger3Type == 'PWD' ? response.query.sailings[0].pwdFare : response.query.sailings[0].regularFare) + (vars.passenger4Type == 'STUDENT' ? response.query.sailings[0].studentFare : vars.passenger4Type == 'SENIOR' ? response.query.sailings[0].seniorFare : vars.passenger4Type == 'CHILD' ? response.query.sailings[0].childFare : vars.passenger4Type == 'PWD' ? response.query.sailings[0].pwdFare : response.query.sailings[0].regularFare) + (vars.passenger5Type == 'STUDENT' ? response.query.sailings[0].studentFare : vars.passenger5Type == 'SENIOR' ? response.query.sailings[0].seniorFare : vars.passenger5Type == 'CHILD' ? response.query.sailings[0].childFare : vars.passenger5Type == 'PWD' ? response.query.sailings[0].pwdFare : response.query.sailings[0].regularFare) + (vars.passenger6Type == 'STUDENT' ? response.query.sailings[0].studentFare : vars.passenger6Type == 'SENIOR' ? response.query.sailings[0].seniorFare : vars.passenger6Type == 'CHILD' ? response.query.sailings[0].childFare : vars.passenger6Type == 'PWD' ? response.query.sailings[0].pwdFare : response.query.sailings[0].regularFare)"
+  })
+  notification_insert(data: {
+    ownerUid_expr: "auth.uid"
+    title: "Reservation awaiting payment"
+    message: "Your seat is reserved. Pay at the ticketing desk to receive your e-ticket."
+    category: "BOOKING"
+  })
+  passenger1: bookingPassenger_insert(data: {
+    bookingId_expr: "response.booking_insert.id"
+    fullName: $passenger1Name
+    passengerType: $passenger1Type
+    birthDate: $passenger1BirthDate
+    sex: $passenger1Sex
+    phone: $passenger1Phone
+    nationality: $passenger1Nationality
+    fare_expr: "vars.passenger1Type == 'STUDENT' ? response.query.sailings[0].studentFare : vars.passenger1Type == 'SENIOR' ? response.query.sailings[0].seniorFare : vars.passenger1Type == 'CHILD' ? response.query.sailings[0].childFare : vars.passenger1Type == 'PWD' ? response.query.sailings[0].pwdFare : response.query.sailings[0].regularFare"
+  })
+  passenger2: bookingPassenger_insert(data: {
+    bookingId_expr: "response.booking_insert.id"
+    fullName: $passenger2Name
+    passengerType: $passenger2Type
+    birthDate: $passenger2BirthDate
+    sex: $passenger2Sex
+    phone: $passenger2Phone
+    nationality: $passenger2Nationality
+    fare_expr: "vars.passenger2Type == 'STUDENT' ? response.query.sailings[0].studentFare : vars.passenger2Type == 'SENIOR' ? response.query.sailings[0].seniorFare : vars.passenger2Type == 'CHILD' ? response.query.sailings[0].childFare : vars.passenger2Type == 'PWD' ? response.query.sailings[0].pwdFare : response.query.sailings[0].regularFare"
+  })
+  passenger3: bookingPassenger_insert(data: {
+    bookingId_expr: "response.booking_insert.id"
+    fullName: $passenger3Name
+    passengerType: $passenger3Type
+    birthDate: $passenger3BirthDate
+    sex: $passenger3Sex
+    phone: $passenger3Phone
+    nationality: $passenger3Nationality
+    fare_expr: "vars.passenger3Type == 'STUDENT' ? response.query.sailings[0].studentFare : vars.passenger3Type == 'SENIOR' ? response.query.sailings[0].seniorFare : vars.passenger3Type == 'CHILD' ? response.query.sailings[0].childFare : vars.passenger3Type == 'PWD' ? response.query.sailings[0].pwdFare : response.query.sailings[0].regularFare"
+  })
+  passenger4: bookingPassenger_insert(data: {
+    bookingId_expr: "response.booking_insert.id"
+    fullName: $passenger4Name
+    passengerType: $passenger4Type
+    birthDate: $passenger4BirthDate
+    sex: $passenger4Sex
+    phone: $passenger4Phone
+    nationality: $passenger4Nationality
+    fare_expr: "vars.passenger4Type == 'STUDENT' ? response.query.sailings[0].studentFare : vars.passenger4Type == 'SENIOR' ? response.query.sailings[0].seniorFare : vars.passenger4Type == 'CHILD' ? response.query.sailings[0].childFare : vars.passenger4Type == 'PWD' ? response.query.sailings[0].pwdFare : response.query.sailings[0].regularFare"
+  })
+  passenger5: bookingPassenger_insert(data: {
+    bookingId_expr: "response.booking_insert.id"
+    fullName: $passenger5Name
+    passengerType: $passenger5Type
+    birthDate: $passenger5BirthDate
+    sex: $passenger5Sex
+    phone: $passenger5Phone
+    nationality: $passenger5Nationality
+    fare_expr: "vars.passenger5Type == 'STUDENT' ? response.query.sailings[0].studentFare : vars.passenger5Type == 'SENIOR' ? response.query.sailings[0].seniorFare : vars.passenger5Type == 'CHILD' ? response.query.sailings[0].childFare : vars.passenger5Type == 'PWD' ? response.query.sailings[0].pwdFare : response.query.sailings[0].regularFare"
+  })
+  passenger6: bookingPassenger_insert(data: {
+    bookingId_expr: "response.booking_insert.id"
+    fullName: $passenger6Name
+    passengerType: $passenger6Type
+    birthDate: $passenger6BirthDate
+    sex: $passenger6Sex
+    phone: $passenger6Phone
+    nationality: $passenger6Nationality
+    fare_expr: "vars.passenger6Type == 'STUDENT' ? response.query.sailings[0].studentFare : vars.passenger6Type == 'SENIOR' ? response.query.sailings[0].seniorFare : vars.passenger6Type == 'CHILD' ? response.query.sailings[0].childFare : vars.passenger6Type == 'PWD' ? response.query.sailings[0].pwdFare : response.query.sailings[0].regularFare"
+  })
+}
+
+mutation ReserveSailing7($sailingCode: String!, $reference: String!, $passenger1Name: String!, $passenger1Type: String!, $passenger1BirthDate: Date, $passenger1Sex: String, $passenger1Phone: String, $passenger1Nationality: String, $passenger2Name: String!, $passenger2Type: String!, $passenger2BirthDate: Date, $passenger2Sex: String, $passenger2Phone: String, $passenger2Nationality: String, $passenger3Name: String!, $passenger3Type: String!, $passenger3BirthDate: Date, $passenger3Sex: String, $passenger3Phone: String, $passenger3Nationality: String, $passenger4Name: String!, $passenger4Type: String!, $passenger4BirthDate: Date, $passenger4Sex: String, $passenger4Phone: String, $passenger4Nationality: String, $passenger5Name: String!, $passenger5Type: String!, $passenger5BirthDate: Date, $passenger5Sex: String, $passenger5Phone: String, $passenger5Nationality: String, $passenger6Name: String!, $passenger6Type: String!, $passenger6BirthDate: Date, $passenger6Sex: String, $passenger6Phone: String, $passenger6Nationality: String, $passenger7Name: String!, $passenger7Type: String!, $passenger7BirthDate: Date, $passenger7Sex: String, $passenger7Phone: String, $passenger7Nationality: String) @auth(level: USER) @transaction {
+  query @check(expr: "response.query.sailings.size() == 1", message: "This sailing is no longer available.") {
+    sailings(where: { code: { eq: $sailingCode }, status: { eq: "SCHEDULED" }, departureAt: { gt_expr: "request.time" } }) { regularFare studentFare seniorFare childFare pwdFare }
+  }
+  sailing_update(
+    first: { where: { code: { eq: $sailingCode }, status: { eq: "SCHEDULED" }, availableSeats: { ge: 7 }, departureAt: { gt_expr: "request.time" } } }
+    data: { availableSeats_update: { dec: 7 }, updatedAt_expr: "request.time" }
+  ) @check(expr: "this != null", message: "This sailing no longer has enough available seats.")
+  booking_insert(data: {
+    reference: $reference
+    ownerUid_expr: "auth.uid"
+    sailingCode: $sailingCode
+    status: "PENDING"
+    passengerCount: 7
+    passengerFareTotal_expr: "(vars.passenger1Type == 'STUDENT' ? response.query.sailings[0].studentFare : vars.passenger1Type == 'SENIOR' ? response.query.sailings[0].seniorFare : vars.passenger1Type == 'CHILD' ? response.query.sailings[0].childFare : vars.passenger1Type == 'PWD' ? response.query.sailings[0].pwdFare : response.query.sailings[0].regularFare) + (vars.passenger2Type == 'STUDENT' ? response.query.sailings[0].studentFare : vars.passenger2Type == 'SENIOR' ? response.query.sailings[0].seniorFare : vars.passenger2Type == 'CHILD' ? response.query.sailings[0].childFare : vars.passenger2Type == 'PWD' ? response.query.sailings[0].pwdFare : response.query.sailings[0].regularFare) + (vars.passenger3Type == 'STUDENT' ? response.query.sailings[0].studentFare : vars.passenger3Type == 'SENIOR' ? response.query.sailings[0].seniorFare : vars.passenger3Type == 'CHILD' ? response.query.sailings[0].childFare : vars.passenger3Type == 'PWD' ? response.query.sailings[0].pwdFare : response.query.sailings[0].regularFare) + (vars.passenger4Type == 'STUDENT' ? response.query.sailings[0].studentFare : vars.passenger4Type == 'SENIOR' ? response.query.sailings[0].seniorFare : vars.passenger4Type == 'CHILD' ? response.query.sailings[0].childFare : vars.passenger4Type == 'PWD' ? response.query.sailings[0].pwdFare : response.query.sailings[0].regularFare) + (vars.passenger5Type == 'STUDENT' ? response.query.sailings[0].studentFare : vars.passenger5Type == 'SENIOR' ? response.query.sailings[0].seniorFare : vars.passenger5Type == 'CHILD' ? response.query.sailings[0].childFare : vars.passenger5Type == 'PWD' ? response.query.sailings[0].pwdFare : response.query.sailings[0].regularFare) + (vars.passenger6Type == 'STUDENT' ? response.query.sailings[0].studentFare : vars.passenger6Type == 'SENIOR' ? response.query.sailings[0].seniorFare : vars.passenger6Type == 'CHILD' ? response.query.sailings[0].childFare : vars.passenger6Type == 'PWD' ? response.query.sailings[0].pwdFare : response.query.sailings[0].regularFare) + (vars.passenger7Type == 'STUDENT' ? response.query.sailings[0].studentFare : vars.passenger7Type == 'SENIOR' ? response.query.sailings[0].seniorFare : vars.passenger7Type == 'CHILD' ? response.query.sailings[0].childFare : vars.passenger7Type == 'PWD' ? response.query.sailings[0].pwdFare : response.query.sailings[0].regularFare)"
+    total_expr: "(vars.passenger1Type == 'STUDENT' ? response.query.sailings[0].studentFare : vars.passenger1Type == 'SENIOR' ? response.query.sailings[0].seniorFare : vars.passenger1Type == 'CHILD' ? response.query.sailings[0].childFare : vars.passenger1Type == 'PWD' ? response.query.sailings[0].pwdFare : response.query.sailings[0].regularFare) + (vars.passenger2Type == 'STUDENT' ? response.query.sailings[0].studentFare : vars.passenger2Type == 'SENIOR' ? response.query.sailings[0].seniorFare : vars.passenger2Type == 'CHILD' ? response.query.sailings[0].childFare : vars.passenger2Type == 'PWD' ? response.query.sailings[0].pwdFare : response.query.sailings[0].regularFare) + (vars.passenger3Type == 'STUDENT' ? response.query.sailings[0].studentFare : vars.passenger3Type == 'SENIOR' ? response.query.sailings[0].seniorFare : vars.passenger3Type == 'CHILD' ? response.query.sailings[0].childFare : vars.passenger3Type == 'PWD' ? response.query.sailings[0].pwdFare : response.query.sailings[0].regularFare) + (vars.passenger4Type == 'STUDENT' ? response.query.sailings[0].studentFare : vars.passenger4Type == 'SENIOR' ? response.query.sailings[0].seniorFare : vars.passenger4Type == 'CHILD' ? response.query.sailings[0].childFare : vars.passenger4Type == 'PWD' ? response.query.sailings[0].pwdFare : response.query.sailings[0].regularFare) + (vars.passenger5Type == 'STUDENT' ? response.query.sailings[0].studentFare : vars.passenger5Type == 'SENIOR' ? response.query.sailings[0].seniorFare : vars.passenger5Type == 'CHILD' ? response.query.sailings[0].childFare : vars.passenger5Type == 'PWD' ? response.query.sailings[0].pwdFare : response.query.sailings[0].regularFare) + (vars.passenger6Type == 'STUDENT' ? response.query.sailings[0].studentFare : vars.passenger6Type == 'SENIOR' ? response.query.sailings[0].seniorFare : vars.passenger6Type == 'CHILD' ? response.query.sailings[0].childFare : vars.passenger6Type == 'PWD' ? response.query.sailings[0].pwdFare : response.query.sailings[0].regularFare) + (vars.passenger7Type == 'STUDENT' ? response.query.sailings[0].studentFare : vars.passenger7Type == 'SENIOR' ? response.query.sailings[0].seniorFare : vars.passenger7Type == 'CHILD' ? response.query.sailings[0].childFare : vars.passenger7Type == 'PWD' ? response.query.sailings[0].pwdFare : response.query.sailings[0].regularFare)"
+  })
+  notification_insert(data: {
+    ownerUid_expr: "auth.uid"
+    title: "Reservation awaiting payment"
+    message: "Your seat is reserved. Pay at the ticketing desk to receive your e-ticket."
+    category: "BOOKING"
+  })
+  passenger1: bookingPassenger_insert(data: {
+    bookingId_expr: "response.booking_insert.id"
+    fullName: $passenger1Name
+    passengerType: $passenger1Type
+    birthDate: $passenger1BirthDate
+    sex: $passenger1Sex
+    phone: $passenger1Phone
+    nationality: $passenger1Nationality
+    fare_expr: "vars.passenger1Type == 'STUDENT' ? response.query.sailings[0].studentFare : vars.passenger1Type == 'SENIOR' ? response.query.sailings[0].seniorFare : vars.passenger1Type == 'CHILD' ? response.query.sailings[0].childFare : vars.passenger1Type == 'PWD' ? response.query.sailings[0].pwdFare : response.query.sailings[0].regularFare"
+  })
+  passenger2: bookingPassenger_insert(data: {
+    bookingId_expr: "response.booking_insert.id"
+    fullName: $passenger2Name
+    passengerType: $passenger2Type
+    birthDate: $passenger2BirthDate
+    sex: $passenger2Sex
+    phone: $passenger2Phone
+    nationality: $passenger2Nationality
+    fare_expr: "vars.passenger2Type == 'STUDENT' ? response.query.sailings[0].studentFare : vars.passenger2Type == 'SENIOR' ? response.query.sailings[0].seniorFare : vars.passenger2Type == 'CHILD' ? response.query.sailings[0].childFare : vars.passenger2Type == 'PWD' ? response.query.sailings[0].pwdFare : response.query.sailings[0].regularFare"
+  })
+  passenger3: bookingPassenger_insert(data: {
+    bookingId_expr: "response.booking_insert.id"
+    fullName: $passenger3Name
+    passengerType: $passenger3Type
+    birthDate: $passenger3BirthDate
+    sex: $passenger3Sex
+    phone: $passenger3Phone
+    nationality: $passenger3Nationality
+    fare_expr: "vars.passenger3Type == 'STUDENT' ? response.query.sailings[0].studentFare : vars.passenger3Type == 'SENIOR' ? response.query.sailings[0].seniorFare : vars.passenger3Type == 'CHILD' ? response.query.sailings[0].childFare : vars.passenger3Type == 'PWD' ? response.query.sailings[0].pwdFare : response.query.sailings[0].regularFare"
+  })
+  passenger4: bookingPassenger_insert(data: {
+    bookingId_expr: "response.booking_insert.id"
+    fullName: $passenger4Name
+    passengerType: $passenger4Type
+    birthDate: $passenger4BirthDate
+    sex: $passenger4Sex
+    phone: $passenger4Phone
+    nationality: $passenger4Nationality
+    fare_expr: "vars.passenger4Type == 'STUDENT' ? response.query.sailings[0].studentFare : vars.passenger4Type == 'SENIOR' ? response.query.sailings[0].seniorFare : vars.passenger4Type == 'CHILD' ? response.query.sailings[0].childFare : vars.passenger4Type == 'PWD' ? response.query.sailings[0].pwdFare : response.query.sailings[0].regularFare"
+  })
+  passenger5: bookingPassenger_insert(data: {
+    bookingId_expr: "response.booking_insert.id"
+    fullName: $passenger5Name
+    passengerType: $passenger5Type
+    birthDate: $passenger5BirthDate
+    sex: $passenger5Sex
+    phone: $passenger5Phone
+    nationality: $passenger5Nationality
+    fare_expr: "vars.passenger5Type == 'STUDENT' ? response.query.sailings[0].studentFare : vars.passenger5Type == 'SENIOR' ? response.query.sailings[0].seniorFare : vars.passenger5Type == 'CHILD' ? response.query.sailings[0].childFare : vars.passenger5Type == 'PWD' ? response.query.sailings[0].pwdFare : response.query.sailings[0].regularFare"
+  })
+  passenger6: bookingPassenger_insert(data: {
+    bookingId_expr: "response.booking_insert.id"
+    fullName: $passenger6Name
+    passengerType: $passenger6Type
+    birthDate: $passenger6BirthDate
+    sex: $passenger6Sex
+    phone: $passenger6Phone
+    nationality: $passenger6Nationality
+    fare_expr: "vars.passenger6Type == 'STUDENT' ? response.query.sailings[0].studentFare : vars.passenger6Type == 'SENIOR' ? response.query.sailings[0].seniorFare : vars.passenger6Type == 'CHILD' ? response.query.sailings[0].childFare : vars.passenger6Type == 'PWD' ? response.query.sailings[0].pwdFare : response.query.sailings[0].regularFare"
+  })
+  passenger7: bookingPassenger_insert(data: {
+    bookingId_expr: "response.booking_insert.id"
+    fullName: $passenger7Name
+    passengerType: $passenger7Type
+    birthDate: $passenger7BirthDate
+    sex: $passenger7Sex
+    phone: $passenger7Phone
+    nationality: $passenger7Nationality
+    fare_expr: "vars.passenger7Type == 'STUDENT' ? response.query.sailings[0].studentFare : vars.passenger7Type == 'SENIOR' ? response.query.sailings[0].seniorFare : vars.passenger7Type == 'CHILD' ? response.query.sailings[0].childFare : vars.passenger7Type == 'PWD' ? response.query.sailings[0].pwdFare : response.query.sailings[0].regularFare"
+  })
+}
+
+mutation ReserveSailing8($sailingCode: String!, $reference: String!, $passenger1Name: String!, $passenger1Type: String!, $passenger1BirthDate: Date, $passenger1Sex: String, $passenger1Phone: String, $passenger1Nationality: String, $passenger2Name: String!, $passenger2Type: String!, $passenger2BirthDate: Date, $passenger2Sex: String, $passenger2Phone: String, $passenger2Nationality: String, $passenger3Name: String!, $passenger3Type: String!, $passenger3BirthDate: Date, $passenger3Sex: String, $passenger3Phone: String, $passenger3Nationality: String, $passenger4Name: String!, $passenger4Type: String!, $passenger4BirthDate: Date, $passenger4Sex: String, $passenger4Phone: String, $passenger4Nationality: String, $passenger5Name: String!, $passenger5Type: String!, $passenger5BirthDate: Date, $passenger5Sex: String, $passenger5Phone: String, $passenger5Nationality: String, $passenger6Name: String!, $passenger6Type: String!, $passenger6BirthDate: Date, $passenger6Sex: String, $passenger6Phone: String, $passenger6Nationality: String, $passenger7Name: String!, $passenger7Type: String!, $passenger7BirthDate: Date, $passenger7Sex: String, $passenger7Phone: String, $passenger7Nationality: String, $passenger8Name: String!, $passenger8Type: String!, $passenger8BirthDate: Date, $passenger8Sex: String, $passenger8Phone: String, $passenger8Nationality: String) @auth(level: USER) @transaction {
+  query @check(expr: "response.query.sailings.size() == 1", message: "This sailing is no longer available.") {
+    sailings(where: { code: { eq: $sailingCode }, status: { eq: "SCHEDULED" }, departureAt: { gt_expr: "request.time" } }) { regularFare studentFare seniorFare childFare pwdFare }
+  }
+  sailing_update(
+    first: { where: { code: { eq: $sailingCode }, status: { eq: "SCHEDULED" }, availableSeats: { ge: 8 }, departureAt: { gt_expr: "request.time" } } }
+    data: { availableSeats_update: { dec: 8 }, updatedAt_expr: "request.time" }
+  ) @check(expr: "this != null", message: "This sailing no longer has enough available seats.")
+  booking_insert(data: {
+    reference: $reference
+    ownerUid_expr: "auth.uid"
+    sailingCode: $sailingCode
+    status: "PENDING"
+    passengerCount: 8
+    passengerFareTotal_expr: "(vars.passenger1Type == 'STUDENT' ? response.query.sailings[0].studentFare : vars.passenger1Type == 'SENIOR' ? response.query.sailings[0].seniorFare : vars.passenger1Type == 'CHILD' ? response.query.sailings[0].childFare : vars.passenger1Type == 'PWD' ? response.query.sailings[0].pwdFare : response.query.sailings[0].regularFare) + (vars.passenger2Type == 'STUDENT' ? response.query.sailings[0].studentFare : vars.passenger2Type == 'SENIOR' ? response.query.sailings[0].seniorFare : vars.passenger2Type == 'CHILD' ? response.query.sailings[0].childFare : vars.passenger2Type == 'PWD' ? response.query.sailings[0].pwdFare : response.query.sailings[0].regularFare) + (vars.passenger3Type == 'STUDENT' ? response.query.sailings[0].studentFare : vars.passenger3Type == 'SENIOR' ? response.query.sailings[0].seniorFare : vars.passenger3Type == 'CHILD' ? response.query.sailings[0].childFare : vars.passenger3Type == 'PWD' ? response.query.sailings[0].pwdFare : response.query.sailings[0].regularFare) + (vars.passenger4Type == 'STUDENT' ? response.query.sailings[0].studentFare : vars.passenger4Type == 'SENIOR' ? response.query.sailings[0].seniorFare : vars.passenger4Type == 'CHILD' ? response.query.sailings[0].childFare : vars.passenger4Type == 'PWD' ? response.query.sailings[0].pwdFare : response.query.sailings[0].regularFare) + (vars.passenger5Type == 'STUDENT' ? response.query.sailings[0].studentFare : vars.passenger5Type == 'SENIOR' ? response.query.sailings[0].seniorFare : vars.passenger5Type == 'CHILD' ? response.query.sailings[0].childFare : vars.passenger5Type == 'PWD' ? response.query.sailings[0].pwdFare : response.query.sailings[0].regularFare) + (vars.passenger6Type == 'STUDENT' ? response.query.sailings[0].studentFare : vars.passenger6Type == 'SENIOR' ? response.query.sailings[0].seniorFare : vars.passenger6Type == 'CHILD' ? response.query.sailings[0].childFare : vars.passenger6Type == 'PWD' ? response.query.sailings[0].pwdFare : response.query.sailings[0].regularFare) + (vars.passenger7Type == 'STUDENT' ? response.query.sailings[0].studentFare : vars.passenger7Type == 'SENIOR' ? response.query.sailings[0].seniorFare : vars.passenger7Type == 'CHILD' ? response.query.sailings[0].childFare : vars.passenger7Type == 'PWD' ? response.query.sailings[0].pwdFare : response.query.sailings[0].regularFare) + (vars.passenger8Type == 'STUDENT' ? response.query.sailings[0].studentFare : vars.passenger8Type == 'SENIOR' ? response.query.sailings[0].seniorFare : vars.passenger8Type == 'CHILD' ? response.query.sailings[0].childFare : vars.passenger8Type == 'PWD' ? response.query.sailings[0].pwdFare : response.query.sailings[0].regularFare)"
+    total_expr: "(vars.passenger1Type == 'STUDENT' ? response.query.sailings[0].studentFare : vars.passenger1Type == 'SENIOR' ? response.query.sailings[0].seniorFare : vars.passenger1Type == 'CHILD' ? response.query.sailings[0].childFare : vars.passenger1Type == 'PWD' ? response.query.sailings[0].pwdFare : response.query.sailings[0].regularFare) + (vars.passenger2Type == 'STUDENT' ? response.query.sailings[0].studentFare : vars.passenger2Type == 'SENIOR' ? response.query.sailings[0].seniorFare : vars.passenger2Type == 'CHILD' ? response.query.sailings[0].childFare : vars.passenger2Type == 'PWD' ? response.query.sailings[0].pwdFare : response.query.sailings[0].regularFare) + (vars.passenger3Type == 'STUDENT' ? response.query.sailings[0].studentFare : vars.passenger3Type == 'SENIOR' ? response.query.sailings[0].seniorFare : vars.passenger3Type == 'CHILD' ? response.query.sailings[0].childFare : vars.passenger3Type == 'PWD' ? response.query.sailings[0].pwdFare : response.query.sailings[0].regularFare) + (vars.passenger4Type == 'STUDENT' ? response.query.sailings[0].studentFare : vars.passenger4Type == 'SENIOR' ? response.query.sailings[0].seniorFare : vars.passenger4Type == 'CHILD' ? response.query.sailings[0].childFare : vars.passenger4Type == 'PWD' ? response.query.sailings[0].pwdFare : response.query.sailings[0].regularFare) + (vars.passenger5Type == 'STUDENT' ? response.query.sailings[0].studentFare : vars.passenger5Type == 'SENIOR' ? response.query.sailings[0].seniorFare : vars.passenger5Type == 'CHILD' ? response.query.sailings[0].childFare : vars.passenger5Type == 'PWD' ? response.query.sailings[0].pwdFare : response.query.sailings[0].regularFare) + (vars.passenger6Type == 'STUDENT' ? response.query.sailings[0].studentFare : vars.passenger6Type == 'SENIOR' ? response.query.sailings[0].seniorFare : vars.passenger6Type == 'CHILD' ? response.query.sailings[0].childFare : vars.passenger6Type == 'PWD' ? response.query.sailings[0].pwdFare : response.query.sailings[0].regularFare) + (vars.passenger7Type == 'STUDENT' ? response.query.sailings[0].studentFare : vars.passenger7Type == 'SENIOR' ? response.query.sailings[0].seniorFare : vars.passenger7Type == 'CHILD' ? response.query.sailings[0].childFare : vars.passenger7Type == 'PWD' ? response.query.sailings[0].pwdFare : response.query.sailings[0].regularFare) + (vars.passenger8Type == 'STUDENT' ? response.query.sailings[0].studentFare : vars.passenger8Type == 'SENIOR' ? response.query.sailings[0].seniorFare : vars.passenger8Type == 'CHILD' ? response.query.sailings[0].childFare : vars.passenger8Type == 'PWD' ? response.query.sailings[0].pwdFare : response.query.sailings[0].regularFare)"
+  })
+  notification_insert(data: {
+    ownerUid_expr: "auth.uid"
+    title: "Reservation awaiting payment"
+    message: "Your seat is reserved. Pay at the ticketing desk to receive your e-ticket."
+    category: "BOOKING"
+  })
+  passenger1: bookingPassenger_insert(data: {
+    bookingId_expr: "response.booking_insert.id"
+    fullName: $passenger1Name
+    passengerType: $passenger1Type
+    birthDate: $passenger1BirthDate
+    sex: $passenger1Sex
+    phone: $passenger1Phone
+    nationality: $passenger1Nationality
+    fare_expr: "vars.passenger1Type == 'STUDENT' ? response.query.sailings[0].studentFare : vars.passenger1Type == 'SENIOR' ? response.query.sailings[0].seniorFare : vars.passenger1Type == 'CHILD' ? response.query.sailings[0].childFare : vars.passenger1Type == 'PWD' ? response.query.sailings[0].pwdFare : response.query.sailings[0].regularFare"
+  })
+  passenger2: bookingPassenger_insert(data: {
+    bookingId_expr: "response.booking_insert.id"
+    fullName: $passenger2Name
+    passengerType: $passenger2Type
+    birthDate: $passenger2BirthDate
+    sex: $passenger2Sex
+    phone: $passenger2Phone
+    nationality: $passenger2Nationality
+    fare_expr: "vars.passenger2Type == 'STUDENT' ? response.query.sailings[0].studentFare : vars.passenger2Type == 'SENIOR' ? response.query.sailings[0].seniorFare : vars.passenger2Type == 'CHILD' ? response.query.sailings[0].childFare : vars.passenger2Type == 'PWD' ? response.query.sailings[0].pwdFare : response.query.sailings[0].regularFare"
+  })
+  passenger3: bookingPassenger_insert(data: {
+    bookingId_expr: "response.booking_insert.id"
+    fullName: $passenger3Name
+    passengerType: $passenger3Type
+    birthDate: $passenger3BirthDate
+    sex: $passenger3Sex
+    phone: $passenger3Phone
+    nationality: $passenger3Nationality
+    fare_expr: "vars.passenger3Type == 'STUDENT' ? response.query.sailings[0].studentFare : vars.passenger3Type == 'SENIOR' ? response.query.sailings[0].seniorFare : vars.passenger3Type == 'CHILD' ? response.query.sailings[0].childFare : vars.passenger3Type == 'PWD' ? response.query.sailings[0].pwdFare : response.query.sailings[0].regularFare"
+  })
+  passenger4: bookingPassenger_insert(data: {
+    bookingId_expr: "response.booking_insert.id"
+    fullName: $passenger4Name
+    passengerType: $passenger4Type
+    birthDate: $passenger4BirthDate
+    sex: $passenger4Sex
+    phone: $passenger4Phone
+    nationality: $passenger4Nationality
+    fare_expr: "vars.passenger4Type == 'STUDENT' ? response.query.sailings[0].studentFare : vars.passenger4Type == 'SENIOR' ? response.query.sailings[0].seniorFare : vars.passenger4Type == 'CHILD' ? response.query.sailings[0].childFare : vars.passenger4Type == 'PWD' ? response.query.sailings[0].pwdFare : response.query.sailings[0].regularFare"
+  })
+  passenger5: bookingPassenger_insert(data: {
+    bookingId_expr: "response.booking_insert.id"
+    fullName: $passenger5Name
+    passengerType: $passenger5Type
+    birthDate: $passenger5BirthDate
+    sex: $passenger5Sex
+    phone: $passenger5Phone
+    nationality: $passenger5Nationality
+    fare_expr: "vars.passenger5Type == 'STUDENT' ? response.query.sailings[0].studentFare : vars.passenger5Type == 'SENIOR' ? response.query.sailings[0].seniorFare : vars.passenger5Type == 'CHILD' ? response.query.sailings[0].childFare : vars.passenger5Type == 'PWD' ? response.query.sailings[0].pwdFare : response.query.sailings[0].regularFare"
+  })
+  passenger6: bookingPassenger_insert(data: {
+    bookingId_expr: "response.booking_insert.id"
+    fullName: $passenger6Name
+    passengerType: $passenger6Type
+    birthDate: $passenger6BirthDate
+    sex: $passenger6Sex
+    phone: $passenger6Phone
+    nationality: $passenger6Nationality
+    fare_expr: "vars.passenger6Type == 'STUDENT' ? response.query.sailings[0].studentFare : vars.passenger6Type == 'SENIOR' ? response.query.sailings[0].seniorFare : vars.passenger6Type == 'CHILD' ? response.query.sailings[0].childFare : vars.passenger6Type == 'PWD' ? response.query.sailings[0].pwdFare : response.query.sailings[0].regularFare"
+  })
+  passenger7: bookingPassenger_insert(data: {
+    bookingId_expr: "response.booking_insert.id"
+    fullName: $passenger7Name
+    passengerType: $passenger7Type
+    birthDate: $passenger7BirthDate
+    sex: $passenger7Sex
+    phone: $passenger7Phone
+    nationality: $passenger7Nationality
+    fare_expr: "vars.passenger7Type == 'STUDENT' ? response.query.sailings[0].studentFare : vars.passenger7Type == 'SENIOR' ? response.query.sailings[0].seniorFare : vars.passenger7Type == 'CHILD' ? response.query.sailings[0].childFare : vars.passenger7Type == 'PWD' ? response.query.sailings[0].pwdFare : response.query.sailings[0].regularFare"
+  })
+  passenger8: bookingPassenger_insert(data: {
+    bookingId_expr: "response.booking_insert.id"
+    fullName: $passenger8Name
+    passengerType: $passenger8Type
+    birthDate: $passenger8BirthDate
+    sex: $passenger8Sex
+    phone: $passenger8Phone
+    nationality: $passenger8Nationality
+    fare_expr: "vars.passenger8Type == 'STUDENT' ? response.query.sailings[0].studentFare : vars.passenger8Type == 'SENIOR' ? response.query.sailings[0].seniorFare : vars.passenger8Type == 'CHILD' ? response.query.sailings[0].childFare : vars.passenger8Type == 'PWD' ? response.query.sailings[0].pwdFare : response.query.sailings[0].regularFare"
+  })
+}
+
+mutation CancelMyBooking($id: UUID!, $sailingCode: String!, $passengerCount: Int!) @auth(level: USER) @transaction {
+  query @check(
+    expr: "response.query.bookings.size() == 1 && (response.query.bookings[0].status == 'PENDING' || response.query.bookings[0].status == 'CONFIRMED') && response.query.bookings[0].paymentStatus == 'UNPAID' && response.query.bookings[0].sailingCode == vars.sailingCode && response.query.bookings[0].passengerCount == vars.passengerCount && response.query.sailings.size() == 1"
+    message: "This reservation cannot be cancelled."
+  ) {
+    bookings(where: { id: { eq: $id }, ownerUid: { eq_expr: "auth.uid" } }) {
+      status
+      paymentStatus
+      sailingCode
+      passengerCount
+    }
+    sailings(where: { code: { eq: $sailingCode }, departureAt: { gt_expr: "request.time" } }) {
+      availableSeats
+    }
+  }
+  booking_update(
+    first: { where: { id: { eq: $id }, ownerUid: { eq_expr: "auth.uid" }, status: { in: ["PENDING", "CONFIRMED"] }, paymentStatus: { eq: "UNPAID" } } }
+    data: { status: "CANCELLED", updatedAt_expr: "request.time" }
+  ) @check(expr: "this != null", message: "This reservation is already cancelled.")
+  sailing_update(
+    key: { code: $sailingCode }
+    data: { availableSeats_update: { inc: $passengerCount }, updatedAt_expr: "request.time" }
+  )
+  notification_insert(data: {
+    ownerUid_expr: "auth.uid"
+    title: "Reservation cancelled"
+    message: "Your ferry reservation was cancelled. The seats are available again."
+    category: "BOOKING"
+  })
+}
+
+query MyNotifications @auth(level: USER) {
+  notifications(where: { ownerUid: { eq_expr: "auth.uid" } }, orderBy: [{ createdAt: DESC }], limit: 50) {
+    id
+    title
+    message
+    category
+    readAt
+    createdAt
+  }
+}
+
+query MyTickets @auth(level: USER) {
+  bookingPassengers(where: { booking: { ownerUid: { eq_expr: "auth.uid" } } }) {
+    id
+    ticketCode
+    ticketStatus
+    issuedAt
+    checkedInAt
+    boardedAt
+    fullName
+    passengerType
+    booking {
+      reference
+      sailing {
+        code
+        departureAt
+        arrivalAt
+        origin { name }
+        destination { name }
+        vessel { name }
+      }
+    }
+  }
+}
+
+mutation MarkNotificationRead($id: UUID!) @auth(level: USER) {
+  notification_update(
+    first: { where: { id: { eq: $id }, ownerUid: { eq_expr: "auth.uid" } } }
+    data: { readAt_expr: "request.time" }
+  )
+}

@@ -1,0 +1,11 @@
+query AdminExportManifest($sailingCode: String!, $offset: Int!) @auth(expr: "auth.token.role == 'ADMIN'") {
+  bookingPassengers(
+    where: { booking: { sailingCode: { eq: $sailingCode }, status: { eq: "CONFIRMED" }, paymentStatus: { eq: "PAID" } } }
+    orderBy: [{ createdAt: ASC }, { id: ASC }]
+    limit: 500
+    offset: $offset
+  ) {
+    fullName sex passengerType ticketStatus boardedAt
+    booking { reference sailing { code } }
+  }
+}
