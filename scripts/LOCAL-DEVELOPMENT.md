@@ -1,7 +1,7 @@
-Run `npm run dev -- --port 8100` from the project folder. This starts the Functions emulator first, then Vite. An already running account backend on port 5001 is reused.
+Use Node.js 24 LTS. After cloning, run `npm ci`, install the Ionic CLI with `npm install -g @ionic/cli`, and copy `.env.example` to `.env.local`. Fill in the Supabase project URL and public key supplied by the owner.
 
-For a frontend started separately (for example, through an IDE), run `npm run functions:emulate` in another terminal and keep it running.
+Run `ionic serve --port 8100` from the project folder, or use `npm run dev -- --host localhost --port 8100`. Both run the same Vite app. Open `http://localhost:8100`.
 
-The Functions emulator runs account management code locally. Firebase Auth and SQL Connect still use this project's live services, so accounts created through the local admin page are real accounts. The Firebase CLI must be signed in with access to this project.
+When using the existing configured team backend, do not reinstall its schema. A project owner creating a separate backend should apply the migrations and deploy the account Edge Function as described in the root README. Authentication, account creation and bookings use the configured project's real services. No Firebase emulator is needed.
 
-Stop the combined dev command with Ctrl+C. It stops the processes it started and leaves a previously running backend alone.
+Run `npm run test:database` for isolated local PostgreSQL tests without modifying hosted data.

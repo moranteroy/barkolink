@@ -29,10 +29,14 @@ import '@ionic/vue/css/display.css';
 
 /* @import '@ionic/vue/css/palettes/dark.always.css'; */
 /* @import '@ionic/vue/css/palettes/dark.class.css'; */
-import '@ionic/vue/css/palettes/dark.system.css';
+import '@ionic/vue/css/palettes/dark.class.css';
 
 /* Theme variables */
 import './theme/variables.css';
+import './theme/workspace.css';
+import './theme/catalog.css';
+import './theme/confirmation.css';
+import './theme/ui.css';
 
 const app = createApp(App)
   .use(IonicVue)

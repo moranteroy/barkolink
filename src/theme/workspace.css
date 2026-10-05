@@ -1,0 +1,341 @@
+/* Shared workspace presentation. Page components retain their own responsive layouts. */
+.design-workspace {
+  --workspace-radius: 16px;
+}
+:root body .design-workspace .sidebar,
+:root body .design-workspace .staff-sidebar {
+  background: linear-gradient(180deg, #102c4a 0%, #0c2038 100%);
+  border-right: 1px solid #ffffff0d;
+}
+:root body .design-workspace .sidebar nav a.active,
+:root body .design-workspace .staff-sidebar nav a.active {
+  background: #ffffff12;
+  color: #fff;
+  box-shadow: inset 3px 0 #65c6e3;
+  border-radius: 8px;
+}
+:root body .design-workspace .sidebar nav a:hover,
+:root body .design-workspace .staff-sidebar nav a:hover {
+  background: #ffffff0b;
+  color: #fff;
+}
+:root body .design-workspace .topbar {
+  border-radius: 0;
+  border-top: 0;
+  border-left: 0;
+  border-right: 0;
+  box-shadow: none;
+  min-height: 72px;
+}
+:root body .design-workspace .content {
+  max-width: 1600px;
+  margin-inline: auto;
+}
+:root body .design-workspace .metrics > article,
+:root body .design-workspace .metric-grid > article,
+:root body .design-workspace .stats > article {
+  position: relative;
+  border-radius: var(--workspace-radius);
+  box-shadow: 0 2px 6px #102c4a04;
+}
+:root body .design-workspace .metrics > article {
+  padding: 23px;
+  overflow: hidden;
+}
+:root body .design-workspace .metrics > article > small {
+  max-width: calc(100% - 40px);
+  font-weight: 600;
+}
+:root body .design-workspace .metrics > article > strong {
+  font-size: 32px;
+  letter-spacing: -0.04em;
+}
+:root body .design-workspace .metrics > article > .metric-symbol {
+  position: absolute;
+  top: 19px;
+  right: 18px;
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  background: var(--light-blue);
+  color: var(--ocean);
+  border-radius: 10px;
+  font-size: 18px;
+}
+:root body .design-workspace .metrics > article:nth-child(2) > .metric-symbol {
+  background: #e9f6f1;
+  color: #20836a;
+}
+:root body .design-workspace .metrics > article:nth-child(3) > .metric-symbol {
+  background: #fff5e0;
+  color: #997016;
+}
+:root body .design-workspace .metrics > article:nth-child(4) > .metric-symbol {
+  background: #fbeef0;
+  color: #ae5463;
+}
+:root[data-theme="dark"]
+  body
+  .design-workspace
+  .metrics
+  > article:nth-child(2)
+  > .metric-symbol {
+  background: #173a32;
+  color: #81d7ba;
+}
+:root[data-theme="dark"]
+  body
+  .design-workspace
+  .metrics
+  > article:nth-child(3)
+  > .metric-symbol {
+  background: #3b321e;
+  color: #e2c277;
+}
+:root[data-theme="dark"]
+  body
+  .design-workspace
+  .metrics
+  > article:nth-child(4)
+  > .metric-symbol {
+  background: #3e2531;
+  color: #efaab9;
+}
+:root body .design-workspace .panel {
+  border-radius: var(--workspace-radius);
+}
+:root body .design-workspace table th {
+  background: var(--surface-soft);
+  font-weight: 650;
+  letter-spacing: 0.04em;
+}
+:root body .design-workspace table tbody tr:hover {
+  background: var(--surface-soft);
+}
+:root body .design-workspace .sailing-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-weight: 700;
+  color: var(--ocean);
+  text-decoration: none;
+}
+:root body .design-workspace .sailing-link ion-icon {
+  font-size: 12px;
+}
+:root body .design-workspace .queue-item {
+  border-radius: 10px;
+}
+:root body .design-workspace .queue-item:hover {
+  background: var(--surface-soft);
+}
+:root body .design-workspace .person-avatar,
+:root body .design-workspace .avatar {
+  border-radius: 12px;
+}
+:root body .design-workspace .empty-state,
+:root body .design-workspace .empty {
+  padding: 32px 20px;
+  color: var(--muted);
+}
+:root body .design-passenger-home {
+  display: block;
+  max-width: 1180px;
+}
+:root body .design-passenger-home .welcome-section {
+  margin: 30px 0 22px;
+}
+:root body .design-passenger-home .passenger-welcome-banner {
+  margin-bottom: 22px;
+}
+:root body .design-passenger-home .upcoming-block,
+:root body .design-passenger-home .quick-block {
+  margin-top: 30px;
+}
+:root body .design-passenger-home .quick-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-rows: auto;
+  gap: 14px;
+}
+:root body .design-passenger-home .quick-grid a {
+  display: block;
+  height: auto;
+  min-height: 120px;
+  padding: 20px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  transition:
+    border-color 0.15s ease,
+    background-color 0.15s ease;
+}
+:root body .design-passenger-home .quick-grid a:hover {
+  border-color: var(--ocean);
+  background: var(--surface-soft);
+}
+:root body .design-passenger-home .quick-icon {
+  margin-bottom: 12px;
+}
+:root body .design-passenger-home .inspiration {
+  margin-top: 30px;
+}
+:root body .bottom-nav a {
+  min-height: 44px;
+}
+@media (min-width: 1000px) {
+  :root body .bottom-nav {
+    left: 50%;
+    right: auto;
+    transform: translateX(-50%);
+    width: min(560px, 90vw);
+    bottom: 16px;
+    border: 1px solid var(--glass-border);
+    border-radius: 18px;
+    box-shadow: 0 8px 30px #102c4a15;
+    padding-bottom: 11px;
+  }
+}
+@media (max-width: 600px) {
+  :root body .design-workspace .metrics > article {
+    padding: 16px;
+    min-height: 115px;
+  }
+  :root body .design-workspace .metrics > article > strong {
+    font-size: 28px;
+  }
+  :root body .design-workspace .metrics > article > .metric-symbol {
+    top: 14px;
+    right: 12px;
+    width: 27px;
+    height: 27px;
+    font-size: 15px;
+  }
+  :root body .design-passenger-home .quick-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+  :root body .design-passenger-home .quick-grid a {
+    padding: 16px;
+    min-height: 110px;
+  }
+}
+@media print {
+  .workspace-welcome,
+  .desktop-passenger-nav {
+    display: none !important;
+  }
+}
+
+:root body .design-workspace .sidebar nav a.active {
+  background: #2196f3;
+  color: white;
+  box-shadow: none;
+}
+:root body .design-workspace .sidebar {
+  width: 256px;
+  background: #0c203b;
+  padding: 22px 16px;
+}
+:root body .admin-global-search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+  border: 1px solid var(--line);
+  border-radius: 11px;
+  padding: 10px 12px;
+  max-width: 300px;
+  color: var(--muted);
+  background: var(--surface);
+}
+:root body .admin-global-search input {
+  border: 0;
+  background: transparent;
+  outline: none;
+  width: 220px;
+  color: var(--ink);
+  font-size: 12px;
+}
+:root body .admin-bell {
+  color: var(--muted);
+  font-size: 21px;
+  display: grid;
+  place-items: center;
+  min-width: 36px;
+  min-height: 40px;
+}
+:root body .design-workspace .content > .heading .eyebrow {
+  display: none;
+}
+:root body .design-workspace .content > .heading h1 {
+  font-size: 25px;
+  margin: 0 0 6px;
+}
+:root body .design-workspace .topbar {
+  background: var(--surface);
+  backdrop-filter: none;
+  min-height: 72px;
+}
+@media (max-width: 1000px) {
+  :root body .admin-global-search {
+    display: none;
+  }
+  :root body .admin-bell {
+    margin-left: auto;
+  }
+}
+
+@media (min-width: 801px) {
+  :root body .boarding-shell.design-workspace .main-column {
+    margin-left: 256px;
+    width: calc(100% - 256px);
+  }
+}
+
+.sidebar-account {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  text-decoration: none;
+  color: white;
+  margin-top: 18px;
+  padding: 12px 10px;
+  border-top: 1px solid #ffffff20;
+}
+.sidebar-account > span {
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: #ffffff12;
+  font-size: 12px;
+  font-weight: 700;
+}
+.sidebar-account strong {
+  font-size: 12px;
+}
+.sidebar-account small {
+  display: block;
+  font-size: 10px;
+  color: #8199b0;
+  margin-top: 4px;
+}
+
+.auth-form input:not([type="checkbox"]) {
+  font-weight: 400;
+}
+:root body .design-workspace .menu-button {
+  color: var(--ink);
+  background: var(--surface);
+  border-color: var(--line);
+}
+:root body .design-workspace .menu-button ion-icon {
+  color: var(--ink);
+  font-size: 20px;
+}
+.reference-menu ion-icon {
+  font-size: 20px;
+}

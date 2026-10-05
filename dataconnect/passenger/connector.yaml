@@ -1,5 +1,0 @@
-connectorId: passenger
-generate:
-  javascriptSdk:
-    outputDir: ../../src/dataconnect-generated/passenger
-    package: "@barkolink/dataconnect-passenger"

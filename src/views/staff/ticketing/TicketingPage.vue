@@ -1,0 +1,2491 @@
+<template>
+  <ion-page>
+    <ion-content ref="contentRef" :fullscreen="true">
+      <main class="staff-shell design-workspace">
+        <button
+          v-if="menuOpen"
+          class="staff-scrim"
+          aria-label="Close navigation"
+          @click="menuOpen = false"
+        ></button>
+        <aside
+          id="staff-sidebar"
+          class="staff-sidebar"
+          :class="{ 'mobile-open': menuOpen }"
+        >
+          <BrandMark /><StaffNavigation
+            role="ticketing"
+            @navigate="menuOpen = false"
+          /><button class="logout" type="button" @click="logout">
+            <ion-icon :icon="logOutOutline" />Log out
+          </button>
+        </aside>
+        <section class="staff-main">
+          <header class="topbar glass-toolbar">
+            <button
+              class="staff-menu"
+              :aria-expanded="menuOpen"
+              aria-controls="staff-sidebar"
+              aria-label="Toggle navigation"
+              @click="menuOpen = !menuOpen"
+            >
+              <ion-icon :icon="menuOpen ? closeOutline : menuOutline" />
+            </button>
+            <div class="breadcrumbs">
+              Staff workspace
+              <ion-icon :icon="chevronForwardOutline" aria-hidden="true" />
+              <strong>{{ staff.role }}</strong>
+            </div>
+            <div class="top-actions">
+              <router-link
+                :to="`/staff/${route.params.role}/settings/account`"
+                class="staff-profile-chip"
+                aria-label="My staff account"
+                ><span class="staff-profile-icon"
+                  ><ion-icon
+                    :icon="staff.actionIcon"
+                    aria-hidden="true" /></span
+                ><span class="staff-profile-copy"
+                  ><strong>{{ staff.name }}</strong
+                  ><small>{{ staff.role }}</small></span
+                ></router-link
+              >
+            </div>
+          </header>
+          <main id="overview" class="content">
+            <div class="heading">
+              <div>
+                <p class="kicker">{{ staff.eyebrow }}</p>
+                <h1>{{ staff.greeting }}</h1>
+                <p>{{ staff.description }}</p>
+              </div>
+              <ion-button
+                v-if="isBoarding"
+                class="primary"
+                :disabled="busy"
+                @click="showScanner = true"
+                ><ion-icon slot="start" :icon="staff.actionIcon" />{{
+                  staff.action
+                }}</ion-button
+              ><button
+                class="staff-refresh"
+                type="button"
+                :disabled="busy || loading"
+                @click="refreshQueues"
+              >
+                {{ loading ? "Refreshing..." : "Refresh" }}
+              </button>
+            </div>
+            <p v-if="loadError" class="staff-note error" role="alert">
+              {{ loadError }}
+            </p>
+            <label v-if="isBoarding" class="sailing-picker"
+              >Sailing<select v-model="activeSailing">
+                <option
+                  v-for="sailing in activeSailings"
+                  :key="sailing.code"
+                  :value="sailing.code"
+                >
+                  {{ sailing.code }} - {{ sailing.origin.name }} to
+                  {{ sailing.destination.name }} -
+                  {{ new Date(sailing.departureAt).toLocaleString() }}
+                </option>
+              </select></label
+            >
+            <section class="metric-grid">
+              <article v-for="metric in staff.metrics" :key="metric.label">
+                <span :class="metric.tone"
+                  ><ion-icon :icon="metric.icon"
+                /></span>
+                <div>
+                  <small>{{ metric.label }}</small
+                  ><strong>{{ metric.value }}</strong
+                  ><em>{{ metric.note }}</em>
+                </div>
+              </article>
+            </section>
+            <section class="workspace-grid">
+              <article id="queue" class="panel queue-panel">
+                <div class="panel-heading">
+                  <div>
+                    <p class="kicker">{{ staff.queueEyebrow }}</p>
+                    <h2>{{ staff.queueTitle }}</h2>
+                  </div>
+                  <input
+                    v-if="!isBoarding"
+                    v-model="searchText"
+                    class="queue-search"
+                    type="search"
+                    placeholder="Search reference, passenger, route"
+                    aria-label="Search bookings"
+                  /><select
+                    v-if="!isBoarding"
+                    v-model="statusFilter"
+                    aria-label="Filter reservation status"
+                  >
+                    <option value="ALL">All statuses</option>
+                    <option value="UNPAID">Awaiting payment</option>
+                    <option value="PAID">Paid</option>
+                    <option value="CANCELLED">Cancelled</option>
+                    <option value="EXPIRED">Expired</option>
+                    <option value="REFUND_PENDING">Refund pending</option>
+                    <option value="REFUNDED">Refunded</option></select
+                  ><span v-else class="filter">{{
+                    activeSailing || "No sailing selected"
+                  }}</span>
+                </div>
+                <div class="queue-list">
+                  <div
+                    v-for="item in queueItems"
+                    :key="item.passengerId || item.reference || item.name"
+                    class="queue-item"
+                  >
+                    <span
+                      class="person-avatar"
+                      :class="isBoarding ? item.tone : 'blue'"
+                      >{{
+                        isBoarding
+                          ? item.initials
+                          : initialsFor(bookingName(item))
+                      }}</span
+                    >
+                    <div>
+                      <strong>{{
+                        isBoarding ? item.name : bookingName(item)
+                      }}</strong>
+                      <p>
+                        {{
+                          isBoarding
+                            ? item.detail
+                            : `${item.reference} · ${item.sailing.origin.name} to ${item.sailing.destination.name} · ${new Date(item.sailing.departureAt).toLocaleString()}`
+                        }}
+                      </p>
+                    </div>
+                    <span
+                      class="status"
+                      :class="
+                        itemStatus(item)
+                          .toLowerCase()
+                          .replace('_', '-')
+                          .replace(' ', '-')
+                      "
+                      >{{ itemStatus(item) }}</span
+                    ><button
+                      class="queue-update"
+                      :aria-label="
+                        queueActionLabel(item) +
+                        ': ' +
+                        (isBoarding ? item.name : item.reference)
+                      "
+                      :title="queueActionLabel(item)"
+                      :disabled="isQueueItemComplete(item) || busy"
+                      @click="processItem(item)"
+                    >
+                      {{ queueActionLabel(item) }}
+                    </button>
+                  </div>
+                  <p v-if="!queueItems.length" class="empty-state">
+                    {{
+                      searchText
+                        ? "No reservations match your search."
+                        : "No records found."
+                    }}
+                  </p>
+                </div>
+                <div
+                  v-if="!isBoarding && queueTotal > pageSize"
+                  class="record-pagination"
+                >
+                  <button
+                    :disabled="queuePage === 0 || busy || loading"
+                    @click="queuePage--"
+                  >
+                    Previous</button
+                  ><span
+                    >Page {{ queuePage + 1 }} /
+                    {{ Math.ceil(queueTotal / pageSize) }}</span
+                  ><button
+                    :disabled="
+                      (queuePage + 1) * pageSize >= queueTotal ||
+                      busy ||
+                      loading
+                    "
+                    @click="queuePage++"
+                  >
+                    Next
+                  </button>
+                </div>
+              </article>
+              <aside v-if="isBoarding" class="panel shift-panel">
+                <p class="kicker">SELECTED SAILING</p>
+                <h2>{{ activeSailing || "Choose a sailing" }}</h2>
+                <p class="muted">
+                  Boarding records and ticket status are read live from the
+                  database.
+                </p>
+              </aside>
+              <TicketingGuide v-else />
+            </section>
+            <section id="activity" class="panel activity-panel">
+              <div class="panel-heading">
+                <div>
+                  <p class="kicker">
+                    {{
+                      isBoarding ? "BOARDING ACTIVITY" : "RECENT RESERVATIONS"
+                    }}
+                  </p>
+                  <h2>
+                    {{
+                      isBoarding ? "Activity log" : "Latest database records"
+                    }}
+                  </h2>
+                </div>
+                <span class="activity-count"
+                  >{{ recentEvents.length }} records</span
+                >
+              </div>
+              <div class="activity-list">
+                <article
+                  v-for="(event, index) in recentEvents"
+                  :key="`${event.title}-${index}`"
+                  class="activity-item"
+                >
+                  <span class="activity-icon"
+                    ><ion-icon :icon="event.icon" aria-hidden="true"
+                  /></span>
+                  <div>
+                    <strong>{{ event.title }}</strong>
+                    <p>{{ event.detail }}</p>
+                  </div>
+                  <small>{{ event.time }}</small>
+                </article>
+                <p v-if="!recentEvents.length" class="empty-state">
+                  No recent records found.
+                </p>
+              </div>
+            </section>
+            <div class="staff-note">
+              <ion-icon :icon="informationCircleOutline" /><span
+                >Confirm cash payment before issuing tickets. Give walk-in
+                passengers their printed reference and ticket code.</span
+              >
+            </div>
+          </main>
+        </section>
+        <ion-modal
+          :is-open="showScanner"
+          @didDismiss="
+            showScanner = false;
+            stopCamera();
+          "
+          ><div class="modal-card">
+            <button
+              class="close"
+              aria-label="Close"
+              @click="showScanner = false"
+            >
+              <ion-icon :icon="closeOutline" /></button
+            ><template
+              ><span class="scan-icon"><ion-icon :icon="scanOutline" /></span>
+              <p class="kicker">GATE CHECK-IN</p>
+              <h2>Scan passenger ticket</h2>
+              <p>
+                Enter the ticket code printed on the e-ticket to load its live
+                boarding record.
+              </p>
+              <video
+                ref="scannerVideo"
+                class="scanner-video"
+                autoplay
+                playsinline
+                muted
+              ></video
+              ><button class="camera-action" type="button" @click="startCamera">
+                Scan QR with camera
+              </button>
+              <p v-if="scanError" class="scan-error" role="alert">
+                {{ scanError }}
+              </p>
+              <label class="modal-field"
+                >Ticket code<input
+                  v-model="ticketLookup"
+                  autocomplete="off"
+                  placeholder="Paste ticket code" /></label
+              ><ion-button
+                expand="block"
+                class="primary"
+                :disabled="!ticketLookup.trim()"
+                @click="lookupTicket"
+                >Find ticket</ion-button
+              ></template
+            >
+          </div></ion-modal
+        ><ion-modal
+          :is-open="!!selectedBooking"
+          @didDismiss="selectedBooking = null"
+          ><div class="modal-card ticket-list-modal">
+            <button
+              class="close"
+              aria-label="Close tickets"
+              @click="selectedBooking = null"
+            >
+              <ion-icon :icon="closeOutline" />
+            </button>
+            <p class="kicker">{{ selectedBooking?.reference }}</p>
+            <h2>Booking and payment</h2>
+            <p>
+              {{
+                selectedBookingCancelled
+                  ? "Original booking amount"
+                  : selectedBookingPaid
+                    ? "Amount paid"
+                    : "Amount due"
+              }}:
+              <strong
+                >PHP
+                {{
+                  Number(selectedBooking?.total || 0).toLocaleString()
+                }}</strong
+              >
+              ·
+              {{
+                selectedBookingExpired
+                  ? "Expired"
+                  : selectedBooking?.paymentStatus === "REFUND_PENDING"
+                    ? "Refund pending"
+                    : selectedBooking?.paymentStatus === "REFUNDED"
+                      ? "Refunded"
+                      : selectedBookingCancelled
+                        ? "Cancelled"
+                        : selectedBookingPaid
+                          ? "Paid"
+                          : "Awaiting payment"
+              }}
+            </p>
+            <p
+              v-if="selectedBookingCancelled"
+              class="cancellation-notice"
+              role="status"
+            >
+              {{
+                selectedBookingExpired
+                  ? "This reservation expired. Its seats were released. No payment is due."
+                  : "This reservation is cancelled. No payment is due and tickets cannot be issued."
+              }}
+            </p>
+            <p>
+              {{ selectedBooking?.sailing.origin.name }} to
+              {{ selectedBooking?.sailing.destination.name }} ·
+              {{
+                new Date(
+                  selectedBooking?.sailing.departureAt || Date.now(),
+                ).toLocaleString()
+              }}
+            </p>
+            <p v-if="selectedBooking?.accommodationName">
+              {{ selectedBooking.accommodationName }} accommodation · PHP
+              {{
+                Number(selectedBooking.serviceFee || 0).toLocaleString()
+              }}
+              additional fare
+            </p>
+            <article
+              v-for="person in selectedBooking?.bookingPassengers_on_booking ||
+              []"
+              :key="person.ticketCode"
+              class="ticket-record"
+            >
+              <div>
+                <strong>{{ person.fullName }}</strong
+                ><small
+                  >{{ person.passengerType }} ·
+                  {{
+                    selectedBookingExpired
+                      ? "Expired"
+                      : selectedBookingCancelled
+                        ? "Cancelled"
+                        : selectedBookingPaid
+                          ? person.ticketStatus
+                          : "Awaiting payment"
+                  }}</small
+                >
+              </div>
+              <small v-if="selectedBookingCancelled">{{
+                selectedBookingExpired
+                  ? "Ticket not issued - reservation expired"
+                  : "Ticket unavailable - reservation cancelled"
+              }}</small
+              ><code v-else-if="selectedBookingPaid">{{
+                person.ticketCode
+              }}</code
+              ><small v-else>Ticket issued after payment</small
+              ><DiscountVerification
+                v-if="
+                  selectedBookingCanPay &&
+                  person.fare < selectedBooking.sailing.regularFare
+                "
+                :key="person.id"
+                :passenger-id="person.id"
+                :verified="!!person.discountVerifiedAt"
+                @verified="refreshQueues"
+              />
+            </article>
+            <p v-if="selectedBookingCanPay && selectedBooking.paymentDeadline">
+              Pay before
+              {{
+                new Date(selectedBooking.paymentDeadline).toLocaleString(
+                  "en-PH",
+                )
+              }}.
+            </p>
+            <p v-if="selectedBooking?.cancellationReason">
+              Reason: {{ selectedBooking.cancellationReason }}
+            </p>
+            <RefundActions
+              v-if="selectedBooking?.paymentStatus === 'REFUND_PENDING'"
+              :key="selectedBooking.id"
+              :booking-id="selectedBooking.id"
+              :amount="Number(selectedBooking.total)"
+              @refunded="refreshQueues"
+            />
+            <p v-if="loadError" class="scan-error" role="alert">
+              {{ loadError }}
+            </p>
+            <p
+              v-if="
+                !selectedBookingCancelled &&
+                !selectedBookingPaid &&
+                selectedBookingDeparted
+              "
+              class="scan-error"
+            >
+              This sailing has departed. The booking remains for history;
+              payment cannot be recorded here.
+            </p>
+            <div v-if="selectedBookingCanPay" class="payment-actions">
+              <p v-if="!selectedDiscountsVerified">
+                Verify discounted passengers before collecting cash.
+              </p>
+              <label class="modal-field"
+                >Payment method<select v-model="paymentMethod">
+                  <option value="CASH">Cash</option>
+                </select></label
+              ><ion-button
+                expand="block"
+                class="primary"
+                :disabled="busy || !selectedDiscountsVerified"
+                @click="collectPayment"
+                >{{
+                  busy ? "Recording…" : "Record payment and issue tickets"
+                }}</ion-button
+              >
+            </div>
+          </div></ion-modal
+        >
+      </main>
+    </ion-content>
+  </ion-page>
+</template>
+<script setup lang="ts">
+import StaffNavigation from "../../../components/staff/StaffNavigation.vue";
+import { staffDashboard } from "../../../services/database/workspaces";
+import { confirmAction } from "../../../composables/confirmation";
+import DiscountVerification from "../../../components/staff/ticketing/DiscountVerification.vue";
+import RefundActions from "../../../components/staff/ticketing/RefundActions.vue";
+import { useQueueRefresh } from "../../../composables/queueRefresh";
+import TicketingGuide from "../../../components/staff/ticketing/TicketingGuide.vue";
+import { databaseRequestError } from "../../../data/databaseErrors";
+import { computed, nextTick, onBeforeUnmount, ref, watch } from "vue";
+import { useRoute, useRouter } from "vue-router";
+import {
+  IonButton,
+  IonContent,
+  IonIcon,
+  IonModal,
+  IonPage,
+  onIonViewDidEnter,
+  onIonViewWillEnter,
+} from "@ionic/vue";
+import {
+  boatOutline,
+  checkmarkCircle,
+  chevronForwardOutline,
+  closeOutline,
+  informationCircleOutline,
+  logOutOutline,
+  menuOutline,
+  peopleOutline,
+  scanOutline,
+  searchOutline,
+  ticketOutline,
+} from "ionicons/icons";
+import BrandMark from "../../../components/shared/BrandMark.vue";
+import { clearSessionViews } from "../../../composables/sessionViews";
+import {
+  boardingActivity,
+  boardingManifest,
+  boardingSailings,
+  boardTicket,
+  checkInTicket,
+  collectBookingPayment,
+  staffBookings,
+} from "../../../services/database/staff";
+import { auth, staffDatabase } from "../../../services/session";
+import { signOut } from "../../../services/auth";
+const route = useRoute();
+const router = useRouter();
+const contentRef = ref<any>(null);
+const showScanner = ref(false);
+const menuOpen = ref(false);
+const activeSection = ref("overview");
+const loading = ref(false);
+const busy = ref(false);
+const loadError = ref("");
+const searchText = ref("");
+const statusFilter = ref("ALL");
+const queuePage = ref(0);
+const queueTotal = ref(0);
+const pageSize = 30;
+const ticketLookup = ref("");
+const scannerVideo = ref<HTMLVideoElement | null>(null);
+const scanError = ref("");
+let scannerStream: MediaStream | null = null;
+let scanFrame = 0;
+const selectedBooking = ref<any>(null);
+const selectedBookingCancelled = computed(() =>
+  ["CANCELLED", "EXPIRED"].includes(selectedBooking.value?.status),
+);
+const selectedBookingExpired = computed(
+  () => selectedBooking.value?.status === "EXPIRED",
+);
+const selectedDiscountsVerified = computed(() =>
+  (selectedBooking.value?.bookingPassengers_on_booking || []).every(
+    (p: any) =>
+      p.passengerType === "REGULAR" ||
+      p.fare >= selectedBooking.value.sailing.regularFare ||
+      !!p.discountVerifiedAt,
+  ),
+);
+const selectedBookingPaid = computed(
+  () => selectedBooking.value?.paymentStatus === "PAID",
+);
+const selectedBookingDeparted = computed(
+  () =>
+    !!selectedBooking.value &&
+    new Date(selectedBooking.value.sailing.departureAt) <= new Date(),
+);
+const selectedBookingCanPay = computed(
+  () =>
+    !!selectedBooking.value &&
+    ["PENDING", "CONFIRMED"].includes(selectedBooking.value.status) &&
+    selectedBooking.value.paymentStatus === "UNPAID" &&
+    (!selectedBooking.value.paymentDeadline ||
+      new Date(selectedBooking.value.paymentDeadline) > new Date()) &&
+    new Date(selectedBooking.value.sailing.departureAt) > new Date(),
+);
+const paymentMethod = ref("CASH");
+const activeSailing = ref("");
+type QueueItem = {
+  passengerId?: string;
+  ticketCode?: string;
+  reference?: string;
+  name: string;
+  initials: string;
+  detail: string;
+  status: string;
+  tone: string;
+};
+const dashboardCounts = ref<{
+  bookings: number;
+  paid: number;
+  unpaid: number;
+  trips: number;
+} | null>(null);
+const ticketingQueue = ref<any[]>([]);
+const boardingQueue = ref<QueueItem[]>([]);
+const boardingEvents = ref<any[]>([]);
+function bookingName(item: any) {
+  return item.bookingChannel === "WALK_IN"
+    ? item.bookingPassengers_on_booking?.[0]?.fullName || "Walk-in passenger"
+    : item.owner?.fullName || "Passenger";
+}
+const recentEvents = computed(() =>
+  isBoarding.value
+    ? boardingEvents.value.map((item) => ({
+        title:
+          item.eventType === "BOARDED"
+            ? "Passenger boarded"
+            : "Passenger checked in",
+        detail: `${item.passenger.fullName} · ${item.passenger.booking.reference}`,
+        time: new Date(item.createdAt).toLocaleString(),
+        icon: boatOutline,
+      }))
+    : ticketingQueue.value
+        .slice(0, 5)
+        .map((item) => ({
+          title:
+            item.status === "EXPIRED"
+              ? "Reservation expired"
+              : item.paymentStatus === "REFUND_PENDING"
+                ? "Refund pending"
+                : item.paymentStatus === "REFUNDED"
+                  ? "Refund recorded"
+                  : item.status === "CANCELLED"
+                    ? "Reservation cancelled"
+                    : item.paymentStatus === "PAID"
+                      ? "Payment recorded"
+                      : "Awaiting payment",
+          detail: `${item.reference} · ${bookingName(item)} · ${item.passengerCount} passenger(s)`,
+          time: new Date(item.createdAt).toLocaleString(),
+          icon: ticketOutline,
+        })),
+);
+const activeSailings = ref<
+  Array<{
+    code: string;
+    status: string;
+    departureAt: string;
+    origin: { name: string };
+    destination: { name: string };
+    vessel: { name: string };
+  }>
+>([]);
+const sailingReadyToBoard = computed(
+  () =>
+    activeSailings.value.find((sailing) => sailing.code === activeSailing.value)
+      ?.status === "BOARDING",
+);
+const ticketing = {
+  name: "Ticketing Staff",
+  role: "Ticketing Staff",
+  eyebrow: "TICKETING DESK",
+  greeting: "Booking queue",
+  description: "Collect payment for reservations and issue walk-in tickets.",
+  action: "Walk-in ticket",
+  actionIcon: ticketOutline,
+  queueIcon: ticketOutline,
+  queueLabel: "Booking queue",
+  queueEyebrow: "BOOKING QUEUE",
+  queueTitle: "Reservations",
+  metrics: [
+    {
+      label: "Reservations",
+      value: "—",
+      note: "Live records",
+      tone: "blue",
+      icon: ticketOutline,
+    },
+    {
+      label: "Paid",
+      value: "—",
+      note: "Ready for sailing",
+      tone: "mint",
+      icon: checkmarkCircle,
+    },
+    {
+      label: "Awaiting payment",
+      value: "—",
+      note: "At ticketing desk",
+      tone: "amber",
+      icon: peopleOutline,
+    },
+  ],
+};
+const boarding = {
+  name: "Boarding Staff",
+  role: "Boarding Staff",
+  eyebrow: "BOARDING DESK",
+  greeting: "Boarding queue",
+  description: "Check in valid tickets and record passengers as they board.",
+  action: "Find ticket",
+  actionIcon: searchOutline,
+  queueIcon: scanOutline,
+  queueLabel: "Boarding queue",
+  queueEyebrow: "LIVE BOARDING",
+  queueTitle: "Passengers on selected sailing",
+  metrics: [
+    {
+      label: "Tickets",
+      value: "—",
+      note: "Sailing manifest",
+      tone: "blue",
+      icon: ticketOutline,
+    },
+    {
+      label: "Checked in",
+      value: "—",
+      note: "Gate status",
+      tone: "mint",
+      icon: scanOutline,
+    },
+    {
+      label: "Boarded",
+      value: "—",
+      note: "Boarding status",
+      tone: "amber",
+      icon: boatOutline,
+    },
+  ],
+};
+const isBoarding = computed(() => route.params.role === "boarding");
+const isWorkspaceRoute = computed(
+  () =>
+    route.path === "/staff/ticketing" ||
+    route.path === "/staff/ticketing/bookings",
+);
+const staff = computed(() => {
+  const source = isBoarding.value ? boarding : ticketing;
+  const items = isBoarding.value ? boardingQueue.value : ticketingQueue.value;
+  const metrics = isBoarding.value
+    ? [
+        { ...source.metrics[0], value: String(items.length) },
+        {
+          ...source.metrics[1],
+          value: String(
+            items.filter(
+              (x) => x.status === "CHECKED-IN" || x.status === "BOARDED",
+            ).length,
+          ),
+        },
+        {
+          ...source.metrics[2],
+          value: String(items.filter((x) => x.status === "BOARDED").length),
+        },
+      ]
+    : [
+        {
+          ...source.metrics[0],
+          note: "All reservations",
+          value: String(dashboardCounts.value?.bookings ?? queueTotal.value),
+        },
+        {
+          ...source.metrics[1],
+          note: "Paid confirmed reservations",
+          value: String(dashboardCounts.value?.paid ?? 0),
+        },
+        {
+          ...source.metrics[2],
+          note: "Active unpaid reservations",
+          value: String(dashboardCounts.value?.unpaid ?? 0),
+        },
+      ];
+  return {
+    ...source,
+    greeting: route.path.endsWith("/bookings") ? "Bookings" : "Dashboard",
+    name:
+      auth?.currentUser?.displayName ||
+      auth?.currentUser?.email?.split("@")[0] ||
+      source.name,
+    metrics,
+  };
+});
+const queueItems = computed(() =>
+  isBoarding.value
+    ? boardingQueue.value
+    : ticketingQueue.value.filter((item) =>
+        `${item.reference} ${bookingName(item)} ${item.bookingChannel} ${item.sailing.origin.name} ${item.sailing.destination.name}`
+          .toLowerCase()
+          .includes(searchText.value.toLowerCase().trim()),
+      ),
+);
+let searchTimer: ReturnType<typeof setTimeout> | undefined;
+watch([searchText, statusFilter], () => {
+  queuePage.value = 0;
+  if (searchTimer) clearTimeout(searchTimer);
+  searchTimer = setTimeout(() => {
+    void refreshQueues();
+  }, 300);
+});
+watch(queuePage, () => {
+  void refreshQueues();
+});
+useQueueRefresh(refreshQueues, () => isWorkspaceRoute.value && !busy.value);
+watch(
+  () => [route.params.role, activeSailing.value],
+  () => {
+    if (isWorkspaceRoute.value) void refreshQueues();
+  },
+);
+onIonViewWillEnter(() => {
+  if (isWorkspaceRoute.value) void refreshQueues();
+});
+onIonViewDidEnter(() => {
+  if (route.hash) void scrollToSection(route.hash.slice(1));
+});
+let refreshToken = 0;
+async function refreshQueues() {
+  if (!isWorkspaceRoute.value) return;
+  const requestId = ++refreshToken;
+  loading.value = true;
+  loadError.value = "";
+  if (!staffDatabase) {
+    loading.value = false;
+    ticketingQueue.value = [];
+    boardingQueue.value = [];
+    loadError.value =
+      "Supabase is not configured. Add the project URL and publishable key to .env.local.";
+    return;
+  }
+  try {
+    if (isBoarding.value) {
+      const sailings = await boardingSailings(staffDatabase, {
+        fetchPolicy: "SERVER_ONLY",
+      });
+      if (requestId !== refreshToken) return;
+      activeSailings.value = sailings.data.sailings.filter(
+        (sailing) =>
+          sailing.status === "BOARDING" ||
+          new Date(sailing.departureAt) > new Date(),
+      );
+      if (
+        !activeSailings.value.some(
+          (sailing) => sailing.code === activeSailing.value,
+        )
+      )
+        activeSailing.value = activeSailings.value[0]?.code || "";
+      if (!activeSailing.value) {
+        boardingQueue.value = [];
+        boardingEvents.value = [];
+        return;
+      }
+      const sailingCode = activeSailing.value;
+      const [result, activity] = await Promise.all([
+        boardingManifest(
+          staffDatabase,
+          { sailingCode },
+          { fetchPolicy: "SERVER_ONLY" },
+        ),
+        boardingActivity(
+          staffDatabase,
+          { sailingCode },
+          { fetchPolicy: "SERVER_ONLY" },
+        ),
+      ]);
+      if (requestId !== refreshToken || sailingCode !== activeSailing.value)
+        return;
+      boardingEvents.value = activity.data.boardingEvents;
+      boardingQueue.value = result.data.bookings.flatMap((booking) =>
+        booking.bookingPassengers_on_booking.map((person) => ({
+          passengerId: person.id,
+          ticketCode: person.ticketCode,
+          reference: booking.reference,
+          name: person.fullName,
+          initials: person.fullName
+            .split(/\s+/)
+            .map((part) => part[0])
+            .join("")
+            .slice(0, 2)
+            .toUpperCase(),
+          detail:
+            booking.reference +
+            " - " +
+            sailingCode +
+            " - " +
+            person.passengerType,
+          status: person.ticketStatus.replace("_", "-"),
+          tone: person.ticketStatus === "BOARDED" ? "mint" : "blue",
+        })),
+      );
+    } else {
+      const [result, counts] = await Promise.all([
+        staffBookings(staffDatabase, {
+          fetchPolicy: "SERVER_ONLY",
+          page: queuePage.value,
+          pageSize,
+          status: statusFilter.value,
+          search: searchText.value.trim(),
+        }),
+        staffDashboard(staffDatabase),
+      ]);
+      if (requestId !== refreshToken) return;
+      dashboardCounts.value = counts.data;
+      ticketingQueue.value = result.data.bookings;
+      queueTotal.value = result.data.totalCount ?? result.data.bookings.length;
+      if (selectedBooking.value)
+        selectedBooking.value =
+          result.data.bookings.find((b) => b.id === selectedBooking.value.id) ||
+          null;
+    }
+  } catch (error) {
+    if (requestId === refreshToken) {
+      loadError.value = databaseRequestError(
+        error,
+        "Could not load operations. Try refreshing again.",
+      );
+    }
+  } finally {
+    if (requestId === refreshToken) loading.value = false;
+  }
+}
+function itemStatus(item: QueueItem) {
+  if (isBoarding.value) return item.status;
+  const booking = item as any;
+  return booking.paymentStatus === "REFUND_PENDING"
+    ? "REFUND PENDING"
+    : booking.paymentStatus === "REFUNDED"
+      ? "REFUNDED"
+      : ["CANCELLED", "EXPIRED"].includes(booking.status)
+        ? booking.status
+        : booking.paymentStatus === "PAID"
+          ? "PAID"
+          : new Date(booking.sailing.departureAt) <= new Date()
+            ? "PAST DUE"
+            : "AWAITING PAYMENT";
+}
+function isQueueItemComplete(item: QueueItem) {
+  return (
+    isBoarding.value &&
+    (item.status === "BOARDED" ||
+      (item.status === "CHECKED-IN" && !sailingReadyToBoard.value) ||
+      (item.status !== "ISSUED" && item.status !== "CHECKED-IN"))
+  );
+}
+function queueActionLabel(item: QueueItem) {
+  return isBoarding.value
+    ? item.status === "ISSUED"
+      ? "Check in"
+      : item.status === "CHECKED-IN"
+        ? sailingReadyToBoard.value
+          ? "Board"
+          : "Await boarding"
+        : item.status === "BOARDED"
+          ? "Boarded"
+          : "Not ready"
+    : "Details";
+}
+async function processItem(item: QueueItem) {
+  if (!isBoarding.value) {
+    selectedBooking.value = item;
+    return;
+  }
+  if (
+    !item.passengerId ||
+    !staffDatabase ||
+    (item.status !== "ISSUED" && item.status !== "CHECKED-IN")
+  )
+    return;
+  if (item.status === "CHECKED-IN" && !sailingReadyToBoard.value) {
+    loadError.value =
+      "Admin must set this sailing to BOARDING before passengers can board.";
+    return;
+  }
+  busy.value = true;
+  loadError.value = "";
+  try {
+    if (item.status === "ISSUED")
+      await checkInTicket(staffDatabase, { passengerId: item.passengerId });
+    else await boardTicket(staffDatabase, { passengerId: item.passengerId });
+    await refreshQueues();
+  } catch (error) {
+    loadError.value = databaseRequestError(
+      error,
+      "Could not update ticket status.",
+    );
+  } finally {
+    busy.value = false;
+  }
+}
+async function lookupTicket() {
+  const item = boardingQueue.value.find(
+    (candidate) =>
+      candidate.ticketCode?.toLowerCase() ===
+      ticketLookup.value.trim().toLowerCase(),
+  );
+  if (item) {
+    showScanner.value = false;
+    ticketLookup.value = "";
+    await processItem(item);
+  } else
+    loadError.value =
+      "No ticket with that code was found on the selected sailing.";
+}
+function stopCamera() {
+  if (scanFrame) cancelAnimationFrame(scanFrame);
+  scanFrame = 0;
+  scannerStream?.getTracks().forEach((track) => track.stop());
+  scannerStream = null;
+  if (scannerVideo.value) scannerVideo.value.srcObject = null;
+}
+async function startCamera() {
+  scanError.value = "";
+  const Detector = (window as any).BarcodeDetector;
+  if (!Detector) {
+    scanError.value =
+      "Camera QR scanning is unavailable in this browser. Enter the ticket code instead.";
+    return;
+  }
+  try {
+    stopCamera();
+    await nextTick();
+    scannerStream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: "environment" },
+      audio: false,
+    });
+    if (!scannerVideo.value) {
+      stopCamera();
+      return;
+    }
+    scannerVideo.value.srcObject = scannerStream;
+    await scannerVideo.value.play();
+    const detector = new Detector({ formats: ["qr_code"] });
+    const scan = async () => {
+      if (!scannerStream || !scannerVideo.value) return;
+      try {
+        const codes = await detector.detect(scannerVideo.value);
+        if (codes[0]?.rawValue) {
+          ticketLookup.value = String(codes[0].rawValue);
+          stopCamera();
+          await lookupTicket();
+          return;
+        }
+      } catch {
+        /* Keep scanning until the camera closes. */
+      }
+      scanFrame = requestAnimationFrame(scan);
+    };
+    scanFrame = requestAnimationFrame(scan);
+  } catch (error) {
+    stopCamera();
+    scanError.value = databaseRequestError(
+      error,
+      "Could not start camera. Enter the ticket code instead.",
+    );
+  }
+}
+onBeforeUnmount(() => {
+  stopCamera();
+  if (searchTimer) clearTimeout(searchTimer);
+});
+async function collectPayment() {
+  if (
+    !staffDatabase ||
+    !selectedBookingCanPay.value ||
+    !selectedDiscountsVerified.value ||
+    busy.value
+  )
+    return;
+  if (
+    !(await confirmAction({
+      title: "Confirm payment received?",
+      message: `Confirm cash received: PHP ${Number(selectedBooking.value.total).toLocaleString()} for ${selectedBooking.value.reference}?`,
+      confirmText: "Confirm cash received",
+      danger: false,
+    }))
+  )
+    return;
+  busy.value = true;
+  loadError.value = "";
+  try {
+    await collectBookingPayment(staffDatabase, {
+      bookingId: selectedBooking.value.id,
+      method: paymentMethod.value,
+    });
+    selectedBooking.value = null;
+    await refreshQueues();
+  } catch (error) {
+    loadError.value = databaseRequestError(error, "Could not record payment.");
+  } finally {
+    busy.value = false;
+  }
+}
+function initialsFor(name: string) {
+  return name
+    .split(/\s+/)
+    .map((part) => part[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase();
+}
+async function scrollToSection(id: string) {
+  activeSection.value = id;
+  const content = await contentRef.value?.$el.getScrollElement();
+  const target = document.getElementById(id);
+  if (content && target)
+    await contentRef.value?.$el.scrollToPoint(
+      0,
+      Math.max(
+        0,
+        target.getBoundingClientRect().top -
+          content.getBoundingClientRect().top +
+          content.scrollTop,
+      ),
+      350,
+    );
+}
+async function logout() {
+  if (auth) await signOut(auth);
+  await router.replace("/login");
+  clearSessionViews();
+}
+</script>
+<style scoped>
+.staff-shell {
+  display: flex;
+  min-height: 100vh;
+  background: var(--cloud);
+}
+.staff-sidebar {
+  position: fixed;
+  inset: 0 auto 0 0;
+  width: 235px;
+  display: flex;
+  flex-direction: column;
+  padding: 26px 16px;
+  background: var(--deep);
+  color: #fff;
+}
+.staff-sidebar :deep(.brand-copy strong),
+.staff-sidebar :deep(.brand-copy b) {
+  color: #fff;
+}
+.staff-sidebar :deep(.brand-copy small) {
+  color: #8eb8cc;
+}
+.staff-sidebar :deep(.brand-symbol) {
+  background: var(--ocean);
+}
+.role-card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 42px 5px 25px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+}
+.role-avatar,
+.mini-avatar {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: #d9edf8;
+  color: var(--ocean);
+  font-size: 10px;
+  font-weight: 800;
+}
+.role-card > div {
+  display: grid;
+}
+.role-card small {
+  color: #6f91a4;
+  font-size: 8px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+}
+.role-card strong {
+  margin-top: 4px;
+  font-size: 11px;
+}
+.role-card em {
+  margin-top: 3px;
+  color: #7cc4e5;
+  font-size: 9px;
+  font-style: normal;
+}
+nav {
+  display: grid;
+  gap: 4px;
+}
+nav p {
+  margin: 16px 8px 5px;
+  color: #6e8b9d;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+}
+nav a,
+.logout {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px;
+  border-radius: 8px;
+  color: #a8c0cf;
+  text-decoration: none;
+  font-size: 11px;
+}
+nav a ion-icon,
+.logout ion-icon {
+  font-size: 17px;
+}
+nav a.active,
+nav a:hover {
+  background: #14355a;
+  color: #fff;
+}
+.logout {
+  margin-top: auto;
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
+  padding-top: 18px;
+}
+.staff-main {
+  width: calc(100% - 235px);
+  margin-left: 235px;
+}
+.topbar {
+  display: flex;
+  align-items: center;
+  height: 73px;
+  padding: 0 35px;
+  border-bottom: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--muted);
+  font-size: 12px;
+}
+.breadcrumbs span {
+  padding: 0 8px;
+  color: #c4ccd5;
+}
+.breadcrumbs strong {
+  color: var(--ink);
+}
+.top-actions {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  margin-left: auto;
+  font-size: 18px;
+}
+.mini-avatar {
+  font-size: 10px;
+}
+.content {
+  padding: 40px 35px;
+}
+.heading {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  margin-bottom: 28px;
+}
+.heading h1 {
+  margin: 7px 0 5px;
+  font-size: 29px;
+  letter-spacing: -1px;
+}
+.heading p:last-child {
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+}
+.kicker {
+  margin: 0;
+  color: var(--ocean);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.11em;
+}
+.primary {
+  --background: var(--ocean);
+  --box-shadow: none;
+  --border-radius: 9px;
+  height: 42px;
+  text-transform: none;
+  font-weight: 800;
+}
+.metric-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+  margin-bottom: 20px;
+}
+.metric-grid article,
+.panel {
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--surface);
+}
+.metric-grid article {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+}
+.metric-grid article > span {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 11px;
+  font-size: 19px;
+}
+.metric-grid .blue {
+  background: var(--light-blue);
+  color: var(--ocean);
+}
+.metric-grid .mint {
+  background: #def7f0;
+  color: #078a72;
+}
+.metric-grid .amber {
+  background: #fff1d2;
+  color: #b77700;
+}
+.metric-grid small,
+.metric-grid strong,
+.metric-grid em {
+  display: block;
+}
+.metric-grid small {
+  color: var(--muted);
+  font-size: 10px;
+}
+.metric-grid strong {
+  margin: 4px 0 2px;
+  font-size: 23px;
+}
+.metric-grid em {
+  color: #078a72;
+  font-size: 9px;
+  font-style: normal;
+}
+.workspace-grid {
+  display: grid;
+  grid-template-columns: 1.6fr 0.85fr;
+  gap: 20px;
+}
+.panel {
+  padding: 20px;
+}
+.panel-heading {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+.panel-heading h2,
+.shift-panel h2 {
+  margin: 5px 0 0;
+  font-size: 18px;
+}
+.filter {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  padding: 7px 9px;
+  background: var(--surface-soft);
+  color: var(--muted);
+  font-size: 10px;
+}
+.queue-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 0;
+  border-top: 1px solid var(--line);
+}
+.person-avatar {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  font-size: 10px;
+  font-weight: 800;
+}
+.person-avatar.blue {
+  background: var(--light-blue);
+  color: var(--ocean);
+}
+.person-avatar.mint {
+  background: #def7f0;
+  color: #078a72;
+}
+.person-avatar.amber {
+  background: #fff1d2;
+  color: #b77700;
+}
+.queue-item > div {
+  flex: 1;
+}
+.queue-item strong {
+  font-size: 12px;
+}
+.queue-item p {
+  margin: 4px 0 0;
+  color: var(--muted);
+  font-size: 10px;
+}
+.queue-item > ion-icon {
+  color: var(--muted);
+}
+.status {
+  padding: 5px 7px;
+  border-radius: 5px;
+  background: #e6f7ef;
+  color: #117a52;
+  font-size: 8px;
+  font-weight: 800;
+}
+.status.pending,
+.status.waiting {
+  background: #fff1d2;
+  color: #9a5b00;
+}
+.status.checked-in {
+  background: var(--light-blue);
+  color: var(--ocean);
+}
+.shift-panel {
+  height: max-content;
+}
+.shift-time {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 27px 0 12px;
+  color: var(--ocean);
+}
+.shift-time strong {
+  font-size: 16px;
+}
+.shift-time span {
+  color: var(--muted);
+  font-size: 10px;
+}
+.shift-line {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.shift-line span {
+  width: 7px;
+  height: 7px;
+  border: 2px solid var(--ocean);
+  border-radius: 50%;
+}
+.shift-line i {
+  height: 1px;
+  flex: 1;
+  background: var(--line);
+}
+.shift-panel .muted {
+  margin: 13px 0 18px;
+  color: var(--muted);
+  font-size: 10px;
+}
+.shift-panel ion-button {
+  --color: var(--ocean);
+  --border-color: #bcd9e9;
+  --border-radius: 8px;
+  text-transform: none;
+  font-weight: 800;
+}
+.staff-note {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-top: 20px;
+  color: var(--muted);
+  font-size: 10px;
+}
+.staff-note ion-icon {
+  color: var(--ocean);
+}
+.modal-card {
+  position: relative;
+  width: min(90vw, 400px);
+  margin: 20vh auto 0;
+  padding: 28px;
+  border-radius: 16px;
+  background: var(--surface);
+  color: var(--ink);
+  text-align: center;
+}
+.close {
+  position: absolute;
+  right: 16px;
+  top: 16px;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  font-size: 20px;
+}
+.scan-icon {
+  display: grid;
+  place-items: center;
+  width: 55px;
+  height: 55px;
+  margin: 0 auto 15px;
+  border-radius: 14px;
+  background: var(--light-blue);
+  color: var(--ocean);
+  font-size: 27px;
+}
+.modal-card h2 {
+  margin: 0;
+  font-size: 20px;
+}
+.modal-field {
+  display: grid;
+  gap: 6px;
+  margin-top: 14px;
+  color: var(--ink);
+  text-align: left;
+  font-size: 11px;
+  font-weight: 700;
+}
+.modal-field input,
+.modal-field select {
+  width: 100%;
+  min-height: 42px;
+  padding: 0 12px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: var(--surface-soft);
+  color: var(--ink);
+  font: inherit;
+}
+.queue-update {
+  width: auto;
+  min-width: 68px;
+  padding: 0 9px;
+  font-size: 9px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+.queue-update:disabled {
+  cursor: default;
+  opacity: 0.55;
+}
+.modal-card p {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+.scan-box {
+  display: grid;
+  gap: 7px;
+  place-items: center;
+  margin: 20px 0;
+  padding: 25px;
+  border: 1px dashed #9fcbe2;
+  border-radius: 12px;
+  color: var(--ocean);
+  font-size: 11px;
+}
+.scan-box ion-icon {
+  font-size: 38px;
+}
+.queue-panel,
+.activity-panel {
+  scroll-margin-top: 20px;
+}
+.queue-item > div {
+  min-width: 0;
+}
+.queue-item p {
+  overflow-wrap: anywhere;
+}
+.queue-update {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 30px;
+  height: 30px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface-soft);
+  color: var(--ocean);
+  cursor: pointer;
+}
+.queue-update:hover {
+  background: var(--light-blue);
+}
+.activity-panel {
+  margin-top: 20px;
+}
+.activity-count {
+  padding: 5px 8px;
+  border-radius: 20px;
+  background: var(--light-blue);
+  color: var(--ocean);
+  font-size: 9px;
+  font-weight: 800;
+}
+.activity-list {
+  display: grid;
+}
+.activity-item {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 11px;
+  padding: 12px 0;
+  border-top: 1px solid var(--line);
+}
+.activity-icon {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  background: var(--light-blue);
+  color: var(--ocean);
+}
+.activity-icon ion-icon {
+  font-size: 17px;
+}
+.activity-item > div {
+  min-width: 0;
+}
+.activity-item strong {
+  font-size: 11px;
+}
+.activity-item p {
+  margin: 3px 0 0;
+  color: var(--muted);
+  font-size: 10px;
+  overflow-wrap: anywhere;
+}
+.activity-item > small {
+  color: var(--muted);
+  font-size: 9px;
+  white-space: nowrap;
+}
+#overview,
+#queue,
+#activity {
+  scroll-margin-top: 20px;
+}
+@media (max-width: 800px) {
+  .staff-sidebar {
+    display: none;
+  }
+  .staff-main {
+    width: 100%;
+    margin: 0;
+  }
+  .content {
+    padding: 25px 16px;
+  }
+  .heading {
+    align-items: start;
+    flex-direction: column;
+    gap: 17px;
+  }
+  .metric-grid {
+    grid-template-columns: 1fr;
+  }
+  .workspace-grid {
+    grid-template-columns: 1fr;
+  }
+  .topbar {
+    padding: 0 17px;
+  }
+  .status {
+    display: none;
+  }
+  .activity-item {
+    grid-template-columns: 34px minmax(0, 1fr);
+  }
+  .activity-item > small {
+    grid-column: 2;
+  }
+  .queue-item {
+    gap: 8px;
+  }
+  .queue-item p {
+    font-size: 9px;
+  }
+}
+.staff-sidebar {
+  z-index: 20;
+}
+.staff-sidebar nav {
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-right: 4px;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: #36516a transparent;
+}
+.staff-sidebar nav::-webkit-scrollbar {
+  width: 5px;
+}
+.staff-sidebar nav::-webkit-scrollbar-thumb {
+  border-radius: 8px;
+  background: #36516a;
+}
+.staff-sidebar nav a {
+  min-height: 39px;
+  transition:
+    background-color 0.16s ease,
+    color 0.16s ease;
+}
+.staff-sidebar nav a.active {
+  box-shadow: inset 3px 0 0 var(--primary);
+}
+.staff-profile-chip {
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 4px 10px 4px 4px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface-soft);
+  color: var(--ink);
+}
+.staff-profile-icon {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 32px;
+  height: 32px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--light-blue);
+  color: var(--ocean);
+}
+.staff-profile-icon ion-icon {
+  font-size: 17px;
+}
+.staff-profile-copy {
+  display: grid;
+  gap: 2px;
+}
+.staff-profile-copy strong {
+  font-size: 10px;
+}
+.staff-profile-copy small {
+  color: var(--muted);
+  font-size: 8px;
+}
+.top-actions > ion-icon {
+  color: var(--muted);
+  font-size: 18px;
+}
+.breadcrumbs {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.breadcrumbs > ion-icon {
+  color: var(--ocean);
+  font-size: 14px;
+}
+.metric-grid article,
+.panel {
+  box-shadow: 0 8px 24px #0b1f3a0a;
+}
+.metric-grid article {
+  min-height: 92px;
+}
+.panel {
+  border-radius: 16px;
+}
+.panel-heading .kicker {
+  display: inline-flex;
+  min-height: 22px;
+  align-items: center;
+  padding: 4px 8px;
+  border-radius: 6px;
+  background: var(--light-blue);
+  font-size: 9px;
+}
+.queue-item {
+  transition: background-color 0.15s ease;
+}
+.queue-item:hover {
+  background: var(--surface-soft);
+}
+.queue-update {
+  transition:
+    background-color 0.15s ease,
+    transform 0.15s ease;
+}
+.queue-update:hover {
+  transform: translateX(2px);
+}
+.shift-panel {
+  background: var(--surface);
+}
+.staff-menu,
+.staff-scrim {
+  display: none;
+}
+.queue-panel,
+.activity-panel,
+#overview {
+  scroll-margin-top: 20px;
+}
+:root[data-theme="dark"] .metric-grid .mint {
+  background: #12342f;
+  color: #57c6aa;
+}
+:root[data-theme="dark"] .metric-grid .amber {
+  background: #3b2e17;
+  color: #edbd5e;
+}
+:root[data-theme="dark"] .person-avatar.mint {
+  background: #12342f;
+  color: #57c6aa;
+}
+:root[data-theme="dark"] .person-avatar.amber {
+  background: #3b2e17;
+  color: #edbd5e;
+}
+:root[data-theme="dark"] .status {
+  background: #12342f;
+  color: #57c6aa;
+}
+:root[data-theme="dark"] .status.pending,
+:root[data-theme="dark"] .status.waiting {
+  background: #3b2e17;
+  color: #edbd5e;
+}
+@media (max-width: 800px) {
+  .staff-sidebar {
+    display: none;
+  }
+  .staff-sidebar.mobile-open {
+    position: fixed;
+    inset: 0 auto 0 0;
+    z-index: 31;
+    display: flex;
+    width: min(84vw, 300px);
+    padding: 22px 15px;
+    background: var(--deep);
+    box-shadow: 12px 0 36px #020b1880;
+  }
+  .staff-scrim {
+    position: fixed;
+    inset: 0;
+    z-index: 30;
+    display: block;
+    width: 100%;
+    height: 100%;
+    border: 0;
+    background: #061222a8;
+  }
+  .staff-sidebar.mobile-open nav {
+    padding-right: 5px;
+  }
+  .staff-menu {
+    display: grid;
+    place-items: center;
+    flex: none;
+    width: 36px;
+    height: 36px;
+    margin-right: 9px;
+    border: 1px solid var(--line);
+    border-radius: 9px;
+    background: var(--surface);
+    color: var(--ink);
+    font-size: 19px;
+  }
+  .topbar {
+    gap: 9px;
+  }
+  .breadcrumbs {
+    min-width: 0;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+  .top-actions {
+    gap: 12px;
+  }
+  .metric-grid article {
+    min-height: 82px;
+  }
+  .status {
+    display: inline-flex;
+    white-space: nowrap;
+    font-size: 7px;
+  }
+  .queue-item {
+    gap: 7px;
+  }
+  .queue-item p {
+    line-height: 1.4;
+  }
+  .panel {
+    padding: 17px;
+  }
+}
+@media (max-width: 460px) {
+  .staff-profile-chip {
+    padding: 3px;
+    border: 0;
+    background: transparent;
+  }
+  .staff-profile-copy {
+    display: none;
+  }
+  .top-actions {
+    gap: 10px;
+  }
+  .topbar {
+    padding: 0 12px;
+  }
+  .content {
+    padding: 21px 12px;
+  }
+  .queue-item {
+    gap: 6px;
+  }
+  .person-avatar {
+    width: 30px;
+    height: 30px;
+  }
+  .status {
+    padding: 4px 5px;
+    font-size: 6px;
+  }
+  .queue-update {
+    width: 26px;
+    height: 26px;
+  }
+}
+.workspace-grid {
+  align-items: stretch;
+}
+.shift-panel {
+  height: auto;
+  display: flex;
+  flex-direction: column;
+}
+.shift-panel > ion-button {
+  margin-top: auto;
+}
+.shift-modal .kicker {
+  margin: 0 0 6px;
+}
+.shift-modal h2 {
+  margin: 0;
+  font-size: 21px;
+}
+.shift-modal-date {
+  margin: 5px 0 18px;
+}
+.shift-modal-time {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 18px 0;
+  padding: 16px 14px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface-soft);
+  color: var(--ocean);
+}
+.shift-modal-time strong {
+  font-size: 16px;
+}
+.shift-modal-time span {
+  color: var(--muted);
+  font-size: 11px;
+}
+.shift-modal-location {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 18px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 11px;
+  background: var(--light-blue);
+  color: var(--ocean);
+}
+.shift-modal-location > ion-icon {
+  font-size: 20px;
+}
+.shift-modal-location span,
+.shift-modal-location strong,
+.shift-modal-location small {
+  display: block;
+}
+.shift-modal-location strong {
+  color: var(--ink);
+  font-size: 12px;
+}
+.shift-modal-location small {
+  margin-top: 3px;
+  color: var(--muted);
+  font-size: 10px;
+}
+.shift-modal > ion-button {
+  margin-top: 5px;
+}
+@media (max-width: 800px) {
+  .workspace-grid > .queue-panel,
+  .workspace-grid > .shift-panel {
+    height: auto;
+  }
+  .shift-panel > ion-button {
+    margin-top: 18px;
+  }
+}
+ion-modal.shift-detail-modal {
+  --width: min(92vw, 480px);
+  --height: min(88vh, 430px);
+  --border-radius: 20px;
+  --background: var(--surface);
+  --box-shadow: 0 24px 70px #020b1866;
+}
+ion-modal.shift-detail-modal::part(content) {
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  background: var(--surface);
+}
+.shift-modal {
+  position: relative;
+  display: flex;
+  width: 100%;
+  height: 100%;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0;
+  overflow: auto;
+  padding: 30px;
+  background: var(--surface);
+  color: var(--ink);
+}
+.shift-modal .close {
+  z-index: 1;
+  top: 16px;
+  right: 16px;
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: var(--surface-soft);
+  font-size: 18px;
+}
+.shift-modal-heading {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding-right: 32px;
+}
+.shift-modal-heading .scan-icon {
+  width: 48px;
+  height: 48px;
+  flex: none;
+  margin: 0;
+  border-radius: 13px;
+  font-size: 23px;
+}
+.shift-modal-heading .kicker {
+  margin-bottom: 5px;
+}
+.shift-modal-heading h2 {
+  margin: 0;
+  color: var(--ink);
+  font-size: 21px;
+  letter-spacing: -0.4px;
+}
+.shift-modal-date {
+  margin: 5px 0 0;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.45;
+}
+.shift-modal-time {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 10px;
+  margin: 24px 0 14px;
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--surface-soft);
+  color: var(--ink);
+}
+.shift-modal-time > div:last-child {
+  text-align: right;
+}
+.shift-modal-time small,
+.shift-modal-location small {
+  display: block;
+  color: var(--muted);
+  font-size: 8px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+}
+.shift-modal-time strong {
+  display: block;
+  margin-top: 6px;
+  color: var(--ocean);
+  font-size: 19px;
+  white-space: nowrap;
+}
+.shift-modal-arrow {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--light-blue);
+  color: var(--ocean);
+}
+.shift-modal-arrow ion-icon {
+  font-size: 14px;
+}
+.shift-modal-location {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  margin: 0;
+  padding: 13px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--light-blue);
+  color: var(--ink);
+}
+.shift-location-icon {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--ocean);
+}
+.shift-location-icon ion-icon {
+  font-size: 19px;
+}
+.shift-modal-location > div {
+  min-width: 0;
+  flex: 1;
+}
+.shift-modal-location strong,
+.shift-modal-location > div > span {
+  display: block;
+}
+.shift-modal-location strong {
+  margin-top: 4px;
+  font-size: 12px;
+}
+.shift-modal-location > div > span {
+  margin-top: 2px;
+  color: var(--muted);
+  font-size: 10px;
+}
+.location-trailing {
+  color: var(--ocean);
+  font-size: 15px;
+}
+.shift-modal-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 7px;
+  margin-top: 13px;
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 1.45;
+}
+.shift-modal-note ion-icon {
+  flex: none;
+  color: var(--ocean);
+  font-size: 15px;
+}
+.shift-modal .shift-done {
+  width: 100%;
+  height: 44px;
+  margin: 20px 0 0;
+  --border-radius: 10px;
+}
+@media (max-width: 480px) {
+  ion-modal.shift-detail-modal {
+    --width: calc(100vw - 24px);
+    --height: min(84vh, 410px);
+  }
+  .shift-modal {
+    padding: 24px 19px;
+  }
+  .shift-modal-heading {
+    gap: 11px;
+  }
+  .shift-modal-heading h2 {
+    font-size: 19px;
+  }
+  .shift-modal-time {
+    gap: 6px;
+    margin: 20px 0 12px;
+    padding: 14px 11px;
+  }
+  .shift-modal-time strong {
+    font-size: 17px;
+  }
+  .shift-modal-time small {
+    font-size: 7px;
+  }
+  .shift-modal-note {
+    font-size: 9px;
+  }
+  .shift-modal .shift-done {
+    margin-top: 16px;
+  }
+}
+.logout {
+  width: 100%;
+  border: 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
+  background: transparent;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.logout:hover {
+  color: #fff;
+  background: #14355a;
+}
+.queue-search {
+  width: min(100%, 260px);
+  min-height: 36px;
+  padding: 0 11px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface-soft);
+  color: var(--ink);
+  font: inherit;
+  font-size: 11px;
+}
+.queue-search::placeholder {
+  color: var(--muted);
+}
+.ticket-list-modal {
+  text-align: left;
+  margin: 12vh auto 0;
+}
+.ticket-list-modal h2 {
+  margin: 7px 0;
+}
+.ticket-record {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  margin-top: 10px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface-soft);
+}
+.ticket-record > div {
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+}
+.ticket-record strong {
+  font-size: 12px;
+}
+.ticket-record small {
+  color: var(--muted);
+  font-size: 10px;
+}
+.ticket-record code {
+  max-width: 56%;
+  overflow-wrap: anywhere;
+  color: var(--ocean);
+  font-size: 10px;
+}
+.empty-state {
+  padding: 18px 0;
+  color: var(--muted);
+  font-size: 12px;
+  text-align: center;
+}
+@media (max-width: 600px) {
+  .panel-heading {
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .queue-search {
+    width: 100%;
+    order: 1;
+  }
+  .queue-item {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+  .queue-item > div {
+    flex-basis: calc(100% - 56px);
+  }
+  .queue-item .status {
+    margin-left: 42px;
+  }
+  .queue-update {
+    margin-left: auto;
+  }
+  .ticket-record {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+  .ticket-record code {
+    max-width: 100%;
+  }
+}
+.queue-update {
+  width: auto;
+  min-width: 72px;
+  min-height: 32px;
+  padding: 0 10px;
+}
+.status.awaiting-payment {
+  background: #fff1d2;
+  color: #9a5b00;
+}
+.status.past-due {
+  background: #ffebe7;
+  color: #a53e33;
+}
+.ticket-list-modal {
+  max-height: 78vh;
+  overflow-y: auto;
+}
+.payment-actions {
+  display: grid;
+  gap: 12px;
+  margin-top: 18px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+}
+.payment-actions ion-button,
+.ticket-list-modal form ion-button {
+  margin-top: 10px;
+}
+.cancellation-notice {
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface-soft);
+  color: var(--ink);
+  line-height: 1.5;
+}
+.scanner-video {
+  width: 100%;
+  max-height: 220px;
+  object-fit: cover;
+  border-radius: 12px;
+  background: #071d31;
+}
+.camera-action {
+  margin: 12px 0 4px;
+  padding: 10px 14px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--light-blue);
+  color: var(--ocean);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+}
+.scan-error {
+  color: #d36a68 !important;
+}
+.staff-refresh {
+  min-height: 40px;
+  padding: 0 14px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: var(--surface);
+  color: var(--ocean);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+}
+.staff-refresh:disabled {
+  opacity: 0.5;
+}
+.ticketing-guide {
+  gap: 0;
+  background: linear-gradient(145deg, var(--surface), var(--surface-soft));
+}
+.ticketing-guide h2 {
+  margin-bottom: 12px;
+}
+.ticketing-guide ol {
+  display: grid;
+  gap: 14px;
+  margin: 4px 0 24px;
+  padding-left: 20px;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.55;
+}
+.ticketing-guide li::marker {
+  color: var(--ocean);
+  font-weight: 800;
+}
+.walk-in-link {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 42px;
+  margin-top: auto;
+  padding: 0 12px;
+  border-radius: 9px;
+  background: var(--ocean);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 800;
+  text-decoration: none;
+}
+.walk-in-link:hover {
+  filter: brightness(1.08);
+}
+.walk-in-link ion-icon {
+  font-size: 16px;
+}
+.staff-note.error {
+  padding: 11px 13px;
+  border-radius: 9px;
+  background: #fff0ee;
+  color: #a53e35;
+}
+.staff-note.error ion-icon {
+  color: inherit;
+}
+@media (max-width: 600px) {
+  .ticketing-guide ol {
+    margin-bottom: 18px;
+  }
+  .walk-in-link {
+    width: 100%;
+  }
+  .queue-update {
+    min-width: 64px;
+  }
+  .queue-item .status {
+    margin-left: 40px;
+  }
+}
+.record-pagination {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 16px;
+}
+.record-pagination button {
+  padding: 9px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface-soft);
+  color: var(--ocean);
+}
+.ticket-record:has(.discount-verification) {
+  flex-wrap: wrap;
+}
+.status.cancelled,
+.status.expired {
+  background: #ffebe7;
+  color: #a53e33;
+}
+</style>

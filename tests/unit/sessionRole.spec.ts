@@ -1,12 +1,12 @@
 import { describe, expect, it } from 'vitest'
 import { resolveAccountRole, roleDestination } from '../../src/data/sessionRole'
-import { dataConnectRequestError } from '../../src/data/dataConnectErrors'
+import { databaseRequestError } from '../../src/data/databaseErrors'
 
 describe('session permissions', () => {
   it('requires a matching token role for staff access', () => {
     for (const role of ['ADMIN', 'TICKETING', 'BOARDING'] as const) {
       expect(resolveAccountRole(role)).toBe(role)
-      expect(() => resolveAccountRole(undefined, role)).toThrow('not configured in Firebase Authentication')
+      expect(() => resolveAccountRole(undefined, role)).toThrow('not configured in Supabase Auth')
     }
     expect(() => resolveAccountRole('admin')).toThrow('invalid access role')
     expect(resolveAccountRole('PASSENGER', 'ADMIN')).toBe('PASSENGER')
@@ -19,12 +19,12 @@ describe('session permissions', () => {
     expect(roleDestination('TICKETING')).toBe('/staff/ticketing')
     expect(roleDestination('PASSENGER')).toBe('/home')
   })
-  it('explains the reported Firebase 403 without displaying backend JSON', () => {
+  it('explains the reported Supabase 403 without displaying backend JSON', () => {
     const error = new Error(JSON.stringify({ error: { code: 403, message: 'unauthorized: you are not authorized to perform this operation', status: 'PERMISSION_DENIED', details: [{ message: '@auth rejected the request' }] } }))
-    expect(dataConnectRequestError(error, 'Fallback')).toContain('Sign in again')
-    expect(dataConnectRequestError(error, 'Fallback')).not.toContain('@auth')
-    expect(dataConnectRequestError({ code: 'unauthenticated' }, 'Fallback')).toContain('session has expired')
-    expect(dataConnectRequestError(new Error('No seats available.'), 'Fallback')).toBe('No seats available.')
-    expect(dataConnectRequestError(null, 'Fallback')).toBe('Fallback')
+    expect(databaseRequestError(error, 'Fallback')).toContain('Sign in again')
+    expect(databaseRequestError(error, 'Fallback')).not.toContain('@auth')
+    expect(databaseRequestError({ code: 'unauthenticated' }, 'Fallback')).toContain('session has expired')
+    expect(databaseRequestError(new Error('No seats available.'), 'Fallback')).toBe('No seats available.')
+    expect(databaseRequestError(null, 'Fallback')).toBe('Fallback')
   })
 })

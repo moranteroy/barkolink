@@ -1,5 +1,5 @@
 import { flushPromises, mount } from '@vue/test-utils'
-import HomePage from '@/views/HomePage.vue'
+import HomePage from '@/views/passenger/HomePage.vue'
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 
 const mocks = vi.hoisted(() => ({ enter: undefined as (() => void) | undefined, profile: vi.fn(), bookings: vi.fn() }))
@@ -10,13 +10,13 @@ vi.mock('@ionic/vue', () => ({
   IonIcon: { template: '<span />' },
   onIonViewWillEnter: (callback: () => void) => { mocks.enter = callback },
 }))
-vi.mock('../../src/services/firebase', () => ({
+vi.mock('../../src/services/session', () => ({
   auth: { currentUser: { uid: 'passenger-test', displayName: 'Passenger One', email: 'test@example.invalid' } },
-  dataConnect: {},
+  database: {},
 }))
-vi.mock('../../src/dataconnect-generated/passenger', () => ({ myProfile: mocks.profile, myBookings: mocks.bookings }))
+vi.mock('../../src/services/database/passenger', () => ({ myProfile: mocks.profile, myBookings: mocks.bookings }))
 
-const options = { global: { stubs: { PassengerHeader: true, PassengerBottomNav: true, TripSearchCard: true, 'router-link': { template: '<a><slot /></a>' } } } }
+const options = { global: { stubs: { PassengerHeader: true, PassengerBottomNav: true, TripSearchCard: true, AdvisoryBanner: true, 'router-link': { template: '<a><slot /></a>' } } } }
 
 describe('HomePage.vue', () => {
   beforeEach(() => {

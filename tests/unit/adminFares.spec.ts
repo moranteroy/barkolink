@@ -1,9 +1,12 @@
 import { flushPromises, mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import AdminWorkspacePage from '../../src/views/AdminWorkspacePage.vue'
+import AdminWorkspacePage from '../../src/views/admin/AdminWorkspacePage.vue'
+import { recordsGridStub } from '../support/recordsGridStub'
 
+vi.mock('../../src/services/database/workspaces', () => ({ routes: vi.fn(async () => ({data:{routes:[]}})) }))
+vi.mock('../../src/composables/confirmation', () => ({ confirmAction: vi.fn(async () => true) }))
 const mocks = vi.hoisted(() => ({
-  route: { path: '/admin/trips', params: { section: 'trips' } },
+  route: { path: '/admin/trips', params: { section: 'trips' }, query: {} },
   enter: vi.fn(),
   settings: vi.fn(), saveSettings: vi.fn(), createTrip: vi.fn(), nextCode: vi.fn(),
   bookings: vi.fn(), updateTrip: vi.fn(),
@@ -12,8 +15,8 @@ const mocks = vi.hoisted(() => ({
   generatePassword: vi.fn(), createUser: vi.fn(),
 }))
 vi.mock('vue-router', () => ({ useRoute: () => mocks.route, useRouter: () => ({ replace: vi.fn() }) }))
-vi.mock('../../src/services/firebase', () => ({ auth: null, functions: {}, staffDataConnect: {} }))
-vi.mock('firebase/functions', () => ({ httpsCallable: (_functions: unknown, name: string) => name === 'generateTemporaryPassword' ? mocks.generatePassword : mocks.createUser }))
+vi.mock('../../src/services/session', () => ({ auth: null, functions: {}, staffDatabase: {} }))
+vi.mock('../../src/services/accountFunctions', () => ({ accountFunction: (_functions: unknown, name: string) => name === 'generateTemporaryPassword' ? mocks.generatePassword : mocks.createUser }))
 vi.mock('@ionic/vue', () => ({
   IonPage: { template: '<div><slot /></div>' }, IonContent: { template: '<div><slot /></div>' },
   IonIcon: { template: '<span />' },
@@ -26,7 +29,7 @@ const sailing = {
   vessel: { id: 'vessel', name: 'Ferry', passengerCapacity: 100 }, availableSeats: 100,
   regularFare: 600, studentFare: 420, seniorFare: 450, childFare: 300, pwdFare: 400,
 }
-vi.mock('../../src/dataconnect-generated/staff', () => ({
+vi.mock('../../src/services/database/staff', () => ({
   adminReports: mocks.reports,
   adminFareSettings: mocks.settings, adminSaveFareSettings: mocks.saveSettings,
   adminNextTripCode: mocks.nextCode,
@@ -45,7 +48,7 @@ vi.mock('../../src/dataconnect-generated/staff', () => ({
 async function load(section = 'trips') {
   mocks.route.path = `/admin/${section}`
   mocks.route.params.section = section
-  const wrapper = mount(AdminWorkspacePage, { global: { stubs: { RouterLink: { template: '<a><slot /></a>' } } } })
+  const wrapper = mount(AdminWorkspacePage, { global: { stubs: { RecordsGrid:recordsGridStub, RouterLink: { template: '<a><slot /></a>' } } } })
   mocks.enter.mock.calls.at(-1)![0]()
   await flushPromises()
   return wrapper
@@ -117,11 +120,11 @@ describe('managed accounts', () => {
     await wrapper.find('form select').setValue('TICKETING')
     await wrapper.find('form input[minlength="8"]').setValue('Strong-password123')
     mocks.createUser.mockRejectedValueOnce({ code: 'functions/already-exists', message: 'An account already uses this email address.' })
-    await wrapper.find('form').trigger('submit'); await flushPromises()
+    await wrapper.find('main form, .modal-body form').trigger('submit'); await flushPromises()
     expect(wrapper.text()).toContain('An account already uses this email address.')
-    await wrapper.find('form').trigger('submit'); await flushPromises()
+    await wrapper.find('main form, .modal-body form').trigger('submit'); await flushPromises()
     expect(mocks.createUser).toHaveBeenLastCalledWith(expect.objectContaining({ fullName: 'New Staff', email: 'new@example.com', role: 'TICKETING', password: 'Strong-password123' }))
-    expect(wrapper.find('.created').text()).toContain('Account created')
+    expect(wrapper.find('.user-dialog h2').text()).toBe('Account created')
     expect(wrapper.find('.created code').text()).toBe('Strong-password123')
     wrapper.unmount()
   })
@@ -132,6 +135,50 @@ function gatePassenger(sailingStatus = 'BOARDING', ticketStatus = 'CHECKED_IN') 
     sailing: { code: 'TRP2026-1002001', status: sailingStatus, departureAt: '2099-01-01T08:00:00Z' },
   } }
 }
+
+describe('editable passenger discounts', () => {
+  it('renames existing Student, changes its percentage, and deletes every default discount', async () => {
+    const wrapper = await load('fares')
+    const student=wrapper.findAll('.custom-discount-row')[0]
+    await student.find('input').setValue('Scholar')
+    await student.find('input[type="number"]').setValue('35')
+    expect(wrapper.find('.fare-preview').text()).toContain('PHP 650')
+    await wrapper.find('main form').trigger('submit'); await flushPromises()
+    expect(mocks.saveSettings).toHaveBeenLastCalledWith({},expect.objectContaining({passengerDiscounts:expect.arrayContaining([expect.objectContaining({name:'Scholar',percentage:35})])}))
+    for(const row of wrapper.findAll('.custom-discount-row')) await row.find('button').trigger('click')
+    await wrapper.find('main form').trigger('submit'); await flushPromises()
+    expect(mocks.saveSettings).toHaveBeenLastCalledWith({},expect.objectContaining({passengerDiscounts:[]}))
+    expect(wrapper.text()).toContain('regular fare only')
+    wrapper.unmount()
+  })
+  it('adds, previews, saves and removes a named vessel discount', async () => {
+    const wrapper = await load('fares')
+    await wrapper.findAll('button').find(b => b.text() === '+ Add discount')!.trigger('click')
+    const row = wrapper.findAll('.custom-discount-row').at(-1)!
+    await row.find('input[placeholder="Special discount"]').setValue('Special discount')
+    await row.find('input[type="number"]').setValue('15')
+    expect(wrapper.find('.fare-preview').text()).toContain('PHP 850')
+    await wrapper.find('main form').trigger('submit'); await flushPromises()
+    expect(mocks.saveSettings).toHaveBeenLastCalledWith({}, expect.objectContaining({passengerDiscounts:expect.arrayContaining([expect.objectContaining({name:'Special discount',percentage:15,isActive:true})])}))
+    await row.find('button').trigger('click')
+    await wrapper.find('main form').trigger('submit'); await flushPromises()
+    expect(mocks.saveSettings).toHaveBeenLastCalledWith({}, expect.objectContaining({passengerDiscounts:expect.not.arrayContaining([expect.objectContaining({name:'Special discount'})])}))
+    wrapper.unmount()
+  })
+  it('rejects reserved names and keeps independent drafts per vessel', async () => {
+    const wrapper = await load('fares')
+    await wrapper.findAll('button').find(b => b.text() === '+ Add discount')!.trigger('click')
+    await wrapper.findAll('.custom-discount-row').at(-1)!.find('input').setValue('Student')
+    await wrapper.find('main form').trigger('submit'); await flushPromises()
+    expect(mocks.saveSettings).not.toHaveBeenCalled()
+    await wrapper.findAll('.custom-discount-row').at(-1)!.find('input').setValue('Special discount')
+    await wrapper.find('#fare-vessel').setValue('unpriced')
+    expect(wrapper.findAll('.custom-discount-row')).toHaveLength(5)
+    await wrapper.find('#fare-vessel').setValue('vessel')
+    expect((wrapper.findAll('.custom-discount-row').at(-1)!.find('input').element as HTMLInputElement).value).toBe('Special discount')
+    wrapper.unmount()
+  })
+})
 
 describe('admin boarding actions', () => {
   it('disables Board and explains that a scheduled trip must open boarding first', async () => {
@@ -177,7 +224,7 @@ describe('admin fare flow', () => {
     mocks.nextCode.mockRejectedValue(new Error('Unavailable'))
     const wrapper = await load()
     await wrapper.findAll('button').find(button => button.text() === 'Create trip')!.trigger('click')
-    expect(wrapper.find('form').exists()).toBe(false)
+    expect(wrapper.find('main form, .modal-body form').exists()).toBe(false)
     expect(wrapper.text()).toContain('Refresh the trip code before creating a trip.')
     expect(mocks.createTrip).not.toHaveBeenCalled()
     wrapper.unmount()
@@ -189,7 +236,7 @@ describe('admin fare flow', () => {
     await wrapper.find('#fare-vessel').setValue('vessel-2')
     expect((wrapper.find('input[type="number"]').element as HTMLInputElement).value).toBe('2000')
     expect(wrapper.find('.fare-preview').text()).toContain('PHP 1,800')
-    await wrapper.find('form').trigger('submit'); await flushPromises()
+    await wrapper.find('main form, .modal-body form').trigger('submit'); await flushPromises()
     expect(mocks.saveSettings).toHaveBeenCalledWith({}, expect.objectContaining({ vesselId: 'vessel-2', regularFare: 2000, studentDiscount: 10 }))
     await wrapper.find('#fare-vessel').setValue('vessel')
     expect((wrapper.find('input[type="number"]').element as HTMLInputElement).value).toBe('1500')
@@ -200,9 +247,9 @@ describe('admin fare flow', () => {
     await wrapper.findAll('button').find(button => button.text() === 'Create trip')!.trigger('click')
     const selector = wrapper.findAll('form select')[2]
     await selector.setValue('vessel')
-    expect(wrapper.findAll('input[type="number"]').map(input => (input.element as HTMLInputElement).value)).toEqual(['1000', '800', '700', '500', '750'])
+    expect(wrapper.findAll('input[type="number"]').map(input => (input.element as HTMLInputElement).value)).toEqual(['1000', '800', '700', '500', '750', '1000'])
     await selector.setValue('vessel-2')
-    expect(wrapper.findAll('input[type="number"]').map(input => (input.element as HTMLInputElement).value)).toEqual(['2000', '1800', '1600', '1200', '1400'])
+    expect(wrapper.findAll('input[type="number"]').map(input => (input.element as HTMLInputElement).value)).toEqual(['2000', '1800', '1600', '1200', '1400', '2000'])
     wrapper.unmount()
   })
   it('blocks an unpriced vessel and clears the previous vessel fares', async () => {
@@ -210,9 +257,9 @@ describe('admin fare flow', () => {
     await wrapper.findAll('button').find(button => button.text() === 'Create trip')!.trigger('click')
     const selector = wrapper.findAll('form select')[2]
     await selector.setValue('vessel'); await selector.setValue('unpriced')
-    expect(wrapper.findAll('input[type="number"]').map(input => (input.element as HTMLInputElement).value)).toEqual(['0', '0', '0', '0', '0'])
+    expect(wrapper.findAll('input[type="number"]').map(input => (input.element as HTMLInputElement).value)).toEqual(['0', '0', '0', '0', '0', '0'])
     expect(wrapper.findAll('button').filter(button => button.text() === 'Create trip').at(-1)!.attributes('disabled')).toBeDefined()
-    await wrapper.find('form').trigger('submit'); await flushPromises()
+    await wrapper.find('main form, .modal-body form').trigger('submit'); await flushPromises()
     expect(mocks.createTrip).not.toHaveBeenCalled()
     expect(wrapper.text()).toContain('Save fare settings for the selected vessel')
     wrapper.unmount()
@@ -222,25 +269,36 @@ describe('admin fare flow', () => {
     const wrapper = await load('fares')
     expect((wrapper.find('input[type="number"]').element as HTMLInputElement).value).toBe('900')
     expect(wrapper.text()).toContain('Rates not saved yet')
-    await wrapper.find('form').trigger('submit'); await flushPromises()
+    await wrapper.find('main form, .modal-body form').trigger('submit'); await flushPromises()
     expect(mocks.saveSettings).toHaveBeenCalledWith({}, expect.objectContaining({ vesselId: 'vessel', regularFare: 900 }))
     expect(wrapper.text()).toContain('Saved rates')
+    wrapper.unmount()
+  })
+  it('previews only active editable discounts when creating a new trip', async () => {
+    mocks.settings.mockResolvedValue({data:{fareSettings:null,vesselFareSettings:[{code:'vessel',regularFare:1000,studentDiscount:0,seniorDiscount:0,childDiscount:0,pwdDiscount:0,pregnantDiscount:0,passengerDiscounts:[{id:'ffffffff-0000-4000-8000-000000000001',name:'Scholar',percentage:35,isActive:true},{id:'ffffffff-0000-4000-8000-000000000004',name:'PWD',percentage:20,isActive:false}]}]}})
+    const wrapper = await load()
+    await wrapper.findAll('button').find(b=>b.text()==='Create trip')!.trigger('click')
+    await wrapper.findAll('form select')[2].setValue('vessel')
+    expect(wrapper.find('.trip-discount-fares').text()).toContain('Scholar')
+    expect(wrapper.find('.trip-discount-fares').text()).not.toContain('Student')
+    expect(wrapper.find('.trip-discount-fares').text()).not.toContain('PWD')
+    expect((wrapper.find('.trip-discount-fares input').element as HTMLInputElement).value).toBe('650')
     wrapper.unmount()
   })
   it('creates a trip with an automatic code and saved discounted fares', async () => {
     const wrapper = await load()
     await wrapper.findAll('button').find(button => button.text() === 'Create trip')!.trigger('click')
-    const inputs = wrapper.findAll('input')
+    const inputs = wrapper.findAll('main input, .modal-body input')
     expect(inputs[1].attributes('readonly')).toBeDefined()
     expect((inputs[1].element as HTMLInputElement).value).toBe('TRP2026-1002001')
     const selects = wrapper.findAll('form select')
     await selects[0].setValue('origin'); await selects[1].setValue('destination'); await selects[2].setValue('vessel')
     const amounts = wrapper.findAll('input[type="number"]')
-    expect(amounts.map(input => (input.element as HTMLInputElement).value)).toEqual(['1000', '800', '700', '500', '750'])
+    expect(amounts.map(input => (input.element as HTMLInputElement).value)).toEqual(['1000', '800', '700', '500', '750', '1000'])
     expect(amounts.every(input => input.attributes('readonly') !== undefined)).toBe(true)
     const dates = wrapper.findAll('input[type="datetime-local"]')
     await dates[0].setValue('2099-01-02T08:00'); await dates[1].setValue('2099-01-02T10:00')
-    await wrapper.find('form').trigger('submit'); await flushPromises()
+    await wrapper.find('main form, .modal-body form').trigger('submit'); await flushPromises()
     expect(mocks.createTrip).toHaveBeenCalledWith({}, expect.objectContaining({ regularFare: 1000, studentFare: 800, seniorFare: 700, childFare: 500, pwdFare: 750 }))
     expect(wrapper.text()).toContain('TRP2026-1002002 created.')
     wrapper.unmount()
@@ -249,8 +307,8 @@ describe('admin fare flow', () => {
     const wrapper = await load('fares')
     await wrapper.find('input[type="number"]').setValue('2000')
     expect(wrapper.find('.fare-preview').text()).toContain('PHP 1,600')
-    await wrapper.find('form').trigger('submit'); await flushPromises()
-    expect(mocks.saveSettings).toHaveBeenCalledWith({}, { vesselId: 'vessel', regularFare: 2000, studentDiscount: 20, seniorDiscount: 30, childDiscount: 50, pwdDiscount: 25 })
+    await wrapper.find('main form, .modal-body form').trigger('submit'); await flushPromises()
+    expect(mocks.saveSettings).toHaveBeenCalledWith({}, expect.objectContaining({ vesselId: 'vessel', regularFare: 2000, studentDiscount: 20, seniorDiscount: 30, childDiscount: 50, pwdDiscount: 25, pregnantDiscount: 0 }))
     expect(wrapper.text()).toContain('New trips for this vessel will use these rates.')
     wrapper.unmount()
   })
@@ -258,7 +316,7 @@ describe('admin fare flow', () => {
     mocks.settings.mockRejectedValue(new Error('Unavailable'))
     const wrapper = await load()
     await wrapper.findAll('button').find(button => button.text() === 'Create trip')!.trigger('click')
-    expect(wrapper.find('form').exists()).toBe(false)
+    expect(wrapper.find('main form, .modal-body form').exists()).toBe(false)
     expect(wrapper.text()).toContain('Refresh fare settings before creating a trip.')
     expect(mocks.createTrip).not.toHaveBeenCalled()
     wrapper.unmount()
@@ -267,9 +325,9 @@ describe('admin fare flow', () => {
     const wrapper = await load()
     await wrapper.findAll('button').find(button => button.text() === 'Edit')!.trigger('click'); await flushPromises()
     const amounts = wrapper.findAll('input[type="number"]')
-    expect(amounts.map(input => (input.element as HTMLInputElement).value)).toEqual(['600', '420', '450', '300', '400'])
+    expect(amounts.map(input => (input.element as HTMLInputElement).value)).toEqual(['600', '420', '450', '300', '400', '600'])
     await amounts[0].setValue('1200')
-    expect(amounts.map(input => (input.element as HTMLInputElement).value)).toEqual(['1200', '960', '840', '600', '900'])
+    expect(amounts.map(input => (input.element as HTMLInputElement).value)).toEqual(['1200', '960', '840', '600', '900', '1200'])
     wrapper.unmount()
   })
   it('keeps fares locked for trips with active reservations', async () => {

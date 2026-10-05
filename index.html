@@ -7,9 +7,20 @@
     <base href="/" />
 
     <meta name="color-scheme" content="light dark" />
+    <script>
+      // Resolve before first paint so a saved dark preference never flashes white.
+      try {
+        const mode = localStorage.getItem('barkolink-theme');
+        const dark = mode === 'dark' || (mode !== 'light' && matchMedia('(prefers-color-scheme: dark)').matches);
+        document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+        document.documentElement.classList.toggle('dark', dark);
+        document.documentElement.classList.toggle('ion-palette-dark', dark);
+        document.documentElement.style.colorScheme = dark ? 'dark' : 'light';
+      } catch {}
+    </script>
     <meta
       name="viewport"
-      content="viewport-fit=cover, width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no"
+      content="viewport-fit=cover, width=device-width, initial-scale=1.0"
     />
     <meta name="format-detection" content="telephone=no" />
     <meta name="msapplication-tap-highlight" content="no" />
@@ -28,4 +39,3 @@
   </body>
 
 </html>
-

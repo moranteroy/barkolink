@@ -1,62 +1,309 @@
 :root {
-	--deep: #0b1f3a;
-	--ocean: #1565c0;
-	--primary: #2196f3;
-	--light-blue: #eaf4ff;
-	--cloud: #f5f7fa;
-	--ink: #172033;
-	--muted: #667085;
-	--line: #e4e7ec;
-	--surface: #ffffff;
-	--surface-soft: #fbfcfe;
-	--ion-font-family: 'Avenir Next', 'Trebuchet MS', sans-serif;
-	--ion-background-color: var(--cloud);
-	--ion-text-color: var(--ink);
+  --deep: #0b1f3a;
+  --ocean: #1565c0;
+  --primary: #2196f3;
+  --light-blue: #eaf4ff;
+  --cloud: #f5f7fa;
+  --ink: #172033;
+  --muted: #667085;
+  --line: #e4e7ec;
+  --surface: #ffffff;
+  --surface-soft: #fbfcfe;
+  --ion-font-family: "Avenir Next", "Trebuchet MS", sans-serif;
+  --ion-background-color: var(--cloud);
+  --ion-text-color: var(--ink);
 }
 
-* { box-sizing: border-box; }
-body { background: var(--cloud); }
-ion-content { --background: var(--cloud); }
-
-:root[data-theme='dark'] {
-	--deep: #08182d;
-	--ocean: #53a9ee;
-	--primary: #66b8f5;
-	--light-blue: #102d4b;
-	--cloud: #0d1726;
-	--ink: #eff6fb;
-	--muted: #9aafc0;
-	--line: #263b50;
-	--surface: #142235;
-	--surface-soft: #101d2d;
-	--ion-background-color: var(--cloud);
-	--ion-text-color: var(--ink);
+* {
+  box-sizing: border-box;
+}
+body {
+  background: var(--cloud);
+  font-family: var(--ion-font-family);
+}
+button,
+input,
+select,
+textarea {
+  font-family: var(--ion-font-family);
+}
+:root body .admin-profile-chip {
+  text-decoration: none;
+}
+ion-content {
+  --background: var(--cloud);
 }
 
-:root[data-theme='dark'] body,
-:root[data-theme='dark'] ion-content { background: var(--cloud); --background: var(--cloud); }
-:root[data-theme='dark'] .search-card,
-:root[data-theme='dark'] .upcoming-card,
-:root[data-theme='dark'] .trip-card,
-:root[data-theme='dark'] .panel,
-:root[data-theme='dark'] .flow-aside,
-:root[data-theme='dark'] .journey-card,
-:root[data-theme='dark'] .passenger-card,
-:root[data-theme='dark'] .summary-card,
-:root[data-theme='dark'] .confirmed-card,
-:root[data-theme='dark'] .profile-card,
-:root[data-theme='dark'] .ticket,
-:root[data-theme='dark'] .stat-card,
-:root[data-theme='dark'] .list-panel { background: var(--surface); border-color: var(--line); }
-:root[data-theme='dark'] .field-button,
-:root[data-theme='dark'] input,
-:root[data-theme='dark'] select,
-:root[data-theme='dark'] .search-tool,
-:root[data-theme='dark'] .search-box,
-:root[data-theme='dark'] .filters button,
-:root[data-theme='dark'] .back-button,
-:root[data-theme='dark'] .filter-button { background: var(--surface-soft); color: var(--ink); border-color: var(--line); }
-:root[data-theme='dark'] .bottom-nav { background: rgba(20,34,53,.94); }
-:root[data-theme='dark'] .inspiration,
-:root[data-theme='dark'] .date-chip,
-:root[data-theme='dark'] .ticket-head { background: #07182c; }
+:root[data-theme="dark"] {
+  --deep: #08182d;
+  --ocean: #53a9ee;
+  --primary: #66b8f5;
+  --light-blue: #102d4b;
+  --cloud: #0d1726;
+  --ink: #eff6fb;
+  --muted: #9aafc0;
+  --line: #263b50;
+  --surface: #142235;
+  --surface-soft: #101d2d;
+  --ion-background-color: var(--cloud);
+  --ion-text-color: var(--ink);
+}
+
+:root[data-theme="dark"] body,
+:root[data-theme="dark"] ion-content {
+  background: var(--cloud);
+  --background: var(--cloud);
+}
+:root[data-theme="dark"] .search-card,
+:root[data-theme="dark"] .upcoming-card,
+:root[data-theme="dark"] .trip-card,
+:root[data-theme="dark"] .panel,
+:root[data-theme="dark"] .flow-aside,
+:root[data-theme="dark"] .journey-card,
+:root[data-theme="dark"] .passenger-card,
+:root[data-theme="dark"] .summary-card,
+:root[data-theme="dark"] .confirmed-card,
+:root[data-theme="dark"] .profile-card,
+:root[data-theme="dark"] .ticket,
+:root[data-theme="dark"] .stat-card,
+:root[data-theme="dark"] .list-panel {
+  background: var(--surface);
+  border-color: var(--line);
+}
+:root[data-theme="dark"] .field-button,
+:root[data-theme="dark"] input,
+:root[data-theme="dark"] select,
+:root[data-theme="dark"] .search-tool,
+:root[data-theme="dark"] .search-box,
+:root[data-theme="dark"] .filters button,
+:root[data-theme="dark"] .back-button,
+:root[data-theme="dark"] .filter-button {
+  background: var(--surface-soft);
+  color: var(--ink);
+  border-color: var(--line);
+}
+:root[data-theme="dark"] .bottom-nav {
+  background: rgba(20, 34, 53, 0.94);
+}
+:root[data-theme="dark"] .inspiration,
+:root[data-theme="dark"] .date-chip,
+:root[data-theme="dark"] .ticket-head {
+  background: #07182c;
+}
+
+/* Base44 light palette, mapped to the existing Ionic and workspace tokens. */
+:root {
+  --deep: hsl(215 70% 14%);
+  --ocean: hsl(210 80% 42%);
+  --primary: hsl(207 90% 54%);
+  --light-blue: hsl(210 100% 96%);
+  --cloud: hsl(220 29% 97%);
+  --ink: hsl(220 31% 15%);
+  --muted: hsl(220 13% 46%);
+  --line: hsl(220 16% 91%);
+  --action: hsl(210 80% 42%);
+  --teal: #137c88;
+  --glass-background: var(--surface);
+  --glass-border: var(--line);
+  --card-shadow:
+    0 1px 2px rgba(16, 24, 40, 0.04), 0 1px 3px rgba(16, 24, 40, 0.06);
+  --page-background: var(--cloud);
+  --ion-color-primary: hsl(210 80% 42%);
+  --ion-color-primary-rgb: 21, 107, 193;
+  --ion-color-primary-contrast: #fff;
+  --ion-font-family: "Inter", "Segoe UI", system-ui, sans-serif;
+}
+:root[data-theme="dark"] {
+  --deep: #08182d;
+  --ocean: #53a9ee;
+  --primary: #66b8f5;
+  --light-blue: #102d4b;
+  --cloud: #0d1726;
+  --ink: #eff6fb;
+  --muted: #9aafc0;
+  --line: #263b50;
+  --action: #246fba;
+  --teal: #7edbd1;
+  --glass-background: rgba(20, 34, 53, 0.88);
+  --glass-border: rgba(117, 159, 195, 0.23);
+  --card-shadow: 0 12px 36px rgba(0, 0, 0, 0.18);
+  --page-background:
+    radial-gradient(ellipse at 0 0, #162d49 0, transparent 52%),
+    radial-gradient(ellipse at 100% 25%, #123135 0, transparent 40%), #0d1726;
+  --ion-color-primary: #246fba;
+  --ion-color-primary-rgb: 36, 111, 186;
+}
+body {
+  background: var(--page-background);
+}
+:root ion-content {
+  --background: var(--page-background);
+}
+:root body .glass-panel,
+:root body .glass-toolbar {
+  background: var(--glass-background);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--card-shadow);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+:root body .glass-toolbar {
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+:root body .passenger-header.glass-toolbar {
+  border-radius: 18px;
+  padding: 13px 14px;
+}
+:root body .booking-header.glass-toolbar {
+  border-radius: 18px;
+  padding: 14px;
+}
+:root body .bottom-nav.glass-toolbar {
+  border-radius: 20px 20px 0 0;
+}
+:root body .continue,
+:root body .submit-button {
+  --background: var(--action);
+  --color: #fff;
+}
+a,
+button,
+input,
+select {
+  -webkit-tap-highlight-color: transparent;
+}
+:focus-visible {
+  outline: 3px solid var(--ocean);
+  outline-offset: 3px;
+}
+:root body .qr-frame,
+:root body .qr-code {
+  background: #fff;
+}
+@supports not (backdrop-filter: blur(1px)) {
+  :root body .glass-panel,
+  :root body .glass-toolbar {
+    background: var(--surface);
+  }
+}
+@media (prefers-reduced-transparency: reduce) {
+  :root body .glass-panel,
+  :root body .glass-toolbar {
+    background: var(--surface);
+    backdrop-filter: none;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+  }
+}
+
+:root body .workspace,
+:root body .staff-main,
+:root body .main-column {
+  background: var(--page-background);
+}
+:root body .metrics > article,
+:root body .metric-grid > article,
+:root body .stats > article {
+  background: var(--glass-background);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--card-shadow);
+}
+:root body button.primary,
+:root body .primary-button {
+  background: var(--action);
+  color: #fff;
+}
+:root body ion-button.primary {
+  --background: var(--action);
+  --color: #fff;
+}
+:root body .qr-block {
+  background: var(--surface);
+  padding: 12px;
+  border-radius: 12px;
+}
+
+:root body .qr-block > img {
+  background: #fff;
+  border: 8px solid #fff;
+  border-radius: 8px;
+}
+
+:root[data-theme="dark"] body .hero-visual {
+  background: linear-gradient(150deg, #143a4a, #142b49);
+}
+:root[data-theme="dark"] body .visual-caption,
+:root[data-theme="dark"] body .visual-caption strong {
+  color: #d6f3ff;
+}
+:root[data-theme="dark"] body .compass {
+  background: #173b50;
+  border-color: #2c5870;
+  color: #80d7f0;
+}
+
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  body .ticket,
+  body .ticket * {
+    visibility: visible;
+  }
+  body .ticket {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    max-width: none;
+    margin: 0;
+    color: #103658;
+    background: white;
+    border: 1px solid #ccdce7;
+    box-shadow: none;
+  }
+  body .ticket-pass {
+    break-inside: avoid;
+  }
+  body .ticket-head {
+    background: white;
+    color: #103658;
+  }
+  body .ticket-head small {
+    color: #103658;
+  }
+  body .ticket .qr-block {
+    background: white;
+  }
+  body ion-content {
+    --overflow: visible;
+  }
+}
+h1,
+h2,
+h3,
+h4,
+h5 {
+  font-family: "Plus Jakarta Sans", "Segoe UI", system-ui, sans-serif;
+  letter-spacing: -0.025em;
+}
+:root:not([data-theme="dark"]) body .glass-panel,
+:root:not([data-theme="dark"]) body .glass-toolbar {
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+:root:not([data-theme="dark"]) body .panel,
+:root:not([data-theme="dark"]) body .setting-card,
+:root:not([data-theme="dark"]) body .settings-card,
+:root:not([data-theme="dark"]) body .booking-card,
+:root:not([data-theme="dark"]) body .trip-card {
+  background: var(--surface);
+  border-color: var(--line);
+  box-shadow: var(--card-shadow);
+}

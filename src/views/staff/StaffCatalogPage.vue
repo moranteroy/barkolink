@@ -1,0 +1,532 @@
+<template>
+  <ion-page
+    ><ion-content :fullscreen="true"
+      ><div class="reference-shell design-workspace">
+        <button
+          v-if="menuOpen"
+          class="reference-scrim"
+          aria-label="Close navigation"
+          @click="menuOpen = false"
+        ></button>
+        <aside class="reference-sidebar sidebar" :class="{ open: menuOpen }">
+          <BrandMark /><StaffNavigation
+            :role="role"
+            @navigate="menuOpen = false"
+          /><button class="reference-logout" @click="logout">Log out</button>
+        </aside>
+        <div class="reference-main">
+          <header class="reference-topbar">
+            <button
+              class="reference-menu"
+              aria-label="Toggle navigation"
+              @click="menuOpen = !menuOpen"
+            >
+              <ion-icon :icon="menuOutline" /></button
+            ><strong>{{ title }}</strong
+            ><router-link :to="`/staff/${role}/settings/account`">{{
+              auth?.currentUser?.displayName || "Staff account"
+            }}</router-link>
+          </header>
+          <main class="reference-content">
+            <div class="reference-heading">
+              <div>
+                <h1>{{ title }}</h1>
+                <p>
+                  {{ descriptions[section] || "Your operational workspace." }}
+                </p>
+              </div>
+              <Button variant="outline" @click="load">Refresh</Button>
+            </div>
+            <p v-if="error" role="alert" class="catalog-error">{{ error }}</p>
+            <NoShowsPanel
+              v-if="section === 'no-shows'"
+              :key="refresh"
+            /><template v-else
+              ><form
+                v-if="['trips', 'passengers'].includes(section)"
+                class="reference-filters"
+                @submit.prevent="
+                  page = 0;
+                  load();
+                "
+              >
+                <input
+                  v-model.trim="search"
+                  type="search"
+                  maxlength="120"
+                  placeholder="Search records"
+                  aria-label="Search staff records"
+                /><select
+                  v-if="section === 'trips'"
+                  v-model="status"
+                  aria-label="Trip status"
+                >
+                  <option value="">All statuses</option>
+                  <option>SCHEDULED</option>
+                  <option>BOARDING</option>
+                  <option>DELAYED</option>
+                  <option>COMPLETED</option>
+                  <option>CANCELLED</option></select
+                ><Button type="submit">Search</Button>
+              </form>
+              <div class="catalog-table">
+                <RecordsGrid
+                  v-if="['trips', 'passengers', 'fares'].includes(section)"
+                  :key="section"
+                  :title="title"
+                  :columns="gridColumns"
+                  :rows="gridRows"
+                  :loading="loading"
+                  ><template #cell="{ row, index, value }"
+                    ><router-link
+                      v-if="
+                        section === 'trips' &&
+                        role === 'boarding' &&
+                        index === 0
+                      "
+                      :to="`/staff/boarding/manifest?sailing=${encodeURIComponent(row.key)}`"
+                      >{{ value }}</router-link
+                    ><Badge v-else-if="index === row.statusIndex" :variant="['Cancelled', 'No show'].includes(String(value)) ? 'destructive' : ['Pending', 'Delayed', 'Boarding'].includes(String(value)) ? 'warning' : 'success'">{{ value }}</Badge><span v-else>{{ value }}</span></template
+                  ></RecordsGrid
+                >
+                <div v-else class="staff-inbox">
+                  <article v-for="n in inbox" :key="n.id">
+                    <strong>{{ n.title }}</strong>
+                    <p>{{ n.message }}</p>
+                    <small>{{ date(n.createdAt) }}</small
+                    ><button v-if="!n.readAt" @click="read(n.id)">
+                      Mark read
+                    </button>
+                  </article>
+                </div>
+                <p
+                  v-if="!recordCount && section === 'notifications'"
+                  class="reference-empty"
+                >
+                  {{ loading ? "Loading records…" : "No records found." }}
+                </p>
+              </div>
+              <div v-if="total > 30" class="catalog-pagination">
+                <button
+                  :disabled="!page || loading"
+                  @click="
+                    page--;
+                    load();
+                  "
+                >
+                  Previous</button
+                ><span>Page {{ page + 1 }} · {{ total }} records</span
+                ><button
+                  :disabled="(page + 1) * 30 >= total || loading"
+                  @click="
+                    page++;
+                    load();
+                  "
+                >
+                  Next
+                </button>
+              </div></template
+            >
+          </main>
+        </div>
+      </div></ion-content
+    ></ion-page
+  >
+</template>
+<script setup lang="ts">
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { passengerDiscountsForSettings } from "../../data/fareSettings";
+import { computed, ref, watch } from "vue";
+import { useRoute, useRouter } from "vue-router";
+import { IonPage, IonContent, IonIcon, onIonViewWillEnter } from "@ionic/vue";
+import { menuOutline } from "ionicons/icons";
+import BrandMark from "../../components/shared/BrandMark.vue";
+import StaffNavigation from "../../components/staff/StaffNavigation.vue";
+import RecordsGrid from "../../components/shared/RecordsGrid.vue";
+import NoShowsPanel from "../../components/admin/NoShowsPanel.vue";
+import { staffDatabase, auth } from "../../services/session";
+import {
+  staffTrips,
+  staffPassengers,
+  staffFares,
+  type WorkspaceTrip,
+  type WorkspacePassenger,
+  type VesselFares,
+} from "../../services/database/workspaces";
+import {
+  myNotifications,
+  markNotificationRead,
+} from "../../services/database/passenger";
+import { signOut } from "../../services/auth";
+import { clearSessionViews } from "../../composables/sessionViews";
+import { databaseRequestError } from "../../data/databaseErrors";
+import { auditLabel as humanize } from "../../data/auditPresentation";
+const route = useRoute(),
+  router = useRouter(),
+  role = computed(() =>
+    route.path.startsWith("/staff/boarding") ? "boarding" : "ticketing",
+  ),
+  section = computed(() => String(route.params.section || "trips"));
+const title = computed(
+  () =>
+    (
+      ({
+        trips: role.value === "boarding" ? "Active trips" : "Trips & schedules",
+        passengers: "Passengers",
+        fares: "Fares",
+        notifications: "Notifications",
+        "no-shows": "No-show passengers",
+      }) as Record<string, string>
+    )[section.value] || "Staff workspace",
+);
+const descriptions: Record<string, string> = {
+  trips: "Review ferry departures, vessels, and capacity.",
+  passengers: "Look up passenger reservations and ticket status.",
+  fares: "View the saved vessel fares and passenger discounts.",
+  "no-shows": "Review passengers who did not board completed trips.",
+  notifications: "Read your account notices and operational updates.",
+};
+const trips = ref<WorkspaceTrip[]>([]),
+  passengers = ref<WorkspacePassenger[]>([]),
+  fares = ref<VesselFares[]>([]),
+  inbox = ref<
+    Array<{
+      id: string;
+      title: string;
+      message: string;
+      createdAt: string;
+      readAt?: string | null;
+    }>
+  >([]),
+  page = ref(0),
+  total = ref(0),
+  search = ref(""),
+  status = ref(""),
+  error = ref(""),
+  loading = ref(false),
+  menuOpen = ref(false),
+  refresh = ref(0);
+const gridColumns = computed(() =>
+  section.value === "trips"
+    ? ["Trip", "Route", "Vessel", "Departure", "Available", "Status"]
+    : section.value === "passengers"
+      ? ["Passenger", "Booking", "Trip", "Accommodation", "Category", "Ticket"]
+      : [
+          "Vessel",
+          "Regular fare",
+          "Passenger discounts",
+          "Accommodation extra fare",
+        ],
+);
+const gridRows = computed(() =>
+  section.value === "trips"
+    ? trips.value.map((s) => ({
+        key: s.code,
+        source: s,
+        statusIndex: 5,
+        sortValues: [
+          undefined,
+          undefined,
+          undefined,
+          new Date(s.departureAt).getTime(),
+        ],
+        cells: [
+          s.code,
+          s.origin.name + " to " + s.destination.name,
+          s.vessel.name,
+          date(s.departureAt),
+          s.availableSeats + " / " + s.vessel.passengerCapacity,
+          humanize(s.status),
+        ],
+      }))
+    : section.value === "passengers"
+      ? passengers.value.map((p) => ({
+          key: p.id,
+          source: p,
+          statusIndex: 5,
+          cells: [
+            p.fullName,
+            p.booking.reference,
+            p.booking.sailing.code,
+            p.booking.accommodationName || "Standard",
+            humanize(p.passengerType),
+            humanize(p.ticketStatus),
+          ],
+        }))
+      : fares.value.map((f, index) => ({
+          key: f.vesselName + "-" + index,
+          source: f,
+          cells: [
+            f.vesselName,
+            "PHP " + f.regularFare,
+            passengerDiscountsForSettings(f)
+              .map(
+                (d) =>
+                  d.name +
+                  ": " +
+                  d.percentage +
+                  "%" +
+                  (d.isActive ? "" : " (inactive)"),
+              )
+              .join("; ") || "None",
+            f.accommodations
+              .map((a) => a.name + ": PHP " + a.surcharge)
+              .join("; ") || "Standard seating",
+          ],
+        })),
+);
+const recordCount = computed(() =>
+  section.value === "trips"
+    ? trips.value.length
+    : section.value === "passengers"
+      ? passengers.value.length
+      : section.value === "fares"
+        ? fares.value.length
+        : inbox.value.length,
+);
+const date = (v: string) =>
+  new Date(v).toLocaleString("en-PH", {
+    timeZone: "Asia/Manila",
+    dateStyle: "medium",
+    timeStyle: "short",
+  });
+let request = 0;
+async function load() {
+  if (!staffDatabase) return;
+  const token = ++request;
+  loading.value = true;
+  error.value = "";
+  try {
+    if (section.value === "no-shows") {
+      refresh.value++;
+      return;
+    }
+    if (section.value === "trips") {
+      const r = await staffTrips(staffDatabase, {
+        page: page.value,
+        search: search.value,
+        status: status.value,
+      });
+      if (token !== request) return;
+      trips.value = r.data.sailings;
+      total.value = r.data.totalCount;
+    } else if (section.value === "passengers") {
+      const r = await staffPassengers(staffDatabase, {
+        page: page.value,
+        search: search.value,
+      });
+      if (token !== request) return;
+      passengers.value = r.data.passengers;
+      total.value = r.data.totalCount;
+    } else if (section.value === "fares") {
+      const r = await staffFares(staffDatabase);
+      if (token !== request) return;
+      fares.value = r.data.fares;
+      total.value = fares.value.length;
+    } else {
+      const r = await myNotifications(staffDatabase);
+      if (token !== request) return;
+      inbox.value = r.data.notifications;
+      total.value = inbox.value.length;
+    }
+  } catch (e) {
+    if (token === request)
+      error.value = databaseRequestError(e, "Could not load staff records.");
+  } finally {
+    if (token === request) loading.value = false;
+  }
+}
+async function read(id: string) {
+  if (!staffDatabase) return;
+  try {
+    await markNotificationRead(staffDatabase, { id });
+    await load();
+  } catch (e) {
+    error.value = databaseRequestError(e, "Could not mark notification read.");
+  }
+}
+async function logout() {
+  if (auth) await signOut(auth);
+  await router.replace("/login");
+  clearSessionViews();
+}
+watch(section, () => {
+  page.value = 0;
+  search.value = "";
+  status.value = "";
+  void load();
+});
+onIonViewWillEnter(load);
+</script>
+<style scoped>
+.reference-shell {
+  display: flex;
+  min-height: 100%;
+}
+.reference-sidebar {
+  position: fixed;
+  inset: 0 auto 0 0;
+  display: flex;
+  flex-direction: column;
+  width: 250px;
+  padding: 24px 16px;
+  background: #0c2038;
+  color: white;
+  z-index: 30;
+}
+.reference-sidebar :deep(.brand-copy strong),
+.reference-sidebar :deep(.brand-copy b) {
+  color: white;
+}
+.reference-sidebar :deep(.brand-copy small) {
+  color: #a2b9ce;
+}
+.reference-logout {
+  margin-top: 15px;
+  padding: 12px;
+  border: 0;
+  border-top: 1px solid #ffffff20;
+  background: transparent;
+  color: #afc5d9;
+  text-align: left;
+  cursor: pointer;
+}
+.reference-main {
+  margin-left: 250px;
+  width: calc(100% - 250px);
+  min-width: 0;
+}
+.reference-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  min-height: 72px;
+  padding: 0 30px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--line);
+}
+.reference-topbar strong {
+  font-size: 16px;
+}
+.reference-topbar a {
+  font-size: 12px;
+  color: var(--ocean);
+  text-decoration: none;
+}
+.reference-content {
+  padding: 32px;
+  max-width: 1500px;
+  margin: auto;
+}
+.reference-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 25px;
+}
+.reference-heading h1 {
+  margin: 0 0 7px;
+  font-size: 28px;
+}
+.reference-heading p {
+  font-size: 12px;
+  color: var(--muted);
+}
+button {
+  padding: 10px 14px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: var(--surface);
+  color: var(--ocean);
+  font-size: 12px;
+  cursor: pointer;
+}
+.reference-filters {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+.reference-filters input,
+.reference-filters select {
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: var(--surface);
+  color: var(--ink);
+  min-width: 0;
+  font-size: 12px;
+}
+.reference-filters input {
+  flex: 1;
+}
+.reference-empty {
+  padding: 30px;
+  color: var(--muted);
+  font-size: 12px;
+}
+.reference-menu,
+.reference-scrim {
+  display: none;
+}
+.staff-inbox article {
+  padding: 20px;
+  border-bottom: 1px solid var(--line);
+  font-size: 13px;
+}
+.staff-inbox p {
+  white-space: pre-wrap;
+  font-size: 12px;
+  line-height: 1.6;
+}
+.staff-inbox small {
+  color: var(--muted);
+}
+.staff-inbox button {
+  margin-left: 15px;
+}
+@media (max-width: 800px) {
+  .reference-sidebar {
+    display: none;
+  }
+  .reference-sidebar.open {
+    display: flex;
+    width: min(85vw, 300px);
+  }
+  .reference-main {
+    width: 100%;
+    margin: 0;
+  }
+  .reference-scrim {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 29;
+    background: #061222a8;
+    border: 0;
+  }
+  .reference-menu {
+    display: block;
+  }
+  .reference-topbar {
+    padding: 0 18px;
+  }
+  .reference-content {
+    padding: 26px 18px;
+  }
+  .reference-heading {
+    align-items: start;
+  }
+  .reference-heading h1 {
+    font-size: 24px;
+  }
+  .reference-filters {
+    flex-wrap: wrap;
+  }
+  .reference-filters input {
+    min-width: 100%;
+  }
+}
+</style>

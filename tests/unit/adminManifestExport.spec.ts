@@ -1,11 +1,11 @@
 import { Blob } from 'node:buffer'
 import { flushPromises, mount } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import AdminManifestExport from '../../src/components/AdminManifestExport.vue'
+import AdminManifestExport from '../../src/components/admin/AdminManifestExport.vue'
 import { reportNumberFields, type ReportSailing } from '../../src/data/reportAnalytics'
 const mocks = vi.hoisted(() => ({ query: vi.fn(), url: vi.fn(), revoke: vi.fn() }))
-vi.mock('../../src/services/firebase', () => ({ staffDataConnect: {} }))
-vi.mock('../../src/dataconnect-generated/staff', () => ({ adminExportManifest: mocks.query }))
+vi.mock('../../src/services/session', () => ({ staffDatabase: {} }))
+vi.mock('../../src/services/database/staff', () => ({ adminExportManifest: mocks.query }))
 const sailing = { ...Object.fromEntries(reportNumberFields.map(k => [k,0])), code: 'TRP1', departureAt: '2026-10-02T08:00:00Z', status: 'SCHEDULED', originId: 'a', origin: 'A', destinationId: 'b', destination: 'B', vesselId: 'v', vessel: 'Ferry' } as ReportSailing
 const passenger = { fullName: 'Test Passenger', sex: 'F', passengerType: 'REGULAR', ticketStatus: 'ISSUED', boardedAt: null, booking: { reference: 'BOOK1', sailing: { code: 'TRP1' } } }
 beforeEach(() => {

@@ -1,10 +1,10 @@
 import { flushPromises, mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import AdminReportsPanel from '../../src/components/AdminReportsPanel.vue'
+import AdminReportsPanel from '../../src/components/admin/AdminReportsPanel.vue'
 import { reportNumberFields } from '../../src/data/reportAnalytics'
 const mocks = vi.hoisted(() => ({ reports: vi.fn() }))
-vi.mock('../../src/services/firebase', () => ({ staffDataConnect: {} }))
-vi.mock('../../src/dataconnect-generated/staff', () => ({ adminReports: mocks.reports }))
+vi.mock('../../src/services/session', () => ({ staffDatabase: {} }))
+vi.mock('../../src/services/database/staff', () => ({ adminReports: mocks.reports }))
 const row = (code: string, vesselId: string, vessel: string, revenue: number) => ({ ...Object.fromEntries(reportNumberFields.map(k => [k,0])), code, vesselId, vessel, departureAt: '2026-10-02T08:00:00Z', originId: 'a', origin: 'Origin', destinationId: 'b', destination: 'Destination', status: 'SCHEDULED', collectedRevenue: revenue, capacity: 100, reservedSeats: 25 })
 beforeEach(() => { mocks.reports.mockReset(); mocks.reports.mockResolvedValue({ data: { sailings: [row('TRP1','v1','Ferry One',100),row('TRP2','v2','Ferry Two',300)] } }) })
 describe('admin reports panel', () => {
