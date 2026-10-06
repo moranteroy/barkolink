@@ -35,6 +35,9 @@ node_modules/
 .firebase-config/
 .firebase/
 .supabase/
+.vercel/
+.backups/
+.audit/
 /supabase/.temp/
 **/.secret.local
 

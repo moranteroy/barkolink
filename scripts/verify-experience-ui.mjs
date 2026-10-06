@@ -16,7 +16,7 @@ const browser = await chromium.launch({ channel: 'msedge', headless: true })
 try {
   for (const width of (process.env.BARKOLINK_UI_WIDTHS?.split(',').map(Number) || [1440, 768, 390])) for (const role of ['ADMIN', 'PASSENGER', 'TICKETING', 'BOARDING']) {
     if (process.env.BARKOLINK_UI_ROLE && process.env.BARKOLINK_UI_ROLE !== role) continue
-    const context = await browser.newContext({ viewport: { width, height: 950 }, acceptDownloads: true })
+    const context = await browser.newContext({ viewport: { width, height: 950 }, acceptDownloads: true, timezoneId: 'America/Los_Angeles' })
     const user = { id, email: 'ui@example.invalid', app_metadata: { role }, user_metadata: { fullName: 'UI User' }, aud: 'authenticated', created_at: '2026-01-01T00:00:00Z' }
     const exp = Math.floor(Date.now() / 1000) + 3600
     const encoded = value => Buffer.from(JSON.stringify(value)).toString('base64url')
@@ -40,6 +40,7 @@ try {
       if (!url.includes('/rpc/barkolink_execute')) return route.fulfill({ status: 403, json: { message: 'Direct access is blocked in this test.' } })
       const { operation, args } = route.request().postDataJSON()
       let result
+      if (operation === 'TicketingCreateGuestWalkIn') return route.fulfill({ json: {} })
       if (operation === 'AdminSaveFareSettings') { fareConfig={...fareConfig,...args};fareSaves++;result={} }
       else if (operation === 'MyMarkAllNotificationsRead') { markAllCalls++; readAt = new Date().toISOString(); result = { marked: 1 } }
       else if (operation === 'UpdateMyProfile') { profile = { ...profile, fullName: args.fullName, phone: args.phone }; user.user_metadata.fullName = args.fullName; result = { user_update: { uid: id } } }
@@ -58,7 +59,7 @@ try {
         MyNotifications: { notifications: [{ id, title: 'Booking updated', message: 'Your ticket is ready.', category: 'BOOKING', createdAt: new Date().toISOString(), readAt }] },
         MySavedTravelers: { travelers: [{ id, fullName: 'UI Traveler', birthDate: '1990-01-01', sex: 'FEMALE', phone: '09123456789', nationality: 'Filipino' }] },
         ActiveAdvisories: { advisories: [advisory] }, AdminAdvisories: { advisories: [advisory] },
-        AdminSailings: { sailings: [sailing], totalCount: 1 }, BrowseSailings: { sailings: [sailing] },
+        AdminSailingOptions: { sailings: [sailing] }, AdminReports: { sailings: [] }, TicketingSailings: { sailings: [sailing] }, AdminSailings: { sailings: [sailing], totalCount: 1 }, BrowseSailings: { sailings: [sailing] },
         BrowseActivePorts: { ports: [sailing.origin, sailing.destination] },
         AdminPorts: { ports: [sailing.origin, sailing.destination] }, AdminVessels: { vessels: [sailing.vessel] },
         AdminSailingBookings:{bookings:[]}, AdminUsers: { users: [{uid:'user-z',fullName:'Zelda User',email:'zelda@example.invalid',role:'PASSENGER',createdAt:'2026-10-05T01:00:00Z'},{uid:'user-a',fullName:'Anna User',email:'anna@example.invalid',role:'TICKETING',createdAt:'2026-10-05T01:00:00Z'},{uid:'user-m',fullName:'Marco User',email:'marco@example.invalid',role:'BOARDING',createdAt:'2026-10-05T01:00:00Z'}],totalCount:3 }, AdminPassengerRecords: { bookingPassengers: [], totalCount: 0 },
@@ -79,6 +80,16 @@ try {
     page.on('console', message => { if(['error','warning'].includes(message.type()) && message.text().includes('AG Grid')) errors.push(message.text()) })
     const paths = role === 'ADMIN' ? ['/admin', '/admin/accommodation', '/admin/routes', '/admin/no-shows', '/admin/notifications', '/admin/analytics', '/admin/audit-logs', '/admin/advisories', '/admin/trip-operations?sailing=UI-TRIP', '/admin/trips', '/admin/bookings', '/admin/settings/profile', '/admin/settings/password', '/admin/settings/appearance'] : role === 'TICKETING' || role === 'BOARDING' ? [`/staff/${role.toLowerCase()}`, ...((role === 'TICKETING' ? ['bookings','passengers','trips','fares','notifications'] : ['trips','check-in','boarding','manifest','no-shows','notifications']).map(section=>`/staff/${role.toLowerCase()}/${section}`)), ...['account','security','appearance'].map(section => `/staff/${role.toLowerCase()}/settings/${section}`)] : ['/home', '/profile', '/settings/profile', '/settings/password', '/settings/appearance', '/notifications', '/bookings', '/ticket?reference=UI-BOOKING', '/travelers', '/help', '/search?all=1']
     if (role === 'ADMIN') paths.push('/admin/users', '/admin/operations', '/admin/fares')
+    if (role === 'ADMIN') paths.push('/admin/manifest', '/admin/inbox')
+    if (role === 'TICKETING') paths.push('/staff/ticketing/walk-in')
+    if (role === 'PASSENGER') {
+      paths.push('/passenger-info', '/booking-confirmed?reference=UI-BOOKING')
+      await context.addInitScript(({ sailing }) => localStorage.setItem('barkolink-selected-trip', JSON.stringify({
+        id: sailing.code, selectionId: 'ui-check', from: sailing.origin.city, to: sailing.destination.city,
+        departureAt: sailing.departureAt, date: 'Jan 1, 2099', departure: '4:00 PM', arrival: '6:00 PM',
+        vessel: sailing.vessel.name, available: 98, regularFare: 600, passengerCount: 1,
+      })), { sailing })
+    }
     const selectedPaths = process.env.BARKOLINK_UI_PATHS?.split(',')
     for (const path of paths.filter(path => !selectedPaths || selectedPaths.includes(path.split('?')[0]))) {
       await page.goto(baseUrl + path)
@@ -137,6 +148,22 @@ try {
         await page.getByRole('heading',{name:'Edit sailing',exact:true}).waitFor()
         await page.getByRole('button',{name:'Close dialog',exact:true}).click()
         await page.locator('ion-modal .modal-body').waitFor({state:'detached'})
+      }
+      if (path === '/admin/routes' && width === 390) {
+        await page.getByRole('button', { name: 'Add route', exact: true }).click()
+        await page.getByLabel('Route code', { exact: true }).fill('UNSAVED-ROUTE')
+        await page.getByRole('button', { name: 'Refresh', exact: true }).click()
+        await page.getByRole('button', { name: 'Go back', exact: true }).click()
+        await page.locator('ion-alert').waitFor({ state: 'detached' })
+        assert.equal(await page.getByLabel('Route code', { exact: true }).inputValue(), 'UNSAVED-ROUTE')
+        await page.getByRole('button', { name: 'Refresh', exact: true }).click()
+        await page.getByRole('button', { name: 'Discard and refresh', exact: true }).click()
+        await page.getByLabel('Route code', { exact: true }).waitFor({ state: 'detached' })
+      }
+      if (path === '/staff/boarding/check-in' && width === 390) {
+        await page.getByRole('button').filter({ hasText: 'UI Traveler' }).first().click()
+        await page.waitForFunction(() => document.activeElement?.getAttribute('aria-label') === 'Ticket review')
+        assert.equal(await page.getByRole('button', { name: 'Export manifest', exact: true }).count(), 0, 'Boarding staff have no manifest export action')
       }
       if (path === '/admin/users') {
         if(width>=700){
@@ -259,6 +286,13 @@ try {
         }
       }
       if (path === '/admin/bookings') {
+        if (width >= 1024) {
+          await page.getByLabel('Search all bookings').fill('missing-reference')
+          await page.getByLabel('Search all bookings').press('Enter')
+          await page.waitForTimeout(600)
+          assert.equal(lastBookingArgs.search, 'missing-reference', 'Same-page header search reaches the database')
+          assert.equal(await page.getByLabel('Search Booking management').inputValue(), 'missing-reference')
+        }
         await page.getByLabel('Search Booking management').fill('UI-BOOKING')
         await page.waitForTimeout(600)
         assert.equal(lastBookingArgs.search, 'UI-BOOKING')
@@ -335,6 +369,7 @@ try {
         assert.equal(markAllCalls, 1)
       }
       if (path === '/bookings') {
+        assert.match(await page.locator('.booking-card').first().innerText(), /Booking total: PHP 600/)
         await page.getByLabel('Payment status').selectOption('PAID')
         assert.equal(await page.locator('.booking-card').count(), 1)
         await page.getByLabel('Find a booking').fill('no-such-reference')
@@ -343,8 +378,106 @@ try {
         assert.equal(await page.locator('.booking-card').count(), 2)
         await page.getByRole('link', { name: 'View details', exact: true }).first().click()
         await page.getByRole('heading', { name: 'Booking details', exact: true }).last().waitFor()
+        assert.match(await page.locator('.booking-detail-card').last().innerText(), /Booking total: PHP 600/)
         await page.goto(baseUrl + path)
         await page.locator('.booking-card').first().waitFor()
+        if (width === 390) {
+          const failBookings = async route => {
+            if (route.request().postDataJSON().operation !== 'MyBookings') return route.fallback()
+            await new Promise(resolve => setTimeout(resolve, 600))
+            await route.fulfill({ status: 503, json: { message: 'Service temporarily unavailable' } })
+          }
+          await context.route('**/rpc/barkolink_execute', failBookings)
+          await page.goto(baseUrl + path)
+          await page.getByRole('status').filter({ hasText: 'Loading my bookings' }).waitFor()
+          assert.equal(await page.getByRole('heading', { name: 'No matching bookings' }).count(), 0)
+          await page.getByRole('heading', { name: 'Could not load my bookings' }).waitFor()
+          await context.unroute('**/rpc/barkolink_execute', failBookings)
+          await page.getByRole('button', { name: 'Retry', exact: true }).click()
+          await page.locator('.booking-card').first().waitFor()
+          assert.equal(await page.locator('.booking-card').count(), 2)
+        }
+      }
+      if (path === '/search?all=1') {
+        assert.match(await page.locator('.trip-card').first().innerText(), /Departure: Jan 1, 2099/)
+        assert.match(await page.locator('.trip-card').first().innerText(), /4:00 PM/)
+      }
+      if (path === '/passenger-info') {
+        const surface = () => page.locator('.passenger-card').first().evaluate(el => getComputedStyle(el).backgroundColor)
+        const light = await surface()
+        await page.evaluate(() => window.dispatchEvent(new StorageEvent('storage', { key: 'barkolink-theme', newValue: 'dark' })))
+        await page.waitForFunction(() => document.documentElement.dataset.theme === 'dark')
+        assert.notEqual(await surface(), light, 'Passenger form follows the selected theme')
+        await page.evaluate(() => window.dispatchEvent(new StorageEvent('storage', { key: 'barkolink-theme', newValue: 'light' })))
+        await page.waitForFunction(() => document.documentElement.dataset.theme === 'light')
+      }
+      if (path.startsWith('/booking-confirmed')) {
+        assert.match(await page.locator('.confirmed-card').innerText(), /BOOKING TOTAL\s+PHP 600/)
+        await page.evaluate(() => Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText: async () => { throw new Error('Denied') } } }))
+        await page.getByRole('button', { name: 'Copy', exact: true }).click()
+        await page.getByText('Could not copy the reference. Select the booking reference and copy it manually.', { exact: true }).waitFor()
+        assert.equal(await page.getByRole('button', { name: 'Copied', exact: true }).count(), 0)
+        await page.evaluate(() => Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText: async () => {} } }))
+      }
+      if (path === '/staff/ticketing/walk-in') {
+        await page.locator('.form-section select').first().selectOption(sailing.code)
+        await page.getByLabel('Full name', { exact: true }).fill('UI Passenger')
+        await page.getByLabel('Date of birth', { exact: true }).fill('1990-01-01')
+        await page.locator('.passenger-section select').first().selectOption('Female')
+        const review = page.getByRole('button', { name: 'Review cash payment', exact: true })
+        await review.click()
+        await page.getByRole('dialog').waitFor()
+        assert.equal(await page.evaluate(() => !!document.activeElement?.closest('[role="dialog"]')), true)
+        for (let step = 0; step < 4; step++) {
+          await page.keyboard.press('Tab')
+          assert.equal(await page.evaluate(() => !!document.activeElement?.closest('[role="dialog"]')), true, 'Tab stays in the payment dialog')
+        }
+        await page.keyboard.press('Escape')
+        await page.getByRole('dialog').waitFor({ state: 'detached' })
+        assert.equal(await review.evaluate(el => el === document.activeElement), true)
+        await review.click()
+        await page.locator('.confirm-actions .issue-button').click()
+        await page.locator('.receipt').waitFor()
+        await page.emulateMedia({ media: 'print' })
+        assert.equal(await page.locator('.receipt').evaluate(el => getComputedStyle(el).visibility), 'visible')
+        assert.equal(await page.locator('.receipt h2').evaluate(el => getComputedStyle(el).visibility), 'visible')
+        assert.equal(await page.locator('.receipt-actions').evaluate(el => getComputedStyle(el).display), 'none')
+        fs.mkdirSync('docs/screenshots/experience', { recursive: true })
+        await page.screenshot({ path: `docs/screenshots/experience/walk-in-receipt-print-${width}.png` })
+        await page.emulateMedia({ media: 'screen' })
+        if (width === 390) {
+          let written = null, mutations = 0, checksAfterWrite = 0
+          const lostResponse = async route => {
+            const { operation, args } = route.request().postDataJSON()
+            if (operation === 'TicketingCreateGuestWalkIn') {
+              mutations++
+              written = { ...booking, reference: args.reference, total: 600 }
+              return route.fulfill({ status: 503, json: { message: 'Simulated response loss' } })
+            }
+            if (operation === 'StaffBookings') {
+              if (written && checksAfterWrite++ === 0) return route.fulfill({ status: 503, json: { message: 'Offline' } })
+              return route.fulfill({ json: { bookings: written ? [written] : [], totalCount: written ? 1 : 0 } })
+            }
+            return route.fallback()
+          }
+          await context.route('**/rpc/barkolink_execute', lostResponse)
+          await page.reload()
+          await page.locator('.form-section select').first().selectOption(sailing.code)
+          await page.getByLabel('Full name', { exact: true }).fill('Retry Passenger')
+          await page.getByLabel('Date of birth', { exact: true }).fill('1990-01-01')
+          await page.locator('.passenger-section select').first().selectOption('Female')
+          await page.getByRole('button', { name: 'Review cash payment', exact: true }).click()
+          await page.locator('.confirm-actions .issue-button').click()
+          await page.getByRole('button', { name: 'Check / retry sale', exact: true }).waitFor()
+          const pendingReference = await page.evaluate(() => JSON.parse(sessionStorage.getItem('barkolink-pending-walk-in')).args.reference)
+          await page.reload()
+          await page.getByRole('button', { name: 'Check / retry sale', exact: true }).click()
+          await page.locator('.receipt').waitFor()
+          assert.match(await page.locator('.receipt').innerText(), new RegExp(pendingReference))
+          assert.equal(mutations, 1, 'Response loss recovers the original sale without another cash mutation')
+          assert.equal(await page.evaluate(() => sessionStorage.getItem('barkolink-pending-walk-in')), null)
+          await context.unroute('**/rpc/barkolink_execute', lostResponse)
+        }
       }
       if (path.startsWith('/ticket')) {
         await page.locator('.qr-block img').waitFor()

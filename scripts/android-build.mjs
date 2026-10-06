@@ -15,7 +15,7 @@ function run(command, args, cwd = process.cwd()) {
   if (result.error) throw result.error
   if (result.status !== 0) process.exit(result.status || 1)
 }
-run(windows ? 'npm.cmd' : 'npm', ['run', 'build'])
+run(windows ? 'npm.cmd' : 'npm', ['run', 'build', '--', '--configLoader', 'native'])
 run(windows ? 'npx.cmd' : 'npx', ['cap', 'sync', 'android'])
 fs.writeFileSync('android/local.properties', `sdk.dir=${sdk.replaceAll('\\', '/').replaceAll(':', '\\:')}\n`)
 run(windows ? 'gradlew.bat' : './gradlew', ['assembleDebug'], path.resolve('android'))

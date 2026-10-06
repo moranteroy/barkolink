@@ -229,6 +229,7 @@
 </template>
 
 <script setup lang="ts">
+import { useUnsavedChanges } from "../../composables/unsavedChanges";
 import { validatedProfile } from "../../data/profileValidation";
 import { databaseRequestError } from "../../data/databaseErrors";
 import {
@@ -307,6 +308,7 @@ const profileDirty = computed(
     profile.name !== savedProfile.value.name ||
     profile.phone !== savedProfile.value.phone,
 );
+useUnsavedChanges(() => (profileLoaded.value && profileDirty.value) || !!(password.current || password.next || password.confirm));
 const sectionTitle = computed(() =>
   route.path === `${settingsPath.value}/profile`
     ? "Personal information"

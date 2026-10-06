@@ -84,6 +84,6 @@ button:disabled {
   opacity: 0.5;
 }
 p {
-  color: #b8463c;
+  color: var(--danger);
 }
 </style>

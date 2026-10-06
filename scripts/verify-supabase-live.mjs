@@ -6,6 +6,11 @@ const values = Object.fromEntries(fs.readFileSync('.env.local', 'utf8').split(/\
 const url = values.VITE_SUPABASE_URL
 const key = values.VITE_SUPABASE_PUBLISHABLE_KEY || values.VITE_SUPABASE_ANON_KEY
 const client = createClient(url, key, { auth: { persistSession: false } })
+for (const operation of ['AdminSailingOptions', 'AdminSailings', 'AdminPassengerRecords']) {
+  const { error } = await client.rpc('barkolink_execute', { operation, args: {} })
+  assert.equal(error?.code, '42501', `${operation} must reject unsigned callers`)
+  console.log(`${operation} access protection: passed`)
+}
 for (const operation of ['BrowseActivePorts', 'BrowseSailings']) {
   const { data, error } = await client.rpc('barkolink_execute', { operation, args: {} })
   assert.equal(error, null, `${operation} should be publicly readable`)

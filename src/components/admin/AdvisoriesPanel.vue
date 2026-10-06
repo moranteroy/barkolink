@@ -1,12 +1,12 @@
 <template>
   <section class="advisory-panel">
     <header>
-      <div>
+      <div v-if="!embedded">
         <p class="eyebrow">PASSENGER COMMUNICATION</p>
         <h2>Travel advisories</h2>
         <p>Publish updates for every passenger or for one sailing.</p>
       </div>
-      <button :disabled="busy || loading" @click="load">
+      <button v-if="!embedded" :disabled="busy || loading" @click="load">
         <ion-icon :icon="refreshOutline" /> Refresh
       </button>
     </header>
@@ -136,6 +136,8 @@ import {
 import { adminSailings } from "../../services/database/staff";
 import { staffDatabase } from "../../services/session";
 import { databaseRequestError } from "../../data/databaseErrors";
+import { useUnsavedChanges } from "../../composables/unsavedChanges";
+defineProps<{ embedded?: boolean }>();
 const items = ref<Advisory[]>([]),
   sailings = ref<
     Array<{
@@ -185,6 +187,10 @@ const empty = () => ({
   published: false,
 });
 const form = reactive(empty());
+let savedForm = JSON.stringify(form);
+const hasUnsavedChanges = () => JSON.stringify(form) !== savedForm;
+useUnsavedChanges(hasUnsavedChanges);
+defineExpose({ hasUnsavedChanges });
 const date = (value: string) =>
   new Date(value).toLocaleString("en-PH", { timeZone: "Asia/Manila" });
 const status = (item: Advisory) =>
@@ -197,6 +203,7 @@ const status = (item: Advisory) =>
         : "ACTIVE";
 function reset() {
   Object.assign(form, empty());
+  savedForm = JSON.stringify(form);
 }
 function edit(item: Advisory) {
   Object.assign(form, item, {
@@ -204,6 +211,7 @@ function edit(item: Advisory) {
     startsAt: local(item.startsAt),
     endsAt: local(item.endsAt),
   });
+  savedForm = JSON.stringify(form);
   if (
     item.sailingCode &&
     !sailings.value.some((s) => s.code === item.sailingCode)
@@ -386,7 +394,7 @@ button:disabled {
   font-size: 10px;
 }
 .error {
-  color: #b8463c;
+  color: var(--danger);
 }
 @media (max-width: 600px) {
   .fields {

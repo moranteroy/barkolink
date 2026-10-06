@@ -2,9 +2,9 @@
   <section class="records-grid" :aria-label="title">
     <div class="grid-tools">
       <div class="grid-summary"><Badge>{{ visibleCount }} of {{ rows.length }} records</Badge><span>Sort and filter the loaded page.</span></div>
-      <div v-if="!compact">
+      <div>
         <DropdownMenu>
-          <DropdownMenuTrigger as-child><Button variant="outline" :disabled="!api"><Columns3 />Columns</Button></DropdownMenuTrigger>
+          <DropdownMenuTrigger as-child><Button variant="outline" :disabled="!compact && !api"><Columns3 />Columns</Button></DropdownMenuTrigger>
           <DropdownMenuContent align="end">
             <DropdownMenuLabel class="ui-menu-label">Visible columns</DropdownMenuLabel>
             <DropdownMenuCheckboxItem v-for="(column, index) in columns" :key="column"
@@ -15,19 +15,21 @@
             </DropdownMenuCheckboxItem>
           </DropdownMenuContent>
         </DropdownMenu>
-        <Button variant="outline" :disabled="!api" @click="fitColumns"><ScanLine />Fit columns</Button>
-        <Button variant="ghost" :disabled="!api" @click="resetView"><RotateCcw />Reset table</Button>
+        <Button v-if="!compact" variant="outline" :disabled="!api" @click="fitColumns"><ScanLine />Fit columns</Button>
+        <Button variant="ghost" :disabled="!compact && !api" @click="compact ? resetMobileView() : resetView()"><RotateCcw />Reset table</Button>
       </div>
     </div>
     <div v-if="compact" class="mobile-records">
+      <label>Sort loaded records<select v-model="mobileSort"><option value="">Original order</option><template v-for="(column, index) in columns" :key="column"><option v-if="!displayOnlyColumns.includes(index)" :value="`${index}:asc`">{{ column }}: ascending</option><option v-if="!displayOnlyColumns.includes(index)" :value="`${index}:desc`">{{ column }}: descending</option></template></select></label>
       <div v-if="loading" role="status" aria-label="Loading records" class="loading-cards">
         <Card v-for="item in 3" :key="item" class="loading-card"><Skeleton class="h-4 w-2/3" /><Skeleton class="h-4 w-full" /><Skeleton class="h-4 w-1/2" /></Card>
       </div>
-      <Card v-for="row in rows" v-else :key="row.key" class="mobile-record">
+      <Card v-for="row in mobileRows" v-else :key="row.key" class="mobile-record">
         <div
           v-for="(column, index) in columns"
           :key="column"
           class="mobile-field"
+          v-show="!hiddenColumns.includes(index)"
         >
           <small>{{ column }}</small>
           <div>
@@ -142,6 +144,10 @@ function syncColumns() {
   hiddenColumns.value = props.columns.map((_, index) => index).filter(index => api.value?.getColumn(`cell-${index}`)?.isVisible() === false);
 }
 function toggleColumn(index: number, visible: boolean | "indeterminate") {
+  if (compact.value) {
+    hiddenColumns.value = visible === true ? hiddenColumns.value.filter(column => column !== index) : [...new Set([...hiddenColumns.value, index])];
+    return;
+  }
   api.value?.setColumnsVisible([`cell-${index}`], visible === true);
   syncColumns();
 }
@@ -153,6 +159,18 @@ function statusVariant(value: string | number) {
   return "default";
 }
 const compact = ref(typeof window !== "undefined" && window.innerWidth < 700);
+const mobileSort = ref("");
+function resetMobileView() { mobileSort.value = ""; hiddenColumns.value = []; }
+const mobileRows = computed(() => {
+  if (!mobileSort.value) return props.rows;
+  const [column, direction] = mobileSort.value.split(':');
+  const index = Number(column);
+  return [...props.rows].sort((a, b) => {
+    const left = a.sortValues?.[index] ?? a.cells[index], right = b.sortValues?.[index] ?? b.cells[index];
+    const result = typeof left === 'number' && typeof right === 'number' ? left - right : collator.compare(String(left ?? ''), String(right ?? ''));
+    return direction === 'desc' ? -result : result;
+  });
+});
 const modules = [
   ClientSideRowModelModule,
   ClientSideRowModelApiModule,

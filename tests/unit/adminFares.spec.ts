@@ -14,7 +14,7 @@ const mocks = vi.hoisted(() => ({
   reports: vi.fn(),
   generatePassword: vi.fn(), createUser: vi.fn(),
 }))
-vi.mock('vue-router', () => ({ useRoute: () => mocks.route, useRouter: () => ({ replace: vi.fn() }) }))
+vi.mock('vue-router', () => ({ onBeforeRouteLeave: vi.fn(), onBeforeRouteUpdate: vi.fn(), useRoute: () => mocks.route, useRouter: () => ({ replace: vi.fn() }) }))
 vi.mock('../../src/services/session', () => ({ auth: null, functions: {}, staffDatabase: {} }))
 vi.mock('../../src/services/accountFunctions', () => ({ accountFunction: (_functions: unknown, name: string) => name === 'generateTemporaryPassword' ? mocks.generatePassword : mocks.createUser }))
 vi.mock('@ionic/vue', () => ({
@@ -36,6 +36,7 @@ vi.mock('../../src/services/database/staff', () => ({
   adminCreateSailing: mocks.createTrip, adminSailingBookings: mocks.bookings, adminUpdateUnbookedSailing: mocks.updateTrip,
   staffBookings: async () => ({ data: { bookings: [] } }),
   adminSailings: async () => ({ data: { sailings: [sailing] } }),
+  adminSailingOptions: async () => ({ data: { sailings: [sailing] } }),
   adminUsers: async () => ({ data: { users: [] } }),
   adminPorts: async () => ({ data: { ports: [{ id: 'origin', name: 'Origin', isActive: true }, { id: 'destination', name: 'Destination', isActive: true }] } }),
   adminVessels: async () => ({ data: { vessels: [{ id: 'vessel', code: 'F1', name: 'Ferry', passengerCapacity: 100, isActive: true }, { id: 'vessel-2', code: 'F2', name: 'Fast Ferry', passengerCapacity: 80, isActive: true }, { id: 'unpriced', code: 'F3', name: 'New Ferry', passengerCapacity: 50, isActive: true }] } }),
@@ -72,10 +73,10 @@ beforeEach(() => {
   mocks.checkIn.mockResolvedValue({ data: {} })
 })
 describe('reports workspace', () => {
-  it('keeps the passenger manifest page for viewing without an export action', async () => {
+  it('offers authorized export on the manifest page with sailing choices', async () => {
     const wrapper = await load('manifest')
-    expect(wrapper.findAll('button').some(b => b.text() === 'Export manifest')).toBe(false)
-    expect(wrapper.text()).toContain('Download manifests in Reports & analytics.')
+    expect(wrapper.findAll('button').some(b => b.text() === 'Export manifest')).toBe(true)
+    expect(wrapper.find('#export-manifest-sailing').text()).toContain('TRP-EXISTING')
     wrapper.unmount()
   })
   it('loads aggregate reports without fetching the limited dashboard records', async () => {

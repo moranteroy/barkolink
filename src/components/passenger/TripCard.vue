@@ -12,6 +12,7 @@
         trip.status
       }}</Badge>
     </div>
+    <p v-if="trip.date" class="sailing-date">Departure: {{ trip.date }} · Philippine time</p>
     <div class="journey">
       <div>
         <small>{{ trip.from.toUpperCase() }}</small
@@ -149,6 +150,12 @@ const props = defineProps<{
   grid-template-columns: 1fr 1fr 1fr;
   align-items: center;
   margin: 22px 0 18px;
+}
+.sailing-date {
+  margin: 14px 0 0;
+  color: var(--ink);
+  font-size: 12px;
+  font-weight: 600;
 }
 .journey small,
 .journey span {

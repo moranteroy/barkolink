@@ -69,12 +69,12 @@
               <ion-icon :icon="searchOutline" /><input
                 v-model.trim="globalSearch"
                 type="search"
-                placeholder="Search bookings, passengers..."
+                placeholder="Search bookings..."
                 aria-label="Search all bookings"
               />
             </form>
             <router-link
-              to="/admin/notifications"
+              to="/admin/inbox"
               class="admin-bell"
               aria-label="Notifications"
               ><ion-icon :icon="notificationsOutline"
@@ -104,7 +104,7 @@
                 <p>{{ page.description }}</p>
               </div>
               <div class="heading-actions">
-                <Button variant="outline" class="secondary" :disabled="loading" @click="loadData">
+                <Button variant="outline" class="secondary" :disabled="loading || refreshDecision" @click="loadData">
                   <ion-icon :icon="refreshOutline" />Refresh</Button
                 ><Button
                   v-if="primaryAction"
@@ -127,10 +127,12 @@
               :refresh-token="reportsRefresh"
             />
             <AccommodationPanel
+              ref="childEditorRef"
               v-else-if="section === 'accommodation'"
               :key="`accommodation-${reportsRefresh}`"
             />
             <RoutesPanel
+              ref="childEditorRef"
               v-else-if="section === 'routes'"
               :key="`routes-${reportsRefresh}`"
             />
@@ -139,16 +141,21 @@
               :key="`no-shows-${reportsRefresh}`"
             />
             <NotificationsPanel
+              ref="childEditorRef"
               v-else-if="section === 'notifications'"
               :key="`notifications-${reportsRefresh}`"
             />
+            <InboxPanel v-else-if="section === 'inbox'" :key="`inbox-${reportsRefresh}`" />
             <AuditLogsPanel
               v-else-if="section === 'audit-logs'"
               :key="`audit-${reportsRefresh}`"
             /><AdvisoriesPanel
+              ref="childEditorRef"
+              embedded
               v-else-if="section === 'advisories'"
               :key="`advisories-${reportsRefresh}`"
             /><TripOperationsPanel
+              embedded
               v-else-if="section === 'trip-operations'"
               :key="`trip-${reportsRefresh}`"
             /><OperationsPanel v-else-if="section === 'operations'" />
@@ -488,7 +495,7 @@
                   aria-label="Filter by sailing"
                 >
                   <option value="ALL">All sailings</option>
-                  <option v-for="s in sailings" :key="s.code" :value="s.code">
+                  <option v-for="s in sailingOptions" :key="s.code" :value="s.code">
                     {{ s.code }} · {{ routeLabel(s) }}
                   </option>
                 </select>
@@ -617,8 +624,8 @@
                 <p class="table-foot">
                   {{ recordTotal }} records.
                   {{
-                    section === "bookings"
-                      ? "Search and status include all reservations. Column sorting and filtering apply to the loaded page."
+                    ['bookings', 'trips', 'users', 'passengers', 'check-in', 'boarding', 'manifest'].includes(section)
+                      ? "Primary filters search all records. Column sorting and filtering apply to the loaded page."
                       : "Search, column sorting, and filters apply to the loaded page."
                   }}
                 </p>
@@ -651,16 +658,18 @@
               :ports="ports"
               class="admin-port-map"
             />
+            <AdminManifestExport v-if="section === 'manifest'" :sailings="sailingOptions.map(s => ({ code: s.code, origin: s.origin.name, destination: s.destination.name, vessel: s.vessel.name }))" />
           </main>
         </div>
       </div>
       <ion-modal
         :is-open="modal !== ''"
+        :can-dismiss="canDismissEditor"
         :class="{
           'trip-modal': modal === 'trip',
           'user-modal': modal === 'user',
         }"
-        @didDismiss="closeModal"
+        @didDismiss="resetModal"
         ><div
           class="modal-body"
           :class="{
@@ -1253,6 +1262,7 @@
 <script setup lang="ts">
 import { Button } from "@/components/ui/button";
 import { confirmAction, requestReason } from "../../composables/confirmation";
+import { useUnsavedChanges } from "../../composables/unsavedChanges";
 import AuditLogsPanel from "../../components/admin/AuditLogsPanel.vue";
 import AdminOverviewPanel from "../../components/admin/AdminOverviewPanel.vue";
 import AccommodationPanel from "../../components/admin/AccommodationPanel.vue";
@@ -1299,7 +1309,6 @@ import {
   searchOutline,
   settingsOutline,
   notificationsOutline,
-  barChartOutline,
   boatOutline,
   calendarOutline,
   closeOutline,
@@ -1320,6 +1329,8 @@ import {
 import PortLocationMap from "../../components/shared/PortLocationMap.vue";
 import BrandMark from "../../components/shared/BrandMark.vue";
 import AdminReportsPanel from "../../components/admin/AdminReportsPanel.vue";
+import AdminManifestExport from "../../components/admin/AdminManifestExport.vue";
+import InboxPanel from "../../components/admin/InboxPanel.vue";
 import { clearSessionViews } from "../../composables/sessionViews";
 import {
   adminCancelBooking,
@@ -1332,6 +1343,7 @@ import {
   adminRescheduleSailing,
   adminSailingBookings,
   adminSailings,
+  adminSailingOptions,
   adminUpdatePort,
   adminUpdateSailingStatus,
   adminUpdateUnbookedSailing,
@@ -1380,6 +1392,8 @@ const selectedFareVesselId = ref("");
 const fareSettingsForm = reactive({ ...defaultFareSettings });
 const fareSettingsLoaded = ref(false);
 const nextTripCode = ref("");
+const childEditorRef = ref<{ hasUnsavedChanges?: () => boolean } | null>(null);
+const refreshDecision = ref(false);
 const settingsFarePreview = computed(() =>
   calculateFares(fareSettingsForm.regularFare, fareSettingsForm),
 );
@@ -1434,6 +1448,11 @@ watch(section, () => {
   menuOpen.value = false;
   void loadData();
 });
+watch(() => route.query.search, (value) => {
+  if (section.value !== "bookings") return;
+  recordPage.value = 0;
+  search.value = String(value || "");
+});
 const bookings = ref<StaffBookingsData["bookings"]>([]),
   sailings = ref<AdminSailingsData["sailings"]>([]),
   users = ref<AdminUsersData["users"]>([]),
@@ -1441,6 +1460,7 @@ const bookings = ref<StaffBookingsData["bookings"]>([]),
   ports = ref<AdminPortsData["ports"]>([]),
   vessels = ref<AdminVesselsData["vessels"]>([]),
   stats = ref<AdminDashboardStatsData | null>(null);
+const sailingOptions = ref<AdminSailingsData["sailings"]>([]);
 const navigation = [
   {
     label: "OVERVIEW",
@@ -1462,6 +1482,11 @@ const navigation = [
         label: "Trip operations",
         icon: optionsOutline,
       },
+    ],
+  },
+  {
+    label: "FLEET SETUP",
+    items: [
       { key: "fares", label: "Fares & discounts", icon: pricetagsOutline },
       { key: "ports", label: "Ports", icon: locationOutline },
       { key: "routes", label: "Routes", icon: navigateOutline },
@@ -1484,7 +1509,7 @@ const navigation = [
       { key: "advisories", label: "Travel advisories", icon: megaphoneOutline },
       {
         key: "notifications",
-        label: "Notifications",
+        label: "Broadcasts",
         icon: notificationsOutline,
       },
     ],
@@ -1493,7 +1518,6 @@ const navigation = [
     label: "MANAGEMENT",
     items: [
       { key: "reports", label: "Reports", icon: documentTextOutline },
-      { key: "analytics", label: "Analytics", icon: barChartOutline },
       { key: "users", label: "Users", icon: peopleCircleOutline },
       { key: "audit-logs", label: "Audit logs", icon: receiptOutline },
       {
@@ -1531,10 +1555,11 @@ const pages: Record<
   },
   notifications: {
     group: "COMMUNICATION",
-    title: "Notifications",
+    title: "Broadcasts",
     description: "Send updates to passenger and staff inboxes.",
     table: "",
   },
+  inbox: { group: "COMMUNICATION", title: "My inbox", description: "Read notifications addressed to your account.", table: "" },
   analytics: {
     group: "MANAGEMENT",
     title: "Analytics",
@@ -1613,7 +1638,7 @@ const pages: Record<
     group: "PASSENGER OPERATIONS",
     title: "Passenger manifest",
     description:
-      "View passenger lists by sailing. Download manifests in Reports & analytics.",
+      "View and download paid passenger manifests by sailing.",
     table: "Passenger manifest",
   },
   reports: {
@@ -1684,8 +1709,8 @@ function bookingStatusFilter() {
     )[statusFilter.value] || statusFilter.value
   );
 }
-watch([search, statusFilter], () => {
-  if (section.value !== "bookings" || !isWorkspaceRoute.value) return;
+watch([search, statusFilter, sailingFilter], () => {
+  if (!["bookings", "trips", "users", "passengers", "check-in", "boarding", "manifest"].includes(section.value) || !isWorkspaceRoute.value) return;
   recordPage.value = 0;
   if (bookingSearchTimer) clearTimeout(bookingSearchTimer);
   bookingSearchTimer = setTimeout(() => {
@@ -1697,6 +1722,13 @@ onBeforeUnmount(() => {
   if (bookingSearchTimer) clearTimeout(bookingSearchTimer);
 });
 async function loadData() {
+  if (refreshDecision.value) return;
+  if (childEditorRef.value?.hasUnsavedChanges?.()) {
+    refreshDecision.value = true;
+    try {
+      if (!(await confirmAction({ title: "Refresh and discard changes?", message: "Refreshing will replace the unsaved changes in this editor.", confirmText: "Discard and refresh" }))) return;
+    } finally { refreshDecision.value = false; }
+  }
   const request = ++loadRequest;
   if (
     isWorkspaceRoute.value &&
@@ -1707,6 +1739,7 @@ async function loadData() {
       "routes",
       "no-shows",
       "notifications",
+      "inbox",
       "reports",
       "operations",
       "audit-logs",
@@ -1742,11 +1775,13 @@ async function loadData() {
       fetchPolicy: "SERVER_ONLY",
       page: recordPage.value,
       pageSize,
+      ...(section.value === "trips" ? { search: search.value, status: statusFilter.value } : {}),
     }),
     adminUsers(dc, {
       fetchPolicy: "SERVER_ONLY",
       page: recordPage.value,
       pageSize,
+      ...(section.value === "users" ? { search: search.value, status: statusFilter.value } : {}),
     }),
     adminPorts(dc, { fetchPolicy: "SERVER_ONLY" }),
     adminVessels(dc, { fetchPolicy: "SERVER_ONLY" }),
@@ -1754,6 +1789,10 @@ async function loadData() {
       fetchPolicy: "SERVER_ONLY",
       page: recordPage.value,
       pageSize,
+      search: ["passengers", "check-in", "boarding", "manifest"].includes(section.value) ? search.value : "",
+      status: ["passengers", "check-in", "boarding"].includes(section.value) ? statusFilter.value : "ALL",
+      sailingCode: sailingFilter.value,
+      paidOnly: ["check-in", "boarding", "manifest"].includes(section.value),
     }),
     adminDashboardStats(dc, localDayBounds(), { fetchPolicy: "SERVER_ONLY" }),
     adminFareSettings(dc, { fetchPolicy: "SERVER_ONLY" }),
@@ -1762,6 +1801,10 @@ async function loadData() {
       ? savedRoutes(dc)
       : Promise.resolve({ data: { routes: [] as FerryRoute[] } }),
   ] as const);
+  if (["check-in", "boarding", "manifest"].includes(section.value)) {
+    try { sailingOptions.value = (await adminSailingOptions(dc)).data.sailings; }
+    catch { error.value = "Could not load sailing choices. Refresh to retry."; }
+  }
   if (request !== loadRequest || !isWorkspaceRoute.value) return;
   const failed: string[] = [];
   recordTotal.value = Number(
@@ -1870,6 +1913,7 @@ useQueueRefresh(
       "routes",
       "no-shows",
       "notifications",
+      "inbox",
       "reports",
       "operations",
       "audit-logs",
@@ -2090,6 +2134,12 @@ const userForm = reactive({
   role: "PASSENGER",
   password: "",
 });
+const editorSnapshot = () => JSON.stringify({ port: portForm, vessel: vesselForm, trip: tripForm, user: userForm });
+let editorBaseline = editorSnapshot();
+watch(modal, () => { editorBaseline = editorSnapshot(); }, { flush: "post" });
+const editorDirty = () => !!modal.value && !createdAccount.value && editorSnapshot() !== editorBaseline;
+useUnsavedChanges(() => editorDirty() || (section.value === "fares" && fareSettingsLoaded.value && !!selectedFareVesselId.value &&
+  JSON.stringify(copyFareSettings(fareSettingsForm)) !== JSON.stringify(copyFareSettings({ ...defaultFareSettings, ...(vesselFareSettings.value[selectedFareVesselId.value] || fareSettings) }))));
 const showTemporaryPassword = ref(false),
   accountPasswordCopied = ref(false);
 const createdAccount = ref<{
@@ -2175,8 +2225,17 @@ function openAction() {
     createdAccount.value = null;
   }
 }
-function closeModal() {
+async function closeModal() {
   if (busy.value) return;
+  if (!(await canDismissEditor())) return;
+  resetModal();
+}
+async function canDismissEditor() {
+  if (!modal.value) return true;
+  if (busy.value) return false;
+  return !editorDirty() || await confirmAction({ title: "Discard changes?", message: "The changes in this editor have not been saved.", confirmText: "Discard changes" });
+}
+function resetModal() {
   modal.value = "";
   formError.value = "";
   createdAccount.value = null;
@@ -2902,7 +2961,7 @@ const rows = computed<Row[]>(() => {
         : 0;
     return { ...row, sortValues };
   });
-  if (section.value === "bookings") return output;
+  if (["bookings", "trips", "users", "passengers", "check-in", "boarding", "manifest"].includes(section.value)) return output;
   const q = search.value.toLowerCase();
   return output.filter(
     (r) =>

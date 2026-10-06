@@ -392,14 +392,14 @@ onIonViewWillEnter(load);
   border: 1px solid #ce6a62;
   border-radius: 12px;
   background: var(--surface);
-  color: #b8463c;
+  color: var(--danger);
   font-weight: 700;
   cursor: pointer;
 }
 .error {
   padding: 14px;
   background: var(--surface);
-  color: #b8463c;
+  color: var(--danger);
   border: 1px solid var(--line);
   border-radius: 10px;
   font-size: 12px;

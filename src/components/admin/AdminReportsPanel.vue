@@ -73,13 +73,14 @@
                 :key="point.date"
                 class="bar-column"
               >
-                <button
+                <div
+                  role="img"
                   :style="{
                     height: `${Math.max(1, (point.revenue / trendMax) * 100)}%`,
                   }"
                   :title="`${point.date}: ${money(point.revenue)}`"
                   :aria-label="`${point.date}: ${money(point.revenue)}`"
-                ></button
+                ></div
                 ><small>{{
                   i % Math.max(1, Math.ceil(trend.points.length / 6)) === 0
                     ? point.date.slice(5)
@@ -89,6 +90,7 @@
             </div>
           </div>
           <div class="chart-foot">
+            <details class="collection-data"><summary>View collection data</summary><table><thead><tr><th>Period</th><th>Collected (PHP)</th></tr></thead><tbody><tr v-for="point in trend.points" :key="point.date"><th>{{ point.date }}</th><td>{{ money(point.revenue) }}</td></tr></tbody></table></details>
             <span>Highest period</span
             ><strong>{{
               money(Math.max(...trend.points.map((p) => p.revenue), 0))
@@ -384,7 +386,7 @@ const passengerMix = computed(() =>
       label: key === "pwd" ? "PWD" : key.charAt(0).toUpperCase() + key.slice(1),
       count: totals.value[key],
     }),
-  ),
+  ).concat([{ label: "Other discounts", count: Math.max(0, totals.value.paidPassengers - ["regular", "student", "senior", "child", "pwd", "pregnant"].reduce((sum, key) => sum + Number(totals.value[key as keyof typeof totals.value] || 0), 0)) }]),
 );
 const performance = computed(() => [
   {
@@ -664,14 +666,13 @@ onBeforeUnmount(() => {
   position: relative;
   padding: 0 1px;
 }
-.bar-column button {
+.bar-column > div {
   width: 100%;
   max-width: 38px;
   border: 0;
   background: #3c9de4;
   border-radius: 4px 4px 0 0;
   min-height: 2px;
-  cursor: pointer;
 }
 .bar-column small {
   position: absolute;
@@ -682,10 +683,13 @@ onBeforeUnmount(() => {
 }
 .chart-foot {
   display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
   justify-content: space-between;
   font-size: 12px;
   margin-top: 12px;
 }
+.collection-data { flex-basis: 100%; overflow-x: auto; }
 .distribution {
   margin: 17px 0;
 }

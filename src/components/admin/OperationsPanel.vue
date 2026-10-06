@@ -15,8 +15,9 @@
           max="168"
           step="any"
           required
+          :disabled="!loaded || loading || saving"
       /></label>
-      <button :disabled="loading || saving">
+      <button :disabled="!loaded || loading || saving">
         {{ saving ? "Saving..." : "Save deadline" }}
       </button>
       <p v-if="notice" role="status">{{ notice }}</p>
@@ -27,6 +28,7 @@
       >View settings history <span aria-hidden="true">&rarr;</span></RouterLink
     >
     <p v-if="error" class="error" role="alert">{{ error }}</p>
+    <button v-if="!loaded && !loading" type="button" @click="load">Retry loading settings</button>
   </section>
 </template>
 <script setup lang="ts">
@@ -39,12 +41,13 @@ import {
 } from "../../services/database/operations";
 import { databaseRequestError } from "../../data/databaseErrors";
 const hours = ref(24);
+const loaded = ref(false);
 const loading = ref(false),
   saving = ref(false),
   error = ref(""),
   notice = ref("");
 async function save() {
-  if (!staffDatabase || saving.value) return;
+  if (!staffDatabase || saving.value || !loaded.value || loading.value) return;
   const minutes = Math.round(hours.value * 60);
   if (!Number.isFinite(minutes) || minutes < 5 || minutes > 10080) {
     error.value = "Choose a deadline from 5 minutes to 7 days.";
@@ -63,18 +66,22 @@ async function save() {
     saving.value = false;
   }
 }
-onMounted(async () => {
-  if (!staffDatabase) return;
+async function load() {
+  if (!staffDatabase) { error.value = "Settings are unavailable. Try signing in again."; return; }
   loading.value = true;
+  error.value = "";
+  loaded.value = false;
   try {
     hours.value =
       (await operationSettings(staffDatabase)).data.reservationMinutes / 60;
+    loaded.value = true;
   } catch (cause) {
     error.value = databaseRequestError(cause, "Could not load the deadline.");
   } finally {
     loading.value = false;
   }
-});
+}
+onMounted(load);
 </script>
 <style scoped>
 .operations-panel {
@@ -137,7 +144,7 @@ button:disabled {
   text-decoration: underline;
 }
 .error {
-  color: #b8463c;
+  color: var(--danger);
 }
 @media (max-width: 600px) {
   .operations-panel > form {

@@ -40,7 +40,8 @@
               >See all <ion-icon :icon="arrowForwardOutline"
             /></router-link>
           </div>
-          <article v-if="journey" class="upcoming-card glass-panel">
+          <p v-if="loading" role="status">Loading your upcoming trip...</p>
+          <article v-else-if="journey" class="upcoming-card glass-panel">
             <div class="upcoming-top">
               <div class="date-chip">
                 <strong>{{ journeyDate.day }}</strong
@@ -97,7 +98,7 @@
               /></ion-button>
             </div>
           </article>
-          <article v-else class="upcoming-empty">
+          <article v-else-if="!loadError" class="upcoming-empty">
             <strong>No upcoming trip</strong>
             <p>Your active reservations will appear here.</p>
             <router-link to="/search">Find a sailing</router-link>
@@ -122,7 +123,7 @@
                 ><ion-icon :icon="qrCodeOutline" /></span
               ><strong>My tickets</strong
               ><small>View your passes</small></router-link
-            ><router-link to="/bookings?tab=Completed"
+            ><router-link to="/bookings?tab=Past%20departures"
               ><span class="quick-icon amber"
                 ><ion-icon :icon="timeOutline" /></span
               ><strong>History</strong><small>Past journeys</small></router-link
@@ -191,6 +192,7 @@ type Journey = {
 };
 const savedJourney = ref<Journey | null>(null);
 const loadError = ref("");
+const loading = ref(false);
 const displayName = ref(
   auth?.currentUser?.displayName ||
     auth?.currentUser?.email?.split("@")[0] ||
@@ -217,15 +219,16 @@ const journeyDate = computed(() => {
   return Number.isNaN(parsed.getTime())
     ? { day: "â€”", month: "â€”" }
     : {
-        day: String(parsed.getDate()),
+        day: parsed.toLocaleDateString("en-PH", { timeZone: "Asia/Manila", day: "numeric" }),
         month: parsed
-          .toLocaleDateString("en-US", { month: "short" })
+          .toLocaleDateString("en-US", { timeZone: "Asia/Manila", month: "short" })
           .toUpperCase(),
       };
 });
 let loadRequest = 0;
 async function loadData() {
   const request = ++loadRequest;
+  loading.value = true;
   const user = auth?.currentUser;
   displayName.value =
     user?.displayName || user?.email?.split("@")[0] || "there";
@@ -233,6 +236,7 @@ async function loadData() {
   loadError.value = "";
   if (!user || !database) {
     loadError.value = "Your account is unavailable. Please sign in again.";
+    loading.value = false;
     return;
   }
   try {
@@ -260,11 +264,11 @@ async function loadData() {
           date: item.sailing.departureAt,
           departure: new Date(item.sailing.departureAt).toLocaleTimeString(
             "en-PH",
-            { hour: "numeric", minute: "2-digit" },
+            { timeZone: "Asia/Manila", hour: "numeric", minute: "2-digit" },
           ),
           arrival: new Date(item.sailing.arrivalAt).toLocaleTimeString(
             "en-PH",
-            { hour: "numeric", minute: "2-digit" },
+            { timeZone: "Asia/Manila", hour: "numeric", minute: "2-digit" },
           ),
           vessel: item.sailing.vessel.name,
           passengers: item.bookingPassengers_on_booking.map((person) => ({
@@ -282,6 +286,8 @@ async function loadData() {
         "Could not load your trips.",
       );
     }
+  } finally {
+    if (request === loadRequest) loading.value = false;
   }
 }
 onIonViewWillEnter(() => {

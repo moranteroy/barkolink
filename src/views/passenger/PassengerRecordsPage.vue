@@ -203,6 +203,12 @@
             >
           </div>
         </template>
+        <template v-else-if="loading && ['bookings', 'booking-details', 'notifications'].includes(kind) && (kind === 'notifications' ? !notices.length : !bookings.length)">
+          <div class="empty-state" role="status"><h2>Loading {{ title.toLowerCase() }}...</h2><p>Checking the latest records.</p></div>
+        </template>
+        <template v-else-if="loadError && ['bookings', 'booking-details', 'notifications'].includes(kind)">
+          <div class="empty-state"><h2>Could not load {{ title.toLowerCase() }}</h2><ion-button class="primary" @click="loadData">Retry</ion-button></div>
+        </template>
         <template v-else-if="kind === 'bookings'"
           ><div class="booking-filters">
             <label
@@ -220,12 +226,11 @@
               </select></label
             >
           </div>
-          <div class="tabs" role="tablist" aria-label="Booking status">
+          <div class="tabs" role="group" aria-label="Filter by booking status">
             <button
               v-for="tab in tabs"
               :key="tab"
-              role="tab"
-              :aria-selected="selectedTab === tab"
+              :aria-pressed="selectedTab === tab"
               :class="{ selected: selectedTab === tab }"
               @click="selectedTab = tab"
             >
@@ -271,6 +276,7 @@
                     {{ booking.vessel }}</span
                   >
                 </div>
+                <p class="payment-hint"><strong>Booking total: PHP {{ booking.total.toLocaleString() }}</strong></p>
                 <p v-if="booking.accommodationName" class="payment-hint">
                   {{ booking.accommodationName }} accommodation · PHP
                   {{ (booking.serviceFee || 0).toLocaleString() }} additional
@@ -399,6 +405,8 @@
                 {{ currentBooking.vessel }}</span
               >
             </div>
+            <p class="payment-hint"><strong>Booking total: PHP {{ currentBooking.total.toLocaleString() }}</strong></p>
+            <p v-if="currentBooking.accommodationName" class="payment-hint">{{ currentBooking.accommodationName }} accommodation · PHP {{ (currentBooking.serviceFee || 0).toLocaleString() }} additional fare included</p>
             <div class="detail-passengers">
               <h3>Passengers ({{ currentBooking.passengers.length }})</h3>
               <div
@@ -409,7 +417,7 @@
                   ><ion-icon :icon="personOutline" aria-hidden="true" /></span
                 ><span
                   ><strong>{{ person.name }}</strong
-                  ><small>{{ person.type }} passenger</small></span
+                  ><small>{{ person.type }} passenger · Base fare: PHP {{ person.fare.toLocaleString() }}</small></span
                 >
               </div>
             </div>
@@ -619,6 +627,7 @@ type Passenger = {
   id?: string;
   name: string;
   type: string;
+  fare: number;
   ticketCode?: string;
   ticketStatus?: string;
 };
@@ -648,7 +657,7 @@ const route = useRoute();
 const kind = computed(() => String(route.name || "bookings"));
 const bookingSearch = ref(""),
   bookingPayment = ref("ALL");
-const tabs = ["Upcoming", "Completed", "Cancelled", "Expired"];
+const tabs = ["Upcoming", "Past departures", "Cancelled", "Expired"];
 const selectedTab = ref("Upcoming");
 const bookings = ref<Booking[]>([]);
 const notices = ref<
@@ -808,7 +817,7 @@ const visibleBookings = computed(() =>
     .filter((item) => {
       if (selectedTab.value === "Cancelled") return item.status === "CANCELLED";
       if (selectedTab.value === "Expired") return item.status === "EXPIRED";
-      if (selectedTab.value === "Completed")
+      if (selectedTab.value === "Past departures")
         return (
           !["CANCELLED", "EXPIRED"].includes(item.status) &&
           new Date(item.departureAt) <= new Date()
@@ -870,12 +879,14 @@ const profile = ref({ name: "", email: "", phone: "" });
 const saved = ref(false);
 const formatDay = (v: string) =>
   new Date(v).toLocaleDateString("en-PH", {
+        timeZone: "Asia/Manila",
     month: "short",
     day: "numeric",
     year: "numeric",
   });
 const formatTime = (v: string) =>
   new Date(v).toLocaleTimeString("en-PH", {
+        timeZone: "Asia/Manila",
     hour: "numeric",
     minute: "2-digit",
   });
@@ -914,6 +925,7 @@ async function loadData() {
           id: person.id,
           name: person.fullName,
           type: person.passengerType,
+          fare: person.fare,
           ticketCode: person.ticketCode,
           ticketStatus: person.ticketStatus,
         })),
@@ -1220,7 +1232,7 @@ async function saveProfile() {
 }
 .row-heading > b.cancelled {
   background: #ffebe7;
-  color: #b8463c;
+  color: var(--danger);
 }
 .booking-copy p {
   margin: 5px 0;
@@ -1248,7 +1260,7 @@ async function saveProfile() {
   cursor: pointer;
 }
 .booking-actions button {
-  color: #b8463c;
+  color: var(--danger);
 }
 .empty-state {
   padding: 55px 20px;

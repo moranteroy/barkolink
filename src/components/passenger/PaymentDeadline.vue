@@ -3,10 +3,9 @@
     v-if="valid"
     class="deadline"
     :class="{ urgent: seconds <= 3600 }"
-    role="status"
   >
     <ion-icon :icon="timeOutline" aria-hidden="true" />
-    <div>
+    <div role="status" aria-live="polite" aria-atomic="true">
       <strong>{{
         seconds > 0 ? "Pay at the ticketing desk" : "Payment deadline reached"
       }}</strong
@@ -16,7 +15,7 @@
           : "Checking your reservation status…"
       }}</small>
     </div>
-    <b v-if="seconds > 0">{{ remaining }}</b>
+    <b v-if="seconds > 0" aria-live="off" :aria-label="`Time remaining: ${remaining}`">{{ remaining }}</b>
   </div>
 </template>
 <script setup lang="ts">

@@ -70,11 +70,11 @@ import { useRouter } from "vue-router";
 import { Button } from "@/components/ui/button";
 import { browseActivePorts } from "../../services/database/passenger";
 import { database } from "../../services/session";
+import { philippineDateKey } from "../../data/travelDate";
 const emit = defineEmits<{ searched: [] }>();
 const router = useRouter();
 const localDate = (date: Date) => {
-  const offset = date.getTimezoneOffset();
-  return new Date(date.getTime() - offset * 60_000).toISOString().slice(0, 10);
+  return philippineDateKey(date);
 };
 const today = localDate(new Date());
 const defaultDate = new Date();
@@ -164,7 +164,7 @@ function search() {
 <style scoped>
 .form-error {
   margin: 10px 0 0;
-  color: #b8463c;
+  color: var(--danger);
   font-size: 11px;
   font-weight: 700;
 }

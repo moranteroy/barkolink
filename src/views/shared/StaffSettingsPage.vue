@@ -208,6 +208,7 @@
 </template>
 
 <script setup lang="ts">
+import { useUnsavedChanges } from "../../composables/unsavedChanges";
 import { validatedProfile } from "../../data/profileValidation";
 import { databaseRequestError } from "../../data/databaseErrors";
 import { computed, onBeforeUnmount, onMounted, reactive, ref } from "vue";
@@ -309,6 +310,7 @@ const sections = computed(() => [
   },
 ]);
 const password = reactive({ current: "", next: "", confirm: "" });
+useUnsavedChanges(() => (!!profile.value && phoneDirty.value) || !!(password.current || password.next || password.confirm));
 const savingPassword = ref(false);
 const passwordMessage = ref("");
 const passwordMessageType = ref<"error" | "success">("error");
@@ -734,7 +736,7 @@ async function changePassword() {
   font-size: 11px;
 }
 .feedback.error {
-  color: #b8463c;
+  color: var(--danger);
 }
 .feedback.success {
   color: #16805a;

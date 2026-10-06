@@ -8,7 +8,7 @@
           <label
             >New password<input
               v-model="password"
-              type="password"
+              :type="showPassword ? 'text' : 'password'"
               minlength="8"
               autocomplete="new-password"
               required
@@ -16,12 +16,13 @@
           <label
             >Confirm password<input
               v-model="confirm"
-              type="password"
+              :type="showPassword ? 'text' : 'password'"
               minlength="8"
               autocomplete="new-password"
               required
           /></label>
-          <p v-if="message" role="status">{{ message }}</p>
+          <label><input v-model="showPassword" type="checkbox" />Show passwords</label>
+          <p v-if="message" :role="failed ? 'alert' : 'status'">{{ message }}</p>
           <ion-button type="submit" :disabled="busy">Save password</ion-button>
         </form>
         <RouterLink to="/login">Back to sign in</RouterLink>
@@ -38,10 +39,13 @@ const password = ref(""),
   confirm = ref(""),
   message = ref(""),
   busy = ref(false);
+const failed = ref(false), showPassword = ref(false);
 async function save() {
   if (busy.value) return;
+  failed.value = false;
   if (password.value !== confirm.value) {
     message.value = "Passwords do not match.";
+    failed.value = true;
     return;
   }
   busy.value = true;
@@ -61,6 +65,7 @@ async function save() {
     confirm.value = "";
     message.value = "Password saved. Sign in with your new password.";
   } catch (error) {
+    failed.value = true;
     message.value =
       error instanceof Error ? error.message : "Could not save password.";
   } finally {

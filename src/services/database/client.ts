@@ -7,6 +7,8 @@ export type QueryOptions = {
   pageSize?: number;
   status?: string;
   search?: string;
+  sailingCode?: string;
+  paidOnly?: boolean;
 };
 
 // PostgreSQL derives identity from Supabase Auth and enforces roles itself.

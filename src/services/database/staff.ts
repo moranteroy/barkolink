@@ -187,11 +187,11 @@ export function adminDashboardStats(
   variables: Types.AdminDashboardStatsVariables,
   _options?: QueryOptions,
 ): Promise<{ data: Types.AdminDashboardStatsData }> {
-  return executeDatabase<Types.AdminDashboardStatsData>(
-    client,
-    "AdminDashboardStats",
-    variables,
-  );
+  return executeDatabase<Types.AdminDashboardStatsData>(client, "AdminDashboardStats", variables);
+}
+
+export function adminSailingOptions(client: DatabaseClient): Promise<{ data: Types.AdminSailingsData }> {
+  return executeDatabase<Types.AdminSailingsData>(client, "AdminSailingOptions", {});
 }
 
 export function adminUsers(

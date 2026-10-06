@@ -17,7 +17,8 @@ export function databaseRequestError(error: unknown, fallback: string): string {
     return "Access was denied. Sign in again to refresh your session. If this continues, contact the administrator to check your account permissions.";
   }
   if (/PGRST202|could not find the function.*barkolink_execute/i.test(detail)) {
-    return "The database has not been set up yet. Apply the BarkoLink SQL migrations in Supabase, then retry.";
+    return "This service is temporarily unavailable. Try again later or contact support.";
   }
+  if (/\.env|Supabase is not configured|migration|relation .* does not exist|column .* does not exist|SQL|constraint|syntax|PGRST|fetch failed|failed to fetch|networkerror/i.test(detail)) return fallback;
   return message || fallback;
 }

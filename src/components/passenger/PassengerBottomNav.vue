@@ -1,5 +1,5 @@
 <template>
-  <nav class="bottom-nav glass-toolbar" aria-label="Passenger navigation">
+  <nav v-if="auth?.currentUser" class="bottom-nav glass-toolbar" aria-label="Passenger navigation">
     <a
       v-for="item in items"
       :key="item.label"
@@ -32,6 +32,7 @@
 import { IonIcon, useIonRouter } from "@ionic/vue";
 import { computed } from "vue";
 import { useRoute } from "vue-router";
+import { auth } from "../../services/session";
 import {
   home,
   notificationsOutline,

@@ -7,7 +7,7 @@ const mocks = vi.hoisted(() => ({
   route: { path: '/settings/profile', params: {} as Record<string,string> }, enter: undefined as (() => void) | undefined,
   profile: vi.fn(), save: vi.fn(), sync: vi.fn(), reauth: vi.fn(), password: vi.fn(), logout: vi.fn(), replace: vi.fn(), clear: vi.fn(),
 }))
-vi.mock('vue-router', () => ({ useRoute: () => mocks.route, useRouter: () => ({ replace: mocks.replace }) }))
+vi.mock('vue-router', () => ({ onBeforeRouteLeave: vi.fn(), onBeforeRouteUpdate: vi.fn(), useRoute: () => mocks.route, useRouter: () => ({ replace: mocks.replace }) }))
 vi.mock('@ionic/vue', () => ({
   IonPage: { template: '<div><slot /></div>' }, IonContent: { template: '<div><slot /></div>' },
   IonButton: { template: '<button><slot /></button>' }, IonIcon: { template: '<span />' },

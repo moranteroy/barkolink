@@ -38,7 +38,7 @@ async function refund() {
     !(await confirmAction({
       title: "Confirm cash refund?",
       message: `Confirm you returned PHP ${props.amount.toLocaleString()} in cash?`,
-      confirmText: "Confirm cash received",
+      confirmText: "Confirm cash returned",
       danger: false,
     }))
   )

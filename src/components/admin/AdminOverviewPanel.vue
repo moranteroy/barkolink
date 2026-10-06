@@ -18,6 +18,10 @@
       <section class="catalog-panel">
         <h2>Passenger Volume &amp; Bookings</h2>
         <p class="chart-context">Bookings created in the last six months</p>
+        <div class="chart-legend volume-legend">
+          <span><i></i>Bookings</span>
+          <span><i class="green"></i>Passengers</span>
+        </div>
         <div class="volume-chart" role="img" :aria-label="monthlyDescription">
           <div
             v-for="month in data.monthly"
@@ -35,17 +39,16 @@
                 :title="`${month.passengers} passengers`"
               ></i>
             </div>
-            <small>{{ month.month }}</small>
+            <span class="month-label">{{ month.month }}</span>
+            <span class="month-total">{{ month.bookings }} / {{ month.passengers }}</span>
           </div>
         </div>
-        <div class="chart-legend">
-          <span><i></i>Bookings</span
-          ><span><i class="green"></i>Passengers</span>
-        </div>
+        <details class="chart-data"><summary>View monthly figures</summary><table><thead><tr><th scope="col">Month</th><th scope="col">Bookings</th><th scope="col">Passengers</th></tr></thead><tbody><tr v-for="month in data.monthly" :key="month.month"><th scope="row">{{ month.month }}</th><td>{{ month.bookings }}</td><td>{{ month.passengers }}</td></tr></tbody></table></details>
       </section>
       <section class="catalog-panel">
         <h2>Booking Status</h2>
         <p class="chart-context">All reservations</p>
+        <div class="distribution-chart">
         <div
           class="donut"
           :style="{ background: pie(data.bookingStatus) }"
@@ -57,11 +60,9 @@
             ><small>Bookings</small>
           </div>
         </div>
-        <div class="chart-legend">
-          <span v-for="(item, i) in data.bookingStatus" :key="item.name"
-            ><i :style="{ background: colors[i % colors.length] }"></i
-            >{{ humanize(item.name) }} ({{ item.value }})</span
-          >
+        <ul class="segment-list">
+          <li v-for="(item, i) in data.bookingStatus" :key="item.name"><span><i :style="{ background: segmentColor(item.name, i) }"></i>{{ humanize(item.name) }}</span><strong>{{ item.value }}</strong></li>
+        </ul>
         </div>
         <p v-if="!sum(data.bookingStatus)" class="chart-empty">
           No reservations yet.
@@ -71,14 +72,9 @@
         <h2>Popular Routes</h2>
         <p class="chart-context">Passengers in active reservations</p>
         <div class="route-chart">
-          <div v-for="item in data.routes" :key="item.route">
-            <span>{{ item.route }}</span>
-            <div>
-              <i
-                :style="{ width: `${(100 * item.passengers) / routeMax}%` }"
-              ></i
-              ><strong>{{ item.passengers }}</strong>
-            </div>
+          <div v-for="item in data.routes" :key="item.route" class="route-row">
+            <div class="route-label"><span>{{ item.route }}</span><strong>{{ item.passengers }} <small>passengers</small></strong></div>
+            <div class="route-track"><i :style="{ width: `${(100 * item.passengers) / routeMax}%` }"></i></div>
           </div>
           <p v-if="!data.routes.length" class="chart-empty">
             Route activity will appear here.
@@ -88,17 +84,16 @@
       <section class="catalog-panel">
         <h2>Passenger Categories</h2>
         <p class="chart-context">Paid, confirmed reservations</p>
+        <div class="distribution-chart">
         <div
-          class="donut category-pie"
+          class="donut"
           :style="{ background: pie(data.categories) }"
           role="img"
           :aria-label="describe(data.categories)"
-        ></div>
-        <div class="chart-legend">
-          <span v-for="(item, i) in data.categories" :key="item.name"
-            ><i :style="{ background: colors[i % colors.length] }"></i
-            >{{ humanize(item.name) }} ({{ item.value }})</span
-          >
+        ><div><strong>{{ sum(data.categories) }}</strong><small>Passengers</small></div></div>
+        <ul class="segment-list">
+          <li v-for="(item, i) in data.categories" :key="item.name"><span><i :style="{ background: segmentColor(item.name, i) }"></i>{{ item.name.toUpperCase() === 'PWD' ? 'PWD' : humanize(item.name) }}</span><strong>{{ item.value }}</strong></li>
+        </ul>
         </div>
         <p v-if="!sum(data.categories)" class="chart-empty">
           No paid passengers yet.
@@ -179,6 +174,11 @@ const colors = [
   "#ec3986",
   "#8a9db1",
 ];
+const semanticColors: Record<string, string> = {
+  confirmed: "#2684d9", pending: "#e5a129", cancelled: "#e56873", expired: "#8a9db1", completed: "#2ca16d",
+  regular: "#2684d9", student: "#2ca16d", senior: "#ae77d1", child: "#e5a129", pwd: "#d869a1", pregnant: "#8a9db1",
+};
+const segmentColor = (name: string, index: number) => semanticColors[name.toLowerCase()] || colors[index % colors.length];
 const metrics = [
   {
     key: "todayTrips",
@@ -233,7 +233,7 @@ function pie(items: Segment[]) {
     .map((item, i) => {
       const start = cursor;
       cursor += (100 * item.value) / total;
-      return `${colors[i % colors.length]} ${start}% ${cursor}%`;
+      return `${segmentColor(item.name, i)} ${start}% ${cursor}%`;
     })
     .join(",")})`;
 }
@@ -345,12 +345,12 @@ watch(() => props.refreshToken, load);
 }
 .overview-charts {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 16px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
 }
 .overview-charts > .catalog-panel {
   display: block;
-  padding: 22px;
+  padding: 24px;
   min-width: 0;
   background: var(--surface);
   border: 1px solid var(--line);
@@ -359,37 +359,46 @@ watch(() => props.refreshToken, load);
 }
 .overview-charts h2,
 .overview-trip-heading h2 {
-  font-size: 13px;
+  font-size: 16px;
   margin: 0;
   font-weight: 650;
 }
 .chart-context {
-  font-size: 10px;
+  font-size: 12px;
   color: var(--muted);
-  margin: 8px 0 16px;
+  line-height: 1.6;
+  margin: 6px 0 20px;
 }
 .volume-chart {
-  height: 200px;
-  display: flex;
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
   gap: 12px;
-  align-items: end;
-  padding: 0 10px;
+  padding: 0;
+}
+.volume-chart::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto;
+  height: 180px;
   border-bottom: 1px solid var(--line);
   background: repeating-linear-gradient(
     to top,
     transparent 0,
-    transparent 49px,
-    var(--line) 50px
+    transparent 44px,
+    var(--line) 45px
   );
 }
 .month-group {
-  flex: 1;
+  position: relative;
+  display: grid;
+  grid-template-rows: 180px auto auto;
+  gap: 8px;
   min-width: 0;
   text-align: center;
-  height: 100%;
 }
 .month-bars {
-  height: calc(100% - 24px);
+  height: 100%;
   display: flex;
   align-items: end;
   gap: 5px;
@@ -399,49 +408,57 @@ watch(() => props.refreshToken, load);
   flex: 1;
   border-radius: 6px 6px 0 0;
   background: #176cc0;
+  min-width: 0;
 }
 .month-bars i.passenger-bar {
   background: #2ca16d;
 }
-.month-group small {
+.month-label,
+.month-total {
   display: block;
-  margin-top: 8px;
   color: var(--muted);
-  font-size: 10px;
+  font-size: 12px;
+  line-height: 1.4;
+  font-variant-numeric: tabular-nums;
 }
+.month-label { font-weight: 600; color: var(--ink); }
+.month-total { font-size: 11px; white-space: nowrap; }
 .chart-legend {
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
   gap: 12px;
-  margin-top: 16px;
+  margin: 0 0 20px;
+  justify-content: flex-start;
 }
 .chart-legend span {
   display: flex;
   align-items: center;
   gap: 5px;
-  font-size: 10px;
+  font-size: 12px;
   color: var(--muted);
 }
 .chart-legend i {
   width: 10px;
   height: 10px;
+  flex-shrink: 0;
+  border-radius: 3px;
   background: #176cc0;
 }
 .chart-legend i.green {
   background: #2ca16d;
 }
 .donut {
-  width: 180px;
-  height: 180px;
+  width: 156px;
+  aspect-ratio: 1;
   border-radius: 50%;
   display: grid;
   place-items: center;
-  margin: 12px auto 22px;
+  margin: 0 auto;
 }
 .donut > div {
-  width: 115px;
-  height: 115px;
+  width: 68%;
+  height: 68%;
   border-radius: 50%;
   background: var(--surface);
   display: flex;
@@ -457,49 +474,65 @@ watch(() => props.refreshToken, load);
   color: var(--muted);
   margin-top: 6px;
 }
-.category-pie {
-  width: 180px;
-  height: 180px;
+.distribution-chart {
+  display: grid;
+  grid-template-columns: 156px minmax(0, 1fr);
+  align-items: center;
+  gap: 24px;
+  min-height: 240px;
 }
+.segment-list { list-style: none; padding: 0; margin: 0; display: grid; gap: 12px; min-width: 0; }
+.segment-list li { display: flex; gap: 12px; justify-content: space-between; align-items: center; font-size: 12px; line-height: 1.5; }
+.segment-list li > span { display: flex; gap: 8px; align-items: center; color: var(--muted); min-width: 0; overflow-wrap: anywhere; }
+.segment-list i { display: block; flex: 0 0 9px; width: 9px; height: 9px; border-radius: 3px; }
+.segment-list strong { color: var(--ink); font-size: 13px; font-variant-numeric: tabular-nums; }
+.chart-data { margin-top: 18px; border-top: 1px solid var(--line); padding-top: 14px; }
+.chart-data summary { font-size: 12px; color: var(--ocean); cursor: pointer; }
+.chart-data table { width: 100%; margin-top: 12px; font-size: 12px; border-collapse: collapse; }
+.chart-data th, .chart-data td { padding: 8px; text-align: right; border-bottom: 1px solid var(--line); }
+.chart-data th:first-child { text-align: left; }
 .chart-empty {
   text-align: center;
   font-size: 12px;
   color: var(--muted);
 }
 .route-chart {
-  min-height: 205px;
+  min-height: 240px;
   display: flex;
   flex-direction: column;
   justify-content: center;
-  gap: 18px;
+  gap: 20px;
 }
-.route-chart > div {
-  display: grid;
-  grid-template-columns: 115px 1fr;
-  gap: 14px;
-  align-items: center;
+.route-label {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  margin-bottom: 8px;
 }
 .route-chart span {
-  font-size: 10px;
-  color: var(--muted);
+  font-size: 12px;
+  color: var(--ink);
+  overflow-wrap: anywhere;
 }
-.route-chart > div > div {
-  position: relative;
-  height: 28px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
+.route-track {
+  height: 10px;
+  border-radius: 5px;
+  background: var(--line);
+  overflow: hidden;
 }
 .route-chart i {
   height: 100%;
   display: block;
-  border-radius: 0 5px 5px 0;
+  border-radius: 5px;
   background: #176cc0;
 }
 .route-chart strong {
-  font-size: 10px;
-  color: var(--muted);
+  font-size: 13px;
+  color: var(--ink);
+  white-space: nowrap;
 }
+.route-chart strong small { font-size: 10px; font-weight: 400; color: var(--muted); }
 .overview-trip-heading {
   display: flex;
   justify-content: space-between;
@@ -515,6 +548,7 @@ td a {
   text-decoration: none;
 }
 @media (max-width: 1050px) {
+  .overview-charts { grid-template-columns: 1fr; }
   .overview-metrics {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -540,8 +574,16 @@ td a {
     padding: 18px;
   }
   .volume-chart {
-    height: 180px;
-    gap: 9px;
+    gap: 6px;
   }
+  .month-bars { gap: 3px; }
+  .distribution-chart { grid-template-columns: 132px minmax(0,1fr); gap: 16px; min-height: 210px; }
+  .donut { width: 132px; }
+  .segment-list { gap: 10px; }
+  .route-label strong small { display: none; }
+}
+@media (max-width: 360px) {
+  .distribution-chart { grid-template-columns: 1fr; }
+  .month-total { font-size: 10px; }
 }
 </style>

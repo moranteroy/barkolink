@@ -1,5 +1,7 @@
 # GitHub repository audit and push preparation
 
+**Historical review:** this document describes the earlier cleanup. That cleanup was subsequently committed and pushed as `c03ef49`. Use [the 6 October 2026 review](GITHUB-REVIEW-20261006.md) for current findings, exclusions and checks; the old paths and pending-push statements below are historical.
+
 Audited on October 5, 2026 (Asia/Manila). Remote: [moranteroy/barkolink](https://github.com/moranteroy/barkolink), `main` at `5b41e6fa0f88f07239aad57e2026720d0fb5c50d`.
 
 ## What was already pushed

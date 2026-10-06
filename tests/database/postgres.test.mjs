@@ -153,6 +153,24 @@ describe("Supabase PostgreSQL migrations and business rules", () => {
     );
   });
 
+  it("filters complete admin directories before paging and restricts sailing options", async () => {
+    await db.exec(`insert into public.app_user(uid,email,full_name,role)
+      select 'directory-'||n,'directory-'||n||'@example.invalid','Directory '||n,'PASSENGER' from generate_series(1,35) n`);
+    const users = await call('admin', 'AdminUsers', { search: 'directory-', status: 'PASSENGER', pageSize: 30 });
+    assert.equal(users.totalCount, 35);
+    assert.equal(users.users.length, 30);
+    assert.equal((await call('admin', 'AdminUsers', { search: 'directory-', page: 1, pageSize: 30 })).users.length, 5);
+    assert.equal((await call('admin', 'AdminUsers', { search: 'directory-35@' })).users[0].uid, 'directory-35');
+    assert.equal((await call('admin', 'AdminSailings', { search: 'TEST-TRIP' })).totalCount, 1);
+    assert.equal((await call('admin', 'AdminSailings', { status: 'CANCELLED' })).totalCount, 0);
+    await reserve('DIRECTORY-BOOKING');
+    assert.equal((await call('admin', 'AdminPassengerRecords', { search: 'DIRECTORY-BOOKING' })).totalCount, 1);
+    assert.equal((await call('admin', 'AdminPassengerRecords', { sailingCode: 'missing' })).totalCount, 0);
+    assert.equal((await call('admin', 'AdminPassengerRecords', { paidOnly: true })).totalCount, 0);
+    assert.ok((await call('admin', 'AdminSailingOptions')).sailings.some(s => s.code === 'TEST-TRIP'));
+    await assert.rejects(call('boarding', 'AdminSailingOptions'), /Administrator/);
+  });
+
   it("filters settings history before pagination and preserves actor roles after role changes", async () => {
     await db.exec("truncate public.activity_log");
     for (let i = 0; i < 32; i++)

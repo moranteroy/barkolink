@@ -91,7 +91,7 @@ After editing `.env.local`, stop and restart the server. Sign in with an existin
 This section is for a project owner creating a separate backend. Skip it when using the existing configured backend.
 
 1. Create a Supabase project and copy its public URL/key into `.env.local`.
-2. In its SQL Editor, run `supabase/setup.sql` **once on the new project**. It combines the 17 current migrations in a transaction. Alternatively, apply `supabase/migrations/*.sql` in numeric order; choose one method. Optional: run `supabase/seed.sql` for example ports and a vessel. When adding migrations later, regenerate the combined script with `node scripts/build-sql.mjs`; existing databases should receive only the new migrations.
+2. In its SQL Editor, run `supabase/setup.sql` **once on the new project**. It combines the 18 current migrations in a transaction. Alternatively, apply `supabase/migrations/*.sql` in numeric order; choose one method. Optional: run `supabase/seed.sql` for example ports and a vessel. When adding migrations later, regenerate the combined script with `node scripts/build-sql.mjs`; existing databases should receive only the new migrations.
 3. In Authentication URL Configuration, allow the app's actual origins and redirect URLs. For the commands above, include `http://localhost:8100/login` and `http://localhost:8100/reset-password`. Add the production URLs when hosting. If you use `127.0.0.1` or another port, configure those URLs too.
 4. Register and confirm the first administrator account. Replace the example email in `supabase/queries/set-account-role.sql`, then run it as the project owner in SQL Editor. Sign out and sign in again after changing a role.
 5. Deploy the server-only account management function. Replace `YOUR_PROJECT_REF` with your project's reference:
@@ -183,3 +183,5 @@ git diff --cached --stat
 Commit source, tests, SQL migrations, config templates, native source, and the npm lockfile. `.gitignore` excludes nested `node_modules`, local environment files, credentials, build outputs, generated screenshots, and archived code. An ignore rule does not remove a file already tracked in a previous commit; see [the repository audit and cleanup notes](docs/GITHUB-PREP.md).
 
 Further guides: [shared UI and appearance](docs/UI-COMPONENTS.md), [AG Grid integration](docs/AG-GRID-INTEGRATION.md), [operations](docs/OPERATIONS-UPGRADE.md), and [development commands](scripts/LOCAL-DEVELOPMENT.md).
+
+Current updates: [release readiness](docs/RELEASE-READINESS.md), [demonstration accounts and workflows](docs/DEMO-WORKFLOWS.md), [Vercel deployment](docs/VERCEL-DEPLOYMENT.md), and [GitHub review](docs/GITHUB-REVIEW-20261006.md).

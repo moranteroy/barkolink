@@ -56,7 +56,10 @@
           {{ errorMessage }}
         </p>
         <section v-else-if="sortedTrips.length" class="trip-list">
-          <TripCard v-for="trip in sortedTrips" :key="trip.id" :trip="trip" />
+          <template v-for="(trip, index) in sortedTrips" :key="trip.id">
+            <h2 v-if="route.query.all === '1' && (!index || sortedTrips[index - 1].date !== trip.date)">{{ trip.date }}</h2>
+            <TripCard :trip="trip" />
+          </template>
         </section>
         <section v-else class="no-trips">
           <strong>No sailings found</strong>
@@ -188,6 +191,7 @@ const dateKey = (value: string) => {
 };
 const clock = (value: string) =>
   new Intl.DateTimeFormat("en-PH", {
+    timeZone: "Asia/Manila",
     hour: "numeric",
     minute: "2-digit",
     hour12: true,
@@ -244,8 +248,11 @@ async function loadTrips() {
         duration: `${Math.floor(sailing.durationMinutes / 60)}h ${sailing.durationMinutes % 60}m`,
         fare: `PHP ${sailing.regularFare.toLocaleString()}`,
         available: sailing.availableSeats,
-        status: sailing.availableSeats < 20 ? "Limited" : "Available",
+        status: ["SCHEDULED", "AVAILABLE"].includes(sailing.status.toUpperCase())
+          ? sailing.availableSeats < 20 ? "Limited" : "Available"
+          : sailing.status.replaceAll("_", " "),
         date: new Date(sailing.departureAt).toLocaleDateString("en-PH", {
+        timeZone: "Asia/Manila",
           month: "short",
           day: "numeric",
           year: "numeric",

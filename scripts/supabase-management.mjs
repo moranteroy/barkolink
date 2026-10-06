@@ -26,7 +26,50 @@ async function sql(query, readOnly = true, parameters = []) {
 const tables = ['app_user','port','vessel','fare_settings','sailing','booking','booking_passenger','notification','boarding_event']
 const inspectQuery = `select table_name from information_schema.tables where table_schema='public' and table_name in (${tables.map(t => `'${t}'`).join(',')}) order by table_name`
 const mode = process.argv[2] || 'inspect'
-if (mode === 'inspect') {
+if (['inspect-admin-filters', 'upgrade-admin-filters', 'verify-admin-filters'].includes(mode)) {
+  const env = fs.readFileSync('.env.local', 'utf8')
+  const url = env.match(/^VITE_SUPABASE_URL\s*=\s*(.+)$/m)?.[1]?.trim().replace(/^['"]|['"]$/g, '')
+  if (!url || new URL(url).hostname !== `${projectRef}.supabase.co`) throw new Error('Frontend and management project must match before checking or upgrading.')
+  const inspect = `select
+    to_regprocedure('barkolink_private.execute_flexible_discounts(text,jsonb,text,text)') is not null as ready,
+    to_regprocedure('barkolink_private.execute_flexible_discounts_v17(text,jsonb,text,text)') is not null as backup,
+    coalesce((select position('AdminSailingOptions' in pg_get_functiondef(p.oid))>0 from pg_proc p where p.oid=to_regprocedure('barkolink_private.execute_flexible_discounts(text,jsonb,text,text)')),false) as installed,
+    (select count(*) from information_schema.columns where table_schema='public' and table_name in ('fare_settings','sailing') and column_name='passenger_discounts') as columns`
+  let state = (await sql(inspect))[0]
+  if (mode === 'upgrade-admin-filters') {
+    if (!state.ready || Number(state.columns) !== 2 || state.backup !== state.installed) throw new Error('Unexpected migration state; inspect before upgrading.')
+    if (state.installed) console.log('Migration 018 already installed; no changes applied.')
+    else {
+      const guard = `do $$ begin
+        perform pg_advisory_xact_lock(hashtext('barkolink-migration-018'));
+        if to_regprocedure('barkolink_private.execute_flexible_discounts_v17(text,jsonb,text,text)') is not null then
+          raise exception 'Migration state changed; inspect before retrying';
+        end if;
+      end $$;`
+      await sql('begin;\n' + guard + '\n' + fs.readFileSync('supabase/migrations/018_admin_directory_filters.sql', 'utf8') + '\ncommit;', false)
+      console.log('Applied migration 018 transactionally; no booking, payment or account records edited.')
+      state = (await sql(inspect))[0]
+    }
+  }
+  console.log(JSON.stringify({ projectRef, adminFilters: state }))
+  if (mode === 'inspect-admin-filters') console.log(JSON.stringify({ ownership: await sql(`select n.nspname,p.proname,r.rolname as owner,p.prosecdef as security_definer,has_function_privilege(current_user,p.oid,'EXECUTE') as management_execute,has_function_privilege('postgres',p.oid,'EXECUTE') as postgres_execute from pg_proc p join pg_namespace n on n.oid=p.pronamespace join pg_roles r on r.oid=p.proowner where p.proname in ('barkolink_execute','execute_flexible_discounts','execute_flexible_discounts_v17')`) }))
+  if (mode !== 'inspect-admin-filters') {
+    if (!state.ready || !state.backup || !state.installed) throw new Error('Migration 018 is not installed.')
+    const security = (await sql(`select
+      has_function_privilege('authenticated','barkolink_private.execute_flexible_discounts(text,jsonb,text,text)','EXECUTE') as browser_private_execute,
+      has_function_privilege('anon','barkolink_private.execute_flexible_discounts(text,jsonb,text,text)','EXECUTE') as anonymous_private_execute,
+      has_function_privilege('authenticated','barkolink_private.execute_flexible_discounts_v17(text,jsonb,text,text)','EXECUTE') as browser_backup_execute,
+      has_table_privilege('authenticated','public.booking_passenger','SELECT') as browser_passenger_select`))[0]
+    if (Object.values(security).some(Boolean)) throw new Error('Unexpected browser access to private functions or tables.')
+    const result = await sql(`with actor as (select uid from public.app_user where role='ADMIN' limit 1),
+      results as materialized (select operation, barkolink_private.execute_flexible_discounts(operation,'{"pageSize":1}'::jsonb,uid,'ADMIN') as data
+        from actor cross join (values ('AdminSailings'),('AdminUsers'),('AdminPassengerRecords'),('AdminSailingOptions')) ops(operation))
+      select operation, jsonb_typeof(data)='object' as valid_response,
+        case when operation='AdminSailingOptions' then data ? 'sailings' else data ? 'totalCount' end as expected_shape from results`, false)
+    if (result.length !== 4 || result.some(row => !row.valid_response || !row.expected_shape)) throw new Error('Authorized admin directory verification failed.')
+    console.log(JSON.stringify({ adminDirectoryVerification: 'passed', result, security }))
+  }
+} else if (mode === 'inspect') {
   const existing = await sql(inspectQuery)
   const functions = await sql("select routine_name from information_schema.routines where routine_schema='public' and routine_name='barkolink_execute'")
   console.log(JSON.stringify({ projectRef, tables: existing, functions }))

@@ -23,6 +23,7 @@
         </div>
         <aside>
           <h2>Need help with a trip?</h2>
+          <OperatorContact />
           <p>
             Contact your ferry operator or visit the terminal ticketing desk.
             Have your booking reference ready. Operator-specific baggage rules
@@ -46,6 +47,7 @@ import {
   timeOutline,
 } from "ionicons/icons";
 import PassengerHeader from "../../components/passenger/PassengerHeader.vue";
+import OperatorContact from "../../components/shared/OperatorContact.vue";
 import PassengerBottomNav from "../../components/passenger/PassengerBottomNav.vue";
 const questions = [
   {

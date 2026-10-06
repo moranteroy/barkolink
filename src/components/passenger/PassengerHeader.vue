@@ -1,5 +1,9 @@
 <template>
-  <header class="passenger-header glass-toolbar">
+  <header v-if="!auth?.currentUser" class="passenger-header glass-toolbar">
+    <router-link to="/" aria-label="BarkoLink home"><BrandMark /></router-link>
+    <router-link to="/help">Help</router-link><router-link to="/login">Sign in</router-link>
+  </header>
+  <header v-else class="passenger-header glass-toolbar">
     <a
       href="/home"
       class="brand-link"

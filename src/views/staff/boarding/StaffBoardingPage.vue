@@ -295,7 +295,7 @@
                 </div>
               </section>
 
-              <aside class="panel review-panel" aria-label="Ticket review">
+              <aside ref="reviewRef" tabindex="-1" class="panel review-panel" aria-label="Ticket review">
                 <template v-if="selectedPassenger"
                   ><div class="panel-heading">
                     <div>
@@ -681,6 +681,13 @@ function selectPassenger(person: Passenger) {
   selectedPassengerId.value = person.id;
   error.value = "";
   success.value = "";
+  void revealReview();
+}
+const reviewRef = ref<HTMLElement | null>(null);
+async function revealReview() {
+  await nextTick();
+  if (window.innerWidth <= 1100) reviewRef.value?.scrollIntoView({ behavior: "smooth", block: "start" });
+  reviewRef.value?.focus({ preventScroll: true });
 }
 
 async function loadData() {
@@ -853,13 +860,11 @@ function findTicket() {
       "Ticket not found on this sailing. Check the code and selected sailing.";
     return;
   }
-  selectedPassengerId.value = person.id;
+  selectPassenger(person);
   statusFilter.value = "ALL";
   search.value = "";
   closeScanner();
-  document
-    .getElementById("manifest")
-    ?.scrollIntoView({ behavior: "smooth", block: "start" });
+  void revealReview();
 }
 function stopCamera() {
   if (scanFrame) cancelAnimationFrame(scanFrame);

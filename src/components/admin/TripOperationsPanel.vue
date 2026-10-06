@@ -1,12 +1,12 @@
 <template>
   <section class="trip-operations">
     <header>
-      <div>
+      <div v-if="!embedded">
         <p class="eyebrow">FERRY OPERATIONS</p>
         <h2>Trip operations</h2>
         <p>One workspace for a sailing's passengers and terminal progress.</p>
       </div>
-      <button :disabled="loading || busy" @click="load">Refresh</button>
+      <button v-if="!embedded" :disabled="loading || busy" @click="load">Refresh</button>
     </header>
     <label class="picker"
       >Choose sailing<select
@@ -190,6 +190,7 @@
 </template>
 <script setup lang="ts">
 import { confirmAction } from "../../composables/confirmation";
+defineProps<{ embedded?: boolean }>();
 import AdminManifestExport from "./AdminManifestExport.vue";
 import { computed, onMounted, ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
@@ -582,7 +583,7 @@ th {
   text-transform: uppercase;
 }
 .error {
-  color: #b8463c;
+  color: var(--danger);
 }
 @media (max-width: 900px) {
   .metrics {

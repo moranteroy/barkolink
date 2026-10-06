@@ -1,4 +1,6 @@
 <template>
+  <p v-if="loading" role="status">Loading saved travelers...</p>
+  <p v-else-if="error" role="status">Saved travelers could not be loaded. You can enter details manually. <button type="button" @click="load">Retry saved travelers</button></p>
   <label v-if="travelers.length" class="saved-picker"
     >Use a saved traveler
     <select :value="''" @change="select">
@@ -18,15 +20,21 @@ import {
 import { database } from "../../services/session";
 const emit = defineEmits<{ select: [traveler: SavedTraveler] }>();
 const travelers = ref<SavedTraveler[]>([]);
-onMounted(async () => {
+const loading = ref(false), error = ref(false);
+async function load() {
   if (database) {
+    loading.value = true;
+    error.value = false;
     try {
       travelers.value = (await savedTravelers(database)).data.travelers;
     } catch {
-      /* Manual passenger entry stays available. */
+      error.value = true;
+    } finally {
+      loading.value = false;
     }
   }
-});
+}
+onMounted(load);
 function select(event: Event) {
   const traveler = travelers.value.find(
     (p) => p.id === (event.target as HTMLSelectElement).value,

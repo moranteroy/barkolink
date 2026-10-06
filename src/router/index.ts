@@ -172,15 +172,31 @@ const router = createRouter({
   routes,
 });
 
-router.afterEach(async () => {
+let navigationNumber = 0;
+router.afterEach(async (to, from) => {
+  const request = ++navigationNumber;
+  const label = to.path.split('/').filter(Boolean).at(-1)?.replaceAll('-', ' ') || 'Welcome';
+  document.title = `${label.replace(/\b\w/g, letter => letter.toUpperCase())} | BarkoLink`;
+  if (to.path === from.path) return;
   await nextTick();
   const focused = document.activeElement;
   if (focused instanceof HTMLElement && focused.closest("ion-router-outlet"))
     focused.blur();
+  window.setTimeout(() => {
+    if (request !== navigationNumber) return;
+    const headings = Array.from(document.querySelectorAll<HTMLElement>('.ion-page:not(.ion-page-hidden):not(.ion-page-invisible) h1'));
+    const heading = headings.filter(el => el.getClientRects().length).at(-1);
+    if (!heading) return;
+    document.title = `${heading.textContent?.trim()} | BarkoLink`;
+    if (document.activeElement instanceof HTMLElement && ['INPUT', 'SELECT', 'TEXTAREA', 'BUTTON'].includes(document.activeElement.tagName)) return;
+    heading.tabIndex = -1;
+    heading.focus({ preventScroll: true });
+  }, 450);
 });
 
 router.beforeEach(async (to) => {
   const path = to.path;
+  if (path === '/admin/analytics') return '/admin/reports';
   if (
     path.startsWith("/admin/") &&
     !/^\/admin\/settings(?:\/(profile|password|appearance))?$/.test(path) &&
@@ -204,15 +220,14 @@ router.beforeEach(async (to) => {
       "accommodation",
       "no-shows",
       "notifications",
+      "inbox",
       "analytics",
     ].includes(String(to.params.section || ""))
   )
     return "/admin";
   const protectedPassenger = [
     "/travelers",
-    "/help",
     "/home",
-    "/search",
     "/trip-details",
     "/passenger-info",
     "/booking-summary",
@@ -259,7 +274,7 @@ router.beforeEach(async (to) => {
     path === "/register" ||
     path === "/" ||
     path === "/reset-password" ||
-    path === "/privacy"
+    path === "/privacy" || path === "/search" || path === "/help"
   )
     return true;
   const authInstance = auth;

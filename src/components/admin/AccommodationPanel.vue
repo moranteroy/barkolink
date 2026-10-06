@@ -8,6 +8,7 @@
       <button class="primary-button" @click="start()">Add accommodation</button>
     </div>
     <p v-if="error" role="alert" class="catalog-error">{{ error }}</p>
+    <button v-if="error && !loading && !busy" type="button" @click="load">Retry loading accommodations</button>
     <p v-if="notice" role="status">{{ notice }}</p>
     <form v-if="editing" class="catalog-form" @submit.prevent="save">
       <h2>{{ form.id ? "Edit accommodation" : "Add accommodation" }}</h2>
@@ -37,8 +38,9 @@
           v-model.number="form.capacity"
           type="number"
           min="1"
+          :max="form.isActive ? remainingCapacity || 1 : undefined"
           required /></label
-      ><label
+      ><p v-if="form.vesselId">{{ remainingCapacity }} seats available to allocate to this class (other active classes excluded).</p><label
         >Extra fare per passenger (PHP)<input
           v-model.number="form.surcharge"
           type="number"
@@ -61,6 +63,7 @@
         </button>
       </div>
     </form>
+    <TableControls v-model:query="table.query.value" v-model:sort="table.sort.value" :columns="[{ key: 'name', label: 'Class' }, { key: 'capacity', label: 'Capacity' }, { key: 'surcharge', label: 'Extra fare' }]" />
     <div class="catalog-table">
       <table>
         <thead>
@@ -75,7 +78,7 @@
           </tr>
         </thead>
         <tbody>
-          <tr v-for="a in rows" :key="a.id">
+          <tr v-for="a in table.records.value" :key="a.id">
             <td data-label="Class">
               <strong>{{ a.name }}</strong>
             </td>
@@ -96,7 +99,7 @@
               <button @click="start(a)">Edit</button>
             </td>
           </tr>
-          <tr v-if="!rows.length">
+          <tr v-if="!table.records.value.length && !error">
             <td colspan="7">
               {{
                 loading
@@ -111,7 +114,10 @@
   </section>
 </template>
 <script setup lang="ts">
-import { onMounted, reactive, ref } from "vue";
+import { computed, onMounted, reactive, ref } from "vue";
+import TableControls from "../shared/TableControls.vue";
+import { useTableRecords } from "../../composables/tableRecords";
+import { useUnsavedChanges } from "../../composables/unsavedChanges";
 import { staffDatabase } from "../../services/session";
 import {
   accommodations,
@@ -138,6 +144,14 @@ const form = reactive({
   surcharge: 0,
   isActive: true,
 });
+const table = useTableRecords(rows);
+let initialForm = JSON.stringify(form);
+const hasUnsavedChanges = () => editing.value && JSON.stringify(form) !== initialForm;
+useUnsavedChanges(hasUnsavedChanges);
+defineExpose({ hasUnsavedChanges });
+const remainingCapacity = computed(() => Math.max(0,
+  (vessels.value.find(v => v.id === form.vesselId)?.passengerCapacity || 0)
+  - rows.value.filter(a => a.vesselId === form.vesselId && a.isActive && a.id !== form.id).reduce((sum, a) => sum + a.capacity, 0)));
 function start(a?: Accommodation) {
   Object.assign(
     form,
@@ -152,6 +166,7 @@ function start(a?: Accommodation) {
     },
   );
   editing.value = true;
+  initialForm = JSON.stringify(form);
   notice.value = "";
 }
 async function load() {
@@ -172,6 +187,7 @@ async function load() {
 }
 async function save() {
   if (!staffDatabase || busy.value) return;
+  if (form.isActive && form.capacity > remainingCapacity.value) { error.value = "Class capacity exceeds the vessel's remaining seats."; return; }
   busy.value = true;
   error.value = "";
   try {

@@ -39,6 +39,7 @@
             selection on your device. Sign out after using a shared device.
           </p>
           <h2>Help with your records</h2>
+          <OperatorContact />
           <p>
             Ask the ferry operator or system administrator about corrections,
             access, or removal of your information.
@@ -55,6 +56,7 @@
 import { IonPage, IonContent } from "@ionic/vue";
 import { RouterLink } from "vue-router";
 import BrandMark from "../../components/shared/BrandMark.vue";
+import OperatorContact from "../../components/shared/OperatorContact.vue";
 </script>
 <style scoped>
 .privacy-page {

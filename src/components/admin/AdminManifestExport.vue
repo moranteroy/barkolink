@@ -3,7 +3,7 @@
     <div>
       <h2 id="manifest-export-title">Passenger manifest export</h2>
       <p>
-        Choose a sailing from the report filters above. CSV includes all
+        Choose a sailing below. CSV includes all
         passengers on paid, confirmed reservations.
       </p>
     </div>
@@ -24,7 +24,7 @@
       </button>
     </div>
     <p v-if="!sailings.length">
-      No sailings match the selected report filters.
+      No sailings are available to export.
     </p>
     <p v-if="error" class="error" role="alert">{{ error }}</p>
     <p v-if="notice" role="status">{{ notice }}</p>
@@ -177,7 +177,7 @@ select {
   color: var(--ink);
 }
 button {
-  background: #238fe0;
+  background: #246fba;
   color: white;
   border: 0;
   border-radius: 8px;

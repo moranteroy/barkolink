@@ -148,10 +148,12 @@
               Enter each passenger name exactly as shown on their ID.
             </p>
             <form @submit.prevent="go('summary')">
+              <p v-if="errorMessage" role="alert">{{ errorMessage }}</p>
               <article
                 v-for="(person, index) in passengers"
                 :key="person.id"
                 class="passenger-card"
+                :data-passenger-index="index"
               >
                 <div class="passenger-heading">
                   <strong>PASSENGER {{ index + 1 }}</strong
@@ -173,7 +175,7 @@
                         ? 'Male'
                         : $event.sex === 'FEMALE'
                           ? 'Female'
-                          : 'Prefer not to say';
+                          : 'Other';
                     person.phone = $event.phone;
                     person.nationality = $event.nationality;
                   "
@@ -182,6 +184,8 @@
                   <label
                     >Full name<input
                       v-model.trim="person.name"
+                      :aria-invalid="attempted && invalidField(person) === 'name'"
+                      :aria-describedby="attempted && invalidField(person) === 'name' ? `passenger-error-${person.id}` : undefined"
                       required
                       autocomplete="name"
                       placeholder="Juan Dela Cruz" /></label
@@ -201,28 +205,37 @@
                   ><label
                     >Date of birth<input
                       v-model="person.birthDate"
+                      :aria-invalid="attempted && invalidField(person) === 'birthDate'"
+                      :aria-describedby="attempted && invalidField(person) === 'birthDate' ? `passenger-error-${person.id}` : undefined"
                       type="date"
+                      :max="philippineDateKey()"
                       required /></label
                   ><label
-                    >Sex<select v-model="person.sex" required>
+                    >Sex<select v-model="person.sex" required :aria-invalid="attempted && invalidField(person) === 'sex'" :aria-describedby="attempted && invalidField(person) === 'sex' ? `passenger-error-${person.id}` : undefined">
                       <option disabled value="">Select</option>
                       <option>Female</option>
                       <option>Male</option>
+                      <option>Other</option>
                       <option>Prefer not to say</option>
                     </select></label
                   ><label
                     >Mobile number<input
                       v-model.trim="person.phone"
+                      :aria-invalid="attempted && invalidField(person) === 'phone'"
+                      :aria-describedby="attempted && invalidField(person) === 'phone' ? `passenger-error-${person.id}` : undefined"
                       type="tel"
                       required
                       placeholder="09XX XXX XXXX" /></label
                   ><label
                     >Nationality<input
                       v-model.trim="person.nationality"
+                      :aria-invalid="attempted && invalidField(person) === 'nationality'"
+                      :aria-describedby="attempted && invalidField(person) === 'nationality' ? `passenger-error-${person.id}` : undefined"
                       required
                       placeholder="Filipino"
                   /></label>
                 </div>
+                <p v-if="attempted && passengerError(person)" :id="`passenger-error-${person.id}`" role="alert">Passenger {{ index + 1 }}: {{ passengerError(person) }}</p>
               </article>
               <button
                 class="add-passenger"
@@ -316,7 +329,8 @@
                     ><span v-else> | Contact details not added</span></small
                   >
                 </div>
-                <span class="checked">Done</span>
+                <details><summary>Identity details</summary><p>Birth date: {{ person.birthDate || 'Missing' }}<br>Sex: {{ person.sex || 'Missing' }}<br>Nationality: {{ person.nationality || 'Missing' }}</p></details>
+                <span class="checked">{{ passengerError(person) ? 'Incomplete' : 'Complete' }}</span>
               </div>
             </article>
           </div>
@@ -422,6 +436,7 @@
                 }}</strong
               >
             </div>
+            <div><small>BOOKING TOTAL</small><strong>PHP {{ booking.total.toLocaleString() }}</strong></div>
           </article>
           <p
             v-if="
@@ -432,7 +447,7 @@
             class="hint"
           >
             Pay before
-            {{ new Date(booking.paymentDeadline).toLocaleString("en-PH") }}.
+            {{ new Date(booking.paymentDeadline).toLocaleString("en-PH", { timeZone: "Asia/Manila" }) }} (Philippine time).
           </p>
           <div class="confirmation-actions">
             <ion-button
@@ -451,6 +466,7 @@
 </template>
 
 <script setup lang="ts">
+import { philippineDateKey, validBirthDate } from "../../data/travelDate";
 import {
   passengerFare,
   passengerTypeCode,
@@ -461,7 +477,7 @@ import type { Accommodation } from "../../services/database/workspaces";
 import AdvisoryBanner from "../../components/passenger/AdvisoryBanner.vue";
 import SavedTravelerPicker from "../../components/passenger/SavedTravelerPicker.vue";
 import { databaseRequestError } from "../../data/databaseErrors";
-import { computed, onMounted, ref, watch } from "vue";
+import { computed, nextTick, onMounted, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import {
   IonButton,
@@ -711,6 +727,12 @@ function initials(name: string) {
   );
 }
 function go(name: string) {
+  if (name === "summary") attempted.value = true;
+  if (name === "summary" && passengers.value.some(person => passengerError(person))) {
+    errorMessage.value = "Complete the passenger details before reviewing your booking.";
+    void focusInvalidPassenger();
+    return;
+  }
   if (
     name === "passengers" &&
     classOptions.value.length &&
@@ -720,6 +742,29 @@ function go(name: string) {
     return;
   }
   router.push({ name });
+}
+const attempted = ref(false);
+function invalidField(person: Passenger): string {
+  if (!person.name.trim()) return "name";
+  if (!validBirthDate(person.birthDate)) return "birthDate";
+  if (!person.sex) return "sex";
+  if (!/^[+()\d\s-]{7,30}$/.test(person.phone.trim()) || person.phone.replace(/\D/g, "").length < 7) return "phone";
+  if (!person.nationality.trim()) return "nationality";
+  return "";
+}
+async function focusInvalidPassenger() {
+  await nextTick();
+  const field = document.querySelector<HTMLElement>('.ion-page:not(.ion-page-hidden) [data-passenger-index] [aria-invalid="true"]');
+  field?.scrollIntoView({ block: "center", behavior: "smooth" });
+  field?.focus({ preventScroll: true });
+}
+function passengerError(person: Passenger): string {
+  if (!person.name.trim()) return "Enter the full name.";
+  if (!validBirthDate(person.birthDate)) return "Enter a valid birth date that is not in the future.";
+  if (!person.sex) return "Select sex.";
+  if (!/^[+()\d\s-]{7,30}$/.test(person.phone.trim()) || person.phone.replace(/\D/g, "").length < 7) return "Enter a valid contact number.";
+  if (!person.nationality.trim()) return "Enter nationality.";
+  return "";
 }
 const bookingIntentKey = "barkolink-booking-intent";
 type BookingIntent = {
@@ -759,6 +804,14 @@ function passengerSignature(people: Array<{ name: string; type: string }>) {
 async function confirm() {
   if (saving.value) return;
   errorMessage.value = "";
+  attempted.value = true;
+  const invalidIndex = passengers.value.findIndex(person => passengerError(person));
+  if (invalidIndex >= 0) {
+    errorMessage.value = `Passenger ${invalidIndex + 1}: ${passengerError(passengers.value[invalidIndex])}`;
+    await router.push({ name: "passengers" });
+    await focusInvalidPassenger();
+    return;
+  }
   if (!selectedTrip.value?.id || !auth?.currentUser) {
     errorMessage.value = "Choose a sailing and sign in before confirming.";
     return;
@@ -774,6 +827,10 @@ async function confirm() {
     )
   ) {
     errorMessage.value = "Complete every passenger field before confirming.";
+    return;
+  }
+  if (passengers.value.some(person => !validBirthDate(person.birthDate))) {
+    errorMessage.value = "Enter a valid date of birth for every passenger. Birthdays cannot be in the future.";
     return;
   }
   if (!database) {
@@ -943,9 +1000,16 @@ async function confirm() {
 }
 async function copyReference() {
   if (!booking.value) return;
-  await navigator.clipboard?.writeText(booking.value.reference);
-  copied.value = true;
-  window.setTimeout(() => (copied.value = false), 1800);
+  try {
+    if (!navigator.clipboard?.writeText) throw new Error("Clipboard unavailable");
+    await navigator.clipboard.writeText(booking.value.reference);
+    errorMessage.value = "";
+    copied.value = true;
+    window.setTimeout(() => (copied.value = false), 1800);
+  } catch {
+    copied.value = false;
+    errorMessage.value = "Could not copy the reference. Select the booking reference and copy it manually.";
+  }
 }
 async function loadConfirmedBooking() {
   const reference = String(route.query.reference || "");
@@ -968,15 +1032,17 @@ async function loadConfirmedBooking() {
       from: saved.sailing.origin.name,
       to: saved.sailing.destination.name,
       date: new Date(saved.sailing.departureAt).toLocaleDateString("en-PH", {
+        timeZone: "Asia/Manila",
         month: "short",
         day: "numeric",
         year: "numeric",
       }),
       departure: new Date(saved.sailing.departureAt).toLocaleTimeString(
         "en-PH",
-        { hour: "numeric", minute: "2-digit" },
+        { timeZone: "Asia/Manila", hour: "numeric", minute: "2-digit" },
       ),
       arrival: new Date(saved.sailing.arrivalAt).toLocaleTimeString("en-PH", {
+        timeZone: "Asia/Manila",
         hour: "numeric",
         minute: "2-digit",
       }),
@@ -2059,17 +2125,9 @@ watch(
   }
 }
 .passenger-content {
-  --background: #0d1726;
+  --background: var(--cloud);
 }
 .passenger-info-page {
-  --cloud: #0d1726;
-  --surface: #142235;
-  --surface-soft: #101d2d;
-  --ink: #eff6fb;
-  --muted: #9aafc0;
-  --line: #263b50;
-  --light-blue: #102d4b;
-  --ocean: #53a9ee;
   min-height: 100%;
   background: var(--cloud);
   color: var(--ink);
@@ -2088,7 +2146,7 @@ watch(
   background: var(--surface-soft);
   color: var(--ink);
   border-color: var(--line);
-  color-scheme: dark;
+  color-scheme: inherit;
 }
 .passenger-info-page .form-grid input::placeholder {
   color: var(--muted);
@@ -2096,19 +2154,19 @@ watch(
 }
 .passenger-info-page .form-grid input:-webkit-autofill {
   -webkit-text-fill-color: var(--ink);
-  box-shadow: 0 0 0 1000px #101d2d inset;
+  box-shadow: 0 0 0 1000px var(--surface-soft) inset;
 }
 .passenger-info-page .form-grid input:focus,
 .passenger-info-page .form-grid select:focus {
   border-color: var(--ocean);
-  outline: 2px solid #53a9ee66;
+  outline: 2px solid var(--ocean);
   outline-offset: 1px;
 }
 .passenger-info-page .form-grid label {
   color: var(--ink);
 }
 .passenger-info-page .remove {
-  color: #fa958c;
+  color: var(--danger);
 }
 .passenger-info-page .add-passenger {
   min-height: 40px;

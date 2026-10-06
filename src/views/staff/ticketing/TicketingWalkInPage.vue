@@ -100,11 +100,19 @@
             ><span><b>3</b> Collect cash</span>
           </div>
           <div class="walk-in-layout">
+            <div v-if="pendingSale" role="status" class="summary-card" style="grid-column: 1 / -1">
+              <strong>Unresolved sale: {{ pendingSale.args.reference }}</strong>
+              <p>{{ pendingSale.receipt.name }} · {{ pendingSale.receipt.from }} to {{ pendingSale.receipt.to }} · PHP {{ pendingSale.receipt.fare.toLocaleString() }}</p>
+              <p>Check or retry this same sale before starting another. Do not collect cash again.</p>
+              <button type="button" :disabled="busy" @click="retrySale">{{ busy ? 'Checking sale...' : 'Check / retry sale' }}</button>
+              <p v-if="errorMessage" role="alert">{{ errorMessage }}</p>
+            </div>
             <form
               id="walk-in-form"
               class="form-card"
               @submit.prevent="prepareTicket"
             >
+              <fieldset :disabled="busy || !!pendingSale" style="display: contents">
               <div class="form-section">
                 <div class="card-heading">
                   <span class="step-number"
@@ -263,6 +271,7 @@
                   <ion-icon :icon="arrowForwardOutline" /></button
                 ><span>Ticket is issued only after you confirm payment.</span>
               </div>
+              </fieldset>
             </form>
 
             <aside class="summary-card glass-panel">
@@ -317,27 +326,21 @@
           </div>
         </template>
 
-        <div
-          v-if="confirming"
-          class="confirmation-overlay"
-          role="presentation"
-          @click.self="confirming = false"
-        >
-          <section
+        <DialogRoot v-model:open="confirming">
+          <DialogOverlay class="confirmation-overlay">
+          <DialogContent
             class="confirmation-card"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="confirm-title"
+            @close-auto-focus="restoreConfirmationFocus"
           >
             <span class="confirm-icon"><ion-icon :icon="cashOutline" /></span>
             <p class="eyebrow">FINAL CHECK</p>
-            <h2 id="confirm-title">Confirm cash payment</h2>
-            <p>
+            <DialogTitle as-child><h2>Confirm cash payment</h2></DialogTitle>
+            <DialogDescription as-child><p>
               Have you received
               <strong>PHP {{ payable.toLocaleString() }}</strong> from
               <strong>{{ form.passengerName }}</strong
               >?
-            </p>
+            </p></DialogDescription>
             <div class="confirm-details">
               <span
                 >{{ selectedSailing?.origin.name }} to
@@ -364,8 +367,9 @@
                 {{ busy ? "Issuing ticket…" : "Cash received — issue ticket" }}
               </button>
             </div>
-          </section>
-        </div>
+          </DialogContent>
+          </DialogOverlay>
+        </DialogRoot>
       </main>
     </ion-content>
   </ion-page>
@@ -382,6 +386,8 @@ import AccommodationPicker from "../../../components/shared/AccommodationPicker.
 import type { Accommodation } from "../../../services/database/workspaces";
 import { databaseRequestError } from "../../../data/databaseErrors";
 import { computed, reactive, ref, watch } from "vue";
+import { philippineDateKey, validBirthDate } from "../../../data/travelDate";
+import { DialogRoot, DialogOverlay, DialogContent, DialogTitle, DialogDescription } from "reka-ui";
 import { IonContent, IonIcon, IonPage, onIonViewWillEnter } from "@ionic/vue";
 import {
   arrowBackOutline,
@@ -400,8 +406,10 @@ import BrandMark from "../../../components/shared/BrandMark.vue";
 import {
   ticketingCreateGuestWalkIn,
   ticketingSailings,
+  staffBookings,
+  type TicketingCreateGuestWalkInVariables,
 } from "../../../services/database/staff";
-import { staffDatabase } from "../../../services/session";
+import { auth, staffDatabase } from "../../../services/session";
 
 type Sailing = {
   passengerDiscounts?: CustomDiscountFare[] | null;
@@ -441,13 +449,50 @@ const form = reactive({
   discountVerified: false,
   verificationNote: "",
 });
-const currentDate = new Date();
-const today = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, "0")}-${String(currentDate.getDate()).padStart(2, "0")}`;
+const today = computed(() => philippineDateKey());
 const busy = ref(false);
 const confirming = ref(false);
+let confirmationReturnFocus: HTMLElement | null = null;
+function restoreConfirmationFocus(event: Event) {
+  event.preventDefault();
+  confirmationReturnFocus?.focus();
+}
 const loadingSailings = ref(false);
 const errorMessage = ref("");
 const issued = ref<Receipt | null>(null);
+type SaleIntent = { ownerUid: string; args: TicketingCreateGuestWalkInVariables; receipt: Receipt };
+const saleKey = "barkolink-pending-walk-in";
+const pendingSale = ref<SaleIntent | null>(null);
+try {
+  const saved = JSON.parse(sessionStorage.getItem(saleKey) || "null");
+  if (saved?.ownerUid === auth?.currentUser?.uid && saved.args?.reference && saved.receipt) pendingSale.value = saved;
+} catch { sessionStorage.removeItem(saleKey); }
+async function retrySale() {
+  if (!staffDatabase || busy.value || !pendingSale.value) return;
+  const intent = pendingSale.value;
+  busy.value = true;
+  errorMessage.value = "";
+  const recover = async () => {
+    const saved = (await staffBookings(staffDatabase!, { search: intent.args.reference, pageSize: 100 })).data.bookings.find(b => b.reference === intent.args.reference && b.status === "CONFIRMED" && b.paymentStatus === "PAID");
+    if (!saved) return false;
+    issued.value = { ...intent.receipt, fare: saved.total };
+    return true;
+  };
+  try {
+    if (!(await recover())) {
+      await ticketingCreateGuestWalkIn(staffDatabase, intent.args);
+      issued.value = intent.receipt;
+      try { await recover(); } catch { /* The successful mutation already confirmed issuance. */ }
+    }
+    pendingSale.value = null;
+    sessionStorage.removeItem(saleKey);
+  } catch (error) {
+    try {
+      if (await recover()) { pendingSale.value = null; sessionStorage.removeItem(saleKey); return; }
+    } catch { /* Keep the original intent while the result is uncertain. */ }
+    errorMessage.value = `${databaseRequestError(error, "Could not confirm this sale.")} Retry this same sale when the connection is restored. Do not collect cash again.`;
+  } finally { busy.value = false; }
+}
 const selectedSailing = computed(() =>
   sailings.value.find((item) => item.code === form.sailingCode),
 );
@@ -509,6 +554,7 @@ const needsDiscountVerification = computed(
 );
 const formatDeparture = (value: string) =>
   new Date(value).toLocaleString("en-PH", {
+    timeZone: "Asia/Manila",
     dateStyle: "medium",
     timeStyle: "short",
   });
@@ -552,8 +598,8 @@ function prepareTicket() {
     errorMessage.value = "Choose an available passenger type.";
     return;
   }
-  if (form.birthDate > today) {
-    errorMessage.value = "Date of birth cannot be in the future.";
+  if (!validBirthDate(form.birthDate)) {
+    errorMessage.value = "Enter a valid date of birth that is not in the future.";
     return;
   }
   if (
@@ -565,9 +611,12 @@ function prepareTicket() {
     return;
   }
   errorMessage.value = "";
+  confirmationReturnFocus = document.activeElement instanceof HTMLElement
+    ? document.activeElement : null;
   confirming.value = true;
 }
 async function issueTicket() {
+  if (pendingSale.value) { await retrySale(); return; }
   const sailing = selectedSailing.value;
   if (
     !staffDatabase ||
@@ -586,7 +635,7 @@ async function issueTicket() {
   const guestUid = `walkin:${crypto.randomUUID()}`;
   const ticketCode = crypto.randomUUID();
   try {
-    await ticketingCreateGuestWalkIn(staffDatabase, {
+    const args: TicketingCreateGuestWalkInVariables = {
       sailingCode: sailing.code,
       accommodationId: form.accommodationId || undefined,
       guestUid,
@@ -602,8 +651,8 @@ async function issueTicket() {
       method: "CASH",
       discountVerified: form.discountVerified,
       verificationNote: form.verificationNote.trim(),
-    });
-    issued.value = {
+    };
+    const receipt: Receipt = {
       reference,
       name: form.passengerName.trim(),
       from: sailing.origin.name,
@@ -612,6 +661,10 @@ async function issueTicket() {
       fare: payable.value,
       ticketCode,
     };
+    pendingSale.value = { ownerUid: auth?.currentUser?.uid || "", args, receipt };
+    sessionStorage.setItem(saleKey, JSON.stringify(pendingSale.value));
+    busy.value = false;
+    await retrySale();
   } catch (error) {
     errorMessage.value = databaseRequestError(
       error,
@@ -1263,7 +1316,7 @@ function printReceipt() {
   }
   .summary-card {
     position: static;
-    order: -1;
+    order: 1;
   }
   .summary-route {
     margin-bottom: 12px;
@@ -1352,9 +1405,24 @@ function printReceipt() {
     padding: 0;
   }
   .receipt {
+    visibility: visible;
+    position: absolute;
+    inset: 0 auto auto 0;
+    width: 100%;
+    margin: 0;
+    color: #103658;
+    background: white;
     max-width: none;
     border: 0;
     box-shadow: none;
+  }
+  .receipt :deep(*) {
+    visibility: visible;
+    color: #103658;
+  }
+  .receipt-top,
+  .receipt-body {
+    background: white;
   }
   .receipt-body {
     padding: 18px 0;

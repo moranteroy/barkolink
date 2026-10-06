@@ -11,6 +11,21 @@ beforeEach(() => {
   mocks.activity.mockResolvedValue({ data: { records: [], totalCount: 0 } })
 })
 describe('operations settings', () => {
+  it('prevents saving fallback settings after loading fails and permits saving after Retry', async () => {
+    mocks.settings.mockRejectedValueOnce(new Error('Offline'));
+    const wrapper = mount(OperationsPanel, { global: { stubs: { RouterLink: true } } });
+    await flushPromises();
+    expect(wrapper.find('input').attributes('disabled')).toBeDefined();
+    await wrapper.find('form').trigger('submit');
+    expect(mocks.save).not.toHaveBeenCalled();
+    await wrapper.findAll('button').find(button => button.text().includes('Retry'))!.trigger('click');
+    await flushPromises();
+    await wrapper.find('input').setValue('12');
+    await wrapper.find('form').trigger('submit');
+    await flushPromises();
+    expect(mocks.save).toHaveBeenCalledWith({}, 720);
+    wrapper.unmount();
+  });
   it('links to settings history without loading a duplicate activity log', async () => {
     const wrapper=mount(OperationsPanel,{global:{stubs:{RouterLink:{props:['to'],template:'<a :href="to"><slot /></a>'}}}}); await flushPromises()
     expect(wrapper.find('.history-link').attributes('href')).toBe('/admin/audit-logs?entityType=operation_settings')

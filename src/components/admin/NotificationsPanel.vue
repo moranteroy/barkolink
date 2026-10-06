@@ -5,13 +5,14 @@
         Send in-app notices to passengers, staff, or travelers booked on a
         selected trip.
       </p>
-      <button class="primary-button" @click="editing = !editing">
+      <button class="primary-button" :disabled="busy" @click="editing = !editing">
         New notification
       </button>
     </div>
     <p v-if="error" class="catalog-error" role="alert">{{ error }}</p>
     <p v-if="notice" role="status">{{ notice }}</p>
     <form v-if="editing" class="catalog-form" @submit.prevent="send">
+      <fieldset :disabled="busy" style="display: contents">
       <h2>New notification</h2>
       <label
         >Title<input
@@ -56,8 +57,12 @@
           Cancel
         </button>
       </div>
+      </fieldset>
     </form>
-    <div class="catalog-table">
+    <p v-if="loading" role="status">Loading broadcasts...</p>
+    <button v-if="error && !loading" type="button" @click="load">Retry loading broadcasts</button>
+    <TableControls v-model:query="table.query.value" v-model:sort="table.sort.value" :columns="[{ key: 'title', label: 'Title' }, { key: 'recipientCount', label: 'Recipients' }, { key: 'createdAt', label: 'Sent' }]" />
+    <div v-if="!loading && !error" class="catalog-table">
       <table>
         <thead>
           <tr>
@@ -69,7 +74,7 @@
           </tr>
         </thead>
         <tbody>
-          <tr v-for="c in rows" :key="c.id">
+          <tr v-for="c in table.records.value" :key="c.id">
             <td data-label="Title">
               <strong>{{ c.title }}</strong>
             </td>
@@ -82,15 +87,15 @@
             <td data-label="Recipients">{{ c.recipientCount }}</td>
             <td data-label="Sent">{{ date(c.createdAt) }}</td>
           </tr>
-          <tr v-if="!rows.length">
-            <td colspan="5">No notification campaigns sent yet.</td>
+          <tr v-if="!table.records.value.length">
+            <td colspan="5">No matching broadcasts.</td>
           </tr>
         </tbody>
       </table>
     </div>
     <div class="catalog-pagination">
       <button
-        :disabled="!page || busy"
+        :disabled="!page || busy || loading"
         @click="
           page--;
           load();
@@ -99,7 +104,7 @@
         Previous</button
       ><span>Page {{ page + 1 }} · {{ total }} campaigns</span
       ><button
-        :disabled="(page + 1) * 30 >= total || busy"
+        :disabled="(page + 1) * 30 >= total || busy || loading"
         @click="
           page++;
           load();
@@ -112,6 +117,9 @@
 </template>
 <script setup lang="ts">
 import { confirmAction } from "../../composables/confirmation";
+import TableControls from "../shared/TableControls.vue";
+import { useTableRecords } from "../../composables/tableRecords";
+import { useUnsavedChanges } from "../../composables/unsavedChanges";
 import { onMounted, reactive, ref, watch } from "vue";
 import { staffDatabase } from "../../services/session";
 import {
@@ -127,6 +135,7 @@ const rows = ref<Campaign[]>([]),
   sailings = ref<WorkspaceTrip[]>([]),
   editing = ref(false),
   busy = ref(false),
+  loading = ref(false),
   error = ref(""),
   notice = ref(""),
   page = ref(0),
@@ -139,6 +148,10 @@ const draft = reactive({
   audience: "PASSENGERS",
   sailingCode: "",
 });
+const table = useTableRecords(rows);
+const hasUnsavedChanges = () => editing.value && !!(draft.title || draft.message || draft.sailingCode);
+useUnsavedChanges(hasUnsavedChanges);
+defineExpose({ hasUnsavedChanges });
 let requestId = crypto.randomUUID();
 watch(draft, () => {
   requestId = crypto.randomUUID();
@@ -151,6 +164,8 @@ const date = (v: string) =>
   });
 async function load() {
   if (!staffDatabase) return;
+  loading.value = true;
+  error.value = "";
   try {
     const r = await campaigns(staffDatabase, page.value);
     rows.value = r.data.campaigns;
@@ -160,6 +175,8 @@ async function load() {
       e,
       "Could not load notification campaigns.",
     );
+  } finally {
+    loading.value = false;
   }
 }
 async function moreTrips() {
@@ -199,6 +216,7 @@ async function send() {
     const r = await sendNotification(staffDatabase, { ...args, requestId });
     notice.value = `Notification sent to ${r.data.sent} accounts.`;
     editing.value = false;
+    Object.assign(draft, { title: "", message: "", audience: "PASSENGERS", sailingCode: "" });
     page.value = 0;
     await load();
   } catch (e) {

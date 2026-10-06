@@ -1,6 +1,6 @@
 <template>
   <ion-page
-    ><ion-content
+    ><ion-content ref="contentRef"
       ><main class="travelers-page">
         <PassengerHeader />
         <div class="heading">
@@ -31,6 +31,7 @@
                 required /></label
             ><label
               >Sex<select v-model="form.sex" required>
+                <option value="" disabled>Select sex</option>
                 <option value="MALE">Male</option>
                 <option value="FEMALE">Female</option>
                 <option value="OTHER">Other</option>
@@ -112,18 +113,21 @@ const empty = () => ({
   id: "",
   fullName: "",
   birthDate: "",
-  sex: "MALE",
+  sex: "",
   phone: "",
   nationality: "Filipino",
 });
 const form = reactive(empty());
+const contentRef = ref<InstanceType<typeof IonContent> | null>(null);
 function reset() {
   Object.assign(form, empty());
 }
 function edit(person: SavedTraveler) {
   Object.assign(form, person);
   notice.value = "";
-  window.scrollTo({ top: 0, behavior: "smooth" });
+  void contentRef.value?.$el.scrollToTop(250).then(() => {
+    contentRef.value?.$el.querySelector('form input')?.focus({ preventScroll: true });
+  });
 }
 async function load() {
   if (!database || loading.value) return;
@@ -288,7 +292,7 @@ small {
   line-height: 1.5;
 }
 .error {
-  color: #b8463c;
+  color: var(--danger);
 }
 @container passenger (max-width: 600px) {
   .travelers-page {

@@ -1,0 +1,12 @@
+# Keep local credentials, native projects and verification fixtures out of uploads.
+.env*
+.audit/
+.backups/
+.git/
+android/
+supabase/
+tests/
+docs/screenshots/
+node_modules/
+dist/
+*.log
