@@ -9,13 +9,32 @@
 
 <script setup lang="ts">
 import { IonApp, IonRouterOutlet } from "@ionic/vue";
-import { computed, nextTick, watch } from "vue";
+import { computed, nextTick, watch, onMounted, onUnmounted } from "vue";
 import { useRoute } from "vue-router";
 import { initializeTheme } from "./composables/useTheme";
 import { sessionViewsKey } from "./composables/sessionViews";
+import { auth } from "./services/session";
+import { refreshNotificationUnread } from "./composables/notificationUnread";
 
 initializeTheme();
 const route = useRoute();
+watch(() => [auth?.currentUser?.uid, route.fullPath], () => {
+  void refreshNotificationUnread();
+}, { immediate: true });
+let notificationTimer: ReturnType<typeof setInterval>;
+function refreshVisibleNotifications() {
+  if (document.visibilityState === "visible") void refreshNotificationUnread();
+}
+onMounted(() => {
+  notificationTimer = setInterval(refreshVisibleNotifications, 30000);
+  window.addEventListener("focus", refreshVisibleNotifications);
+  document.addEventListener("visibilitychange", refreshVisibleNotifications);
+});
+onUnmounted(() => {
+  clearInterval(notificationTimer);
+  window.removeEventListener("focus", refreshVisibleNotifications);
+  document.removeEventListener("visibilitychange", refreshVisibleNotifications);
+});
 const passengerPaths = new Set([
   "/home",
   "/search",
@@ -35,7 +54,8 @@ const passengerPaths = new Set([
   "/settings/profile",
   "/settings/password",
 ]);
-const isPassengerRoute = computed(() => passengerPaths.has(route.path));
+const isPassengerRoute = computed(() => passengerPaths.has(route.path) ||
+  (route.path === "/privacy" && route.query.from === "profile"));
 function refreshPassengerLayout() {
   if (!isPassengerRoute.value) return;
   requestAnimationFrame(() =>

@@ -1,158 +1,70 @@
-<template>
+﻿<template>
   <ion-page>
     <ion-content :fullscreen="true" class="home-content">
-      <main class="page-shell design-passenger-home">
-        <PassengerHeader class="topbar glass-toolbar" :name="displayName" />
-
+      <main class="page-shell passenger-home">
+        <PassengerHeader class="topbar" />
         <section class="welcome-section">
-          <div>
-            <p class="kicker">{{ today }}</p>
-            <h1>{{ greeting }}, {{ firstName }}!</h1>
-            <p class="welcome-copy">Where would you like to sail today?</p>
-          </div>
+          <h1>{{ greeting }}, {{ firstName }}!</h1>
+          <p>Where would you like to sail today?</p>
         </section>
-        <p v-if="loadError" class="home-error" role="alert">
-          {{ loadError }} <button @click="loadData">Retry</button>
-        </p>
-
-        <WorkspaceWelcome
-          class="passenger-welcome-banner"
-          eyebrow="YOUR JOURNEY, ALL IN ONE PLACE"
-          title="Find your next island escape."
-          description="Search ferry departures, keep your tickets close, and travel with the latest sailing updates."
-          :links="[
-            { label: 'Browse departures', to: '/search?all=1' },
-            { label: 'My bookings', to: '/bookings' },
-          ]"
-        /><TripSearchCard /><AdvisoryBanner />
-        <div class="passenger-shortcuts">
-          <router-link to="/travelers">Saved travelers →</router-link
-          ><router-link to="/help">Help & travel guide →</router-link>
-        </div>
-
-        <section class="section-block upcoming-block">
+        <p v-if="loadError" class="home-error" role="alert">{{ loadError }} <button @click="loadData">Retry</button></p>
+        <TripSearchCard class="home-search" />
+        <section class="section-block upcoming-block" aria-labelledby="upcoming-heading">
           <div class="section-heading">
-            <div>
-              <p class="kicker">YOUR NEXT JOURNEY</p>
-              <h2>Upcoming trip</h2>
-            </div>
-            <router-link to="/bookings"
-              >See all <ion-icon :icon="arrowForwardOutline"
-            /></router-link>
+            <h2 id="upcoming-heading"><ion-icon :icon="boatOutline" aria-hidden="true" /> Upcoming trip</h2>
+            <router-link to="/bookings">See all <ion-icon :icon="ticketOutline" aria-hidden="true" /></router-link>
           </div>
-          <p v-if="loading" role="status">Loading your upcoming trip...</p>
-          <article v-else-if="journey" class="upcoming-card glass-panel">
-            <div class="upcoming-top">
-              <div class="date-chip">
-                <strong>{{ journeyDate.day }}</strong
-                ><span>{{ journeyDate.month }}</span>
+          <div v-if="loading" class="upcoming-empty" role="status">Loading your upcoming trip...</div>
+          <article v-else-if="journey" class="upcoming-card">
+            <div class="journey-banner">
+              <div class="journey-status-row">
+                <span>{{ departureLabel }}</span>
+                <b class="journey-status" :class="{ pending: !hasTicket }">{{ hasTicket ? 'Confirmed' : 'Payment pending' }}</b>
               </div>
-              <div>
-                <span :class="['confirmed', journey.status.toLowerCase()]"
-                  ><ion-icon :icon="checkmarkCircle" />
-                  {{
-                    journey.paymentStatus === "PAID"
-                      ? "PAID"
-                      : "PAYMENT PENDING"
-                  }}</span
-                >
-                <p>
-                  Booking <strong>{{ journey.reference }}</strong>
-                </p>
+              <div class="upcoming-route">
+                <div><strong>{{ journey.from }}</strong><span>{{ journey.departure }} <small>Departure</small></span></div>
+                <ion-icon :icon="arrowForwardOutline" aria-label="to" />
+                <div class="align-right"><strong>{{ journey.to }}</strong><span>{{ journey.arrival }} <small>Arrival</small></span></div>
               </div>
             </div>
-            <div class="upcoming-route">
-              <div>
-                <span>{{ journey.from.toUpperCase() }}</span
-                ><strong>{{ journey.departure }}</strong>
+            <div class="journey-footer">
+              <div class="journey-copy">
+                <strong>{{ journey.vessel }}</strong>
+                <p>{{ sailingDate }} <template v-if="journey.accommodation"><span aria-hidden="true">·</span> {{ journey.accommodation }}</template> <span aria-hidden="true">·</span> {{ journey.passengers.length }} passenger{{ journey.passengers.length === 1 ? '' : 's' }}</p>
+                <small v-if="!hasTicket">Pay at the ticketing desk before your payment deadline.</small>
               </div>
-              <div class="route-track">
-                <span></span><i></i><ion-icon :icon="boatOutline" /><i></i
-                ><span></span>
-              </div>
-              <div class="align-right">
-                <span>{{ journey.to.toUpperCase() }}</span
-                ><strong>{{ journey.arrival }}</strong>
-              </div>
-            </div>
-            <div class="vessel-row">
-              <span><ion-icon :icon="boatOutline" /> {{ journey.vessel }}</span
-              ><span
-                >{{ journey.passengers.length }} passenger{{
-                  journey.passengers.length === 1 ? "" : "s"
-                }}</span
-              >
-            </div>
-            <div class="upcoming-actions">
-              <ion-button
-                v-if="journey.paymentStatus === 'PAID'"
-                fill="outline"
-                :router-link="`/ticket?reference=${encodeURIComponent(journey.reference)}`"
-                ><ion-icon slot="start" :icon="ticketOutline" /> View
-                ticket</ion-button
-              ><span v-if="journey.paymentStatus !== 'PAID'" class="pay-note"
-                >Pay at ticketing desk</span
-              ><ion-button
-                :router-link="`/booking-details?reference=${encodeURIComponent(journey.reference)}`"
-                >View details <ion-icon slot="end" :icon="arrowForwardOutline"
-              /></ion-button>
+              <ion-button v-if="hasTicket" :router-link="`/ticket?reference=${encodeURIComponent(journey.reference)}`">View e-ticket</ion-button>
+              <ion-button v-else :router-link="`/booking-details?reference=${encodeURIComponent(journey.reference)}`">View booking</ion-button>
             </div>
           </article>
           <article v-else-if="!loadError" class="upcoming-empty">
-            <strong>No upcoming trip</strong>
-            <p>Your active reservations will appear here.</p>
-            <router-link to="/search">Find a sailing</router-link>
+            <span class="empty-icon"><ion-icon :icon="boatOutline" aria-hidden="true" /></span>
+            <div><strong>Your next journey starts here</strong><p>Search a sailing above. Your active reservation will appear here.</p></div>
           </article>
         </section>
-
-        <section class="section-block quick-block">
-          <div class="section-heading">
-            <div>
-              <p class="kicker">MAKE IT EASY</p>
-              <h2>Quick actions</h2>
-            </div>
-          </div>
-          <div class="quick-grid">
-            <router-link to="/search?all=1"
-              ><span class="quick-icon blue"
-                ><ion-icon :icon="searchOutline" /></span
-              ><strong>Book ferry</strong
-              ><small>Find a trip</small></router-link
-            ><router-link to="/ticket"
-              ><span class="quick-icon mint"
-                ><ion-icon :icon="qrCodeOutline" /></span
-              ><strong>My tickets</strong
-              ><small>View your passes</small></router-link
-            ><router-link to="/bookings?tab=Past%20departures"
-              ><span class="quick-icon amber"
-                ><ion-icon :icon="timeOutline" /></span
-              ><strong>History</strong><small>Past journeys</small></router-link
-            ><router-link to="/notifications"
-              ><span class="quick-icon coral"
-                ><ion-icon :icon="notificationsOutline" /></span
-              ><strong>Alerts</strong><small>Stay updated</small></router-link
-            >
+        <section class="section-block quick-block" aria-labelledby="quick-heading">
+          <div class="section-heading"><h2 id="quick-heading"><ion-icon :icon="sparklesOutline" aria-hidden="true" /> Travel essentials</h2></div>
+          <div class="essentials-grid">
+            <router-link to="/travelers"><span class="quick-icon"><ion-icon :icon="peopleOutline" aria-hidden="true" /></span><span><strong>Saved travelers</strong><small>Book with saved details</small></span><ion-icon :icon="chevronForwardOutline" aria-hidden="true" /></router-link>
+            <router-link to="/help"><span class="quick-icon"><ion-icon :icon="helpCircleOutline" aria-hidden="true" /></span><span><strong>Travel guide</strong><small>Payment & boarding help</small></span><ion-icon :icon="chevronForwardOutline" aria-hidden="true" /></router-link>
           </div>
         </section>
-
-        <section class="inspiration">
-          <div>
-            <p class="kicker">SAIL WITH CONFIDENCE</p>
-            <h2>Every journey,<br /><em>made simpler.</em></h2>
-            <p>One place for bookings, tickets, and travel updates.</p>
+        <section v-if="recentSearches.length" class="section-block recent-block" aria-labelledby="recent-heading">
+          <div class="section-heading"><h2 id="recent-heading"><ion-icon :icon="timeOutline" aria-hidden="true" /> Recent searches</h2></div>
+          <div class="recent-list">
+            <article v-for="item in recentSearches" :key="`${item.from}-${item.to}-${item.date}-${item.passengers}`">
+              <div><strong>{{ item.from }} <ion-icon :icon="arrowForwardOutline" aria-label="to" /> {{ item.to }}</strong><p>{{ searchDate(item.date) }} <span aria-hidden="true">·</span> {{ item.passengers }} passenger{{ item.passengers === 1 ? '' : 's' }}</p></div>
+              <button @click="repeatSearch(item)" :aria-label="`Search again: ${item.from} to ${item.to}`"><ion-icon :icon="searchOutline" aria-hidden="true" /> Search again</button>
+            </article>
           </div>
-          <div class="sun-disc"></div>
-          <div class="boat-illustration"><span></span><i></i></div>
         </section>
+        <AdvisoryBanner class="home-advisories" show-heading />
       </main>
       <PassengerBottomNav />
     </ion-content>
   </ion-page>
 </template>
-
 <script setup lang="ts">
-import WorkspaceWelcome from "../../components/shared/WorkspaceWelcome.vue";
-
 import { databaseRequestError } from "../../data/databaseErrors";
 import { computed, ref } from "vue";
 import {
@@ -161,23 +73,41 @@ import {
   IonIcon,
   IonPage,
   onIonViewWillEnter,
+  useIonRouter,
 } from "@ionic/vue";
 import { myBookings, myProfile } from "../../services/database/passenger";
 import { auth, database } from "../../services/session";
 import {
   arrowForwardOutline,
   boatOutline,
-  checkmarkCircle,
-  notificationsOutline,
-  qrCodeOutline,
-  searchOutline,
-  ticketOutline,
+  sparklesOutline,
+  peopleOutline,
+  helpCircleOutline,
+  chevronForwardOutline,
   timeOutline,
+  ticketOutline,
+  searchOutline,
 } from "ionicons/icons";
 import PassengerHeader from "../../components/passenger/PassengerHeader.vue";
 import PassengerBottomNav from "../../components/passenger/PassengerBottomNav.vue";
 import AdvisoryBanner from "../../components/passenger/AdvisoryBanner.vue";
 import TripSearchCard from "../../components/passenger/TripSearchCard.vue";
+import { readRecentSearches, recordRecentSearch, type RecentSearch } from "../../data/recentSearches";
+import { philippineDateKey } from "../../data/travelDate";
+const ionRouter = useIonRouter();
+const recentSearches = ref(readRecentSearches());
+function searchDate(date: string) {
+  return new Date(`${date}T00:00:00+08:00`).toLocaleDateString("en-PH", { timeZone: "Asia/Manila", month: "short", day: "numeric", year: "numeric" });
+}
+function repeatSearch(item: RecentSearch) {
+  const date = item.date < philippineDateKey() ? philippineDateKey() : item.date;
+  localStorage.setItem("barkolink-search-route", JSON.stringify({ from: item.from, to: item.to }));
+  localStorage.setItem("barkolink-search-iso-date", date);
+  localStorage.setItem("barkolink-search-date", searchDate(date));
+  localStorage.setItem("barkolink-search-passengers", String(item.passengers));
+  recordRecentSearch({ ...item, date });
+  ionRouter.navigate("/search", "forward", "push");
+}
 type Journey = {
   reference: string;
   from: string;
@@ -186,6 +116,7 @@ type Journey = {
   departure: string;
   arrival: string;
   vessel: string;
+  accommodation?: string | null;
   passengers: { name: string; type: string }[];
   status: string;
   paymentStatus: string;
@@ -199,14 +130,6 @@ const displayName = ref(
     "there",
 );
 const firstName = computed(() => displayName.value.trim().split(/\s+/)[0]);
-const today = new Intl.DateTimeFormat("en-PH", {
-  weekday: "long",
-  month: "long",
-  day: "numeric",
-  year: "numeric",
-})
-  .format(new Date())
-  .toUpperCase();
 const greeting =
   new Date().getHours() < 12
     ? "Good morning"
@@ -214,17 +137,14 @@ const greeting =
       ? "Good afternoon"
       : "Good evening";
 const journey = computed(() => savedJourney.value);
-const journeyDate = computed(() => {
-  const parsed = new Date(journey.value?.date || "");
-  return Number.isNaN(parsed.getTime())
-    ? { day: "â€”", month: "â€”" }
-    : {
-        day: parsed.toLocaleDateString("en-PH", { timeZone: "Asia/Manila", day: "numeric" }),
-        month: parsed
-          .toLocaleDateString("en-US", { timeZone: "Asia/Manila", month: "short" })
-          .toUpperCase(),
-      };
+const hasTicket = computed(() => journey.value?.status === "CONFIRMED" && journey.value?.paymentStatus === "PAID");
+const sailingDate = computed(() => journey.value ? searchDate(philippineDateKey(new Date(journey.value.date))) : "");
+const departureLabel = computed(() => {
+  if (!journey.value) return "";
+  const days = Math.round((Date.parse(philippineDateKey(new Date(journey.value.date))) - Date.parse(philippineDateKey())) / 86400000);
+  return days === 0 ? "Departing today" : days === 1 ? "Departing tomorrow" : `Departing in ${days} days`;
 });
+
 let loadRequest = 0;
 async function loadData() {
   const request = ++loadRequest;
@@ -251,6 +171,7 @@ async function loadData() {
       .filter(
         (x) =>
           ["CONFIRMED", "PENDING"].includes(x.status) &&
+          ["PAID", "UNPAID"].includes(x.paymentStatus) &&
           new Date(x.sailing.departureAt) > new Date(),
       )
       .sort((a, b) =>
@@ -271,6 +192,7 @@ async function loadData() {
             { timeZone: "Asia/Manila", hour: "numeric", minute: "2-digit" },
           ),
           vessel: item.sailing.vessel.name,
+          accommodation: item.accommodationName,
           passengers: item.bookingPassengers_on_booking.map((person) => ({
             name: person.fullName,
             type: person.passengerType,
@@ -291,790 +213,97 @@ async function loadData() {
   }
 }
 onIonViewWillEnter(() => {
+  recentSearches.value = readRecentSearches();
   void loadData();
 });
 </script>
-
 <style scoped>
-.page-shell {
-  max-width: 1120px;
-  margin: 0 auto;
-  padding: 26px 34px 110px;
-}
-.topbar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-.top-actions {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-}
-.icon-button,
-.avatar {
-  border: 0;
-  background: transparent;
-  cursor: pointer;
-}
-.icon-button {
-  position: relative;
-  color: var(--ink);
-  font-size: 22px;
-}
-.icon-button span {
-  position: absolute;
-  right: 1px;
-  top: 0;
-  width: 7px;
-  height: 7px;
-  border: 2px solid white;
-  border-radius: 50%;
-  background: #f97363;
-}
-.avatar {
-  display: grid;
-  place-items: center;
-  width: 38px;
-  height: 38px;
-  border-radius: 50%;
-  background: #d9edf8;
-  color: var(--ocean);
-  font-size: 12px;
-  font-weight: 800;
-}
-.welcome-section {
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  margin: 54px 0 28px;
-}
-.kicker {
-  margin: 0;
-  color: var(--ocean);
-  font-size: 10px;
-  font-weight: 800;
-  letter-spacing: 0.11em;
-}
-.welcome-section h1 {
-  margin: 8px 0 5px;
-  font-size: 34px;
-  line-height: 1;
-  letter-spacing: -1.3px;
-}
-.welcome-copy {
-  margin: 0;
-  color: var(--muted);
-  font-size: 15px;
-}
-.wave-mark {
-  display: flex;
-  gap: 5px;
-  align-items: flex-end;
-  height: 42px;
-  opacity: 0.8;
-}
-.wave-mark span {
-  display: block;
-  width: 5px;
-  border-radius: 8px;
-  background: #acd8ed;
-}
-.wave-mark span:nth-child(1) {
-  height: 17px;
-}
-.wave-mark span:nth-child(2) {
-  height: 32px;
-  background: #6db9dc;
-}
-.wave-mark span:nth-child(3) {
-  height: 42px;
-  background: var(--ocean);
-}
-.section-block {
-  margin-top: 40px;
-}
-.section-heading {
-  display: flex;
-  align-items: end;
-  justify-content: space-between;
-  margin-bottom: 16px;
-}
-.section-heading h2 {
-  margin: 5px 0 0;
-  font-size: 21px;
-  letter-spacing: -0.5px;
-}
-.section-heading a {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  color: var(--ocean);
-  font-size: 12px;
-  font-weight: 800;
-  text-decoration: none;
-}
-.section-heading ion-icon {
-  font-size: 14px;
-}
-.upcoming-empty {
-  display: grid;
-  gap: 8px;
-  min-height: 150px;
-  align-content: center;
-  padding: 22px;
-  border: 1px dashed var(--line);
-  border-radius: 18px;
-  background: var(--surface);
-  color: var(--ink);
-}
-.upcoming-empty p {
-  margin: 0;
-  color: var(--muted);
-  font-size: 12px;
-}
-.upcoming-empty a {
-  width: max-content;
-  color: var(--ocean);
-  font-size: 11px;
-  font-weight: 800;
-  text-decoration: none;
-}
-.upcoming-card {
-  padding: 20px;
-  border-radius: 18px;
-  background: #fff;
-  border: 1px solid var(--line);
-  box-shadow: 0 12px 30px rgba(16, 43, 76, 0.06);
-}
-.upcoming-top {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-.date-chip {
-  display: grid;
-  place-items: center;
-  width: 44px;
-  height: 50px;
-  border-radius: 10px;
-  background: var(--deep);
-  color: #fff;
-  line-height: 1;
-}
-.date-chip strong {
-  font-size: 19px;
-}
-.date-chip span {
-  font-size: 9px;
-  letter-spacing: 0.1em;
-  color: #9cc9e3;
-}
-.confirmed {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  color: #117a52;
-  font-size: 9px;
-  font-weight: 800;
-  letter-spacing: 0.07em;
-}
-.confirmed ion-icon {
-  font-size: 14px;
-}
-.confirmed.pending {
-  color: #9a5b00;
-}
-.confirmed.issued {
-  color: #117a52;
-}
-.upcoming-top p {
-  margin: 5px 0 0;
-  color: var(--muted);
-  font-size: 11px;
-}
-.upcoming-top p strong {
-  color: var(--ink);
-}
-.more {
-  margin-left: auto;
-  color: var(--muted);
-  font-size: 20px;
-}
-.upcoming-route {
-  display: grid;
-  grid-template-columns: 1fr 1.6fr 1fr;
-  align-items: center;
-  margin: 25px 0 20px;
-}
-.upcoming-route span {
-  display: block;
-  color: var(--muted);
-  font-size: 10px;
-  font-weight: 800;
-  letter-spacing: 0.1em;
-}
-.upcoming-route strong {
-  display: block;
-  margin-top: 5px;
-  font-size: 25px;
-  letter-spacing: -0.6px;
-}
-.upcoming-route small {
-  font-size: 11px;
-  color: var(--muted);
-}
-.align-right {
-  text-align: right;
-}
-.route-track {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  color: var(--ocean);
-}
-.route-track i {
-  height: 1px;
-  flex: 1;
-  background: var(--line);
-}
-.route-track span {
-  width: 6px;
-  height: 6px;
-  border: 2px solid var(--ocean);
-  border-radius: 50%;
-}
-.route-track ion-icon {
-  font-size: 19px;
-}
-.vessel-row {
-  display: flex;
-  justify-content: space-between;
-  padding-top: 14px;
-  border-top: 1px solid var(--line);
-  color: var(--muted);
-  font-size: 11px;
-}
-.vessel-row span:first-child {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  color: var(--ink);
-  font-weight: 700;
-}
-.vessel-row ion-icon {
-  color: var(--ocean);
-  font-size: 17px;
-}
-.upcoming-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 8px;
-  margin-top: 16px;
-}
-.upcoming-actions ion-button {
-  --border-radius: 9px;
-  height: 37px;
-  margin: 0;
-  font-size: 11px;
-  text-transform: none;
-  font-weight: 800;
-}
-.upcoming-actions ion-button:first-child {
-  --color: var(--ocean);
-  --border-color: #bcd9e9;
-}
-.upcoming-actions ion-button:last-child {
-  --background: var(--ocean);
-  --box-shadow: none;
-}
-.quick-grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 12px;
-}
-.quick-grid a {
-  padding: 15px 14px;
-  border: 1px solid var(--line);
-  border-radius: 15px;
-  background: var(--surface);
-  color: var(--ink);
-  text-decoration: none;
-  transition:
-    transform 0.2s,
-    box-shadow 0.2s;
-}
-.quick-grid a:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 10px 24px rgba(16, 43, 76, 0.08);
-}
-.quick-icon {
-  display: grid;
-  place-items: center;
-  width: 34px;
-  height: 34px;
-  margin-bottom: 11px;
-  border-radius: 10px;
-  font-size: 18px;
-}
-.quick-icon.blue {
-  color: var(--ocean);
-  background: var(--light-blue);
-}
-.quick-icon.mint {
-  color: #078a72;
-  background: #def7f0;
-}
-.quick-icon.amber {
-  color: #b77700;
-  background: #fff1d2;
-}
-.quick-icon.coral {
-  color: #d45d4d;
-  background: #ffebe7;
-}
-.quick-grid strong,
-.quick-grid small {
-  display: block;
-}
-.quick-grid strong {
-  color: var(--ink);
-  font-size: 12px;
-}
-.quick-grid small {
-  margin-top: 4px;
-  color: var(--muted);
-  font-size: 10px;
-}
-.inspiration {
-  position: relative;
-  overflow: hidden;
-  display: flex;
-  align-items: center;
-  min-height: 145px;
-  margin-top: 40px;
-  padding: 22px 28px;
-  border-radius: 20px;
-  background: var(--deep);
-  color: #fff;
-}
-.inspiration .kicker {
-  color: #7cc4e5;
-}
-.inspiration h2 {
-  margin: 7px 0;
-  font-size: 25px;
-  line-height: 1.05;
-  letter-spacing: -0.7px;
-}
-.inspiration em {
-  color: #7cc4e5;
-  font-style: normal;
-}
-.inspiration p:last-child {
-  margin: 0;
-  color: #afc0d2;
-  font-size: 12px;
-}
-.sun-disc {
-  position: absolute;
-  right: 100px;
-  top: -45px;
-  width: 170px;
-  height: 170px;
-  border-radius: 50%;
-  background: #f6c667;
-  opacity: 0.9;
-}
-.boat-illustration {
-  position: absolute;
-  right: 45px;
-  bottom: 28px;
-  width: 185px;
-  height: 58px;
-}
-.boat-illustration:before {
-  content: "";
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  width: 170px;
-  height: 27px;
-  border-radius: 0 0 70px 70px;
-  background: #f5f8fb;
-  transform: skew(-20deg);
-}
-.boat-illustration span {
-  position: absolute;
-  left: 68px;
-  bottom: 27px;
-  width: 50px;
-  height: 25px;
-  border-radius: 5px 5px 0 0;
-  background: #d9edf8;
-}
-.boat-illustration i {
-  position: absolute;
-  left: 92px;
-  bottom: 52px;
-  width: 2px;
-  height: 29px;
-  background: #d9edf8;
-}
-.boat-illustration i:after {
-  content: "";
-  position: absolute;
-  left: 2px;
-  top: 0;
-  border-style: solid;
-  border-width: 8px 0 8px 20px;
-  border-color: transparent transparent transparent #7cc4e5;
-}
-@media (min-width: 900px) {
-  .page-shell {
-    display: grid;
-    grid-template-columns: minmax(0, 1.55fr) minmax(290px, 1fr);
-    grid-template-areas: "header header" "welcome welcome" "search search" "upcoming quick" "inspiration inspiration";
-    column-gap: 24px;
-    max-width: 1180px;
-    padding: 34px 36px 115px;
-  }
-  .topbar {
-    grid-area: header;
-  }
-  .welcome-section {
-    grid-area: welcome;
-    margin: 62px 0 28px;
-  }
-  .page-shell > .search-card {
-    grid-area: search;
-  }
-  .upcoming-block {
-    grid-area: upcoming;
-    max-width: none;
-    min-width: 0;
-    margin-top: 34px;
-  }
-  .quick-block {
-    grid-area: quick;
-    display: flex;
-    flex-direction: column;
-    max-width: none;
-    min-width: 0;
-    margin-top: 34px;
-  }
-  .quick-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    grid-template-rows: repeat(2, minmax(0, 1fr));
-    flex: 1;
-    gap: 10px;
-  }
-  .quick-grid a {
-    display: grid;
-    height: 100%;
-    grid-template-columns: 42px 1fr;
-    grid-template-rows: auto auto;
-    align-items: center;
-    column-gap: 11px;
-    min-height: 122px;
-    padding: 12px;
-  }
-  .quick-icon {
-    grid-row: 1/3;
-    width: 40px;
-    height: 40px;
-    margin: 0;
-  }
-  .quick-grid strong {
-    align-self: end;
-    font-size: 12px;
-  }
-  .quick-grid small {
-    align-self: start;
-    margin-top: 3px;
-  }
-  .inspiration {
-    grid-area: inspiration;
-    position: relative;
-    left: auto;
-    top: auto;
-    width: auto;
-    min-height: 158px;
-    margin-top: 28px;
-    padding: 24px 30px;
-    align-items: center;
-  }
-  .inspiration .boat-illustration {
-    right: 54px;
-    bottom: 25px;
-    transform: scale(1);
-  }
-  .sun-disc {
-    right: 140px;
-    top: -50px;
-  }
-  .page-shell {
-    position: static;
-  }
-}
-@media (min-width: 900px) and (max-width: 1050px) {
-  .page-shell {
-    grid-template-columns: minmax(0, 1.35fr) minmax(270px, 0.9fr);
-    column-gap: 18px;
-    padding-left: 24px;
-    padding-right: 24px;
-  }
-  .quick-grid {
-    gap: 8px;
-  }
-  .quick-grid a {
-    grid-template-columns: 36px 1fr;
-    column-gap: 8px;
-    min-height: 96px;
-    height: 100%;
-    padding: 10px;
-  }
-  .quick-icon {
-    width: 34px;
-    height: 34px;
-  }
-}
-@container passenger (max-width:899px) {
-  .page-shell {
-    display: block;
-  }
-  .quick-block {
-    display: block;
-  }
-  .wave-mark {
-    display: none;
-  }
-}
-@container passenger (max-width:620px) {
-  .page-shell {
-    padding: 22px 16px 102px;
-  }
-  .welcome-section {
-    margin: 42px 0 22px;
-  }
-  .welcome-section h1 {
-    font-size: 29px;
-  }
-  .wave-mark {
-    display: none;
-  }
-  .upcoming-route strong {
-    font-size: 20px;
-  }
-  .quick-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-  .inspiration {
-    min-height: 155px;
-    padding: 20px;
-  }
-  .inspiration .boat-illustration {
-    right: -15px;
-    transform: scale(0.75);
-    transform-origin: right bottom;
-  }
-  .inspiration h2 {
-    font-size: 23px;
-  }
-}
-
-.logout-button {
-  display: grid;
-  place-items: center;
-  width: 38px;
-  height: 38px;
-  border: 1px solid var(--line);
-  border-radius: 11px;
-  background: var(--surface);
-  color: var(--ocean);
-  font-size: 19px;
-  cursor: pointer;
-}
-.home-error {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  margin: 0 0 18px;
-  padding: 12px;
-  border: 1px solid #d89da2;
-  border-radius: 10px;
-  background: var(--surface);
-  color: #ac4149;
-  font-size: 12px;
-}
-.home-error button {
-  border: 0;
-  background: transparent;
-  color: var(--ocean);
-  font-weight: 800;
-  cursor: pointer;
-}
-@container passenger (max-width:620px) {
-  .page-shell {
-    display: block;
-    max-width: none;
-    padding: 22px 16px 105px;
-  }
-  .welcome-section {
-    margin: 35px 0 22px;
-  }
-  .welcome-section h1 {
-    font-size: 27px;
-    line-height: 1.1;
-  }
-  .welcome-copy {
-    font-size: 13px;
-  }
-  .section-block,
-  .upcoming-block,
-  .quick-block {
-    display: block;
-    margin-top: 28px;
-  }
-  .quick-grid {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    grid-template-rows: auto;
-    gap: 10px;
-  }
-  .quick-grid a {
-    display: block;
-    min-height: 100px;
-    padding: 13px;
-  }
-  .quick-icon {
-    width: 36px;
-    height: 36px;
-    margin-bottom: 9px;
-  }
-  .inspiration {
-    min-height: 145px;
-    margin-top: 28px;
-    padding: 20px;
-  }
-  .sun-disc {
-    right: 25px;
-    top: -35px;
-    width: 125px;
-    height: 125px;
-  }
-  .inspiration .boat-illustration {
-    right: -12px;
-    bottom: 22px;
-    transform: scale(0.55);
-    transform-origin: right bottom;
-  }
-  .upcoming-route {
-    grid-template-columns: minmax(0, 1fr) 65px minmax(0, 1fr);
-    gap: 5px;
-  }
-  .upcoming-route strong {
-    font-size: 18px;
-  }
-  .upcoming-actions {
-    justify-content: stretch;
-  }
-  .upcoming-actions ion-button {
-    flex: 1;
-    font-size: 10px;
-  }
-}
-.pay-note {
-  display: inline-flex;
-  align-items: center;
-  color: var(--muted);
-  font-size: 11px;
-  font-weight: 700;
-}
-@container passenger (min-width:700px) and (max-width:899px) {
-  .page-shell {
-    display: grid;
-    grid-template-columns: minmax(0, 1.55fr) minmax(250px, 1fr);
-    grid-template-areas: "header header" "welcome welcome" "search search" "upcoming quick" "inspiration inspiration";
-    column-gap: 18px;
-    max-width: none;
-    padding: 26px 24px 105px;
-  }
-  .topbar {
-    grid-area: header;
-  }
-  .welcome-section {
-    grid-area: welcome;
-    margin: 40px 0 22px;
-  }
-  .page-shell > .search-card {
-    grid-area: search;
-  }
-  .upcoming-block {
-    grid-area: upcoming;
-    min-width: 0;
-    margin-top: 28px;
-  }
-  .quick-block {
-    grid-area: quick;
-    display: flex;
-    flex-direction: column;
-    min-width: 0;
-    margin-top: 28px;
-  }
-  .quick-grid {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    grid-template-rows: repeat(2, minmax(0, 1fr));
-    flex: 1;
-    gap: 9px;
-  }
-  .quick-grid a {
-    display: grid;
-    grid-template-columns: 34px minmax(0, 1fr);
-    grid-template-rows: auto auto;
-    column-gap: 7px;
-    align-items: center;
-    min-height: 90px;
-    height: 100%;
-    padding: 10px;
-  }
-  .quick-icon {
-    grid-row: 1/3;
-    width: 32px;
-    height: 32px;
-    margin: 0;
-  }
-  .quick-grid strong {
-    align-self: end;
-    font-size: 11px;
-  }
-  .quick-grid small {
-    align-self: start;
-    font-size: 9px;
-  }
-  .inspiration {
-    grid-area: inspiration;
-    margin-top: 24px;
-  }
-  .upcoming-route {
-    grid-template-columns: minmax(0, 1fr) 65px minmax(0, 1fr);
-  }
-  .upcoming-route strong {
-    font-size: 20px;
-  }
-}
-.passenger-shortcuts {
-  display: flex;
-  gap: 20px;
-  flex-wrap: wrap;
-  margin: 20px 0;
-}
-.passenger-shortcuts a {
-  font-size: 12px;
-  font-weight: 700;
-  color: var(--ocean);
-  text-decoration: none;
+.home-content { --background: var(--page-background); }
+.page-shell { display: block; width: 100%; max-width: 680px; margin: 0 auto; padding: 20px 16px calc(108px + env(safe-area-inset-bottom)); color: var(--ink); }
+.topbar { margin-bottom: 22px; }
+.welcome-section { margin: 0 0 22px; }
+.welcome-section h1 { margin: 0 0 6px; font-size: 23px; line-height: 1.35; letter-spacing: -.6px; overflow-wrap: anywhere; }
+.welcome-section p { margin: 0; color: var(--muted); font-size: 13px; line-height: 1.6; }
+.home-search { padding: 20px; border: 1px solid var(--line); border-radius: 16px; box-shadow: 0 4px 14px #102b4c08; }
+.home-search :deep(.card-heading) { align-items: center; margin-bottom: 18px; }
+.home-search :deep(.eyebrow) { display: none; }
+.home-search :deep(h2) { margin: 0; font-size: 17px; letter-spacing: -.3px; }
+.home-search :deep(.route-badge) { padding: 7px 9px; background: var(--light-blue); color: var(--ocean); border-radius: 7px; font-size: 9px; }
+.home-search :deep(.route-fields) { grid-template-columns: minmax(0, 1fr) 30px minmax(0, 1fr); gap: 6px; }
+.home-search :deep(.detail-fields) { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 14px 12px; margin-top: 16px; }
+.home-search :deep(.search-button) { grid-column: 1 / -1; width: 100%; height: 46px; margin: 0; border-radius: 10px; background: var(--action); }
+.home-search :deep(select), .home-search :deep(input), .home-search :deep(.counter) { background: var(--surface); border-radius: 10px; }
+.home-search :deep(input) { min-width: 0; max-width: 100%; }
+:global(:root[data-theme="dark"]) .home-search :deep(input[type="date"]) { color-scheme: dark; }
+.home-search :deep(label) { font-size: 10px; font-weight: 600; letter-spacing: .02em; }
+.home-search :deep(.swap-button) { display: grid; place-items: center; width: 30px; min-height: 44px; margin: 0; padding: 0; background: transparent; color: var(--ocean); }
+.section-block { margin-top: 26px; }
+.section-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
+.section-heading h2 { display: flex; align-items: center; gap: 8px; margin: 0; font-size: 14px; font-weight: 650; line-height: 1.5; }
+.section-heading h2 ion-icon { color: var(--ocean); font-size: 17px; flex: none; }
+.section-heading a { display: inline-flex; align-items: center; gap: 5px; min-height: 32px; color: var(--ocean); text-decoration: none; font-size: 12px; font-weight: 600; white-space: nowrap; }
+.upcoming-card { overflow: hidden; border: 1px solid var(--line); border-radius: 15px; background: var(--surface); box-shadow: 0 2px 6px #102b4c06; }
+.journey-banner { padding: 18px; background: linear-gradient(115deg, #102c4d, #166bc0); color: #fff; }
+.journey-status-row { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; }
+.journey-status-row > span { font-size: 10px; font-weight: 650; letter-spacing: .04em; text-transform: uppercase; color: #c6e0fa; }
+.journey-status { padding: 5px 9px; border-radius: 7px; background: #ffffff24; color: #fff; font-size: 10px; font-weight: 650; }
+.journey-status.pending { background: #fff0cd; color: #784909; }
+.upcoming-route { display: grid; grid-template-columns: minmax(0, 1fr) 24px minmax(0, 1fr); align-items: center; gap: 10px; margin-top: 24px; }
+.upcoming-route > div { min-width: 0; }
+.upcoming-route strong { display: block; font-size: 23px; line-height: 1.25; letter-spacing: -.5px; overflow-wrap: anywhere; }
+.upcoming-route span { display: block; margin-top: 6px; font-size: 13px; color: #e1efff; }
+.upcoming-route small { display: block; margin-top: 4px; color: #bdd8f6; font-size: 10px; }
+.upcoming-route > ion-icon { font-size: 22px; color: #c6e0fa; }
+.align-right { text-align: right; }
+.journey-footer { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 16px; }
+.journey-copy { min-width: 0; }
+.journey-copy > strong { display: block; font-size: 13px; line-height: 1.6; overflow-wrap: anywhere; }
+.journey-copy p { margin: 3px 0 0; font-size: 11px; line-height: 1.6; color: var(--muted); }
+.journey-copy small { display: block; margin-top: 6px; color: var(--muted); font-size: 11px; line-height: 1.6; }
+.journey-footer ion-button { flex: none; margin: 0; min-height: 44px; --border-radius: 9px; --background: var(--action); --color: #fff; --box-shadow: none; font-size: 11px; font-weight: 650; text-transform: none; }
+.upcoming-empty { display: flex; align-items: center; gap: 14px; min-height: 110px; padding: 18px; border: 1px dashed var(--line); border-radius: 14px; background: var(--surface); color: var(--muted); font-size: 13px; }
+.upcoming-empty strong { color: var(--ink); font-size: 13px; }
+.upcoming-empty p { margin: 6px 0 0; color: var(--muted); font-size: 12px; line-height: 1.7; }
+.empty-icon, .quick-icon { display: grid; place-items: center; flex: none; width: 36px; height: 36px; border-radius: 10px; background: var(--light-blue); color: var(--ocean); font-size: 20px; }
+.essentials-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.essentials-grid a { display: flex; align-items: center; gap: 10px; min-width: 0; min-height: 80px; padding: 13px 12px; border: 1px solid var(--line); border-radius: 13px; background: var(--surface); color: var(--ink); text-decoration: none; }
+.essentials-grid a > span:nth-child(2) { min-width: 0; }
+.essentials-grid strong { display: block; font-size: 12px; line-height: 1.5; }
+.essentials-grid small { display: block; margin-top: 4px; font-size: 10px; line-height: 1.5; color: var(--muted); }
+.essentials-grid a > ion-icon { margin-left: auto; flex: none; font-size: 14px; color: var(--muted); }
+.essentials-grid a:hover, .recent-list article:hover { border-color: var(--ocean); }
+.recent-list { display: grid; gap: 9px; }
+.recent-list article { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); }
+.recent-list article > div { min-width: 0; }
+.recent-list strong { font-size: 12px; line-height: 1.7; overflow-wrap: anywhere; }
+.recent-list strong ion-icon { margin: 0 4px; vertical-align: middle; color: var(--muted); }
+.recent-list p { margin: 4px 0 0; font-size: 11px; color: var(--muted); }
+.recent-list button { display: inline-flex; align-items: center; justify-content: center; gap: 5px; flex: none; min-height: 44px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); color: var(--ocean); font-size: 11px; cursor: pointer; }
+.home-advisories { margin: 26px 0 0; }
+.home-advisories :deep(article) { border-radius: 13px; border-left-width: 1px; }
+.home-advisories :deep(article > ion-icon) { box-sizing: content-box; padding: 9px; border-radius: 10px; background: var(--light-blue); font-size: 18px; }
+.home-advisories :deep(.high > ion-icon) { background: #fff0d4; color: #986009; }
+.home-advisories :deep(h3) { font-size: 13px; font-weight: 600; }
+.home-advisories :deep(article p) { font-size: 12px; }
+.home-error { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 12px; margin-bottom: 18px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); color: var(--danger); font-size: 12px; line-height: 1.6; }
+.home-error button { border: 0; background: transparent; color: var(--ocean); font-weight: 600; cursor: pointer; }
+a:focus-visible, button:focus-visible { outline: 2px solid var(--ocean); outline-offset: 3px; }
+@container passenger (max-width: 420px) {
+  .home-search :deep(.detail-fields) { grid-template-columns: minmax(0, 1fr); }
+}
+@container passenger (max-width: 380px) {
+  .welcome-section h1 { font-size: 21px; }
+  .home-search { padding: 16px 12px; }
+  .home-search :deep(.route-fields) { gap: 3px; grid-template-columns: minmax(0, 1fr) 24px minmax(0, 1fr); }
+  .home-search :deep(.swap-button) { width: 24px; }
+  .journey-banner { padding: 16px; }
+  .upcoming-route { gap: 6px; }
+  .upcoming-route strong { font-size: 19px; }
+  .journey-footer { flex-wrap: wrap; gap: 12px; }
+  .journey-footer ion-button { width: 100%; }
+  .essentials-grid a { align-items: flex-start; gap: 8px; padding: 12px 10px; }
+  .essentials-grid a > ion-icon { display: none; }
+  .quick-icon { width: 30px; height: 30px; font-size: 17px; }
+  .recent-list article { flex-wrap: wrap; }
 }
 </style>

@@ -13,15 +13,8 @@
       }}</router-link
     >
     <p>ACCOUNT</p>
+
     <router-link
-      :to="`/staff/${role}/notifications`"
-      :class="{ active: route.path === `/staff/${role}/notifications` }"
-      :aria-current="
-        route.path === `/staff/${role}/notifications` ? 'page' : undefined
-      "
-      @click="$emit('navigate')"
-      ><ion-icon :icon="notificationsOutline" />Notifications</router-link
-    ><router-link
       :to="`/staff/${role}/settings/account`"
       :class="{ active: route.path.startsWith(`/staff/${role}/settings/`) }"
       :aria-current="
@@ -47,7 +40,6 @@ import {
   listOutline,
   personRemoveOutline,
   pricetagOutline,
-  notificationsOutline,
   settingsOutline,
 } from "ionicons/icons";
 const props = defineProps<{ role: "ticketing" | "boarding" }>();

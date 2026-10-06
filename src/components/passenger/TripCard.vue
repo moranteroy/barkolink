@@ -1,11 +1,11 @@
-<template>
+﻿<template>
   <article class="trip-card glass-panel">
     <div class="trip-top">
       <div class="vessel">
         <span class="vessel-icon"><ion-icon :icon="boatOutline" /></span>
         <div>
           <strong>{{ trip.vessel }}</strong
-          ><small>Trip {{ trip.id }} | Passenger ferry</small>
+          ><small>Trip {{ trip.id }}</small>
         </div>
       </div>
       <Badge class="status" :variant="['SCHEDULED', 'AVAILABLE'].includes(trip.status.toUpperCase()) ? 'success' : trip.status.toUpperCase() === 'CANCELLED' ? 'destructive' : 'warning'">{{
@@ -15,16 +15,15 @@
     <p v-if="trip.date" class="sailing-date">Departure: {{ trip.date }} · Philippine time</p>
     <div class="journey">
       <div>
-        <small>{{ trip.from.toUpperCase() }}</small
+        <small>Departure</small
         ><strong>{{ trip.departure }}</strong
         ><span>{{ trip.originPortName || trip.from + " Port" }}</span>
       </div>
       <div class="journey-line">
-        <span>{{ trip.duration }}</span
-        ><i></i><ion-icon :icon="arrowForwardOutline" />
+        <ion-icon :icon="boatOutline" aria-hidden="true" /><span>{{ trip.duration }}</span>
       </div>
       <div class="arrival">
-        <small>{{ trip.to.toUpperCase() }}</small
+        <small>Arrival</small
         ><strong>{{ trip.arrival }}</strong
         ><span>{{ trip.destinationPortName || trip.to + " Port" }}</span>
       </div>
@@ -34,11 +33,13 @@
         ><ion-icon :icon="peopleOutline" /> {{ trip.available }} slots
         available</span
       >
-      <div>
+      <div class="fare-actions">
+        <div class="fare-copy">
         <strong>{{ trip.fare }}</strong
-        ><small> / passenger</small
-        ><Button @click="selectTrip"
-          >Book this sailing <ion-icon :icon="arrowForwardOutline"
+        ><small>Regular fare / passenger</small>
+        </div>
+        <Button @click="selectTrip"
+          >Book this sailing <ion-icon :icon="ticketOutline" aria-hidden="true"
         /></Button>
       </div>
     </div>
@@ -50,9 +51,9 @@ import { IonIcon } from "@ionic/vue";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
-  arrowForwardOutline,
   boatOutline,
   peopleOutline,
+  ticketOutline,
 } from "ionicons/icons";
 import { useRouter } from "vue-router";
 const router = useRouter();
@@ -91,153 +92,40 @@ const props = defineProps<{
 </script>
 
 <style scoped>
-.trip-card {
-  padding: 20px;
-  border: 1px solid var(--line);
-  background: var(--surface);
-  border-radius: 18px;
-}
-.trip-top,
-.trip-bottom {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-}
-.vessel {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-.vessel-icon {
-  display: grid;
-  place-items: center;
-  width: 34px;
-  height: 34px;
-  border-radius: 10px;
-  background: var(--light-blue);
-  color: var(--ocean);
-}
-.vessel strong,
-.vessel small {
-  display: block;
-}
-.vessel strong {
-  font-size: 14px;
-}
-.vessel small {
-  margin-top: 3px;
-  color: var(--muted);
-  font-size: 10px;
-}
-.status {
-  padding: 5px 8px;
-  border-radius: 6px;
-  font-size: 9px;
-  font-weight: 800;
-  letter-spacing: 0.07em;
-}
-.available {
-  color: #117a52;
-  background: #e6f7ef;
-}
-.limited {
-  color: #9a5b00;
-  background: #fff3d6;
-}
-.journey {
-  display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
-  align-items: center;
-  margin: 22px 0 18px;
-}
-.sailing-date {
-  margin: 14px 0 0;
-  color: var(--ink);
-  font-size: 12px;
-  font-weight: 600;
-}
-.journey small,
-.journey span {
-  display: block;
-  color: var(--muted);
-  font-size: 10px;
-}
-.journey strong {
-  display: block;
-  margin: 4px 0;
-  font-size: 22px;
-  letter-spacing: -0.6px;
-}
-.journey-line {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-.journey-line i {
-  height: 1px;
-  flex: 1;
-  background: var(--line);
-}
-.journey-line ion-icon {
-  color: var(--ocean);
-  font-size: 17px;
-}
-.arrival {
-  text-align: right;
-}
-.trip-bottom {
-  border-top: 1px solid var(--line);
-  padding-top: 14px;
-}
-.trip-bottom > span {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  color: var(--muted);
-  font-size: 11px;
-}
-.trip-bottom > span ion-icon {
-  color: var(--ocean);
-}
-.trip-bottom > div {
-  display: flex;
-  align-items: center;
-  gap: 2px;
-}
-.trip-bottom > div strong {
-  font-size: 17px;
-}
-.trip-bottom small {
-  color: var(--muted);
-  font-size: 10px;
-}
-.trip-bottom [data-slot="button"] {
-  --color: var(--ocean);
-  margin-left: 10px;
-  font-weight: 700;
-  text-transform: none;
-}
-.trip-bottom ion-button ion-icon {
-  font-size: 14px;
-}
-@container passenger (max-width:480px) {
-  .trip-card {
-    padding: 16px;
-  }
-  .trip-bottom {
-    align-items: flex-start;
-    flex-direction: column;
-  }
-  .trip-bottom > div {
-    width: 100%;
-    justify-content: space-between;
-  }
-  .trip-bottom [data-slot="button"] {
-    margin-left: auto;
-  }
-  .journey strong {
-    font-size: 18px;
-  }
+.trip-card { min-width: 0; padding: 18px; border: 1px solid var(--line); border-radius: 15px; background: var(--surface); color: var(--ink); }
+.trip-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+.vessel { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.vessel > div { min-width: 0; }
+.vessel-icon { display: grid; place-items: center; flex: none; width: 34px; height: 34px; border-radius: 10px; background: var(--light-blue); color: var(--ocean); font-size: 19px; }
+.vessel strong { display: block; font-size: 14px; line-height: 1.5; overflow-wrap: anywhere; }
+.vessel small { display: block; margin-top: 3px; color: var(--muted); font-size: 10px; line-height: 1.5; overflow-wrap: anywhere; }
+.status { flex: none; padding: 5px 8px; border-radius: 7px; font-size: 9px; font-weight: 650; letter-spacing: .02em; }
+.sailing-date { margin: 14px 0 0; color: var(--muted); font-size: 10px; line-height: 1.6; font-weight: 400; }
+.journey { display: grid; grid-template-columns: minmax(0, 1fr) 64px minmax(0, 1fr); align-items: center; gap: 8px; padding: 16px 0; margin: 8px 0 0; }
+.journey > div { min-width: 0; }
+.journey small { display: block; color: var(--muted); font-size: 10px; }
+.journey strong { display: block; margin: 5px 0; color: var(--ink); font-size: 22px; line-height: 1.3; letter-spacing: -.5px; }
+.journey span { display: block; color: var(--muted); font-size: 11px; line-height: 1.6; overflow-wrap: anywhere; }
+.journey-line { display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 5px; }
+.journey-line ion-icon { color: var(--ocean); font-size: 20px; }
+.journey-line span { font-size: 10px; text-align: center; }
+.arrival { text-align: right; }
+.trip-bottom { padding-top: 14px; border-top: 1px solid var(--line); }
+.trip-bottom > span { display: flex; align-items: center; gap: 6px; color: var(--muted); font-size: 11px; }
+.trip-bottom > span ion-icon { color: var(--ocean); font-size: 16px; }
+.fare-actions { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 14px; }
+.fare-copy { min-width: 0; }
+.fare-copy strong { display: block; color: var(--ink); font-size: 20px; line-height: 1.5; }
+.fare-copy small { display: block; color: var(--muted); font-size: 10px; line-height: 1.5; }
+.fare-actions [data-slot="button"] { display: inline-flex; align-items: center; justify-content: center; gap: 6px; flex: none; min-height: 44px; padding: 10px 12px; border-radius: 9px; background: var(--action); color: #fff; font-size: 11px; font-weight: 600; white-space: normal; text-transform: none; }
+.fare-actions ion-icon { font-size: 17px; flex: none; }
+@container passenger (max-width: 380px) {
+  .trip-card { padding: 16px; }
+  .trip-top { gap: 8px; }
+  .vessel { gap: 8px; }
+  .journey { grid-template-columns: minmax(0, 1fr) 44px minmax(0, 1fr); gap: 6px; }
+  .journey strong { font-size: 18px; }
+  .fare-actions { flex-wrap: wrap; }
+  .fare-actions [data-slot="button"] { width: 100%; }
 }
 </style>

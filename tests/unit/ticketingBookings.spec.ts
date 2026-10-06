@@ -7,7 +7,7 @@ const mocks = vi.hoisted(() => ({ enter: vi.fn(), bookings: vi.fn(), collectPaym
 vi.mock('../../src/services/database/workspaces', () => ({ staffDashboard: vi.fn(async () => ({data:{bookings:1,paid:0,unpaid:1,trips:1}})) }))
 vi.mock('../../src/services/database/operations', () => ({ verifyPassengerDiscount: mocks.verify, refundBooking: mocks.refund }))
 vi.mock('vue-router', () => ({
-  useRoute: () => ({ path: '/staff/ticketing', params: { role: 'ticketing' } }),
+  useRoute: () => ({ path: '/staff/ticketing/bookings', params: { role: 'ticketing' } }),
   useRouter: () => ({ replace: vi.fn() }),
 }))
 vi.mock('../../src/services/session', () => ({ auth: null, staffDatabase: {} }))
@@ -31,9 +31,9 @@ function booking(status = 'PENDING', paymentStatus = 'UNPAID', departureAt = '20
     id: 'booking-1', reference: 'BL-2026-CBD008A6', status, paymentStatus,
     total: 500, passengerCount: 1, bookingChannel: 'ONLINE', createdAt: '2026-10-03T01:00:00Z',
     owner: { fullName: 'Carlo Biado' },
-    sailing: { departureAt, origin: { name: 'Batangas Port' }, destination: { name: 'Calapan Port' } },
+    sailing: { departureAt, regularFare: 500, vessel: { name: 'Test Ferry' }, origin: { name: 'Batangas Port' }, destination: { name: 'Calapan Port' } },
     bookingPassengers_on_booking: [{
-      fullName: 'Carlo Biado', passengerType: 'REGULAR', ticketCode: 'ticket-1',
+      id: 'person-1', fare: 500, fullName: 'Carlo Biado', passengerType: 'REGULAR', ticketCode: 'ticket-1',
       ticketStatus: paymentStatus === 'PAID' ? 'ISSUED' : 'PENDING',
     }],
   }
@@ -42,7 +42,7 @@ function booking(status = 'PENDING', paymentStatus = 'UNPAID', departureAt = '20
 async function openDetails(record = booking()) {
   mocks.bookings.mockResolvedValue({ data: { bookings: [record] } })
   const wrapper = mount(TicketingPage, {
-    global: { stubs: { RouterLink: { template: '<a><slot /></a>' }, BrandMark: true, TicketingGuide: true } },
+    global: { stubs: { StaffWorkspaceHeader: true, StaffLogoutButton: true, RouterLink: { template: '<a><slot /></a>' }, BrandMark: true, TicketingGuide: true } },
   })
   await mocks.enter.mock.calls.at(-1)![0]()
   await flushPromises()
@@ -63,7 +63,8 @@ describe('ticketing booking details', () => {
   it.each(['2099-10-10T02:00:00Z', '2020-10-10T02:00:00Z'])('shows cancelled reservations without payment or ticket promises (%s)', async departureAt => {
     const wrapper = await openDetails(booking('CANCELLED', 'UNPAID', departureAt))
     const details = wrapper.find('.ticket-list-modal')
-    expect(details.text()).toContain('Original booking amount: PHP 500')
+    expect(details.get('.booking-amount > span').text()).toBe('Original booking amount')
+    expect(details.get('.booking-amount > strong').text()).toContain('PHP 500')
     expect(details.text()).toContain('No payment is due and tickets cannot be issued.')
     expect(details.find('.ticket-record').text()).toContain('REGULAR · Cancelled')
     expect(details.text()).toContain('Ticket unavailable')
@@ -79,7 +80,8 @@ describe('ticketing booking details', () => {
   it('lets staff collect cash for an active unpaid reservation', async () => {
     const wrapper = await openDetails()
     const details = wrapper.find('.ticket-list-modal')
-    expect(details.text()).toContain('Amount due: PHP 500')
+    expect(details.get('.booking-amount > span').text()).toBe('Amount due')
+    expect(details.get('.booking-amount > strong').text()).toContain('PHP 500')
     expect(details.text()).toContain('Awaiting payment')
     expect(details.text()).toContain('Ticket issued after payment')
     await details.find('.payment-actions button').trigger('click')

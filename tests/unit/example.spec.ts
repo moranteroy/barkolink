@@ -8,6 +8,8 @@ vi.mock('@ionic/vue', () => ({
   IonContent: { template: '<div><slot /></div>' },
   IonButton: { template: '<button><slot /></button>' },
   IonIcon: { template: '<span />' },
+  IonSpinner: { template: '<span />' },
+  useIonRouter: () => ({navigate: vi.fn()}),
   onIonViewWillEnter: (callback: () => void) => { mocks.enter = callback },
 }))
 vi.mock('../../src/services/session', () => ({
@@ -29,7 +31,8 @@ describe('HomePage.vue', () => {
     mocks.enter?.()
     await flushPromises()
     expect(wrapper.text()).toContain('Passenger!')
-    expect(wrapper.text()).toContain('No upcoming trip')
+    expect(wrapper.text()).toContain('Your next journey starts here')
+    expect(mocks.bookings).toHaveBeenCalledTimes(1)
     expect(wrapper.find('[role="alert"]').exists()).toBe(false)
     wrapper.unmount()
   })

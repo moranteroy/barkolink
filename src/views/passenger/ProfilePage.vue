@@ -2,7 +2,7 @@
   <ion-page
     ><ion-content
       ><main class="profile-page">
-        <PassengerHeader :name="profile.name" />
+        <PassengerHeader />
         <p v-if="error" class="error" role="alert">
           {{ error }} <button :disabled="loading" @click="load">Retry</button>
         </p>
@@ -40,10 +40,11 @@
           <section v-for="group in groups" :key="group.title">
             <h2>{{ group.title }}</h2>
             <div class="menu-card">
-              <router-link
+              <a
                 v-for="item in group.items"
                 :key="item.label"
-                :to="item.to"
+                :href="item.to"
+                @click="openMenu($event, item.to)"
                 ><span class="item-icon"
                   ><ion-icon :icon="item.icon" aria-hidden="true"
                 /></span>
@@ -52,7 +53,7 @@
                   ><small>{{ item.description }}</small>
                 </div>
                 <ion-icon :icon="chevronForwardOutline" aria-hidden="true"
-              /></router-link>
+              /></a>
             </div>
           </section>
         </div>
@@ -68,7 +69,7 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from "vue";
 import { useRouter } from "vue-router";
-import { IonPage, IonContent, IonIcon, onIonViewWillEnter } from "@ionic/vue";
+import { IonPage, IonContent, IonIcon, onIonViewWillEnter, useIonRouter } from "@ionic/vue";
 import {
   callOutline,
   chevronForwardOutline,
@@ -92,6 +93,12 @@ import { clearSessionViews } from "../../composables/sessionViews";
 import { databaseRequestError } from "../../data/databaseErrors";
 const router = useRouter(),
   profile = reactive({ name: "", email: "", phone: "" });
+const ionRouter = useIonRouter();
+function openMenu(event: MouseEvent, path: string) {
+  if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+  event.preventDefault();
+  ionRouter.navigate(path, "forward", "push");
+}
 const loading = ref(false),
   loggingOut = ref(false),
   error = ref("");
@@ -165,7 +172,7 @@ const groups = [
         label: "Privacy notice",
         description: "How your account and passenger details are used",
         icon: documentTextOutline,
-        to: "/privacy",
+        to: "/privacy?from=profile",
       },
     ],
   },

@@ -20,7 +20,7 @@
         aria-label="Swap ports"
         @click="swap"
       >
-        ⇅</button
+        <IonIcon :icon="swapHorizontalOutline" aria-hidden="true" /></button
       ><label
         >To<select v-model="to" :disabled="loading || !!portError">
           <option v-for="city in cities" :key="city" :value="city">
@@ -59,7 +59,7 @@
         class="search-button"
         :disabled="loading || !!portError || cities.length < 2"
         @click="search"
-        >Search sailings →</Button
+        ><IonIcon :icon="searchOutline" aria-hidden="true" /> Search sailings</Button
       >
     </div>
   </section>
@@ -68,10 +68,16 @@
 import { computed, onMounted, ref } from "vue";
 import { useRouter } from "vue-router";
 import { Button } from "@/components/ui/button";
+import { IonIcon } from "@ionic/vue";
+import { searchOutline, swapHorizontalOutline } from "ionicons/icons";
 import { browseActivePorts } from "../../services/database/passenger";
 import { database } from "../../services/session";
 import { philippineDateKey } from "../../data/travelDate";
+import { recordRecentSearch } from "../../data/recentSearches";
 const emit = defineEmits<{ searched: [] }>();
+const props = withDefaults(defineProps<{ navigateOnSearch?: boolean }>(), {
+  navigateOnSearch: true,
+});
 const router = useRouter();
 const localDate = (date: Date) => {
   return philippineDateKey(date);
@@ -158,7 +164,8 @@ function search() {
     JSON.stringify({ from: from.value, to: to.value }),
   );
   emit("searched");
-  void router.push("/search");
+  recordRecentSearch({ from: from.value, to: to.value, date: date.value, passengers: count.value });
+  if (props.navigateOnSearch) void router.push("/search");
 }
 </script>
 <style scoped>
@@ -274,6 +281,10 @@ input {
   font-size: 13px;
 }
 .search-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
   --background: var(--ocean);
   --box-shadow: none;
   --border-radius: 10px;
@@ -283,6 +294,7 @@ input {
   font-weight: 800;
   white-space: nowrap;
 }
+.search-button ion-icon { font-size: 18px; flex: none; }
 @container passenger (max-width:620px) {
   .search-card {
     padding: 19px 15px;

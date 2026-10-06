@@ -4,6 +4,7 @@
     class="advisories"
     aria-label="Travel advisories"
   >
+    <h2 v-if="showHeading" class="advisory-heading"><ion-icon :icon="megaphoneOutline" aria-hidden="true" /> Travel advisories</h2>
     <p v-if="error" role="alert">
       {{ error }} <button @click="load">Retry</button>
     </p>
@@ -38,7 +39,7 @@ import {
 } from "../../services/database/experience";
 import { database } from "../../services/session";
 import { databaseRequestError } from "../../data/databaseErrors";
-const props = defineProps<{ sailingCode?: string }>();
+const props = defineProps<{ sailingCode?: string; showHeading?: boolean }>();
 const items = ref<Advisory[]>([]),
   error = ref("");
 let request = 0;
@@ -71,6 +72,8 @@ watch(() => props.sailingCode, load);
   gap: 10px;
   margin: 20px 0;
 }
+.advisory-heading { display: flex; align-items: center; gap: 8px; margin: 0 0 4px; color: var(--ink); font-size: 14px; font-weight: 650; }
+.advisory-heading ion-icon { font-size: 17px; }
 .advisories article {
   display: flex;
   align-items: flex-start;

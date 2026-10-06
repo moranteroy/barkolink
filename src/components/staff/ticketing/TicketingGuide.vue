@@ -3,11 +3,10 @@
     <p class="kicker">AT THE COUNTER</p>
     <h2>Ticketing steps</h2>
     <ol>
-      <li>Find the reservation and confirm the passenger details.</li>
-      <li>Collect cash, then record payment to issue tickets.</li>
+      <li><strong>Check the reservation</strong><span>Confirm the sailing, passengers and discount eligibility.</span></li>
+      <li><strong>Record cash payment</strong><span>Receive cash, then confirm payment to issue the tickets.</span></li>
       <li>
-        For a passenger without an account, create a walk-in ticket and print
-        the receipt.
+        <strong>Assist walk-in passengers</strong><span>Create a walk-in ticket and print the receipt for passengers without an account.</span>
       </li>
     </ol>
     <RouterLink to="/staff/ticketing/walk-in" class="walk-in-link"
@@ -23,6 +22,10 @@ import { ticketOutline } from "ionicons/icons";
 <style scoped>
 .ticketing-guide {
   gap: 0;
+  align-self: start;
+  padding: 22px;
+  border: 1px solid var(--line);
+  border-radius: 15px;
   background: linear-gradient(145deg, var(--surface), var(--surface-soft));
 }
 .kicker {
@@ -37,11 +40,17 @@ ol {
   display: grid;
   gap: 14px;
   margin: 4px 0 24px;
-  padding-left: 20px;
+  padding: 0;
+  list-style: none;
+  counter-reset: step;
   color: var(--muted);
   font-size: 11px;
   line-height: 1.55;
 }
+li { position: relative; padding-left: 36px; counter-increment: step; }
+li::before { content: counter(step); position: absolute; left: 0; top: 0; display: grid; place-items: center; width: 25px; height: 25px; border-radius: 8px; background: var(--light-blue); color: var(--ocean); font-size: 11px; font-weight: 650; }
+li strong { display: block; color: var(--ink); font-size: 12px; font-weight: 600; line-height: 1.6; }
+li span { display: block; margin-top: 5px; font-size: 11px; line-height: 1.8; }
 li::marker {
   color: var(--ocean);
   font-weight: 800;
@@ -51,7 +60,7 @@ li::marker {
   align-items: center;
   justify-content: center;
   gap: 8px;
-  min-height: 42px;
+  min-height: 44px;
   margin-top: auto;
   padding: 0 12px;
   border-radius: 9px;

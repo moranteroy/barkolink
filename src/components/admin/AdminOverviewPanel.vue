@@ -102,7 +102,7 @@
     </div>
     <div class="overview-trip-heading">
       <h2>Today's Trips</h2>
-      <router-link to="/admin/trips">View all →</router-link>
+      <router-link to="/admin/trips">View all <ion-icon :icon="boatOutline" aria-hidden="true" /></router-link>
     </div>
     <section class="catalog-panel catalog-table">
       <table>

@@ -25,7 +25,7 @@
           <p v-if="message" :role="failed ? 'alert' : 'status'">{{ message }}</p>
           <ion-button type="submit" :disabled="busy">Save password</ion-button>
         </form>
-        <RouterLink to="/login">Back to sign in</RouterLink>
+        <RouterLink to="/login" class="sign-in-return"><IonIcon :icon="logInOutline" aria-hidden="true" /> Back to sign in</RouterLink>
       </main></ion-content
     ></ion-page
   >
@@ -33,7 +33,8 @@
 <script setup lang="ts">
 import { ref } from "vue";
 import { RouterLink } from "vue-router";
-import { IonPage, IonContent, IonButton } from "@ionic/vue";
+import { IonPage, IonContent, IonButton, IonIcon } from "@ionic/vue";
+import { logInOutline } from "ionicons/icons";
 import { requireSupabase } from "../../services/supabase";
 const password = ref(""),
   confirm = ref(""),
@@ -116,4 +117,6 @@ input {
   background: var(--surface);
   color: var(--ink);
 }
+.sign-in-return { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; }
+.sign-in-return ion-icon { font-size: 19px; flex: none; }
 </style>

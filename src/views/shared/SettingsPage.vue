@@ -2,7 +2,7 @@
   <ion-page>
     <ion-content ref="settingsScroller" :fullscreen="true">
       <main class="settings-page">
-        <PassengerHeader v-if="isPassenger" :name="profile.name" />
+        <PassengerHeader v-if="isPassenger" />
         <header v-else class="settings-header">
           <router-link
             :to="backPath"
@@ -14,7 +14,7 @@
                   ? 'Back to staff workspace'
                   : 'Back to home'
             "
-            ><ion-icon :icon="arrowBackOutline"
+            ><ion-icon :icon="isAdmin || isStaff ? gridOutline : homeOutline" aria-hidden="true"
           /></router-link>
           <BrandMark />
           <span class="page-mode"
@@ -89,7 +89,7 @@
                 Loading your saved details...
               </p>
               <router-link v-if="isPassenger" to="/profile" class="profile-back"
-                >Back to my profile</router-link
+                ><ion-icon :icon="personOutline" aria-hidden="true" /> Back to my profile</router-link
               >
               <form class="setting-form" @submit.prevent="saveProfile">
                 <fieldset
@@ -257,7 +257,8 @@ import {
   useIonRouter,
 } from "@ionic/vue";
 import {
-  arrowBackOutline,
+  gridOutline,
+  homeOutline,
   contrastOutline,
   informationCircleOutline,
   notificationsOutline,
@@ -803,12 +804,16 @@ async function changePassword() {
   opacity: 0.5;
 }
 .profile-back {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
   margin-top: 12px;
   color: var(--ocean);
   font-size: 12px;
   text-decoration: none;
 }
+.profile-back ion-icon { font-size: 19px; flex: none; }
 .profile-hint,
 .setting-form small {
   font-size: 11px;

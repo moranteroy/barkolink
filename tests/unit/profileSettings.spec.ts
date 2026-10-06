@@ -18,7 +18,7 @@ vi.mock('../../src/services/database/passenger', () => ({ myProfile: mocks.profi
 vi.mock('../../src/services/auth', () => ({ syncAccountProfileName: mocks.sync, PasswordAuthProvider: { credential: (email: string, password: string) => ({ email, password }) }, reauthenticateWithCredential: mocks.reauth, updatePassword: mocks.password, signOut: mocks.logout }))
 vi.mock('../../src/composables/sessionViews', () => ({ clearSessionViews: mocks.clear }))
 vi.mock('../../src/components/shared/ThemeSwitcher.vue', () => ({ default: { template: '<div />' } }))
-const options = { global: { stubs: { PassengerHeader: true, PassengerBottomNav: true, BrandMark: true, ThemeSwitcher: true, RouterLink: { props: ['to'], template: '<a :href="to"><slot /></a>' } } } }
+const options = { global: { stubs: { StaffWorkspaceHeader: true, PassengerHeader: true, PassengerBottomNav: true, BrandMark: true, ThemeSwitcher: true, RouterLink: { props: ['to'], template: '<a :href="to"><slot /></a>' } } } }
 const original = { fullName: 'Passenger One', email: 'owner@example.invalid', phone: '09123456789' }
 describe('Passenger profile and settings', () => {
   beforeEach(() => {
@@ -87,7 +87,7 @@ describe('Passenger profile and settings', () => {
     const wrapper = mount(ProfilePage, options); await flushPromises()
     expect(wrapper.get('h1').text()).toBe('Passenger One')
     expect(wrapper.text()).toContain('09123456789')
-    for (const href of ['/settings/profile','/settings/password','/travelers','/notifications','/settings/appearance','/help','/privacy']) expect(wrapper.find(`a[href="${href}"]`).exists()).toBe(true)
+    for (const href of ['/settings/profile','/settings/password','/travelers','/notifications','/settings/appearance','/help','/privacy?from=profile']) expect(wrapper.find(`a[href="${href}"]`).exists()).toBe(true)
     await wrapper.get('.logout').trigger('click'); await flushPromises()
     expect(mocks.logout).toHaveBeenCalledTimes(1); expect(mocks.clear).toHaveBeenCalledTimes(1)
     expect(mocks.replace).toHaveBeenCalledWith('/login'); wrapper.unmount()

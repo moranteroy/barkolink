@@ -42,7 +42,7 @@
             {{ date(data.sailing.departureAt) }}
           </p>
         </div>
-        <router-link to="/admin/trips">Manage schedule & status →</router-link>
+        <router-link to="/admin/trips">Manage schedule & status <ion-icon :icon="calendarOutline" aria-hidden="true" /></router-link>
       </div>
       <div class="metrics">
         <article v-for="metric in metrics" :key="metric.label">
@@ -71,13 +71,13 @@
         <div class="links">
           <router-link
             :to="`/admin/check-in?sailing=${encodeURIComponent(code)}`"
-            >Check-in desk →</router-link
+            >Check-in desk <ion-icon :icon="scanOutline" aria-hidden="true" /></router-link
           ><router-link
             :to="`/admin/boarding?sailing=${encodeURIComponent(code)}`"
-            >Boarding desk →</router-link
+            >Boarding desk <ion-icon :icon="boatOutline" aria-hidden="true" /></router-link
           ><router-link
             :to="`/admin/manifest?sailing=${encodeURIComponent(code)}`"
-            >Manifest & export →</router-link
+            >Manifest & export <ion-icon :icon="documentTextOutline" aria-hidden="true" /></router-link
           >
         </div>
       </div>
@@ -195,7 +195,7 @@ import AdminManifestExport from "./AdminManifestExport.vue";
 import { computed, onMounted, ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { IonIcon } from "@ionic/vue";
-import { timeOutline } from "ionicons/icons";
+import { timeOutline, calendarOutline, scanOutline, boatOutline, documentTextOutline } from "ionicons/icons";
 import { adminSailings } from "../../services/database/staff";
 import {
   tripOperations,
@@ -475,10 +475,14 @@ button:disabled {
 }
 .trip-header a,
 .links a {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
   font-size: 12px;
   color: var(--ocean);
   text-decoration: none;
 }
+.trip-header a ion-icon, .links a ion-icon { font-size: 17px; flex: none; }
 .metrics {
   display: grid;
   grid-template-columns: repeat(6, minmax(0, 1fr));

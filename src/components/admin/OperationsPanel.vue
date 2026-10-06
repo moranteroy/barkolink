@@ -25,7 +25,7 @@
     <RouterLink
       class="history-link"
       to="/admin/audit-logs?entityType=operation_settings"
-      >View settings history <span aria-hidden="true">&rarr;</span></RouterLink
+      >View settings history <IonIcon :icon="timeOutline" aria-hidden="true" /></RouterLink
     >
     <p v-if="error" class="error" role="alert">{{ error }}</p>
     <button v-if="!loaded && !loading" type="button" @click="load">Retry loading settings</button>
@@ -34,6 +34,8 @@
 <script setup lang="ts">
 import { onMounted, ref } from "vue";
 import { RouterLink } from "vue-router";
+import { IonIcon } from "@ionic/vue";
+import { timeOutline } from "ionicons/icons";
 import { staffDatabase } from "../../services/session";
 import {
   operationSettings,

@@ -1,8 +1,8 @@
 <template>
   <ion-page
     ><ion-content :fullscreen="true"
-      ><main class="demo-page">
-        <PassengerHeader :name="profile.name" />
+      ><main class="demo-page" :class="{ 'bookings-page': kind === 'bookings' }">
+        <PassengerHeader />
         <section class="page-title">
           <p class="kicker">{{ eyebrow }}</p>
           <h1>{{ title }}</h1>
@@ -243,9 +243,6 @@
               :key="booking.reference"
               class="booking-card glass-panel"
             >
-              <span class="booking-symbol"
-                ><ion-icon :icon="boatOutline" aria-hidden="true"
-              /></span>
               <div class="booking-copy">
                 <div class="row-heading">
                   <h2>
@@ -255,7 +252,7 @@
                     /></span>
                     {{ booking.to }}
                   </h2>
-                  <b :class="booking.status.toLowerCase()">{{
+                  <b :class="[booking.status.toLowerCase(), booking.paymentStatus.toLowerCase()]">{{
                     booking.paymentStatus === "REFUND_PENDING"
                       ? "REFUND PENDING"
                       : booking.paymentStatus === "REFUNDED"
@@ -276,12 +273,14 @@
                     {{ booking.vessel }}</span
                   >
                 </div>
-                <p class="payment-hint"><strong>Booking total: PHP {{ booking.total.toLocaleString() }}</strong></p>
-                <p v-if="booking.accommodationName" class="payment-hint">
+                <div class="booking-fare-panel">
+                <div class="booking-total"><span>Booking total</span><strong>PHP {{ booking.total.toLocaleString() }}</strong></div>
+                <p v-if="booking.accommodationName" class="booking-accommodation">
                   {{ booking.accommodationName }} accommodation · PHP
                   {{ (booking.serviceFee || 0).toLocaleString() }} additional
-                  fare
+                  fare included
                 </p>
+                </div>
                 <div class="booking-reference">
                   <span
                     ><ion-icon :icon="ticketOutline" aria-hidden="true" />
@@ -310,16 +309,11 @@
                 </p>
                 <div class="booking-actions">
                   <router-link
+                    class="booking-details-link"
                     :to="`/booking-details?reference=${encodeURIComponent(booking.reference)}`"
-                    >View details</router-link
-                  ><span
-                    v-if="
-                      booking.paymentStatus !== 'PAID' &&
-                      ['PENDING', 'CONFIRMED'].includes(booking.status)
-                    "
-                    class="payment-hint"
-                    >Pay at the ticketing desk · PHP 0 booking fee</span
+                    ><ion-icon :icon="documentTextOutline" aria-hidden="true" /> View details</router-link
                   ><router-link
+                    class="booking-ticket-link"
                     v-if="
                       booking.status === 'CONFIRMED' &&
                       booking.paymentStatus === 'PAID'
@@ -328,6 +322,7 @@
                     ><ion-icon :icon="ticketOutline" aria-hidden="true" /> View
                     e-ticket</router-link
                   ><button
+                    class="booking-cancel-link"
                     v-if="
                       booking.paymentStatus === 'UNPAID' &&
                       ['PENDING', 'CONFIRMED'].includes(booking.status) &&
@@ -381,7 +376,7 @@
                 /></span>
                 {{ currentBooking.to }}
               </h2>
-              <b :class="currentBooking.status.toLowerCase()">{{
+              <b class="detail-status" :class="[currentBooking.status.toLowerCase(), currentBooking.paymentStatus.toLowerCase()]">{{
                 currentBooking.paymentStatus === "REFUND_PENDING"
                   ? "REFUND PENDING"
                   : currentBooking.paymentStatus === "REFUNDED"
@@ -394,19 +389,18 @@
               }}</b>
             </div>
             <p class="detail-reference">
-              Booking {{ currentBooking.reference }}
+              <span>Booking reference</span><strong>{{ currentBooking.reference }}</strong>
             </p>
             <div class="booking-meta">
-              <span
-                ><ion-icon :icon="calendarOutline" aria-hidden="true" />
-                {{ currentBooking.date }} - {{ currentBooking.departure }}</span
-              ><span
-                ><ion-icon :icon="boatOutline" aria-hidden="true" />
-                {{ currentBooking.vessel }}</span
-              >
+              <div><span><ion-icon :icon="calendarOutline" aria-hidden="true" />Departure</span><strong>{{ currentBooking.date }} · {{ currentBooking.departure }}</strong></div>
+              <div><span><ion-icon :icon="boatOutline" aria-hidden="true" />Ferry</span><strong>{{ currentBooking.vessel }}</strong></div>
             </div>
-            <p class="payment-hint"><strong>Booking total: PHP {{ currentBooking.total.toLocaleString() }}</strong></p>
-            <p v-if="currentBooking.accommodationName" class="payment-hint">{{ currentBooking.accommodationName }} accommodation · PHP {{ (currentBooking.serviceFee || 0).toLocaleString() }} additional fare included</p>
+            <section class="detail-fares" aria-labelledby="detail-fares-heading">
+              <h3 id="detail-fares-heading">Fare breakdown</h3>
+              <div><span>Passenger fares</span><b>PHP {{ (currentBooking.total - (currentBooking.serviceFee || 0)).toLocaleString() }}</b></div>
+              <div v-if="currentBooking.accommodationName || currentBooking.serviceFee"><span>Accommodation<small>{{ currentBooking.accommodationName || 'Standard' }}</small></span><b>PHP {{ (currentBooking.serviceFee || 0).toLocaleString() }}</b></div>
+              <div class="detail-fare-total"><strong>Booking total</strong><strong>PHP {{ currentBooking.total.toLocaleString() }}</strong></div>
+            </section>
             <div class="detail-passengers">
               <h3>Passengers ({{ currentBooking.passengers.length }})</h3>
               <div
@@ -417,29 +411,25 @@
                   ><ion-icon :icon="personOutline" aria-hidden="true" /></span
                 ><span
                   ><strong>{{ person.name }}</strong
-                  ><small>{{ person.type }} passenger · Base fare: PHP {{ person.fare.toLocaleString() }}</small></span
-                >
+                  ><small>{{ person.type === 'PWD' ? 'PWD' : person.type.replaceAll('_', ' ').toLowerCase() }} passenger</small></span>
+                <b class="detail-person-fare">PHP {{ person.fare.toLocaleString() }}<small>Base fare</small></b>
               </div>
             </div>
-            <p
+            <div
               v-if="
                 currentBooking.paymentStatus === 'UNPAID' &&
                 ['PENDING', 'CONFIRMED'].includes(currentBooking.status)
               "
-              class="payment-hint"
+              class="detail-payment"
             >
-              Pay at the ticketing desk to receive your e-ticket. Booking fee:
-              PHP 0.
-            </p>
             <PaymentDeadline
-              v-if="
-                currentBooking.paymentDeadline &&
-                currentBooking.paymentStatus === 'UNPAID' &&
-                ['PENDING', 'CONFIRMED'].includes(currentBooking.status)
-              "
+              v-if="currentBooking.paymentDeadline"
               :deadline="currentBooking.paymentDeadline"
               @expired="loadData"
             />
+              <h3 v-else>Pay at the ticketing desk</h3>
+              <p>Show your booking reference and pay before the deadline to receive your QR ticket. Booking fee: PHP 0.</p>
+            </div>
             <p v-if="currentBooking.cancellationReason" class="payment-hint">
               {{ currentBooking.cancellationReason }}
             </p>
@@ -563,11 +553,7 @@
             <router-link :to="{ name: 'settings' }" class="settings-link"
               ><ion-icon :icon="settingsOutline" aria-hidden="true" />
               Preferences & settings
-              <ion-icon
-                class="settings-arrow"
-                :icon="arrowForwardOutline"
-                aria-hidden="true"
-            /></router-link></section
+            </router-link></section
         ></template>
         <p class="prototype-note">
           Your bookings, e-tickets, notifications, and profile are synced with
@@ -582,6 +568,7 @@ import { Button } from "@/components/ui/button";
 import { confirmAction } from "../../composables/confirmation";
 import PaymentDeadline from "../../components/passenger/PaymentDeadline.vue";
 import { markAllNotificationsRead } from "../../services/database/experience";
+import { clearNotificationUnread, setUnreadNotifications } from "../../composables/notificationUnread";
 import { downloadTicket, shareTicket } from "../../data/ticketExport";
 import { useQueueRefresh } from "../../composables/queueRefresh";
 import { databaseRequestError } from "../../data/databaseErrors";
@@ -600,6 +587,7 @@ import {
   bookmarkOutline,
   boatOutline,
   calendarOutline,
+  documentTextOutline,
   callOutline,
   checkmarkCircleOutline,
   checkmarkOutline,
@@ -690,10 +678,13 @@ const filteredNotices = computed(() =>
 );
 async function markAllRead() {
   if (!database || noticeBusy.value) return;
+  const uid = auth?.currentUser?.uid;
   noticeBusy.value = true;
   loadError.value = "";
   try {
     await markAllNotificationsRead(database);
+    clearNotificationUnread(undefined, uid);
+    notices.value.forEach(notice => { notice.unread = false; });
     await loadData();
   } catch (cause) {
     loadError.value = databaseRequestError(
@@ -870,7 +861,7 @@ const description = computed(
       ticket: "Your reservation details, ready for the terminal.",
       bookings: "Manage upcoming reservations and past journeys.",
       "booking-details":
-        "Review the sailing and passengers on your latest reservation.",
+        "Review the sailing, passengers and payment details for this reservation.",
       notifications: "Stay up to date with booking and sailing changes.",
       profile: "Keep your contact details up to date.",
     })[kind.value] || "",
@@ -932,6 +923,7 @@ async function loadData() {
       }));
     }
     if (kind.value === "notifications") {
+      const uid = auth?.currentUser?.uid;
       const result = await myNotifications(database, {
         fetchPolicy: "SERVER_ONLY",
       });
@@ -943,6 +935,7 @@ async function loadData() {
         time: formatDay(item.createdAt),
         unread: !item.readAt,
       }));
+      setUnreadNotifications(result.data.notifications, uid);
     }
     if (kind.value === "profile") {
       const result = await myProfile(database, { fetchPolicy: "SERVER_ONLY" });
@@ -1017,9 +1010,11 @@ function noticeIcon(type: string) {
 }
 async function markNotice(notice: { id: string; unread: boolean }) {
   if (!database) return;
+  const uid = auth?.currentUser?.uid;
   try {
     await markNotificationRead(database, { id: notice.id });
     notice.unread = false;
+    clearNotificationUnread(notice.id, uid);
   } catch (error) {
     loadError.value = databaseRequestError(
       error,
@@ -1059,18 +1054,6 @@ async function saveProfile() {
   display: flex;
   align-items: center;
   gap: 15px;
-}
-.logout-button {
-  display: grid;
-  place-items: center;
-  width: 36px;
-  height: 36px;
-  border: 1px solid var(--line);
-  border-radius: 9px;
-  background: var(--surface);
-  color: var(--ocean);
-  font-size: 18px;
-  cursor: pointer;
 }
 .role-link,
 .settings-link {
@@ -2318,5 +2301,110 @@ button:disabled {
   .booking-filters {
     grid-template-columns: 1fr;
   }
+}
+/* Booking details use one padded card and distinct fare/payment sections. */
+.booking-detail-card { padding: 20px; border-radius: 18px; }
+.booking-detail-card .row-heading { display: flex; flex-direction: column; align-items: flex-start; gap: 12px; padding: 0; }
+.booking-detail-card .row-heading h2 { font-size: 22px; line-height: 1.5; }
+.booking-detail-card .row-heading h2 span { margin-inline: 5px; }
+.booking-detail-card .row-heading > .detail-status { padding: 5px 9px; border-radius: 6px; font-size: 10px; line-height: 1.5; letter-spacing: .025em; }
+.booking-detail-card .detail-status.unpaid.pending { color: #8a5100; background: #fff0d5; }
+.booking-detail-card .detail-status.paid { color: var(--ocean); background: var(--light-blue); }
+.booking-detail-card .detail-reference { display: grid; gap: 5px; margin: 18px 0 0; padding: 0; border-radius: 0; background: none; font-weight: 400; }
+.booking-detail-card .detail-reference span { color: var(--muted); font-size: 11px; }
+.booking-detail-card .detail-reference strong { color: var(--ink); font-size: 13px; line-height: 1.6; overflow-wrap: anywhere; }
+.booking-detail-card .booking-meta { margin: 20px 0 0; padding: 18px 0; border-top: 1px solid var(--line); gap: 16px; }
+.booking-detail-card .booking-meta > div { min-width: 0; }
+.booking-detail-card .booking-meta span { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--muted); }
+.booking-detail-card .booking-meta strong { display: block; margin-top: 7px; color: var(--ink); font-size: 13px; line-height: 1.6; overflow-wrap: anywhere; }
+.detail-fares { margin-top: 20px; padding: 16px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface-soft); }
+.detail-fares h3, .booking-detail-card .detail-passengers h3 { margin: 0 0 14px; font-size: 14px; line-height: 1.5; color: var(--ink); }
+.detail-fares > div { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; margin-top: 12px; color: var(--muted); font-size: 12px; line-height: 1.6; }
+.detail-fares > div > span { min-width: 0; overflow-wrap: anywhere; }
+.detail-fares b { flex: none; font-size: 12px; color: var(--ink); white-space: nowrap; }
+.detail-fares small { display: block; margin-top: 3px; color: var(--muted); font-size: 11px; }
+.detail-fares > .detail-fare-total { flex-wrap: wrap; align-items: center; margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--line); color: var(--ink); }
+.detail-fare-total strong:first-child { font-size: 13px; }
+.detail-fare-total strong:last-child { font-size: 22px; line-height: 1.4; white-space: nowrap; }
+.booking-detail-card .detail-passengers { margin: 24px 0 0; padding: 0; }
+.booking-detail-card .detail-passengers > div { display: grid; grid-template-columns: 34px minmax(0, 1fr) auto; align-items: start; gap: 10px; padding: 14px 0; }
+.booking-detail-card .detail-passengers > div > span:nth-child(2) { min-width: 0; overflow-wrap: anywhere; }
+.booking-detail-card .detail-passengers strong { display: block; font-size: 14px; line-height: 1.5; }
+.booking-detail-card .detail-passengers small { display: block; margin-top: 5px; font-size: 11px; line-height: 1.5; }
+.detail-person-fare { text-align: right; white-space: nowrap; color: var(--ink); font-size: 12px; line-height: 1.5; }
+.detail-person-fare small { font-weight: 400; }
+.detail-payment { margin-top: 20px; }
+.detail-payment > p { margin: 12px 0 0; color: var(--muted); font-size: 12px; line-height: 1.8; }
+.detail-payment > h3 { font-size: 14px; color: var(--ink); }
+.detail-payment :deep(.deadline) { display: grid; grid-template-columns: 24px minmax(0, 1fr); align-items: start; gap: 10px; margin: 0; padding: 16px; }
+.detail-payment :deep(.deadline div) { min-width: 0; }
+.detail-payment :deep(.deadline strong) { font-size: 13px; line-height: 1.5; }
+.detail-payment :deep(.deadline small) { font-size: 12px; line-height: 1.6; }
+.detail-payment :deep(.deadline b) { grid-column: 2; margin: 0; font-size: 15px; line-height: 1.5; }
+.detail-payment :deep(.deadline b)::before { content: 'Time left · '; font-size: 11px; font-weight: 400; }
+.booking-detail-card .payment-hint { margin: 16px 0 0; font-size: 13px; line-height: 1.7; }
+.booking-detail-card .detail-actions { margin: 24px 0 0; padding-top: 18px; gap: 10px; }
+.booking-detail-card .detail-actions ion-button { margin: 0; min-height: 46px; font-size: 13px; }
+:global(:root[data-theme="dark"]) .booking-detail-card .detail-status.unpaid.pending { color: #ffda8a; background: #33260f; }
+@container passenger (max-width:380px) {
+  .booking-detail-card { padding: 16px; }
+  .booking-detail-card .row-heading h2 { font-size: 19px; }
+  .booking-detail-card .detail-passengers > div { grid-template-columns: 34px minmax(0, 1fr); }
+  .detail-person-fare { grid-column: 2; text-align: left; }
+  .booking-detail-card .detail-person-fare small { display: inline; margin-left: 6px; }
+  .detail-payment :deep(.deadline) { padding: 12px; }
+  .detail-payment :deep(.deadline b) { font-size: 13px; }
+}
+/* Compact booking list, independent of the ticket and detail screens. */
+.bookings-page .page-title { margin: 24px 0 20px; }
+.bookings-page .page-title h1 { font-size: 26px; line-height: 1.3; }
+.bookings-page .booking-filters { grid-template-columns: minmax(0, 1fr); gap: 12px; margin: 0 0 18px; }
+.bookings-page .booking-filters label { min-width: 0; font-size: 11px; font-weight: 600; }
+.bookings-page .booking-filters label:last-child { grid-template-columns: minmax(0, 1fr); gap: 7px; }
+.bookings-page .booking-filters input, .bookings-page .booking-filters select { min-width: 0; min-height: 44px; border-radius: 10px; font-size: 14px; }
+.bookings-page .booking-filters input::placeholder { font-size: 12px; font-weight: 400; }
+.bookings-page .tabs { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px; margin: 0 0 18px; padding: 4px; border: 1px solid var(--line); border-radius: 11px; background: var(--surface-soft); overflow: visible; }
+.bookings-page .tabs button { min-width: 0; min-height: 44px; padding: 7px 4px; border: 0; border-radius: 7px; background: transparent; color: var(--muted); font-size: 11px; font-weight: 600; line-height: 1.5; white-space: normal; }
+.bookings-page .tabs button.selected { background: var(--action); color: #fff; border: 0; }
+.bookings-page .booking-list { gap: 16px; }
+.bookings-page .booking-card { display: block; padding: 18px; border-radius: 15px; background: var(--surface); }
+.bookings-page .booking-copy { width: 100%; }
+.bookings-page .booking-card .row-heading { display: flex; flex-direction: column; align-items: flex-start; gap: 10px; margin: 0; }
+.bookings-page .booking-card .row-heading h2 { margin: 0; font-size: 18px; line-height: 1.5; font-weight: 650; overflow-wrap: anywhere; }
+.bookings-page .booking-card .row-heading h2 span { display: inline; margin-inline: 4px; color: var(--ocean); }
+.bookings-page .booking-card .row-heading > b { padding: 5px 9px; border-radius: 7px; font-size: 10px; line-height: 1.5; letter-spacing: .02em; }
+.bookings-page .row-heading > b.unpaid { background: #fff0d5; color: #8a5100; }
+.bookings-page .row-heading > b.paid { background: var(--light-blue); color: var(--ocean); }
+.bookings-page .row-heading > b.cancelled, .bookings-page .row-heading > b.expired { background: var(--surface-soft); color: var(--muted); }
+.bookings-page .row-heading > b.refund_pending { background: #fff0d5; color: #8a5100; }
+.bookings-page .booking-meta { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 10px; margin: 16px 0; }
+.bookings-page .booking-meta span { display: flex; align-items: flex-start; gap: 6px; min-width: 0; color: var(--muted); font-size: 11px; line-height: 1.7; overflow-wrap: anywhere; }
+.bookings-page .booking-meta ion-icon { flex: none; margin-top: 3px; color: var(--ocean); font-size: 15px; }
+.bookings-page .booking-fare-panel { padding: 13px 14px; border: 1px solid var(--line); border-radius: 11px; background: var(--surface-soft); }
+.bookings-page .booking-total { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px 14px; }
+.bookings-page .booking-total span { color: var(--muted); font-size: 12px; }
+.bookings-page .booking-total strong { color: var(--ink); font-size: 21px; line-height: 1.4; white-space: nowrap; }
+.bookings-page .booking-accommodation { margin: 8px 0 0; color: var(--muted); font-size: 11px; line-height: 1.7; }
+.bookings-page .booking-reference { display: flex; flex-wrap: wrap; gap: 8px 16px; margin: 16px 0; color: var(--muted); }
+.bookings-page .booking-reference span { display: inline-flex; align-items: center; gap: 6px; min-width: 0; font-size: 11px; line-height: 1.6; overflow-wrap: anywhere; }
+.bookings-page .booking-reference ion-icon { flex: none; color: var(--ocean); font-size: 15px; }
+.bookings-page .booking-card :deep(.deadline) { display: grid; grid-template-columns: 22px minmax(0, 1fr); gap: 8px 10px; margin: 16px 0; padding: 14px; }
+.bookings-page .booking-card :deep(.deadline > ion-icon) { align-self: start; font-size: 21px; }
+.bookings-page .booking-card :deep(.deadline strong) { font-size: 12px; line-height: 1.5; }
+.bookings-page .booking-card :deep(.deadline small) { font-size: 11px; line-height: 1.6; }
+.bookings-page .booking-card :deep(.deadline > b) { grid-column: 2; margin: 0; font-size: 14px; line-height: 1.5; }
+.bookings-page .booking-card :deep(.deadline > b)::before { content: 'Time left · '; font-size: 11px; font-weight: 400; }
+.bookings-page .booking-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--line); }
+.bookings-page .booking-actions a, .bookings-page .booking-actions button { display: inline-flex; align-items: center; justify-content: center; gap: 7px; min-height: 44px; padding: 10px; border: 1px solid var(--line); border-radius: 9px; background: var(--surface); color: var(--ocean); font-size: 12px; font-weight: 600; line-height: 1.5; text-align: center; }
+.bookings-page .booking-actions a ion-icon { font-size: 17px; flex: none; }
+.bookings-page .booking-actions .booking-ticket-link { background: var(--action); color: #fff; border-color: transparent; }
+.bookings-page .booking-actions .booking-cancel-link { color: var(--danger); font-size: 11px; }
+.bookings-page .booking-actions > :only-child { grid-column: 1 / -1; }
+@container passenger (max-width: 380px) {
+  .bookings-page .booking-card { padding: 16px; }
+  .bookings-page .booking-meta { grid-template-columns: minmax(0, 1fr); gap: 8px; }
+  .bookings-page .tabs button { font-size: 10px; }
+  .bookings-page .booking-card .row-heading h2 { font-size: 17px; }
+  .bookings-page .booking-actions { grid-template-columns: minmax(0, 1fr); }
 }
 </style>

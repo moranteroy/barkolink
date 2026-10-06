@@ -2,23 +2,11 @@
   <ion-page>
     <ion-content :fullscreen="true">
       <main class="walk-in-page">
-        <header class="page-header">
-          <div class="header-left">
-            <router-link
-              class="back-link"
-              to="/staff/ticketing"
-              aria-label="Back to ticketing"
-              ><ion-icon :icon="arrowBackOutline" /></router-link
-            ><BrandMark />
-          </div>
-          <div class="header-right">
-            <span class="staff-label"
-              ><ion-icon :icon="ticketOutline" /> Ticketing desk</span
-            ><router-link class="queue-link" to="/staff/ticketing#queue"
-              >Booking queue <ion-icon :icon="chevronForwardOutline"
-            /></router-link>
-          </div>
-        </header>
+        <StaffWorkspaceHeader title="Walk-in booking" />
+        <router-link class="back-to-ticketing" to="/staff/ticketing">
+          <ion-icon :icon="gridOutline" aria-hidden="true" />
+          Back to ticketing
+        </router-link>
 
         <section class="page-intro">
           <div>
@@ -32,9 +20,7 @@
               }}
             </p>
           </div>
-          <span v-if="!issued" class="intro-icon"
-            ><ion-icon :icon="ticketOutline"
-          /></span>
+          <router-link class="return-to-queue" to="/staff/ticketing/bookings"><ion-icon :icon="ticketOutline" aria-hidden="true" /> Booking queue</router-link>
         </section>
 
         <div v-if="issued" class="receipt" aria-live="polite">
@@ -88,17 +74,18 @@
             ><button type="button" class="secondary-button" @click="newTicket">
               Issue another ticket</button
             ><router-link to="/staff/ticketing#queue"
-              >Back to booking queue</router-link
+              ><ion-icon :icon="ticketOutline" aria-hidden="true" /> Back to booking queue</router-link
             >
           </div>
         </div>
 
         <template v-else>
           <div class="flow-strip" aria-label="Walk-in ticket steps">
-            <span><b>1</b> Select sailing</span><i></i
-            ><span><b>2</b> Passenger details</span><i></i
-            ><span><b>3</b> Collect cash</span>
+            <span :class="selectedSailing ? 'complete' : 'active'"><b>1</b> Select sailing</span><i></i
+            ><span :class="{ active: selectedSailing, complete: selectedSailing && form.passengerName.trim() && form.birthDate && form.sex }"><b>2</b> Passenger details</span><i></i
+            ><span><b>3</b> Review &amp; collect cash</span>
           </div>
+          <div class="mobile-fare" aria-live="polite"><span>Cash to collect<small>{{ selectedSailing ? fareLabel : 'Select a sailing to calculate fare' }}</small></span><strong>PHP {{ payable.toLocaleString() }}</strong></div>
           <div class="walk-in-layout">
             <div v-if="pendingSale" role="status" class="summary-card" style="grid-column: 1 / -1">
               <strong>Unresolved sale: {{ pendingSale.args.reference }}</strong>
@@ -268,13 +255,13 @@
                 >
                   <ion-icon :icon="cashOutline" />
                   {{ busy ? "Issuing ticket…" : "Review cash payment" }}
-                  <ion-icon :icon="arrowForwardOutline" /></button
+                  </button
                 ><span>Ticket is issued only after you confirm payment.</span>
               </div>
               </fieldset>
             </form>
 
-            <aside class="summary-card glass-panel">
+            <aside class="summary-card fare-summary">
               <div class="summary-heading">
                 <span class="summary-icon"
                   ><ion-icon :icon="receiptOutline"
@@ -376,6 +363,7 @@
 </template>
 
 <script setup lang="ts">
+import StaffWorkspaceHeader from "../../../components/staff/StaffWorkspaceHeader.vue";
 import {
   passengerFare,
   passengerTypeCode,
@@ -390,19 +378,17 @@ import { philippineDateKey, validBirthDate } from "../../../data/travelDate";
 import { DialogRoot, DialogOverlay, DialogContent, DialogTitle, DialogDescription } from "reka-ui";
 import { IonContent, IonIcon, IonPage, onIonViewWillEnter } from "@ionic/vue";
 import {
-  arrowBackOutline,
   arrowForwardOutline,
   boatOutline,
   cashOutline,
   checkmarkCircleOutline,
-  chevronForwardOutline,
+  gridOutline,
   informationCircleOutline,
   personOutline,
   printOutline,
   receiptOutline,
   ticketOutline,
 } from "ionicons/icons";
-import BrandMark from "../../../components/shared/BrandMark.vue";
 import {
   ticketingCreateGuestWalkIn,
   ticketingSailings,
@@ -1431,4 +1417,69 @@ function printReceipt() {
     padding: 18px 0;
   }
 }
+
+/* Compact counter workspace with a persistent desktop fare summary. */
+.walk-in-page { max-width: 1240px; padding: 18px 28px 48px; }
+.walk-in-page > :deep(.staff-workspace-header) { border: 1px solid var(--line); border-radius: 12px; min-height: 64px; }
+.page-intro { margin: 24px 0 16px; gap: 12px; }
+.page-intro h1 { font-size: 28px; margin: 5px 0; line-height: 1.3; }
+.return-to-queue { display: inline-flex; align-items: center; justify-content: center; gap: 7px; flex: none; min-height: 42px; padding: 8px 12px; border: 1px solid var(--line); border-radius: 9px; background: var(--surface); color: var(--ocean); font-size: 12px; text-decoration: none; }
+.return-to-queue ion-icon { font-size: 17px; }
+.flow-strip { margin-bottom: 16px; padding: 10px 16px; gap: 16px; border-radius: 10px; font-size: 11px; font-weight: 500; }
+.flow-strip span.active { color: var(--ocean); font-weight: 650; }
+.flow-strip span.active b { color: white; background: var(--ocean); }
+.flow-strip span.complete { color: var(--ocean); }
+.walk-in-layout { grid-template-columns: minmax(0, 1fr) 320px; gap: 18px; }
+.form-card, .summary-card { border-radius: 12px; box-shadow: none; }
+.form-section { padding: 18px 20px; }
+.card-heading { gap: 10px; margin-bottom: 14px; }
+.step-number { width: 32px; height: 32px; border-radius: 9px; font-size: 18px; }
+.card-heading h2 { font-size: 17px; margin: 2px 0 3px; }
+.card-heading p { font-size: 12px; font-weight: 400; }
+.field { font-size: 12px; font-weight: 500; }
+.field input, .field select { box-sizing: border-box; height: 42px; margin-top: 6px; font-weight: 400; font-size: 13px; }
+.form-grid { gap: 12px 14px; }
+.selected-sailing { padding: 9px 12px; margin-top: 10px; }
+.form-footer { padding: 16px 20px; gap: 10px; }
+.form-footer .issue-button { justify-content: center; min-height: 44px; font-size: 13px; }
+.form-footer .issue-button ion-icon { margin: 0; }
+.fare-summary { top: 18px; }
+.summary-heading { padding: 16px; gap: 10px; }
+.summary-heading h2 { font-size: 17px; }
+.summary-icon { width: 32px; height: 32px; border-radius: 9px; font-size: 18px; }
+.summary-route { margin: 16px; padding: 12px; gap: 6px; }
+.summary-route strong { line-height: 1.5; overflow-wrap: anywhere; }
+.summary-route span { line-height: 1.6; }
+.summary-row { margin: 0 16px; padding: 10px 0; font-size: 12px; }
+.summary-total { margin: 16px; padding: 14px 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--light-blue); font-size: 12px; }
+.summary-total strong { font-size: 23px; white-space: nowrap; }
+.summary-note { margin: 0 16px 16px; background: transparent; padding: 0; font-size: 11px; line-height: 1.6; }
+.mobile-fare { display: none; }
+.back-to-ticketing { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; margin-top: 12px; padding: 8px 12px; border: 1px solid var(--line); border-radius: 9px; background: var(--surface); color: var(--ocean); font-size: 12px; font-weight: 500; text-decoration: none; }
+.back-to-ticketing ion-icon { font-size: 17px; }
+.back-to-ticketing:hover { background: var(--surface-soft); }
+.back-to-ticketing + .page-intro { margin-top: 14px; }
+.confirmation-overlay { overflow-y: auto; }
+.confirmation-card { max-height: calc(100dvh - 36px); overflow-y: auto; }
+@media (max-width: 900px) {
+ .walk-in-layout { grid-template-columns: minmax(0, 1fr) 280px; gap: 14px; }
+ .walk-in-page { padding: 16px 20px 40px; }
+}
+@media (max-width: 780px) {
+ .walk-in-layout { grid-template-columns: minmax(0, 1fr); }
+ .walk-in-page { padding: 12px 16px 32px; }
+ .page-intro { margin-top: 20px; flex-wrap: wrap; }
+ .mobile-fare { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 14px; padding: 12px 14px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); font-size: 12px; }
+ .mobile-fare small { display: block; margin-top: 4px; color: var(--muted); font-size: 10px; }
+ .mobile-fare strong { color: var(--ocean); font-size: 20px; white-space: nowrap; }
+ .fare-summary { position: static; }
+ .flow-strip { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); align-items: start; gap: 8px; padding: 12px; font-size: 10px; }
+ .flow-strip i { display: none; }
+ .flow-strip span { align-items: flex-start; white-space: normal; line-height: 1.5; }
+ .flow-strip b { flex: none; }
+ .form-section { padding: 16px; }
+ .form-footer { padding: 16px; }
+}
+@media print { .walk-in-page > :deep(.staff-workspace-header), .back-to-ticketing, .mobile-fare { display: none; } }
+
 </style>

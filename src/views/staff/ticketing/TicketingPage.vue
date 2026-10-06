@@ -1,7 +1,7 @@
 <template>
   <ion-page>
     <ion-content ref="contentRef" :fullscreen="true">
-      <main class="staff-shell design-workspace">
+      <main class="staff-shell design-workspace" :class="{ 'ticketing-workspace': !isBoarding, 'ticketing-bookings': isBookingsPage }">
         <button
           v-if="menuOpen"
           class="staff-scrim"
@@ -16,42 +16,10 @@
           <BrandMark /><StaffNavigation
             role="ticketing"
             @navigate="menuOpen = false"
-          /><button class="logout" type="button" @click="logout">
-            <ion-icon :icon="logOutOutline" />Log out
-          </button>
+          /><StaffLogoutButton />
         </aside>
         <section class="staff-main">
-          <header class="topbar glass-toolbar">
-            <button
-              class="staff-menu"
-              :aria-expanded="menuOpen"
-              aria-controls="staff-sidebar"
-              aria-label="Toggle navigation"
-              @click="menuOpen = !menuOpen"
-            >
-              <ion-icon :icon="menuOpen ? closeOutline : menuOutline" />
-            </button>
-            <div class="breadcrumbs">
-              Staff workspace
-              <ion-icon :icon="chevronForwardOutline" aria-hidden="true" />
-              <strong>{{ staff.role }}</strong>
-            </div>
-            <div class="top-actions">
-              <router-link
-                :to="`/staff/${route.params.role}/settings/account`"
-                class="staff-profile-chip"
-                aria-label="My staff account"
-                ><span class="staff-profile-icon"
-                  ><ion-icon
-                    :icon="staff.actionIcon"
-                    aria-hidden="true" /></span
-                ><span class="staff-profile-copy"
-                  ><strong>{{ staff.name }}</strong
-                  ><small>{{ staff.role }}</small></span
-                ></router-link
-              >
-            </div>
-          </header>
+          <StaffWorkspaceHeader :role="String(route.params.role)" :title="staff.greeting" navigation :menu-open="menuOpen" @toggle-menu="menuOpen = !menuOpen" />
           <main id="overview" class="content">
             <div class="heading">
               <div>
@@ -73,6 +41,7 @@
                 :disabled="busy || loading"
                 @click="refreshQueues"
               >
+                <ion-icon :icon="refreshOutline" aria-hidden="true" />
                 {{ loading ? "Refreshing..." : "Refresh" }}
               </button>
             </div>
@@ -92,7 +61,7 @@
                 </option>
               </select></label
             >
-            <section class="metric-grid">
+            <section v-if="!isBookingsPage" class="metric-grid">
               <article v-for="metric in staff.metrics" :key="metric.label">
                 <span :class="metric.tone"
                   ><ion-icon :icon="metric.icon"
@@ -111,15 +80,14 @@
                     <p class="kicker">{{ staff.queueEyebrow }}</p>
                     <h2>{{ staff.queueTitle }}</h2>
                   </div>
-                  <input
-                    v-if="!isBoarding"
+                  <div v-if="isBookingsPage" class="queue-filters">
+                  <label>Find a reservation<input
                     v-model="searchText"
                     class="queue-search"
                     type="search"
                     placeholder="Search reference, passenger, route"
                     aria-label="Search bookings"
-                  /><select
-                    v-if="!isBoarding"
+                  /></label><label>Payment / booking status<select
                     v-model="statusFilter"
                     aria-label="Filter reservation status"
                   >
@@ -129,11 +97,12 @@
                     <option value="CANCELLED">Cancelled</option>
                     <option value="EXPIRED">Expired</option>
                     <option value="REFUND_PENDING">Refund pending</option>
-                    <option value="REFUNDED">Refunded</option></select
-                  ><span v-else class="filter">{{
+                    <option value="REFUNDED">Refunded</option></select></label>
+                  </div><router-link v-else-if="!isBoarding" class="all-bookings-link" to="/staff/ticketing/bookings"><ion-icon :icon="ticketOutline" aria-hidden="true" /> View all bookings</router-link><span v-else class="filter">{{
                     activeSailing || "No sailing selected"
                   }}</span>
                 </div>
+                <p v-if="!isBoarding" class="queue-result-count">{{ loading ? 'Loading reservations...' : `${queueItems.length} shown / ${queueTotal} ${isBookingsPage ? 'matching reservations' : 'awaiting payment'}` }}</p>
                 <div class="queue-list">
                   <div
                     v-for="item in queueItems"
@@ -149,17 +118,16 @@
                           : initialsFor(bookingName(item))
                       }}</span
                     >
-                    <div>
+                    <div class="queue-person">
                       <strong>{{
                         isBoarding ? item.name : bookingName(item)
                       }}</strong>
-                      <p>
-                        {{
-                          isBoarding
-                            ? item.detail
-                            : `${item.reference} · ${item.sailing.origin.name} to ${item.sailing.destination.name} · ${new Date(item.sailing.departureAt).toLocaleString()}`
-                        }}
-                      </p>
+                      <p v-if="isBoarding">{{ item.detail }}</p>
+                      <template v-else>
+                        <small class="queue-reference">{{ item.reference }}</small>
+                        <p class="queue-route">{{ item.sailing.origin.name }} to {{ item.sailing.destination.name }}</p>
+                        <p class="queue-departure"><ion-icon :icon="calendarOutline" aria-hidden="true" /> {{ formatQueueDeparture(item.sailing.departureAt) }}</p>
+                      </template>
                     </div>
                     <span
                       class="status"
@@ -193,7 +161,7 @@
                   </p>
                 </div>
                 <div
-                  v-if="!isBoarding && queueTotal > pageSize"
+                  v-if="isBookingsPage && queueTotal > pageSize"
                   class="record-pagination"
                 >
                   <button
@@ -224,9 +192,9 @@
                   database.
                 </p>
               </aside>
-              <TicketingGuide v-else />
+              <TicketingGuide v-else-if="!isBookingsPage" />
             </section>
-            <section id="activity" class="panel activity-panel">
+            <section v-if="isBoarding" id="activity" class="panel activity-panel">
               <div class="panel-heading">
                 <div>
                   <p class="kicker">
@@ -321,9 +289,11 @@
             >
           </div></ion-modal
         ><ion-modal
+          class="booking-payment-modal"
           :is-open="!!selectedBooking"
           @didDismiss="selectedBooking = null"
-          ><div class="modal-card ticket-list-modal">
+          ><div class="modal-card ticket-list-modal booking-dialog">
+            <header class="booking-dialog-heading">
             <button
               class="close"
               aria-label="Close tickets"
@@ -331,23 +301,26 @@
             >
               <ion-icon :icon="closeOutline" />
             </button>
-            <p class="kicker">{{ selectedBooking?.reference }}</p>
+            <div><p class="kicker">{{ selectedBooking?.reference }}</p>
             <h2>Booking and payment</h2>
-            <p>
+            </div></header>
+            <div class="booking-dialog-body">
+            <section class="booking-amount">
+              <span>
               {{
                 selectedBookingCancelled
                   ? "Original booking amount"
                   : selectedBookingPaid
                     ? "Amount paid"
                     : "Amount due"
-              }}:
+              }}</span>
               <strong
                 >PHP
                 {{
                   Number(selectedBooking?.total || 0).toLocaleString()
                 }}</strong
               >
-              ·
+              <b>
               {{
                 selectedBookingExpired
                   ? "Expired"
@@ -361,7 +334,8 @@
                           ? "Paid"
                           : "Awaiting payment"
               }}
-            </p>
+              </b>
+            </section>
             <p
               v-if="selectedBookingCancelled"
               class="cancellation-notice"
@@ -373,15 +347,12 @@
                   : "This reservation is cancelled. No payment is due and tickets cannot be issued."
               }}
             </p>
-            <p>
+            <section class="dialog-sailing"><h3>
               {{ selectedBooking?.sailing.origin.name }} to
-              {{ selectedBooking?.sailing.destination.name }} ·
-              {{
-                new Date(
-                  selectedBooking?.sailing.departureAt || Date.now(),
-                ).toLocaleString()
-              }}
-            </p>
+              {{ selectedBooking?.sailing.destination.name }}</h3>
+              <p><ion-icon :icon="calendarOutline" aria-hidden="true" />{{ formatQueueDeparture(selectedBooking?.sailing.departureAt || new Date().toISOString()) }}</p>
+              <p><ion-icon :icon="boatOutline" aria-hidden="true" />{{ selectedBooking?.sailing.vessel.name }}</p>
+            </section>
             <p v-if="selectedBooking?.accommodationName">
               {{ selectedBooking.accommodationName }} accommodation · PHP
               {{
@@ -389,6 +360,7 @@
               }}
               additional fare
             </p>
+            <h3 class="dialog-section-title">Passengers ({{ selectedBooking?.bookingPassengers_on_booking.length || 0 }})</h3>
             <article
               v-for="person in selectedBooking?.bookingPassengers_on_booking ||
               []"
@@ -410,6 +382,7 @@
                   }}</small
                 >
               </div>
+              <span class="dialog-person-fare">PHP {{ Number(person.fare).toLocaleString() }}</span>
               <small v-if="selectedBookingCancelled">{{
                 selectedBookingExpired
                   ? "Ticket not issued - reservation expired"
@@ -480,13 +453,15 @@
                 }}</ion-button
               >
             </div>
-          </div></ion-modal
+          </div></div></ion-modal
         >
       </main>
     </ion-content>
   </ion-page>
 </template>
 <script setup lang="ts">
+import StaffLogoutButton from "../../../components/staff/StaffLogoutButton.vue";
+import StaffWorkspaceHeader from "../../../components/staff/StaffWorkspaceHeader.vue";
 import StaffNavigation from "../../../components/staff/StaffNavigation.vue";
 import { staffDashboard } from "../../../services/database/workspaces";
 import { confirmAction } from "../../../composables/confirmation";
@@ -496,7 +471,7 @@ import { useQueueRefresh } from "../../../composables/queueRefresh";
 import TicketingGuide from "../../../components/staff/ticketing/TicketingGuide.vue";
 import { databaseRequestError } from "../../../data/databaseErrors";
 import { computed, nextTick, onBeforeUnmount, ref, watch } from "vue";
-import { useRoute, useRouter } from "vue-router";
+import { useRoute } from "vue-router";
 import {
   IonButton,
   IonContent,
@@ -509,18 +484,16 @@ import {
 import {
   boatOutline,
   checkmarkCircle,
-  chevronForwardOutline,
   closeOutline,
   informationCircleOutline,
-  logOutOutline,
-  menuOutline,
   peopleOutline,
   scanOutline,
   searchOutline,
+  refreshOutline,
+  calendarOutline,
   ticketOutline,
 } from "ionicons/icons";
 import BrandMark from "../../../components/shared/BrandMark.vue";
-import { clearSessionViews } from "../../../composables/sessionViews";
 import {
   boardingActivity,
   boardingManifest,
@@ -531,9 +504,7 @@ import {
   staffBookings,
 } from "../../../services/database/staff";
 import { auth, staffDatabase } from "../../../services/session";
-import { signOut } from "../../../services/auth";
 const route = useRoute();
-const router = useRouter();
 const contentRef = ref<any>(null);
 const showScanner = ref(false);
 const menuOpen = ref(false);
@@ -546,6 +517,7 @@ const statusFilter = ref("ALL");
 const queuePage = ref(0);
 const queueTotal = ref(0);
 const pageSize = 30;
+const isBookingsPage = computed(() => route.path === "/staff/ticketing/bookings");
 const ticketLookup = ref("");
 const scannerVideo = ref<HTMLVideoElement | null>(null);
 const scanError = ref("");
@@ -728,6 +700,9 @@ const boarding = {
   ],
 };
 const isBoarding = computed(() => route.params.role === "boarding");
+function formatQueueDeparture(value: string) {
+  return new Date(value).toLocaleString("en-PH", { timeZone: "Asia/Manila", month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit" });
+}
 const isWorkspaceRoute = computed(
   () =>
     route.path === "/staff/ticketing" ||
@@ -771,7 +746,10 @@ const staff = computed(() => {
       ];
   return {
     ...source,
-    greeting: route.path.endsWith("/bookings") ? "Bookings" : "Dashboard",
+    greeting: isBookingsPage.value ? "Bookings" : "Dashboard",
+    description: !isBoarding.value && isBookingsPage.value ? "Find reservations, review payments and manage booking records." : source.description,
+    queueEyebrow: !isBoarding.value && !isBookingsPage.value ? "PAYMENT QUEUE" : source.queueEyebrow,
+    queueTitle: !isBoarding.value && !isBookingsPage.value ? "Awaiting payment" : source.queueTitle,
     name:
       auth?.currentUser?.displayName ||
       auth?.currentUser?.email?.split("@")[0] ||
@@ -782,13 +760,21 @@ const staff = computed(() => {
 const queueItems = computed(() =>
   isBoarding.value
     ? boardingQueue.value
-    : ticketingQueue.value.filter((item) =>
+    : (isBookingsPage.value ? ticketingQueue.value : ticketingQueue.value.slice(0, 6)).filter((item) =>
         `${item.reference} ${bookingName(item)} ${item.bookingChannel} ${item.sailing.origin.name} ${item.sailing.destination.name}`
           .toLowerCase()
           .includes(searchText.value.toLowerCase().trim()),
       ),
 );
 let searchTimer: ReturnType<typeof setTimeout> | undefined;
+watch(isBookingsPage, () => {
+  searchText.value = "";
+  statusFilter.value = "ALL";
+  queuePage.value = 0;
+  selectedBooking.value = null;
+  menuOpen.value = false;
+  if (isWorkspaceRoute.value) void refreshQueues();
+});
 watch([searchText, statusFilter], () => {
   queuePage.value = 0;
   if (searchTimer) clearTimeout(searchTimer);
@@ -890,10 +876,10 @@ async function refreshQueues() {
       const [result, counts] = await Promise.all([
         staffBookings(staffDatabase, {
           fetchPolicy: "SERVER_ONLY",
-          page: queuePage.value,
-          pageSize,
-          status: statusFilter.value,
-          search: searchText.value.trim(),
+          page: isBookingsPage.value ? queuePage.value : 0,
+          pageSize: isBookingsPage.value ? pageSize : 6,
+          status: isBookingsPage.value ? statusFilter.value : "UNPAID",
+          search: isBookingsPage.value ? searchText.value.trim() : "",
         }),
         staffDashboard(staffDatabase),
       ]);
@@ -1112,11 +1098,7 @@ async function scrollToSection(id: string) {
       350,
     );
 }
-async function logout() {
-  if (auth) await signOut(auth);
-  await router.replace("/login");
-  clearSessionViews();
-}
+
 </script>
 <style scoped>
 .staff-shell {
@@ -2488,4 +2470,116 @@ ion-modal.shift-detail-modal::part(content) {
   background: #ffebe7;
   color: #a53e33;
 }
+.ticketing-workspace .content { padding: 28px 32px 40px; }
+.ticketing-workspace .heading { align-items: center; gap: 16px; margin-bottom: 24px; }
+.ticketing-workspace .heading h1 { font-size: 28px; line-height: 1.3; }
+.ticketing-workspace .heading p:last-child { font-size: 13px; line-height: 1.7; }
+.ticketing-workspace .staff-refresh { display: inline-flex; align-items: center; gap: 7px; min-height: 44px; font-weight: 600; }
+.ticketing-workspace .staff-refresh ion-icon { font-size: 17px; }
+.ticketing-workspace .metric-grid { gap: 16px; margin-bottom: 24px; }
+.ticketing-workspace .metric-grid article { min-width: 0; min-height: 116px; padding: 20px; border-radius: 14px; background: var(--surface); }
+.ticketing-workspace .metric-grid article > span { width: 42px; height: 42px; border-radius: 12px; flex: none; }
+.ticketing-workspace .metric-grid small { font-size: 12px; line-height: 1.6; }
+.ticketing-workspace .metric-grid strong { font-size: 28px; line-height: 1.3; margin: 4px 0; }
+.ticketing-workspace .metric-grid em { color: var(--muted); font-size: 11px; font-style: normal; line-height: 1.6; }
+.ticketing-workspace .workspace-grid { grid-template-columns: minmax(0, 1fr) 290px; align-items: start; gap: 20px; }
+.ticketing-workspace .queue-panel { min-width: 0; padding: 22px; border-radius: 15px; background: var(--surface); }
+.ticketing-workspace .queue-panel .panel-heading { display: block; margin: 0; }
+.ticketing-workspace .queue-panel h2 { margin: 7px 0 0; font-size: 20px; line-height: 1.4; }
+.ticketing-workspace .queue-filters { display: grid; grid-template-columns: minmax(0, 1fr) 180px; align-items: end; gap: 12px; margin-top: 18px; }
+.ticketing-workspace .queue-filters label { display: grid; gap: 7px; min-width: 0; color: var(--muted); font-size: 11px; font-weight: 500; }
+.ticketing-workspace .queue-filters input, .ticketing-workspace .queue-filters select { width: 100%; min-width: 0; height: 44px; padding: 0 12px; border: 1px solid var(--line); border-radius: 9px; background: var(--surface-soft); color: var(--ink); font-size: 12px; font-weight: 400; }
+.ticketing-workspace .queue-search::placeholder { font-size: 11px; }
+.ticketing-workspace .queue-result-count { margin: 14px 0; color: var(--muted); font-size: 11px; line-height: 1.7; }
+.ticketing-workspace .queue-list { display: grid; gap: 10px; }
+.ticketing-workspace .queue-item { display: grid; grid-template-columns: 36px minmax(0, 1fr) auto; gap: 10px 12px; align-items: start; padding: 16px; border: 1px solid var(--line); border-radius: 11px; background: var(--surface-soft); }
+.ticketing-workspace .person-avatar { grid-column: 1; grid-row: 1 / 3; width: 36px; height: 36px; font-size: 11px; }
+.ticketing-workspace .queue-person { grid-column: 2; grid-row: 1 / 3; min-width: 0; }
+.ticketing-workspace .queue-person strong { font-size: 14px; line-height: 1.6; overflow-wrap: anywhere; }
+.ticketing-workspace .queue-reference { display: block; margin-top: 3px; color: var(--muted); font-size: 10px; line-height: 1.6; overflow-wrap: anywhere; }
+.ticketing-workspace .queue-person .queue-route { margin: 5px 0 0; color: var(--ink); font-size: 12px; line-height: 1.7; overflow-wrap: anywhere; }
+.ticketing-workspace .queue-person .queue-departure { display: flex; align-items: flex-start; gap: 5px; margin: 5px 0 0; color: var(--muted); font-size: 11px; line-height: 1.7; }
+.ticketing-workspace .queue-departure ion-icon { flex: none; margin-top: 3px; color: var(--ocean); font-size: 13px; }
+.ticketing-workspace .queue-item .status { grid-column: 3; grid-row: 1; justify-self: end; margin: 0; max-width: 120px; padding: 5px 8px; border-radius: 7px; font-size: 9px; line-height: 1.5; text-align: center; white-space: normal; }
+.ticketing-workspace .queue-item .status.awaiting-payment, .ticketing-workspace .queue-item .status.refund-pending { color: #8a5100; background: #fff0d5; }
+.ticketing-workspace .queue-item .status.paid { color: #167252; background: #e0f4eb; }
+.ticketing-workspace .queue-item .status.cancelled, .ticketing-workspace .queue-item .status.expired, .ticketing-workspace .queue-item .status.refunded { color: var(--muted); background: var(--surface); }
+.ticketing-workspace .queue-update { grid-column: 3; grid-row: 2; justify-self: end; min-height: 40px; min-width: 80px; margin: 0; padding: 8px 12px; font-size: 11px; font-weight: 600; border-radius: 8px; }
+@media (max-width: 1199px) {
+  .ticketing-workspace .workspace-grid { grid-template-columns: minmax(0, 1fr); }
+  .ticketing-workspace .queue-filters { grid-template-columns: minmax(0, 1fr) minmax(150px, .6fr); }
+}
+@media (max-width: 600px) {
+  .ticketing-workspace .content { padding: 22px 16px 32px; }
+  .ticketing-workspace .heading { flex-wrap: wrap; }
+  .ticketing-workspace .metric-grid { grid-template-columns: minmax(0, 1fr); gap: 10px; }
+  .ticketing-workspace .metric-grid article { min-height: 90px; padding: 16px; }
+  .ticketing-workspace .queue-panel { padding: 16px; }
+  .ticketing-workspace .queue-filters { grid-template-columns: minmax(0, 1fr); }
+  .ticketing-workspace .queue-item { grid-template-columns: 30px minmax(0, 1fr); gap: 8px; padding: 13px; }
+  .ticketing-workspace .person-avatar { width: 30px; height: 30px; grid-row: 1; }
+  .ticketing-workspace .queue-person { grid-row: 1; }
+  .ticketing-workspace .queue-item .status { grid-column: 2; grid-row: 2; justify-self: start; }
+  .ticketing-workspace .queue-update { grid-column: 1 / -1; grid-row: 3; width: 100%; justify-self: stretch; min-height: 44px; }
+}
+
+/* Dense reservation rows keep large queues easy to scan. */
+.ticketing-workspace .queue-list { gap: 6px; }
+.ticketing-workspace .queue-panel { padding: 18px; }
+.ticketing-workspace .metric-grid article { min-height: 90px; padding: 16px; }
+.ticketing-workspace .queue-item { grid-template-columns: 30px minmax(0, 1fr) auto 70px; align-items: center; gap: 8px 10px; padding: 10px 12px; border-radius: 9px; }
+.ticketing-workspace .person-avatar { width: 30px; height: 30px; grid-row: 1; }
+.ticketing-workspace .queue-person { grid-row: 1; }
+.ticketing-workspace .queue-person strong { display: inline; font-size: 13px; line-height: 1.5; }
+.ticketing-workspace .queue-reference { display: inline; margin: 0 0 0 8px; font-size: 10px; }
+.ticketing-workspace .queue-person .queue-route { margin: 2px 0 0; font-size: 11px; line-height: 1.5; }
+.ticketing-workspace .queue-person .queue-departure { margin: 2px 0 0; font-size: 10px; line-height: 1.5; }
+.ticketing-workspace .queue-departure ion-icon { margin-top: 1px; font-size: 12px; }
+.ticketing-workspace .queue-item .status { grid-column: 3; grid-row: 1; }
+.ticketing-workspace .queue-update { grid-column: 4; grid-row: 1; min-width: 0; width: 70px; min-height: 40px; padding: 8px; }
+.booking-payment-modal { --width: min(660px, calc(100vw - 32px)); --height: min(820px, 90vh); --border-radius: 18px; }
+.booking-payment-modal .booking-dialog { box-sizing: border-box; width: 100%; height: 100%; max-height: none; margin: 0; padding: 0; border: 0; display: block; overflow-y: auto; text-align: left; background: var(--surface); color: var(--ink); }
+.booking-dialog .booking-dialog-heading { position: sticky; top: 0; z-index: 2; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 18px 24px; border-bottom: 1px solid var(--line); background: var(--surface); }
+.booking-dialog-heading > div { min-width: 0; }
+.booking-dialog-heading .kicker { margin: 0 0 5px; overflow-wrap: anywhere; }
+.booking-dialog-heading h2 { margin: 0; font-size: 21px; line-height: 1.4; }
+.booking-dialog-heading .close { position: static; order: 2; flex: none; display: grid; place-items: center; width: 40px; height: 40px; margin: 0; padding: 0; border: 1px solid var(--line); border-radius: 10px; background: var(--surface-soft); color: var(--ink); }
+.booking-dialog .booking-dialog-body { display: grid; gap: 14px; padding: 22px 24px; }
+.booking-dialog-body > p { margin: 0; color: var(--muted); font-size: 12px; line-height: 1.7; }
+.booking-dialog .booking-amount { display: grid; grid-template-columns: 1fr auto; gap: 5px 12px; padding: 16px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface-soft); }
+.booking-amount > span { font-size: 12px; color: var(--muted); }
+.booking-amount > strong { grid-column: 1; font-size: 27px; line-height: 1.3; }
+.booking-amount > b { grid-column: 2; grid-row: 1 / 3; align-self: center; max-width: 130px; padding: 7px 10px; border-radius: 8px; background: var(--light-blue); color: var(--ocean); font-size: 11px; text-align: center; }
+.dialog-sailing h3 { margin: 0 0 8px; font-size: 17px; line-height: 1.5; }
+.dialog-sailing p { display: flex; align-items: center; gap: 8px; margin: 5px 0; color: var(--muted); font-size: 12px; line-height: 1.6; }
+.dialog-sailing ion-icon { color: var(--ocean); flex: none; font-size: 16px; }
+.booking-dialog .dialog-section-title { margin: 3px 0 0; font-size: 14px; }
+.booking-dialog .ticket-record { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 6px 12px; margin: 0; padding: 12px 14px; border-radius: 10px; background: var(--surface-soft); }
+.booking-dialog .ticket-record > div { min-width: 0; }
+.booking-dialog .ticket-record strong { font-size: 13px; line-height: 1.5; overflow-wrap: anywhere; }
+.booking-dialog .ticket-record small { display: block; font-size: 10px; line-height: 1.7; color: var(--muted); }
+.booking-dialog .ticket-record > small, .booking-dialog .ticket-record > code, .booking-dialog .ticket-record > div:not(:first-child) { grid-column: 1 / -1; overflow-wrap: anywhere; }
+.dialog-person-fare { font-size: 12px; font-weight: 600; align-self: start; white-space: nowrap; }
+.booking-dialog .payment-actions { margin-top: 0; padding-top: 18px; }
+.booking-dialog .payment-actions ion-button { margin: 0; min-height: 46px; font-size: 13px; letter-spacing: 0; }
+@media (max-width: 600px) {
+ .ticketing-workspace .queue-item { grid-template-columns: 26px minmax(0, 1fr) 62px; gap: 6px 8px; padding: 10px; }
+ .ticketing-workspace .person-avatar { width: 26px; height: 26px; align-self: start; }
+ .ticketing-workspace .queue-person { grid-row: 1; }
+ .ticketing-workspace .queue-reference { display: block; margin: 2px 0 0; }
+ .ticketing-workspace .queue-item .status { grid-column: 2; grid-row: 2; justify-self: start; }
+ .ticketing-workspace .queue-update { grid-column: 3; grid-row: 1 / 3; width: 62px; min-height: 44px; }
+ .booking-payment-modal { --width: calc(100vw - 24px); --height: 90vh; --border-radius: 14px; }
+ .booking-dialog .booking-dialog-heading { padding: 16px; }
+ .booking-dialog-heading h2 { font-size: 18px; }
+ .booking-dialog .booking-dialog-body { padding: 16px; }
+ .booking-amount > strong { font-size: 23px; }
+ .booking-amount > b { max-width: 100px; }
+}
+
+
+.ticketing-bookings .workspace-grid { grid-template-columns: minmax(0, 1fr); }
+.ticketing-workspace .all-bookings-link { display: inline-flex; align-items: center; gap: 7px; margin-top: 12px; min-height: 40px; padding: 8px 12px; border: 1px solid var(--line); border-radius: 8px; color: var(--ocean); text-decoration: none; font-size: 12px; }
+.all-bookings-link ion-icon { font-size: 16px; }
+
 </style>

@@ -15,7 +15,7 @@
           :to="link.to"
           @click="jump($event, link.to)"
           >{{ link.label }}
-          <ion-icon :icon="arrowForwardOutline" aria-hidden="true"
+          <ion-icon :icon="openOutline" aria-hidden="true"
         /></router-link>
       </div>
     </div>
@@ -29,7 +29,7 @@
 </template>
 <script setup lang="ts">
 import { IonIcon } from "@ionic/vue";
-import { arrowForwardOutline, boatOutline } from "ionicons/icons";
+import { openOutline, boatOutline } from "ionicons/icons";
 function jump(event: MouseEvent, to: string) {
   if (
     event.button !== 0 ||

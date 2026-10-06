@@ -12,21 +12,10 @@
           <BrandMark /><StaffNavigation
             :role="role"
             @navigate="menuOpen = false"
-          /><button class="reference-logout" @click="logout">Log out</button>
+          /><StaffLogoutButton />
         </aside>
         <div class="reference-main">
-          <header class="reference-topbar">
-            <button
-              class="reference-menu"
-              aria-label="Toggle navigation"
-              @click="menuOpen = !menuOpen"
-            >
-              <ion-icon :icon="menuOutline" /></button
-            ><strong>{{ title }}</strong
-            ><router-link :to="`/staff/${role}/settings/account`">{{
-              auth?.currentUser?.displayName || "Staff account"
-            }}</router-link>
-          </header>
+          <StaffWorkspaceHeader :role="role" :title="title" navigation :menu-open="menuOpen" @toggle-menu="menuOpen = !menuOpen" />
           <main class="reference-content">
             <div class="reference-heading">
               <div>
@@ -54,7 +43,7 @@
                   v-model.trim="search"
                   type="search"
                   maxlength="120"
-                  placeholder="Search records"
+                  :placeholder="section === 'trips' ? 'Search trip code or route' : 'Search records'"
                   aria-label="Search staff records"
                 /><select
                   v-if="section === 'trips'"
@@ -69,7 +58,17 @@
                   <option>CANCELLED</option></select
                 ><Button type="submit">Search</Button>
               </form>
-              <div class="catalog-table">
+              <section v-if="role === 'boarding' && section === 'trips'" class="trip-directory">
+                <p class="trip-result-count">{{ loading ? 'Loading trips...' : `${total} matching sailings` }}</p>
+                <article v-for="trip in trips" :key="trip.code" class="operation-trip">
+                  <div class="trip-identity"><h2>{{ trip.origin.name }} to {{ trip.destination.name }}</h2><small>{{ trip.code }}</small></div>
+                  <dl><div><dt>Departure</dt><dd>{{ date(trip.departureAt) }}</dd></div><div><dt>Vessel</dt><dd>{{ trip.vessel.name }}</dd></div><div><dt>Seats</dt><dd>{{ trip.availableSeats }} / {{ trip.vessel.passengerCapacity }}</dd></div></dl>
+                  <Badge class="trip-status" :variant="trip.status === 'CANCELLED' ? 'destructive' : trip.status === 'DELAYED' ? 'warning' : 'success'">{{ humanize(trip.status) }}</Badge>
+                  <router-link :to="{path: '/staff/boarding/manifest', query: {sailing: trip.code}}" aria-label="View passenger manifest">Manifest</router-link>
+                </article>
+                <p v-if="!loading && !trips.length" class="reference-empty">No sailings match your search or status filter.</p>
+              </section>
+              <div v-else class="catalog-table">
                 <RecordsGrid
                   v-if="['trips', 'passengers', 'fares'].includes(section)"
                   :key="section"
@@ -134,18 +133,20 @@
   >
 </template>
 <script setup lang="ts">
+import { setUnreadNotifications, clearNotificationUnread } from "../../composables/notificationUnread";
+import StaffLogoutButton from "../../components/staff/StaffLogoutButton.vue";
+import StaffWorkspaceHeader from "../../components/staff/StaffWorkspaceHeader.vue";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { passengerDiscountsForSettings } from "../../data/fareSettings";
 import { computed, ref, watch } from "vue";
-import { useRoute, useRouter } from "vue-router";
-import { IonPage, IonContent, IonIcon, onIonViewWillEnter } from "@ionic/vue";
-import { menuOutline } from "ionicons/icons";
+import { useRoute } from "vue-router";
+import { IonPage, IonContent, onIonViewWillEnter } from "@ionic/vue";
 import BrandMark from "../../components/shared/BrandMark.vue";
 import StaffNavigation from "../../components/staff/StaffNavigation.vue";
 import RecordsGrid from "../../components/shared/RecordsGrid.vue";
 import NoShowsPanel from "../../components/admin/NoShowsPanel.vue";
-import { staffDatabase, auth } from "../../services/session";
+import { staffDatabase } from "../../services/session";
 import {
   staffTrips,
   staffPassengers,
@@ -158,12 +159,9 @@ import {
   myNotifications,
   markNotificationRead,
 } from "../../services/database/passenger";
-import { signOut } from "../../services/auth";
-import { clearSessionViews } from "../../composables/sessionViews";
 import { databaseRequestError } from "../../data/databaseErrors";
 import { auditLabel as humanize } from "../../data/auditPresentation";
 const route = useRoute(),
-  router = useRouter(),
   role = computed(() =>
     route.path.startsWith("/staff/boarding") ? "boarding" : "ticketing",
   ),
@@ -328,6 +326,7 @@ async function load() {
       const r = await myNotifications(staffDatabase);
       if (token !== request) return;
       inbox.value = r.data.notifications;
+      setUnreadNotifications(inbox.value);
       total.value = inbox.value.length;
     }
   } catch (e) {
@@ -341,16 +340,13 @@ async function read(id: string) {
   if (!staffDatabase) return;
   try {
     await markNotificationRead(staffDatabase, { id });
+    clearNotificationUnread(id);
     await load();
   } catch (e) {
     error.value = databaseRequestError(e, "Could not mark notification read.");
   }
 }
-async function logout() {
-  if (auth) await signOut(auth);
-  await router.replace("/login");
-  clearSessionViews();
-}
+
 watch(section, () => {
   page.value = 0;
   search.value = "";
@@ -529,4 +525,45 @@ button {
     min-width: 100%;
   }
 }
+
+.reference-content { padding-top: 24px; }
+.reference-heading { margin-bottom: 20px; }
+.reference-filters { padding: 16px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); gap: 10px; }
+.trip-directory { display: grid; gap: 12px; }
+.trip-result-count { margin: 4px 0; font-size: 12px; color: var(--muted); }
+.operation-trip { padding: 18px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); }
+.trip-route { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+.trip-route h2 { margin: 0; font-size: 17px; line-height: 1.5; }
+.operation-trip > small { display: block; margin-top: 7px; color: var(--muted); }
+.operation-trip dl { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin: 16px 0; }
+.operation-trip dt { font-size: 11px; color: var(--muted); margin-bottom: 5px; }
+.operation-trip dd { margin: 0; font-size: 12px; line-height: 1.6; }
+.operation-trip > a { display: inline-flex; min-height: 40px; align-items: center; padding: 8px 12px; border: 1px solid var(--line); border-radius: 8px; color: var(--ocean); text-decoration: none; font-size: 12px; }
+@media (max-width: 600px) { .trip-route { align-items: flex-start; flex-wrap: wrap; } .operation-trip dl { grid-template-columns: minmax(0, 1fr); } .operation-trip { padding: 14px; } }
+
+
+/* Compact sailing rows for scanning many departures. */
+.trip-directory { gap: 7px; }
+.operation-trip { display: grid; grid-template-columns: minmax(180px, 1.1fr) minmax(280px, 1.6fr) auto 76px; align-items: center; gap: 12px; padding: 12px 14px; border-radius: 10px; }
+.trip-identity { min-width: 0; }
+.trip-identity h2 { margin: 0; font-size: 13px; line-height: 1.5; overflow-wrap: anywhere; }
+.trip-identity small { display: block; margin-top: 4px; font-size: 10px; color: var(--muted); overflow-wrap: anywhere; }
+.operation-trip dl { margin: 0; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr) minmax(0, .6fr); gap: 10px; }
+.operation-trip dt { margin-bottom: 3px; font-size: 10px; }
+.operation-trip dd { font-size: 11px; line-height: 1.5; overflow-wrap: anywhere; }
+.operation-trip > a { justify-content: center; min-height: 40px; padding: 7px 9px; font-size: 11px; }
+.operation-trip .trip-status { justify-self: end; font-size: 9px; }
+@media (max-width: 1100px) {
+ .operation-trip { grid-template-columns: minmax(0, 1fr) auto; gap: 10px; }
+ .operation-trip .trip-status { grid-column: 2; grid-row: 1; }
+ .operation-trip dl { grid-column: 1; grid-row: 2; }
+ .operation-trip > a { grid-column: 2; grid-row: 2; }
+}
+@media (max-width: 600px) {
+ .operation-trip { padding: 12px; }
+ .operation-trip dl { grid-column: 1 / -1; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto; }
+ .operation-trip > a { grid-row: 3; min-height: 36px; }
+ .operation-trip dd { font-size: 10px; }
+}
+
 </style>

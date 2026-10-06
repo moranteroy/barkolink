@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <ion-page>
     <ion-content :fullscreen="true">
       <main class="search-page">
@@ -21,6 +21,7 @@
         </div>
         <div class="search-tools">
           <Button variant="outline" :aria-expanded="modifySearch" @click="modifySearch = !modifySearch">
+            <ion-icon :icon="optionsOutline" aria-hidden="true" />
             {{ modifySearch ? "Close search" : "Modify search" }}
           </Button>
           <ToggleGroup class="time-filters" type="single" :model-value="timeFilter" aria-label="Departure time" @update:model-value="setTimeFilter">
@@ -36,6 +37,7 @@
         </div>
         <TripSearchCard
           v-if="modifySearch"
+          :navigate-on-search="false"
           @searched="searchAgain"
         /><AdvisoryBanner />
         <section class="summary-strip">
@@ -44,9 +46,10 @@
             ><span>trips found</span>
           </div>
           <button type="button" @click="sortDescending = !sortDescending">
+            <ion-icon :icon="swapVerticalOutline" aria-hidden="true" />
             Departure
             <b>{{ sortDescending ? "latest first" : "earliest first" }}</b
-            ><ion-icon :icon="chevronDownOutline" />
+            >
           </button>
         </section>
         <div v-if="loading" class="trip-list" role="status" aria-label="Loading available sailings">
@@ -57,14 +60,14 @@
         </p>
         <section v-else-if="sortedTrips.length" class="trip-list">
           <template v-for="(trip, index) in sortedTrips" :key="trip.id">
-            <h2 v-if="route.query.all === '1' && (!index || sortedTrips[index - 1].date !== trip.date)">{{ trip.date }}</h2>
+            <h2 v-if="route.query.all === '1' && (!index || sortedTrips[index - 1].date !== trip.date)"><ion-icon :icon="calendarOutline" aria-hidden="true" />{{ trip.date }}</h2>
             <TripCard :trip="trip" />
           </template>
         </section>
         <section v-else class="no-trips">
           <strong>No sailings found</strong>
           <p>Try another route or travel date.</p>
-          <button @click="router.push('/home')">Change search</button>
+          <button type="button" @click="modifySearch = true">Change search</button>
         </section>
         <div class="demo-note">
           <ion-icon :icon="informationCircleOutline" /><span
@@ -87,7 +90,8 @@ import { databaseRequestError } from "../../data/databaseErrors";
 import { IonContent, IonIcon, IonPage } from "@ionic/vue";
 import {
   calendarOutline,
-  chevronDownOutline,
+  optionsOutline,
+  swapVerticalOutline,
   informationCircleOutline,
 } from "ionicons/icons";
 import { useRoute, useRouter } from "vue-router";
@@ -277,180 +281,56 @@ async function loadTrips() {
     loading.value = false;
   }
 }
-onIonViewWillEnter(loadTrips);
+onIonViewWillEnter(() => {
+  timeFilter.value = "All";
+  sortDescending.value = false;
+  modifySearch.value = false;
+  void loadTrips();
+});
 async function searchAgain() {
   modifySearch.value = false;
+  timeFilter.value = "All";
+  sortDescending.value = false;
   await router.replace("/search");
   await loadTrips();
 }
 </script>
 <style scoped>
-.search-page {
-  max-width: 850px;
-  margin: 0 auto;
-  padding: 26px 34px 105px;
-}
-.page-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-.page-header .brand-mark {
-  margin: auto;
-}
-.back-button,
-.filter-button {
-  display: grid;
-  place-items: center;
-  width: 38px;
-  height: 38px;
-  border: 1px solid var(--line);
-  border-radius: 11px;
-  background: #fff;
-  color: var(--ink);
-  font-size: 20px;
-}
-.kicker {
-  margin: 55px 0 7px;
-  color: var(--ocean);
-  font-size: 10px;
-  font-weight: 800;
-  letter-spacing: 0.1em;
-}
-.title-row h1 {
-  margin: 0;
-  font-size: 31px;
-  letter-spacing: -1px;
-}
-.title-row h1 span {
-  color: var(--muted);
-  font-weight: 400;
-}
-.subline {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  margin: 10px 0 0;
-  color: var(--muted);
-  font-size: 12px;
-}
-.subline ion-icon {
-  color: var(--ocean);
-}
-.subline i {
-  width: 4px;
-  height: 4px;
-  border-radius: 50%;
-  background: #b8c0cc;
-}
-.summary-strip {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin: 34px 0 13px;
-  padding: 14px 16px;
-  border-radius: 12px;
-  background: var(--light-blue);
-}
-.summary-strip div {
-  display: flex;
-  align-items: baseline;
-  gap: 6px;
-}
-.summary-strip strong {
-  color: var(--ocean);
-  font-size: 18px;
-}
-.summary-strip span {
-  color: var(--muted);
-  font-size: 11px;
-}
-.summary-strip button {
-  border: 0;
-  background: transparent;
-  color: var(--muted);
-  font-size: 11px;
-}
-.summary-strip b {
-  color: var(--ink);
-}
-.summary-strip ion-icon {
-  margin-left: 4px;
-  vertical-align: middle;
-}
-.trip-list {
-  display: grid;
-  gap: 12px;
-}
-.demo-note {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-  margin: 18px 4px;
-  color: var(--muted);
-  font-size: 10px;
-}
-.demo-note ion-icon {
-  flex: none;
-  color: var(--ocean);
-  font-size: 16px;
-}
-@container passenger (max-width:620px) {
-  .search-page {
-    padding: 20px 16px 102px;
-  }
-  .kicker {
-    margin-top: 42px;
-  }
-  .title-row h1 {
-    font-size: 27px;
-  }
-  .summary-strip {
-    margin-top: 25px;
-  }
-}
-.header-spacer {
-  width: 38px;
-  height: 38px;
-}
-@container passenger (max-width:620px) {
-  .search-page {
-    padding: 20px 16px 105px;
-  }
-  .kicker {
-    margin-top: 40px;
-  }
-  .title-row h1 {
-    font-size: 27px;
-  }
-  .summary-strip {
-    margin-top: 25px;
-  }
-}
-.search-tools {
-  display: flex;
-  gap: 12px;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  margin: 22px 0;
-}
-.search-tools button {
-  padding: 9px 12px;
-  border: 1px solid var(--line);
-  border-radius: 9px;
-  background: var(--surface);
-  color: var(--ocean);
-  font-size: 12px;
-  font-weight: 700;
-  cursor: pointer;
-}
-.time-filters {
-  display: flex;
-  gap: 6px;
-  overflow: auto;
-}
-.time-filters button.active {
-  background: var(--ocean);
-  color: white;
+.search-page { width: 100%; max-width: 850px; margin: 0 auto; padding: 20px 16px calc(108px + env(safe-area-inset-bottom)); color: var(--ink); }
+.title-row { margin-top: 24px; }
+.kicker { margin: 0 0 8px; color: var(--ocean); font-size: 10px; font-weight: 700; letter-spacing: .1em; }
+.title-row h1 { margin: 0; font-size: 26px; line-height: 1.3; letter-spacing: -.7px; overflow-wrap: anywhere; }
+.title-row h1 span { color: var(--muted); font-size: .7em; font-weight: 400; }
+.subline { display: flex; align-items: center; flex-wrap: wrap; gap: 7px; margin: 10px 0 0; color: var(--muted); font-size: 12px; line-height: 1.6; }
+.subline ion-icon { color: var(--ocean); flex: none; }
+.subline i { width: 3px; height: 3px; border-radius: 50%; background: var(--muted); }
+.search-tools { display: grid; gap: 14px; margin: 20px 0 16px; }
+.search-tools > button { justify-self: start; display: inline-flex; align-items: center; gap: 7px; min-height: 44px; padding: 10px 13px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); color: var(--ink); font-size: 12px; font-weight: 600; cursor: pointer; }
+.search-tools > button ion-icon { color: var(--ocean); font-size: 17px; }
+.time-filters { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px; width: 100%; padding: 4px; border: 1px solid var(--line); border-radius: 11px; background: var(--surface-soft); }
+.time-filters button { min-width: 0; min-height: 40px; padding: 8px 4px; border: 0; border-radius: 7px; background: transparent; color: var(--muted); font-size: 11px; font-weight: 600; cursor: pointer; }
+.time-filters button.active { background: var(--action); color: #fff; box-shadow: 0 2px 5px #102b4c10; }
+.summary-strip { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; margin: 16px 0; padding: 0 0 12px; border-bottom: 1px solid var(--line); }
+.summary-strip > div { display: inline-flex; align-items: baseline; gap: 6px; font-size: 12px; color: var(--muted); }
+.summary-strip strong { color: var(--ink); font-size: 16px; }
+.summary-strip button { display: inline-flex; align-items: center; gap: 5px; min-height: 40px; padding: 8px 0 8px 8px; border: 0; background: transparent; color: var(--muted); font-size: 11px; cursor: pointer; }
+.summary-strip b { color: var(--ink); font-weight: 600; }
+.summary-strip ion-icon { color: var(--ocean); font-size: 16px; }
+.trip-list { display: grid; gap: 14px; }
+.trip-list > h2 { display: flex; align-items: center; gap: 7px; margin: 6px 0 0; color: var(--muted); font-size: 13px; font-weight: 600; line-height: 1.6; }
+.trip-list > h2:not(:first-child) { margin-top: 12px; }
+.trip-list > h2 ion-icon { color: var(--ocean); font-size: 16px; }
+.trip-loading { display: grid; gap: 20px; padding: 20px; border-radius: 14px; }
+.state-message, .no-trips { margin: 18px 0; padding: 24px 18px; border: 1px solid var(--line); border-radius: 14px; background: var(--surface); font-size: 13px; line-height: 1.7; }
+.error { color: var(--danger); }
+.no-trips strong { color: var(--ink); font-size: 16px; }
+.no-trips p { color: var(--muted); }
+.no-trips button { min-height: 44px; padding: 8px 14px; border: 1px solid var(--line); border-radius: 9px; background: var(--light-blue); color: var(--ocean); font-weight: 600; cursor: pointer; }
+.demo-note { display: flex; align-items: flex-start; gap: 8px; margin: 20px 2px 0; color: var(--muted); font-size: 11px; line-height: 1.7; }
+.demo-note ion-icon { flex: none; margin-top: 2px; font-size: 16px; color: var(--ocean); }
+button:focus-visible { outline: 2px solid var(--ocean); outline-offset: 3px; }
+@container passenger (max-width: 380px) {
+  .title-row h1 { font-size: 24px; }
+  .time-filters button { font-size: 10px; }
 }
 </style>

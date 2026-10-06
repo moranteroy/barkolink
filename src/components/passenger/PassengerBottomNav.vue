@@ -35,7 +35,6 @@ import { useRoute } from "vue-router";
 import { auth } from "../../services/session";
 import {
   home,
-  notificationsOutline,
   ticketOutline,
   boatOutline,
   personOutline,
@@ -47,7 +46,6 @@ const items = [
   { label: "Home", to: "/home", icon: home },
   { label: "Trips", to: "/search?all=1", icon: boatOutline },
   { label: "Bookings", to: "/bookings", icon: ticketOutline },
-  { label: "Alerts", to: "/notifications", icon: notificationsOutline },
   { label: "Profile", to: "/profile", icon: personOutline },
 ];
 function navigateTab(event: MouseEvent, path: string) {

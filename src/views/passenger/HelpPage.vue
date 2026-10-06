@@ -17,9 +17,9 @@
           </details>
         </section>
         <div class="help-actions">
-          <router-link to="/bookings">View my bookings →</router-link
-          ><router-link to="/travelers">Manage saved travelers →</router-link
-          ><router-link to="/privacy">Privacy notice →</router-link>
+          <router-link to="/bookings"><ion-icon :icon="ticketOutline" aria-hidden="true" /> View my bookings</router-link
+          ><router-link to="/travelers"><ion-icon :icon="peopleOutline" aria-hidden="true" /> Manage saved travelers</router-link
+          ><router-link to="/privacy"><ion-icon :icon="shieldCheckmarkOutline" aria-hidden="true" /> Privacy notice</router-link>
         </div>
         <aside>
           <h2>Need help with a trip?</h2>
@@ -45,6 +45,8 @@ import {
   peopleOutline,
   qrCodeOutline,
   timeOutline,
+  ticketOutline,
+  shieldCheckmarkOutline,
 } from "ionicons/icons";
 import PassengerHeader from "../../components/passenger/PassengerHeader.vue";
 import OperatorContact from "../../components/shared/OperatorContact.vue";
@@ -154,11 +156,16 @@ aside p {
   flex-wrap: wrap;
 }
 .help-actions a {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 44px;
   font-size: 12px;
   color: var(--ocean);
   font-weight: 700;
   text-decoration: none;
 }
+.help-actions ion-icon { font-size: 17px; flex: none; }
 aside {
   margin-top: 28px;
   padding: 22px;

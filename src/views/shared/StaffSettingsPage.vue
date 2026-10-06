@@ -2,24 +2,15 @@
   <ion-page>
     <ion-content :fullscreen="true">
       <main class="staff-settings-page">
-        <header class="topbar glass-toolbar">
-          <router-link
-            :to="workspacePath"
-            class="back"
-            aria-label="Back to staff workspace"
-            ><ion-icon :icon="arrowBackOutline"
-          /></router-link>
-          <BrandMark />
-          <span class="role-label">{{ roleLabel }}</span>
-        </header>
+        <StaffWorkspaceHeader :role="String(route.params.role)" title="Account settings" />
 
         <section class="page-heading">
           <div>
-            <p class="eyebrow">STAFF WORKSPACE / SETTINGS</p>
+            <p class="eyebrow">ACCOUNT PREFERENCES</p>
             <h1>Account settings</h1>
             <p>Keep your contact details and sign-in preferences up to date.</p>
           </div>
-          <span class="heading-icon"><ion-icon :icon="settingsOutline" /></span>
+          <router-link class="settings-back" :to="workspacePath"><ion-icon :icon="gridOutline" aria-hidden="true" /> Back to workspace</router-link>
         </section>
 
         <div class="settings-layout">
@@ -33,13 +24,7 @@
               :aria-current="section === item.section ? 'page' : undefined"
               @click="navigateSection($event, item.path)"
               ><ion-icon :icon="item.icon" /><span>{{ item.label }}</span
-              ><ion-icon class="nav-chevron" :icon="chevronForwardOutline"
-            /></a>
-            <router-link :to="workspacePath" class="workspace-link"
-              ><ion-icon :icon="gridOutline" /><span
-                >Back to workspace</span
-              ></router-link
-            >
+              ></a>
           </nav>
 
           <section class="settings-card">
@@ -72,9 +57,6 @@
                 Retry loading
               </button>
               <div class="detail-grid">
-                <div class="detail">
-                  <span>Full name</span><strong>{{ displayName }}</strong>
-                </div>
                 <div class="detail">
                   <span>Email address</span
                   ><strong>{{
@@ -114,8 +96,9 @@
                   </button>
                 </div>
                 <button
+                  v-if="phoneDirty"
                   type="button"
-                  :disabled="savingPhone || !phoneDirty"
+                  :disabled="savingPhone"
                   @click="discardPhone"
                 >
                   Discard changes
@@ -208,6 +191,7 @@
 </template>
 
 <script setup lang="ts">
+import StaffWorkspaceHeader from "../../components/staff/StaffWorkspaceHeader.vue";
 import { useUnsavedChanges } from "../../composables/unsavedChanges";
 import { validatedProfile } from "../../data/profileValidation";
 import { databaseRequestError } from "../../data/databaseErrors";
@@ -226,15 +210,11 @@ import {
   useIonRouter,
 } from "@ionic/vue";
 import {
-  arrowBackOutline,
-  chevronForwardOutline,
   contrastOutline,
   gridOutline,
   personOutline,
-  settingsOutline,
   shieldCheckmarkOutline,
 } from "ionicons/icons";
-import BrandMark from "../../components/shared/BrandMark.vue";
 import ThemeSwitcher from "../../components/shared/ThemeSwitcher.vue";
 import AppearancePreview from "../../components/shared/AppearancePreview.vue";
 import { myProfile, updateMyProfile } from "../../services/database/passenger";
@@ -857,4 +837,39 @@ async function changePassword() {
   width: 18px;
   height: 18px;
 }
+
+.staff-settings-page { max-width: 1180px; padding: 18px 28px 40px; }
+.staff-settings-page > :deep(.staff-workspace-header) { border: 1px solid var(--line); border-radius: 12px; }
+.page-heading { margin: 24px 0 18px; gap: 12px; flex-wrap: wrap; }
+.page-heading h1 { font-size: 28px; margin: 5px 0; }
+.settings-back { display: inline-flex; align-items: center; gap: 7px; min-height: 42px; padding: 8px 12px; border: 1px solid var(--line); border-radius: 9px; background: var(--surface); color: var(--ocean); font-size: 12px; text-decoration: none; }
+.settings-back ion-icon { font-size: 17px; }
+.settings-layout { grid-template-columns: 190px minmax(0, 1fr); gap: 18px; }
+.settings-nav, .settings-card { border-radius: 12px; box-shadow: none; }
+.settings-nav { padding: 10px; position: sticky; top: 18px; }
+.settings-card { padding: 20px; min-height: 0; }
+.card-heading { padding-bottom: 16px; }
+.card-heading h2 { margin: 4px 0 5px; font-size: 20px; }
+.card-heading > ion-icon { width: 26px; height: 26px; padding: 8px; }
+.identity-card { margin: 16px 0; padding: 12px; border-radius: 10px; }
+.avatar { width: 38px; height: 38px; border-radius: 10px; font-size: 13px; }
+.detail-grid { gap: 12px; }
+.detail { padding: 12px; border-radius: 10px; }
+.detail strong { overflow-wrap: anywhere; }
+.phone-form { margin-top: 18px; padding-top: 18px; }
+.phone-actions input, .password-form input { min-height: 44px; font-size: 13px; }
+.phone-actions button, .password-form button { min-height: 44px; border-radius: 9px; font-size: 12px; }
+.phone-form > button { margin-top: 10px; padding: 8px 12px; border: 1px solid var(--line); border-radius: 8px; color: var(--muted); background: var(--surface-soft); font-size: 11px; }
+.password-form { margin-top: 18px; max-width: 520px; }
+.password-form label { font-size: 12px; font-weight: 500; }
+.theme-card { margin-top: 16px; padding: 16px; }
+@media (max-width: 760px) {
+ .staff-settings-page { padding: 12px 16px 32px; }
+ .settings-layout { grid-template-columns: minmax(0, 1fr); gap: 14px; }
+ .settings-nav { position: static; }
+ .settings-card { padding: 16px; }
+ .page-heading { margin: 20px 0 16px; }
+ .settings-nav .workspace-link { display: none; }
+}
+
 </style>

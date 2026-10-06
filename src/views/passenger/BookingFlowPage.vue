@@ -7,17 +7,8 @@
         class="booking-page"
         :class="{ 'passenger-info-page': flow === 'passengers' }"
       >
-        <header class="booking-header glass-toolbar">
-          <router-link
-            to="/search"
-            class="back-link"
-            aria-label="Back to sailings"
-            title="Back to sailings"
-            ><ion-icon
-              :icon="arrowBackOutline"
-              aria-hidden="true" /></router-link
-          ><BrandMark /><span class="secure">Secure reservation</span>
-        </header>
+        <PassengerHeader />
+        <router-link :to="bookingBack.path" class="booking-back"><ion-icon :icon="bookingBack.icon" aria-hidden="true" />{{ bookingBack.label }}</router-link>
         <nav class="progress" aria-label="Booking steps">
           <div
             v-for="(step, index) in steps"
@@ -146,6 +137,7 @@
             <h1>Who is sailing?</h1>
             <p class="muted">
               Enter each passenger name exactly as shown on their ID.
+              Passenger 1 uses your account details when available. You can edit them or choose a saved traveler.
             </p>
             <form @submit.prevent="go('summary')">
               <p v-if="errorMessage" role="alert">{{ errorMessage }}</p>
@@ -167,18 +159,7 @@
                   </button>
                 </div>
                 <SavedTravelerPicker
-                  @select="
-                    person.name = $event.fullName;
-                    person.birthDate = $event.birthDate;
-                    person.sex =
-                      $event.sex === 'MALE'
-                        ? 'Male'
-                        : $event.sex === 'FEMALE'
-                          ? 'Female'
-                          : 'Other';
-                    person.phone = $event.phone;
-                    person.nationality = $event.nationality;
-                  "
+                  @select="Object.assign(person, travelerPassengerDetails($event))"
                 />
                 <div class="form-grid">
                   <label
@@ -252,7 +233,7 @@
                   aria-label="Back to trip details"
                   title="Back to trip details"
                   ><ion-icon
-                    :icon="arrowBackOutline"
+                    :icon="boatOutline"
                     aria-hidden="true" /></router-link
                 ><ion-button class="continue" type="submit"
                   >Review booking</ion-button
@@ -299,52 +280,57 @@
             <article class="summary-card glass-panel">
               <div class="summary-heading">
                 <strong>Trip details</strong
-                ><router-link to="/trip-details">Edit</router-link>
+                ><router-link to="/trip-details" aria-label="Edit trip details">Edit trip</router-link>
               </div>
               <div class="summary-route">
                 <strong>{{ trip.from }}</strong
-                ><span> to </span><strong>{{ trip.to }}</strong
-                ><small
-                  >{{ trip.date }} | {{ trip.departure }} |
-                  {{ trip.vessel }}</small
-                >
+                ><ion-icon :icon="arrowForwardOutline" aria-hidden="true" /><strong>{{ trip.to }}</strong>
               </div>
-              <div class="summary-heading">
-                <strong>Passengers ({{ passengers.length }})</strong
-                ><router-link to="/passenger-info">Edit</router-link>
+              <dl class="summary-trip-meta">
+                <div><dt>Departure</dt><dd>{{ trip.date }} · {{ trip.departure }}</dd></div>
+                <div><dt>Ferry</dt><dd>{{ trip.vessel }}</dd></div>
+              </dl>
+              <div class="summary-heading passengers-heading">
+                <strong>Passengers ({{ passengers.length }})</strong>
+                <router-link to="/passenger-info" aria-label="Edit passenger details">Edit passengers</router-link>
               </div>
-              <div
+              <article
                 v-for="(person, index) in passengers"
                 :key="person.id"
                 class="passenger-row"
               >
-                <span class="initial">{{
+                <span class="initial" aria-hidden="true">{{
                   initials(person.name || `Passenger ${index + 1}`)
                 }}</span>
-                <div>
-                  <strong>{{ person.name || `Passenger ${index + 1}` }}</strong
-                  ><small
-                    >{{ person.type }} passenger<span v-if="person.phone">
-                      | {{ person.phone }}</span
-                    ><span v-else> | Contact details not added</span></small
-                  >
+                <div class="passenger-copy">
+                  <div class="passenger-name-line">
+                    <strong>{{ person.name || `Passenger ${index + 1}` }}</strong>
+                    <span class="passenger-status" :class="{ incomplete: passengerError(person) }"><ion-icon v-if="!passengerError(person)" :icon="checkmarkOutline" aria-hidden="true" />{{ passengerError(person) ? 'Incomplete' : 'Complete' }}</span>
+                  </div>
+                  <small>{{ person.type }} passenger</small>
+                  <span class="passenger-contact">{{ person.phone || 'Contact details not added' }}</span>
                 </div>
-                <details><summary>Identity details</summary><p>Birth date: {{ person.birthDate || 'Missing' }}<br>Sex: {{ person.sex || 'Missing' }}<br>Nationality: {{ person.nationality || 'Missing' }}</p></details>
-                <span class="checked">{{ passengerError(person) ? 'Incomplete' : 'Complete' }}</span>
-              </div>
+                <details class="passenger-identity">
+                  <summary :aria-label="`Identity details for ${person.name || `Passenger ${index + 1}`}`">Identity details <ion-icon :icon="chevronDownOutline" aria-hidden="true" /></summary>
+                  <dl class="identity-grid">
+                    <div><dt>Date of birth</dt><dd>{{ displayBirthDate(person.birthDate) }}</dd></div>
+                    <div><dt>Sex</dt><dd>{{ person.sex || 'Missing' }}</dd></div>
+                    <div><dt>Nationality</dt><dd>{{ person.nationality || 'Missing' }}</dd></div>
+                  </dl>
+                </details>
+              </article>
             </article>
           </div>
-          <aside class="flow-aside glass-panel">
+          <aside class="flow-aside glass-panel review-fares">
             <p class="kicker">FARE SUMMARY</p>
-            <div v-for="row in fareRows" :key="row.label" class="fare-row">
-              <span>{{ row.label }}</span
-              ><b>PHP {{ row.amount.toLocaleString() }}</b>
+            <div v-for="(person, index) in passengers" :key="person.id" class="fare-row">
+              <span><strong>{{ person.name || `Passenger ${index + 1}` }}</strong><small>{{ person.type }} passenger</small></span>
+              <b>PHP {{ fareFor(person.type).toLocaleString() }}</b>
             </div>
             <div class="fare-row">
               <span
-                >Accommodation:
-                {{ selectedAccommodation?.name || "Standard" }}</span
-              ><b>PHP {{ serviceFee }}</b>
+                ><strong>Accommodation</strong><small>{{ selectedAccommodation?.name || "Standard" }}</small></span>
+              <b>PHP {{ serviceFee.toLocaleString() }}</b>
             </div>
             <div class="total">
               <span>Total to pay</span
@@ -363,7 +349,7 @@
               }}</ion-button
             >
             <p class="hint">
-              Your fare and seat allocation are saved with your reservation.
+              Pay at the ticketing desk. Your fare and seat allocation are saved with your reservation.
             </p>
           </aside>
         </section>
@@ -487,7 +473,9 @@ import {
   onIonViewWillEnter,
 } from "@ionic/vue";
 import {
-  arrowBackOutline,
+  ticketOutline,
+  arrowForwardOutline,
+  chevronDownOutline,
   boatOutline,
   calendarOutline,
   checkmarkOutline,
@@ -495,10 +483,13 @@ import {
   peopleOutline,
 } from "ionicons/icons";
 import PortLocationMap from "../../components/shared/PortLocationMap.vue";
-import BrandMark from "../../components/shared/BrandMark.vue";
+import PassengerHeader from "../../components/passenger/PassengerHeader.vue";
+import { accountPassengerDetails, travelerPassengerDetails } from "../../data/bookingPassenger";
+import { savedTravelers } from "../../services/database/experience";
 import {
   browseSailings,
   myBookings,
+  myProfile,
   reserveSailing1,
   reserveSailing2,
   reserveSailing3,
@@ -541,6 +532,11 @@ const route = useRoute();
 const router = useRouter();
 const steps = ["Sailing", "Passengers", "Review", "Reserved"];
 const flow = computed(() => String(route.name || "details"));
+const bookingBack = computed(() => flow.value === 'passengers'
+  ? { path: '/trip-details', label: 'Back to trip details', icon: boatOutline }
+  : flow.value === 'summary' ? { path: '/passenger-info', label: 'Back to passengers', icon: peopleOutline }
+  : flow.value === 'confirmed' ? { path: '/bookings', label: 'Back to my bookings', icon: ticketOutline }
+  : { path: '/search', label: 'Back to sailings', icon: boatOutline });
 const activeStep = computed(() =>
   Math.max(
     0,
@@ -642,6 +638,24 @@ const passengers = ref<Passenger[]>(
     passengerCount,
   ),
 );
+async function prefillAccountPassenger() {
+  const person = passengers.value[0];
+  if (!database || !auth?.currentUser || !person || person.name || person.phone || person.birthDate || person.sex) return;
+  const selection = selectedTrip.value?.selectionId;
+  const ownerUid = auth.currentUser.uid;
+  const snapshot = JSON.stringify(person);
+  try {
+    const [profile, travelers] = await Promise.all([
+      myProfile(database, { fetchPolicy: 'SERVER_ONLY' }),
+      savedTravelers(database).catch(() => ({ data: { travelers: [] } })),
+    ]);
+    // A delayed response must not replace manual edits, another traveler, or a new trip.
+    if (!profile.data.user || auth.currentUser?.uid !== ownerUid ||
+        selectedTrip.value?.selectionId !== selection || passengers.value[0]?.id !== person.id ||
+        JSON.stringify(passengers.value[0]) !== snapshot) return;
+    Object.assign(passengers.value[0], accountPassengerDetails(profile.data.user, travelers.data.travelers));
+  } catch { /* Manual entry remains available when the account cannot be loaded. */ }
+}
 watch(
   passengers,
   (value) => {
@@ -725,6 +739,10 @@ function initials(name: string) {
       .map((part) => part[0].toUpperCase())
       .join("") || "P"
   );
+}
+function displayBirthDate(value: string) {
+  if (!value || !validBirthDate(value)) return value || 'Missing';
+  return new Date(`${value}T00:00:00Z`).toLocaleDateString('en-PH', { timeZone: 'UTC', month: 'short', day: 'numeric', year: 'numeric' });
 }
 function go(name: string) {
   if (name === "summary") attempted.value = true;
@@ -1076,6 +1094,7 @@ onMounted(() => {
   if (!selectedTrip.value && flow.value !== "confirmed")
     router.replace("/search");
   if (flow.value === "confirmed") void loadConfirmedBooking();
+  else void prefillAccountPassenger();
 });
 onIonViewWillEnter(() => {
   if (flow.value === "confirmed") {
@@ -1110,6 +1129,7 @@ onIonViewWillEnter(() => {
       passengers.value.length,
     );
   }
+  void prefillAccountPassenger();
 });
 watch(
   () => route.name,
@@ -1121,6 +1141,10 @@ watch(
 </script>
 
 <style scoped>
+.booking-back { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; margin-top: 16px; padding: 8px 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface-soft); color: var(--ink); font-size: 13px; text-decoration: none; }
+.booking-back ion-icon { font-size: 19px; color: var(--ocean); flex: none; }
+.booking-back:hover { text-decoration: underline; text-underline-offset: 4px; }
+.booking-back:focus-visible { outline: 2px solid var(--ocean); outline-offset: 3px; border-radius: 6px; }
 .details-flow > .trip-port-map {
   grid-column: 1/-1;
   margin-top: 0;
@@ -1131,23 +1155,6 @@ watch(
   margin: auto;
   padding: 28px 34px 72px;
   color: var(--ink);
-}
-.booking-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-.back-link {
-  display: grid;
-  place-items: center;
-  width: 40px;
-  height: 40px;
-  border: 1px solid var(--line);
-  border-radius: 11px;
-  background: var(--surface);
-  color: var(--ink);
-  font-size: 19px;
-  text-decoration: none;
 }
 .icon-back {
   display: grid;
@@ -1160,11 +1167,6 @@ watch(
   color: var(--ocean);
   font-size: 19px;
   text-decoration: none;
-}
-.secure {
-  color: #087b68;
-  font-size: 11px;
-  font-weight: 700;
 }
 .progress {
   display: flex;
@@ -1640,10 +1642,6 @@ watch(
   color: var(--muted);
   font-size: 10px;
 }
-.checked {
-  margin-left: auto;
-  color: #078a72;
-}
 .confirmed-page {
   max-width: 600px;
   margin: 25px auto;
@@ -1797,9 +1795,6 @@ watch(
   .trip-summary {
     position: static;
   }
-  .secure {
-    display: none;
-  }
   .progress {
     justify-content: space-between;
     margin: 32px 0;
@@ -1848,16 +1843,6 @@ watch(
 @container passenger (max-width:480px) {
   .booking-page {
     padding: 14px 12px 34px;
-  }
-  .booking-header :deep(.brand-copy small) {
-    display: none;
-  }
-  .booking-header :deep(.brand-copy strong) {
-    font-size: 14px;
-  }
-  .back-link {
-    width: 36px;
-    height: 36px;
   }
   .progress {
     justify-content: space-between;
@@ -2225,5 +2210,56 @@ watch(
     font-size: 9px;
     line-height: 1.5;
   }
+}
+/* Review rows keep identity details below the passenger name at every width. */
+.summary-flow { gap: 20px; }
+.summary-flow > div { min-width: 0; }
+.summary-flow .summary-heading { align-items: center; gap: 12px; }
+.summary-flow .summary-heading a { display: inline-flex; align-items: center; min-height: 44px; font-size: 12px; white-space: nowrap; }
+.summary-flow .summary-heading a:focus-visible,
+.passenger-identity summary:focus-visible { outline: 2px solid var(--ocean); outline-offset: 3px; border-radius: 6px; }
+.summary-flow .summary-route { grid-template-columns: minmax(0, 1fr) 24px minmax(0, 1fr); gap: 12px; padding: 8px 0 16px; border: 0; }
+.summary-flow .summary-route strong { overflow-wrap: anywhere; line-height: 1.4; font-size: 18px; }
+.summary-flow .summary-route ion-icon { color: var(--ocean); font-size: 20px; }
+.summary-trip-meta { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin: 0; padding-bottom: 20px; border-bottom: 1px solid var(--line); }
+.summary-trip-meta div, .identity-grid div { min-width: 0; }
+.summary-trip-meta dt, .identity-grid dt { color: var(--muted); font-size: 11px; line-height: 1.5; }
+.summary-trip-meta dd, .identity-grid dd { margin: 5px 0 0; color: var(--ink); font-size: 13px; line-height: 1.6; overflow-wrap: anywhere; }
+.summary-flow .passengers-heading { margin: 14px 0 4px; }
+.summary-flow .passenger-row { display: grid; grid-template-columns: 36px minmax(0, 1fr); align-items: start; gap: 8px 12px; padding: 18px 0; }
+.summary-flow .passenger-row + .passenger-row { border-top: 1px solid var(--line); }
+.summary-flow .passenger-row .initial { width: 36px; height: 36px; margin-top: 2px; }
+.passenger-name-line { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; }
+.summary-flow .passenger-row strong { font-size: 14px; line-height: 1.5; overflow-wrap: anywhere; }
+.summary-flow .passenger-row small { margin-top: 5px; font-size: 12px; line-height: 1.5; }
+.passenger-contact { display: block; margin-top: 4px; color: var(--muted); font-size: 12px; line-height: 1.5; overflow-wrap: anywhere; }
+.passenger-status { display: inline-flex; align-items: center; gap: 4px; padding: 3px 7px; border-radius: 6px; background: color-mix(in srgb, var(--ocean) 10%, var(--surface)); color: var(--ocean); font-size: 10px; font-weight: 600; line-height: 1.5; white-space: nowrap; }
+.passenger-status.incomplete { color: var(--ink); background: var(--surface-soft); border: 1px solid var(--line); }
+.passenger-status ion-icon { font-size: 13px; }
+.passenger-identity { grid-column: 2; min-width: 0; }
+.passenger-identity summary { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 44px; color: var(--ocean); font-size: 12px; font-weight: 600; list-style: none; cursor: pointer; }
+.passenger-identity summary::-webkit-details-marker { display: none; }
+.passenger-identity summary ion-icon { flex: none; font-size: 15px; transition: transform .15s ease; }
+.passenger-identity[open] summary ion-icon { transform: rotate(180deg); }
+.identity-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin: 0; padding: 14px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface-soft); }
+.identity-grid div:last-child { grid-column: 1 / -1; }
+.summary-flow .review-fares { min-width: 0; }
+.summary-flow .review-fares .fare-row { align-items: flex-start; gap: 16px; padding: 14px 0; border-bottom: 1px solid var(--line); }
+.review-fares .fare-row > span { min-width: 0; }
+.review-fares .fare-row strong { display: block; color: var(--ink); font-size: 13px; line-height: 1.5; overflow-wrap: anywhere; }
+.review-fares .fare-row small { display: block; margin-top: 4px; color: var(--muted); font-size: 12px; line-height: 1.5; }
+.review-fares .fare-row b { flex: none; font-size: 13px; line-height: 1.5; white-space: nowrap; }
+.summary-flow .review-fares .total { flex-wrap: wrap; gap: 8px 16px; padding: 18px 0; margin: 0; border: 0; }
+.review-fares .total strong { font-size: 24px; white-space: nowrap; }
+.review-fares .continue { width: 100%; margin: 4px 0 0; min-height: 48px; }
+.review-fares .hint { line-height: 1.7; }
+@container passenger (max-width:380px) {
+  .summary-trip-meta { grid-template-columns: minmax(0, 1fr); gap: 12px; }
+  .summary-flow .passenger-row { column-gap: 10px; }
+  .passenger-identity { grid-column: 1 / -1; }
+  .summary-flow .summary-heading { font-size: 13px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .passenger-identity summary ion-icon { transition: none; }
 }
 </style>

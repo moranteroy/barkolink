@@ -142,7 +142,6 @@
 }
 :root body ion-app.passenger-preview .bottom-nav a { min-height: 48px; color: var(--muted); }
 :root body ion-app.passenger-preview .bottom-nav a.active { color: var(--ocean); }
-:root body ion-app.passenger-preview .desktop-passenger-nav { display: none; }
 .trip-loading { padding: 22px; display: grid; gap: 18px; }
 :root body ion-app.passenger-preview main {
   width: 100%; min-width: 0; margin-inline: auto;
@@ -150,9 +149,6 @@
   padding-bottom: calc(104px + env(safe-area-inset-bottom));
 }
 :root body ion-app.passenger-preview .passenger-header { gap: 8px; }
-:root body ion-app.passenger-preview .passenger-profile-copy { display: none; }
-:root body ion-app.passenger-preview .header-actions { gap: 6px; }
-:root body ion-app.passenger-preview .passenger-profile-chip { padding: 3px; }
 :root body ion-app.passenger-preview .design-passenger-home .quick-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
 :root body ion-app.passenger-preview .design-passenger-home .quick-grid a { min-height: 110px; padding: 16px; }
 :root body ion-app.passenger-preview .design-passenger-home .welcome-section { margin: 24px 0 18px; }
@@ -163,8 +159,6 @@
 :root body ion-app.passenger-preview textarea { font-size: 16px; min-height: 44px; }
 :root body ion-app.passenger-preview button { min-height: 44px; }
 :root body ion-app.passenger-preview .counter button { width: 44px; }
-:root body ion-app.passenger-preview .notification-link,
-:root body ion-app.passenger-preview .passenger-profile-chip { min-height: 44px; }
 
 /* Shared surfaces also cover pages with local styles in both palettes. */
 :root[data-theme="dark"] body .setting-card,

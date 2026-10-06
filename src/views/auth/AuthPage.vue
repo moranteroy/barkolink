@@ -24,18 +24,18 @@
         <section class="auth-form">
           <div class="form-inner">
             <RouterLink class="mobile-back" to="/" aria-label="Back to home"
-              ><ion-icon :icon="arrowBackOutline" aria-hidden="true" /> Back to
+              ><ion-icon :icon="homeOutline" aria-hidden="true" /> Back to
               home</RouterLink
             >
             <div class="auth-mobile-brand"><BrandMark /></div>
             <div class="auth-mode-tabs" aria-label="Account access">
               <RouterLink
-                to="/login"
+                :to="authLocation('/login')"
                 :class="{ selected: !isRegister }"
                 :aria-current="!isRegister ? 'page' : undefined"
                 >Sign in</RouterLink
               ><RouterLink
-                to="/register"
+                :to="authLocation('/register')"
                 :class="{ selected: isRegister }"
                 :aria-current="isRegister ? 'page' : undefined"
                 >Create account</RouterLink
@@ -117,14 +117,14 @@
                 {{ errorMessage }}
               </p>
               <div v-if="!isRegister" class="form-options">
-                <span class="reset-hint">Forgot your password?</span
-                ><button
+                <button
                   class="text-button"
                   type="button"
+                  title="Send a password reset link to your email"
                   :disabled="resetting || submitting"
                   @click="resetPassword"
                 >
-                  {{ resetting ? "Sending..." : "Send reset link" }}
+                  {{ resetting ? "Sending reset link..." : "Forgot your password?" }}
                 </button>
               </div>
               <p v-if="recoveryMessage" class="recovery-note" role="status">
@@ -138,7 +138,7 @@
                   required
                 /><span
                   >I have read the
-                  <RouterLink to="/privacy">Privacy notice</RouterLink>.</span
+                  <RouterLink :to="privacyLocation">Privacy notice</RouterLink>.</span
                 ></label
               >
               <ion-button
@@ -155,7 +155,7 @@
                       ? "Create account"
                       : "Sign in"
                 }}
-                <ion-icon slot="end" :icon="arrowForwardOutline"
+                <ion-icon slot="end" :icon="isRegister ? personAddOutline : logInOutline" aria-hidden="true"
               /></ion-button>
             </form>
             <p class="switch-copy">
@@ -164,7 +164,7 @@
                   ? "Already have an account?"
                   : "Don't have an account?"
               }}
-              <RouterLink :to="isRegister ? '/login' : '/register'">{{
+              <RouterLink :to="authLocation(isRegister ? '/login' : '/register')">{{
                 isRegister ? "Sign in" : "Create account"
               }}</RouterLink>
             </p>
@@ -191,8 +191,9 @@ import { computed, ref, watch } from "vue";
 import { RouterLink, useRoute, useRouter } from "vue-router";
 import { IonButton, IonContent, IonIcon, IonPage } from "@ionic/vue";
 import {
-  arrowBackOutline,
-  arrowForwardOutline,
+  homeOutline,
+  personAddOutline,
+  logInOutline,
   shieldCheckmarkOutline,
   eyeOffOutline,
   eyeOutline,
@@ -215,6 +216,13 @@ import { databaseRequestError } from "../../data/databaseErrors";
 const route = useRoute();
 const router = useRouter();
 const isRegister = computed(() => route.path === "/register");
+function authLocation(path: '/login' | '/register') {
+  return { path, query: typeof route.query.redirect === 'string' ? { redirect: route.query.redirect } : {} };
+}
+const privacyLocation = computed(() => ({
+  path: '/privacy',
+  query: { ...authLocation('/register').query, from: 'register' },
+}));
 const fullName = ref("");
 const email = ref("");
 const password = ref("");
@@ -228,7 +236,16 @@ const recoveryMessage = ref("");
 
 watch(
   () => route.fullPath,
-  () => {
+  (next, previous) => {
+    // Ionic keeps the registration form in memory during the privacy detour.
+    // Preserve its fields until the user returns to acknowledge the notice.
+    const nextPath = next.split('?')[0];
+    const previousPath = previous.split('?')[0];
+    if ((previousPath === '/register' && nextPath === '/privacy') ||
+        (previousPath === '/privacy' && nextPath === '/register')) {
+      showPassword.value = false;
+      return;
+    }
     errorMessage.value = String(route.query.sessionError || "");
     recoveryMessage.value = "";
     password.value = "";
@@ -544,12 +561,9 @@ input:focus {
 .form-options {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-}
-.reset-hint {
-  font-size: 12px;
-  color: var(--muted);
+  justify-content: flex-end;
+  margin-top: -8px;
+  margin-bottom: -4px;
 }
 .check {
   display: flex !important;
@@ -571,14 +585,28 @@ input:focus {
   font-weight: 700;
 }
 .text-button {
-  padding: 5px 0;
+  min-height: 32px;
+  padding: 6px 0;
   border: 0;
+  border-radius: 4px;
   background: transparent;
   color: var(--ocean);
   font: inherit;
   font-size: 12px;
-  font-weight: 800;
+  font-weight: 600;
   cursor: pointer;
+}
+.text-button:hover:not(:disabled) {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.text-button:focus-visible {
+  outline: 2px solid var(--ocean);
+  outline-offset: 4px;
+}
+.text-button:disabled {
+  opacity: 0.6;
+  cursor: default;
 }
 .submit-button {
   --background: var(--action);
@@ -690,13 +718,6 @@ input:focus {
   }
   .form-heading h1 {
     font-size: 27px;
-  }
-  .form-options {
-    gap: 6px;
-  }
-  .reset-hint,
-  .text-button {
-    font-size: 11px;
   }
 }
 
