@@ -1,20 +1,23 @@
 <template>
-  <section class="catalog-panel no-shows-panel">
-    <div class="catalog-tools">
+  <section class="no-shows-panel">
+    <div class="no-show-picker-card">
+    <div class="catalog-tools no-show-heading">
+      <div class="no-show-intro"><span class="no-show-symbol"><IonIcon :icon="personRemoveOutline" aria-hidden="true" /></span><div><p class="eyebrow">ATTENDANCE REVIEW</p><h2>Review a completed sailing</h2>
       <p>
         Review paid passengers who did not board. Record no-shows only after the
         trip is completed.
       </p>
+      </div></div>
       <button
         class="primary-button"
-        :disabled="busy || !eligibleCount || sailing?.status !== 'COMPLETED'"
+        :disabled="busy || loading || !eligibleCount || sailing?.status !== 'COMPLETED'"
         @click="mark()"
       >
-        Mark remaining as no-show
+        {{ busy ? 'Recording…' : 'Mark remaining as no-show' }}
       </button>
     </div>
     <label class="catalog-picker"
-      >Completed trip<select v-model="code" @change="load">
+      >Completed trip<select v-model="code" :disabled="busy || loading" @change="load">
         <option value="">Select trip</option>
         <option v-for="s in sailings" :key="s.code" :value="s.code">
           {{ s.code }} · {{ s.origin.name }} → {{ s.destination.name }}
@@ -27,23 +30,26 @@
     >
       Load older trips
     </button>
+    </div>
     <p v-if="error" role="alert" class="catalog-error">{{ error }}</p>
     <p v-if="notice" role="status">{{ notice }}</p>
     <div class="catalog-tools no-show-search">
-      <input
+      <label class="no-show-search-label" for="no-show-search">Search passengers<div class="no-show-search-input"><IonIcon :icon="searchOutline" aria-hidden="true" /><input
+        id="no-show-search"
         v-model.trim="search"
         class="catalog-search"
         type="search"
         placeholder="Search passenger or booking"
         aria-label="Search no-shows"
-      /><span
+      /></div></label><Button variant="ghost" :disabled="!search" @click="search = ''">Reset search</Button><span
         >{{ visible.length }} passengers · {{ eligibleCount }} not yet
         marked</span
       >
     </div>
     <div class="no-show-counts"><div><span>Passengers not boarded</span><strong>{{ rows.length }}</strong></div><div><span>Not yet recorded</span><strong>{{ eligibleCount }}</strong></div><div><span>No-shows recorded</span><strong>{{ rows.filter(p => p.noShow).length }}</strong></div></div>
-    <div v-if="!visible.length" class="no-show-empty" role="status"><strong>{{ loading ? 'Loading passengers...' : search ? 'No matching passengers' : code ? 'No passengers to record' : 'Choose a completed trip' }}</strong><p>{{ search ? 'Try another passenger name or booking reference.' : code ? 'No non-boarded paid passengers were found for this completed sailing.' : 'Select a completed sailing to review attendance.' }}</p></div>
-    <div v-else class="catalog-table">
+    <div v-if="!visible.length && !error" class="no-show-empty" role="status"><span class="no-show-empty-symbol"><IonIcon :icon="code && !search ? checkmarkCircleOutline : personRemoveOutline" aria-hidden="true" /></span><strong>{{ loading ? 'Loading passengers...' : search ? 'No matching passengers' : code ? 'No passengers to record' : 'Choose a completed trip' }}</strong><p>{{ search ? 'Try another passenger name or booking reference.' : code ? 'No non-boarded paid passengers were found for this completed sailing.' : 'Select a completed sailing to review attendance.' }}</p></div>
+    <div v-else-if="visible.length" class="catalog-table">
+      <div class="no-show-table-heading"><p class="eyebrow">PASSENGER ATTENDANCE</p><h2>Passengers who did not board</h2></div>
       <table>
         <thead>
           <tr>
@@ -57,21 +63,22 @@
         </thead>
         <tbody>
           <tr v-for="p in visible" :key="p.id">
-            <td data-label="Passenger">{{ p.fullName }}</td>
+            <td data-label="Passenger"><strong>{{ p.fullName }}</strong></td>
             <td data-label="Booking">{{ p.booking.reference }}</td>
             <td data-label="Accommodation">
               {{ p.booking.accommodationName || "Standard" }}
             </td>
-            <td data-label="Ticket">{{ humanize(p.ticketStatus) }}</td>
+            <td data-label="Ticket"><Badge :variant="p.ticketStatus === 'CHECKED_IN' ? 'success' : 'default'">{{ humanize(p.ticketStatus) }}</Badge></td>
             <td data-label="Attendance">
-              <span class="status">{{
+              <Badge :variant="p.noShow ? 'destructive' : 'warning'">{{
                 p.noShow ? "No-show recorded" : "Did not board"
-              }}</span>
+              }}</Badge>
             </td>
             <td data-label="Action">
               <button
                 v-if="!p.noShow"
-                :disabled="busy || sailing?.status !== 'COMPLETED'"
+                :disabled="busy || loading || sailing?.status !== 'COMPLETED'"
+                :aria-label="`Mark ${p.fullName} as no-show`"
                 @click="mark(p.id)"
               >
                 Mark no-show</button
@@ -96,6 +103,10 @@
 </template>
 <script setup lang="ts">
 import { confirmAction } from "../../composables/confirmation";
+import { IonIcon } from "@ionic/vue";
+import { personRemoveOutline, searchOutline, checkmarkCircleOutline } from "ionicons/icons";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { computed, onMounted, ref } from "vue";
 import { useRoute } from "vue-router";
 import { staffDatabase } from "../../services/session";
@@ -137,6 +148,7 @@ const visible = computed(() =>
 );
 async function load() {
   if (!staffDatabase) return;
+  if (!code.value) { rows.value = []; sailing.value = null; notice.value = ''; return; }
   loading.value = true;
   error.value = "";
   try {
@@ -167,7 +179,7 @@ async function more() {
   }
 }
 async function mark(id?: string) {
-  if (!staffDatabase || busy.value) return;
+  if (!staffDatabase || busy.value || loading.value || sailing.value?.status !== 'COMPLETED') return;
   if (
     !(await confirmAction({
       title: "Record no-show attendance?",
@@ -203,7 +215,29 @@ onMounted(async () => {
 </script>
 
 <style scoped>
-.no-shows-panel { display: grid; gap: 16px; padding: 18px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); }
+.no-shows-panel { display: grid; gap: 20px; min-width: 0; }
+.no-show-picker-card { padding: 22px; border: 1px solid var(--line); border-radius: 14px; background: var(--surface); }
+.no-show-intro { display: flex; align-items: flex-start; gap: 14px; }
+.no-show-symbol, .no-show-empty-symbol { display: grid; place-items: center; flex: none; border-radius: 12px; background: var(--light-blue); color: var(--ocean); }
+.no-show-symbol { width: 44px; height: 44px; font-size: 24px; }
+.no-show-empty-symbol { width: 56px; height: 56px; font-size: 28px; margin: 0 auto 16px; }
+.no-shows-panel h2 { font-size: 18px; margin: 0 0 7px; color: var(--ink); }
+.no-shows-panel .eyebrow { font-size: 10px; color: var(--ocean); font-weight: 800; letter-spacing: .1em; margin: 0 0 6px; }
+.no-shows-panel .no-show-heading { margin-bottom: 20px; align-items: flex-start; }
+.no-show-heading > button { flex: none; }
+.no-show-picker-card > button { margin-top: 12px; }
+.no-shows-panel .no-show-search { padding: 18px 20px; border: 1px solid var(--line); border-radius: 14px; background: var(--surface); align-items: end; }
+.no-show-search-label { display: grid; flex: 1; gap: 8px; min-width: 0; font-size: 11px; color: var(--muted); font-weight: 600; }
+.no-show-search-input { display: flex; align-items: center; gap: 8px; padding-left: 12px; border: 1px solid var(--line); border-radius: 9px; background: var(--surface-soft); }
+.no-show-search-input ion-icon { font-size: 17px; flex: none; }
+.no-shows-panel .no-show-search-input input { border: 0; background: transparent; outline: none; }
+.no-show-search-input:focus-within { outline: 2px solid var(--ocean); outline-offset: 2px; }
+.no-show-search > span { padding-bottom: 12px; }
+.no-show-table-heading { padding: 20px; border-bottom: 1px solid var(--line); }
+.no-shows-panel .catalog-table { border: 1px solid var(--line); border-radius: 14px; background: var(--surface); overflow-x: auto; }
+.no-shows-panel .catalog-table button, .no-show-picker-card > button { background: var(--light-blue); color: var(--ocean); cursor: pointer; }
+.no-shows-panel button:disabled, .no-shows-panel select:disabled { opacity: .6; cursor: not-allowed; }
+.no-shows-panel button:focus-visible, .no-shows-panel select:focus-visible { outline: 2px solid var(--ocean); outline-offset: 2px; }
 .no-shows-panel .catalog-tools { display: flex; justify-content: space-between; align-items: center; gap: 14px; margin: 0; }
 .no-shows-panel .catalog-tools p { margin: 0; max-width: 620px; color: var(--muted); font-size: 12px; line-height: 1.7; }
 .no-shows-panel button { min-height: 42px; padding: 9px 12px; border: 1px solid var(--line); border-radius: 8px; font-size: 12px; }
@@ -212,18 +246,23 @@ onMounted(async () => {
 .no-show-search input { flex: 1; }
 .no-show-search > span { color: var(--muted); font-size: 11px; line-height: 1.6; }
 .no-show-counts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
-.no-show-counts > div { display: grid; gap: 8px; padding: 14px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface-soft); }
+.no-show-counts > div { display: grid; gap: 10px; padding: 18px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); }
 .no-show-counts span { font-size: 11px; color: var(--muted); }
-.no-show-counts strong { font-size: 24px; }
+.no-show-counts strong { font-size: 27px; color: var(--ink); font-variant-numeric: tabular-nums; }
 .no-show-empty { padding: 28px 18px; text-align: center; border: 1px dashed var(--line); border-radius: 10px; background: var(--surface-soft); }
 .no-show-empty strong { font-size: 15px; }
 .no-show-empty p { font-size: 12px; color: var(--muted); line-height: 1.7; margin-bottom: 0; }
 .no-shows-panel table { width: 100%; border-collapse: collapse; font-size: 12px; }
-.no-shows-panel th { text-align: left; font-size: 10px; color: var(--muted); padding: 12px; }
+.no-shows-panel th { text-align: left; font-size: 10px; color: var(--muted); padding: 15px; background: var(--surface-soft); text-transform: uppercase; letter-spacing: .04em; }
 .no-shows-panel td { padding: 12px; border-top: 1px solid var(--line); overflow-wrap: anywhere; }
+.no-shows-panel .no-show-intro .eyebrow { margin: 0 0 6px; color: var(--ocean); font-size: 10px; line-height: 1.5; }
+.no-shows-panel .catalog-tools.no-show-heading { margin-bottom: 20px; align-items: flex-start; }
+.no-shows-panel .catalog-tools.no-show-search { align-items: end; }
 @media (max-width: 700px) {
- .no-shows-panel { padding: 14px; }
+ .no-show-picker-card { padding: 16px; }
+ .no-shows-panel .no-show-search { padding: 16px; }
  .no-shows-panel .catalog-tools { flex-direction: column; align-items: stretch; }
+ .no-shows-panel .catalog-tools.no-show-search, .no-shows-panel .catalog-tools.no-show-heading { align-items: stretch; }
  .no-show-counts { gap: 8px; }
  .no-show-counts > div { padding: 10px; }
  .no-show-counts strong { font-size: 21px; }

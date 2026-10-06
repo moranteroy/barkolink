@@ -1,0 +1,44 @@
+/* Shared admin communication pages and scrollable compose dialogs. */
+.communication-heading { display:flex; align-items:center; justify-content:space-between; gap:18px; }
+.communication-heading h2, .communication-heading h3, .communication-dialog-heading h2 { margin:0; font-size:19px; color:var(--ink); }
+.communication-heading p, .communication-dialog-heading p { margin:7px 0 0; color:var(--muted); font-size:12px; line-height:1.6; }
+.communication-heading .eyebrow, .communication-dialog-heading .eyebrow, .notification-inbox .eyebrow { color:var(--ocean); font-size:10px; font-weight:800; letter-spacing:.1em; margin:0 0 7px; }
+.communication-directory { border:1px solid var(--line); border-radius:16px; background:var(--surface); overflow:hidden; }
+.communication-directory > .communication-heading { padding:22px; border-bottom:1px solid var(--line); }
+.communication-directory > .catalog-tools { padding:18px; }
+.communication-directory > .catalog-table { margin:0 14px 14px; }
+.communication-filters { display:flex; align-items:end; gap:14px; padding:20px; border:1px solid var(--line); border-radius:15px; background:var(--surface); }
+.communication-filters label { display:grid; gap:8px; font-size:12px; font-weight:600; color:var(--muted); min-width:0; }
+.communication-filters label:first-child { flex:1; }
+.communication-filters input, .communication-filters select, .communication-fields input, .communication-fields select, .communication-fields textarea { width:100%; min-width:0; min-height:42px; padding:11px 12px; border:1px solid var(--line); border-radius:9px; color:var(--ink); background:var(--surface-soft); font:inherit; }
+.communication-filters select { min-width:180px; }
+.communication-empty { text-align:center; padding:30px 20px; border:1px dashed var(--line); border-radius:14px; background:var(--surface-soft); color:var(--muted); font-size:13px; }
+.communication-empty h3 { color:var(--ink); margin:0 0 9px; }
+.communication-count { margin:0; color:var(--muted); font-size:12px; }
+.communication-modal { --width:660px; --height:auto; --max-height:calc(100dvh - 32px); --border-radius:18px; --background:var(--surface); }
+.communication-dialog { display:flex; flex-direction:column; height:auto; max-height:calc(100dvh - 32px); overflow:hidden; background:var(--surface); color:var(--ink); gap:0; }
+.communication-dialog-heading { display:flex; align-items:center; justify-content:space-between; gap:18px; padding:22px; border-bottom:1px solid var(--line); flex:none; }
+.communication-dialog-heading > button { display:grid; place-items:center; width:36px; height:36px; padding:0; flex:none; background:var(--surface-soft); border:1px solid var(--line); border-radius:10px; color:var(--muted); cursor:pointer; }
+.communication-dialog-heading ion-icon { font-size:20px; }
+.communication-form { display:flex; flex-direction:column; flex:1; min-height:0; overflow:hidden; margin:0; }
+.communication-scroll { flex:1; min-height:0; overflow-y:auto; overscroll-behavior:contain; padding:22px; }
+.communication-scroll fieldset { border:0; padding:0; margin:0; min-width:0; display:grid; gap:18px; }
+.communication-fields { grid-template-columns:repeat(2,minmax(0,1fr)); }
+.communication-fields label { display:grid; gap:8px; min-width:0; font-size:12px; font-weight:600; }
+.communication-fields textarea { resize:vertical; min-height:110px; }
+.communication-footer { display:flex; justify-content:flex-end; gap:10px; padding:16px 22px; border-top:1px solid var(--line); background:var(--surface); flex:none; }
+.advisory-badges { display:flex; align-items:center; flex-wrap:wrap; gap:10px; }
+.notification-list { display:grid; gap:14px; }
+.notification-card { padding:22px; border:1px solid var(--line); border-radius:15px; background:var(--surface); }
+.notification-card.unread { border-left:3px solid var(--ocean); }
+.notification-card-heading { display:flex; align-items:start; justify-content:space-between; gap:16px; }
+.notification-card h3 { margin:0; font-size:16px; overflow-wrap:anywhere; }
+.notification-card > p { font-size:13px; line-height:1.7; white-space:pre-wrap; overflow-wrap:anywhere; }
+.notification-card-footer { display:flex; justify-content:space-between; align-items:center; gap:14px; color:var(--muted); font-size:11px; }
+.broadcast-link { border:1px solid var(--line); border-radius:9px; padding:10px 14px; font-size:12px; color:var(--ocean); text-decoration:none; }
+@media(max-width:600px) { .communication-heading { align-items:start; flex-wrap:wrap; } .communication-filters { flex-direction:column; align-items:stretch; padding:16px; } .communication-fields { grid-template-columns:1fr; } .communication-scroll,.communication-dialog-heading { padding:18px; } .communication-modal { --width:calc(100vw - 24px); --max-height:calc(100dvh - 24px); } .communication-dialog { max-height:calc(100dvh - 24px); } .notification-card-footer { flex-wrap:wrap; } }
+
+.communication-directory > .catalog-tools label:first-child { flex:1; }
+.communication-directory > .catalog-tools input { width:100%; }
+
+.communication-heading [data-slot="button"][data-variant="default"], .catalog-tools [data-slot="button"][data-variant="default"] { background:var(--action); color:#fff; border-color:transparent; }

@@ -1,6 +1,6 @@
 <template>
   <section class="advisory-panel">
-    <header>
+    <header v-if="!embedded">
       <div v-if="!embedded">
         <p class="eyebrow">PASSENGER COMMUNICATION</p>
         <h2>Travel advisories</h2>
@@ -12,8 +12,10 @@
     </header>
     <p v-if="error" class="error" role="alert">{{ error }}</p>
     <p v-if="notice" role="status">{{ notice }}</p>
-    <form @submit.prevent="save">
-      <h3>{{ form.id ? "Edit advisory" : "Create advisory" }}</h3>
+    <div class="communication-heading"><div><p class="eyebrow">PASSENGER UPDATES</p><h3>Advisory directory</h3><p>Manage drafts and updates for upcoming travel.</p></div><Button :disabled="busy || loading" @click="start">Create advisory</Button></div>
+    <div class="communication-filters"><label>Search advisories<input v-model="query" type="search" placeholder="Title, message, or sailing" /></label><label>Status<select v-model="statusFilter"><option value="ALL">All statuses</option><option value="ACTIVE">Active</option><option value="SCHEDULED">Scheduled</option><option value="DRAFT">Draft</option><option value="ENDED">Ended</option></select></label><Button variant="ghost" @click="query = ''; statusFilter = 'ALL'" :disabled="!query && statusFilter === 'ALL'">Reset filters</Button></div>
+    <IonModal :is-open="editing" :can-dismiss="canDismiss" class="communication-modal" @didDismiss="editing = false"><section class="communication-dialog"><header class="communication-dialog-heading"><div><p class="eyebrow">TRAVEL ADVISORY</p><h2>{{ form.id ? 'Edit advisory' : 'Create advisory' }}</h2><p>Set the audience and publishing period.</p></div><button type="button" aria-label="Close advisory" :disabled="busy" @click="close"><ion-icon :icon="closeOutline" /></button></header>    <form class="communication-form" @submit.prevent="save"><div class="communication-scroll"><fieldset :disabled="busy">
+<p v-if="formError" class="error" role="alert">{{ formError }}</p>
       <label
         >Title<input
           v-model.trim="form.title"
@@ -40,18 +42,18 @@
                 'SAFETY',
                 'GENERAL',
               ]"
-              :key="type"
+              :key="type" :value="type"
             >
-              {{ type }}
+              {{ label(type) }}
             </option>
           </select></label
         ><label
           >Priority<select v-model="form.priority">
             <option
               v-for="priority in ['HIGH', 'MEDIUM', 'LOW']"
-              :key="priority"
+              :key="priority" :value="priority"
             >
-              {{ priority }}
+              {{ label(priority) }}
             </option>
           </select></label
         >
@@ -88,26 +90,17 @@
         ><input v-model="form.published" type="checkbox" /> Publish during this
         period</label
       >
-      <div class="actions">
-        <button :disabled="busy || loading">
-          {{ busy ? "Saving…" : "Save advisory" }}</button
-        ><button type="button" :disabled="busy" @click="reset">
-          {{ form.id ? "Cancel edit" : "Clear" }}
-        </button>
-      </div>
-    </form>
+</fieldset></div><footer class="communication-footer"><Button variant="outline" type="button" :disabled="busy" @click="close">Cancel</Button><Button type="submit" :disabled="busy || loading">{{ busy ? 'Saving...' : 'Save advisory' }}</Button></footer></form></section></IonModal>
     <p v-if="loading">Loading advisories…</p>
     <p v-else-if="!items.length">No advisories created yet.</p>
+    <p v-if="!loading && items.length" class="communication-count">{{ filteredItems.length }} of {{ items.length }} advisories</p><p v-if="!loading && items.length && !filteredItems.length" class="communication-empty">No advisories match these filters.</p>
     <div class="advisory-list">
-      <article v-for="item in items" :key="item.id">
+      <article v-for="item in filteredItems" :key="item.id">
         <ion-icon
           :icon="item.priority === 'HIGH' ? warningOutline : megaphoneOutline"
         />
         <div>
-          <small
-            >{{ item.category }} · {{ item.priority }} ·
-            {{ status(item) }}</small
-          >
+          <div class="advisory-badges"><Badge :variant="status(item) === 'ACTIVE' ? 'success' : status(item) === 'SCHEDULED' ? 'warning' : 'default'">{{ label(status(item)) }}</Badge><small>{{ label(item.category) }} / {{ label(item.priority) }} priority</small></div>
           <h3>{{ item.title }}</h3>
           <p>{{ item.message }}</p>
           <small
@@ -121,9 +114,10 @@
   </section>
 </template>
 <script setup lang="ts">
-import { onMounted, reactive, ref } from "vue";
-import { IonIcon } from "@ionic/vue";
+import { computed, onMounted, reactive, ref } from "vue";
+import { IonIcon, IonModal } from "@ionic/vue";
 import {
+  closeOutline,
   megaphoneOutline,
   refreshOutline,
   warningOutline,
@@ -137,7 +131,13 @@ import { adminSailings } from "../../services/database/staff";
 import { staffDatabase } from "../../services/session";
 import { databaseRequestError } from "../../data/databaseErrors";
 import { useUnsavedChanges } from "../../composables/unsavedChanges";
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { confirmAction } from '../../composables/confirmation';
+import '../../theme/communication.css';
 defineProps<{ embedded?: boolean }>();
+const editing = ref(false), formError = ref(''), query = ref(''), statusFilter = ref('ALL');
+const label = (value: string) => value.charAt(0) + value.slice(1).toLowerCase();
 const items = ref<Advisory[]>([]),
   sailings = ref<
     Array<{
@@ -164,7 +164,7 @@ async function loadMoreSailings() {
     sailingPage.value++;
     sailingTotal.value = result.data.totalCount || sailings.value.length;
   } catch (cause) {
-    error.value = databaseRequestError(cause, "Could not load more sailings.");
+    formError.value = databaseRequestError(cause, "Could not load more sailings.");
   } finally {
     moreLoading.value = false;
   }
@@ -188,7 +188,7 @@ const empty = () => ({
 });
 const form = reactive(empty());
 let savedForm = JSON.stringify(form);
-const hasUnsavedChanges = () => JSON.stringify(form) !== savedForm;
+const hasUnsavedChanges = () => editing.value && JSON.stringify(form) !== savedForm;
 useUnsavedChanges(hasUnsavedChanges);
 defineExpose({ hasUnsavedChanges });
 const date = (value: string) =>
@@ -201,11 +201,16 @@ const status = (item: Advisory) =>
       : Date.parse(item.startsAt) > Date.now()
         ? "SCHEDULED"
         : "ACTIVE";
+const filteredItems = computed(() => items.value.filter(item => (statusFilter.value === 'ALL' || status(item) === statusFilter.value) && [item.title, item.message, item.sailingCode || 'All passengers'].join(' ').toLowerCase().includes(query.value.trim().toLowerCase())));
+async function canDismiss() { return !busy.value && (!hasUnsavedChanges() || await confirmAction({ title: 'Discard advisory changes?', message: 'Your unsaved changes will be lost.', confirmText: 'Discard changes' })); }
+async function close() { if (await canDismiss()) editing.value = false; }
+function start() { reset(); formError.value = ''; editing.value = true; }
 function reset() {
   Object.assign(form, empty());
   savedForm = JSON.stringify(form);
 }
 function edit(item: Advisory) {
+  editing.value = true; formError.value = "";
   Object.assign(form, item, {
     sailingCode: item.sailingCode || "",
     startsAt: local(item.startsAt),
@@ -246,12 +251,13 @@ async function save() {
   if (!staffDatabase || busy.value) return;
   error.value = "";
   notice.value = "";
-  const startsAt = new Date(`${form.startsAt}:00+08:00`).toISOString(),
-    endsAt = new Date(`${form.endsAt}:00+08:00`).toISOString();
-  if (endsAt <= startsAt) {
-    error.value = "End time must be later than start time.";
+  formError.value = '';
+  const startDate = new Date(`${form.startsAt}:00+08:00`), endDate = new Date(`${form.endsAt}:00+08:00`);
+  if (!Number.isFinite(startDate.getTime()) || !Number.isFinite(endDate.getTime()) || endDate <= startDate) {
+    formError.value = "End time must be later than start time.";
     return;
   }
+  const startsAt = startDate.toISOString(), endsAt = endDate.toISOString();
   busy.value = true;
   try {
     await saveAdvisory(staffDatabase, {
@@ -262,11 +268,12 @@ async function save() {
       endsAt,
     });
     reset();
+    busy.value = false; editing.value = false;
     await load();
     notice.value =
       "Advisory saved. Published advisories appear during their effective period.";
   } catch (cause) {
-    error.value = databaseRequestError(cause, "Could not save advisory.");
+    formError.value = databaseRequestError(cause, "Could not save advisory.");
   } finally {
     busy.value = false;
   }
@@ -299,12 +306,15 @@ header p {
   color: var(--ocean) !important;
   font-size: 10px !important;
 }
-form {
-  display: grid;
-  gap: 14px;
-  padding: 24px;
-  border: 1px solid var(--line);
-  border-radius: 15px;
+form.communication-form {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  flex: 1;
+  gap: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
   background: var(--surface);
 }
 label {
@@ -343,7 +353,7 @@ textarea {
   display: flex;
   gap: 10px;
 }
-button {
+button:not([data-slot="button"]) {
   display: inline-flex;
   align-items: center;
   gap: 7px;
@@ -371,7 +381,7 @@ button:disabled {
   border-radius: 14px;
   background: var(--surface);
 }
-.advisory-list article div {
+.advisory-list article > div {
   flex: 1;
   min-width: 0;
 }
@@ -403,8 +413,6 @@ button:disabled {
   .advisory-list article {
     flex-wrap: wrap;
   }
-  form {
-    padding: 18px;
-  }
+
 }
 </style>

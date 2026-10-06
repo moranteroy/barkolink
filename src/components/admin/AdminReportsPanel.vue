@@ -1,6 +1,7 @@
 <template>
   <div class="reports">
     <section class="card filters" aria-label="Report filters">
+      <div class="filter-heading"><div><p class="eyebrow">REPORT SCOPE</p><h2>Filter analytics</h2></div><Button variant="ghost" :disabled="loading" @click="resetFilters"><IonIcon :icon="refreshOutline" aria-hidden="true" />Reset filters</Button></div>
       <label
         >Period<select v-model="period" @change="applyPeriod">
           <option value="month">This month</option>
@@ -13,7 +14,7 @@
       <label
         >From<input v-model="start" type="date" @change="customDates" /></label
       ><label
-        >Through<input v-model="end" type="date" @change="customDates"
+        >To<input v-model="end" type="date" @change="customDates"
       /></label>
       <label
         >Route<select v-model="route">
@@ -31,37 +32,32 @@
           </option>
         </select></label
       >
-      <p>
-        Reports follow sailing departure dates in Philippine time. Select up to
-        366 days.
-      </p>
+      <p class="filter-note"><IonIcon :icon="informationCircleOutline" aria-hidden="true" />Reports use sailing departure dates in Philippine time. Select up to 366 days.</p>
     </section>
-    <p v-if="error" class="card error" role="alert">{{ error }}</p>
+    <div v-if="error" class="card report-state error" role="alert"><IonIcon :icon="alertCircleOutline" aria-hidden="true" /><div><h3>Reports unavailable</h3><p>{{ error }}</p></div><Button variant="outline" @click="loadReports">Try again</Button></div>
     <p v-else-if="loading" class="card" role="status">
       Loading reports and analytics…
     </p>
     <template v-else-if="ready">
       <div class="metrics">
         <article v-for="m in metrics" :key="m.label" class="card">
-          <small>{{ m.label }}</small
+          <div class="metric-top"><small>{{ m.label }}</small><span class="metric-icon" :class="m.tone"><IonIcon :icon="m.icon" aria-hidden="true" /></span></div
           ><strong>{{ m.value }}</strong
           ><span>{{ m.note }}</span>
         </article>
       </div>
-      <p v-if="!filtered.length" class="card">
-        No sailings match these dates and filters.
-      </p>
+      <div v-if="!filtered.length" class="card report-state"><IonIcon :icon="barChartOutline" aria-hidden="true" /><div><h3>No sailings in this report</h3><p>Try another date range, route, or vessel.</p></div></div>
       <div class="charts">
         <section class="card">
           <div class="card-head">
-            <h2>Collection trend</h2>
-            <span>{{ trend.mode }}</span>
+            <h2><IonIcon :icon="trendingUpOutline" aria-hidden="true" />Collection trend</h2>
+            <Badge>{{ trend.mode }}</Badge>
           </div>
           <p>
             Paid booking amounts grouped by departure date, including paid
             cancellations before refunds.
           </p>
-          <div class="chart-scroll">
+          <div class="trend-scale"><span>{{ money(Math.max(...trend.points.map(point => point.revenue), 0)) }}</span><span>Peak collection</span></div><div class="chart-scroll">
             <div
               class="bars"
               :style="{
@@ -98,7 +94,7 @@
           </div>
         </section>
         <section class="card">
-          <h2>Booking activity</h2>
+          <h2><IonIcon :icon="ticketOutline" aria-hidden="true" />Booking activity</h2>
           <p>
             Payment and cancellation breakdown for
             {{ totals.bookingCount }} reservations.
@@ -133,14 +129,10 @@
               >Walk-in<strong>{{ totals.walkInBookings }}</strong></span
             >
           </div>
+          <div class="refund-summary"><span>Refunds pending<strong>{{ money(totals.refundPending) }}</strong></span><span>Cash refunded<strong>{{ money(totals.refundedRevenue) }}</strong></span><span>Expired reservations<strong>{{ totals.expiredBookings }}</strong></span></div>
         </section>
         <section class="card">
-          <p>
-            Refunds pending: PHP {{ totals.refundPending.toLocaleString() }} |
-            Cash refunded: PHP {{ totals.refundedRevenue.toLocaleString() }} |
-            Expired reservations: {{ totals.expiredBookings }}
-          </p>
-          <h2>Passenger mix</h2>
+          <h2><IonIcon :icon="peopleOutline" aria-hidden="true" />Passenger mix</h2>
           <p>Paid, confirmed passengers by fare category.</p>
           <div
             v-for="item in passengerMix"
@@ -166,7 +158,7 @@
           </div>
         </section>
         <section class="card">
-          <h2>Sailing performance</h2>
+          <h2><IonIcon :icon="boatOutline" aria-hidden="true" />Sailing performance</h2>
           <p>
             Seat utilization and terminal progress across the selected sailings.
           </p>
@@ -193,7 +185,7 @@
                 'CANCELLED',
               ]"
               :key="status"
-              >{{ status.toLowerCase()
+              :class="status.toLowerCase()">{{ status.toLowerCase()
               }}<strong>{{
                 filtered.filter((s) => s.status === status).length
               }}</strong></span
@@ -209,18 +201,18 @@
       <section class="card report-table">
         <div class="card-head">
           <div>
-            <h2>Detailed reports</h2>
+            <p class="eyebrow">REPORT EXPLORER</p><h2>Detailed reports</h2>
             <p>
               {{ tableRows.length }} records · {{ start }} through {{ end }}
             </p>
           </div>
-          <button
+          <Button
             class="export"
             :disabled="!tableRows.length"
             @click="exportReport"
           >
-            Export CSV
-          </button>
+            <IonIcon :icon="downloadOutline" aria-hidden="true" />Export CSV
+          </Button>
         </div>
         <div class="table-toolbar">
           <div class="tabs" role="group" aria-label="Report type">
@@ -233,14 +225,14 @@
               {{ label }}
             </button>
           </div>
-          <input
+          <label class="report-search"><IonIcon :icon="searchOutline" aria-hidden="true" /><input
             v-model="search"
             type="search"
             placeholder="Search this report"
             aria-label="Search report table"
-          />
+          /></label>
         </div>
-        <div class="table-scroll">
+        <p class="scroll-hint"><IonIcon :icon="swapHorizontalOutline" aria-hidden="true" />Scroll across to see every report column.</p><div class="table-scroll" tabindex="0" role="region" :aria-label="`${tabs[tab]} report details`">
           <table>
             <thead>
               <tr>
@@ -249,8 +241,9 @@
             </thead>
             <tbody>
               <tr v-for="(row, i) in tableRows" :key="i">
-                <td v-for="(cell, j) in row" :key="j">
-                  {{ moneyColumns.includes(j) ? money(Number(cell)) : cell }}
+                <td v-for="(cell, j) in row" :key="j" :class="{ numeric: moneyColumns.includes(j), 'sailing-status': tab === 'sailings' && j === 10 }">
+                  <Badge v-if="tab === 'sailings' && j === 10" :variant="cell === 'COMPLETED' ? 'success' : cell === 'CANCELLED' ? 'destructive' : cell === 'DELAYED' ? 'warning' : 'default'">{{ String(cell).charAt(0) + String(cell).slice(1).toLowerCase() }}</Badge><template v-else>
+                  {{ moneyColumns.includes(j) ? money(Number(cell)) : cell }}</template>
                 </td>
               </tr>
               <tr v-if="!tableRows.length">
@@ -273,6 +266,10 @@
 
 <script setup lang="ts">
 import { computed, onBeforeUnmount, ref, watch } from "vue";
+import { IonIcon } from '@ionic/vue';
+import { alertCircleOutline, barChartOutline, boatOutline, cashOutline, downloadOutline, informationCircleOutline, peopleOutline, refreshOutline, scanOutline, searchOutline, swapHorizontalOutline, ticketOutline, timeOutline, trendingUpOutline } from 'ionicons/icons';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import AdminManifestExport from "./AdminManifestExport.vue";
 import { adminReports } from "../../services/database/staff";
 import { staffDatabase } from "../../services/session";
@@ -330,32 +327,32 @@ const metrics = computed(() => {
   const t = totals.value;
   return [
     {
-      label: "Collected revenue",
+      label: "Collected revenue", icon: cashOutline, tone: "green",
       value: money(t.collectedRevenue),
       note: "Gross paid booking amounts",
     },
     {
-      label: "Awaiting payment",
+      label: "Awaiting payment", icon: timeOutline, tone: "amber",
       value: money(t.pendingRevenue),
       note: `${t.pendingBookings} unpaid active bookings`,
     },
     {
-      label: "Reservations",
+      label: "Reservations", icon: ticketOutline, tone: "blue",
       value: t.bookingCount,
       note: `${t.cancelledBookings} cancelled (${percent(t.cancelledBookings, t.bookingCount)}%)`,
     },
     {
-      label: "Reserved seats",
+      label: "Reserved seats", icon: peopleOutline, tone: "purple",
       value: t.reservedSeats,
       note: `${percent(t.reservedSeats, t.capacity)}% of ${t.capacity} sailing seats`,
     },
     {
-      label: "Sailings",
+      label: "Sailings", icon: boatOutline, tone: "blue",
       value: filtered.value.length,
       note: `${filtered.value.filter((s) => s.status === "COMPLETED").length} completed`,
     },
     {
-      label: "Checked in / boarded",
+      label: "Checked in / boarded", icon: scanOutline, tone: "green",
       value: `${t.checkedIn} / ${t.boarded}`,
       note: `${t.paidPassengers} paid, confirmed passengers`,
     },
@@ -532,6 +529,9 @@ async function loadReports() {
     }
   }
 }
+function resetFilters() {
+  route.value = 'ALL'; vessel.value = 'ALL'; search.value = ''; period.value = 'month'; applyPeriod();
+}
 function applyPeriod() {
   if (period.value === "custom") return;
   end.value = manilaDay();
@@ -568,284 +568,92 @@ onBeforeUnmount(() => {
 </script>
 
 <style scoped>
-.reports {
-  display: grid;
-  gap: 20px;
-}
-.card {
-  background: var(--surface, #fff);
-  border: 1px solid var(--line, #dae5ef);
-  border-radius: 16px;
-  padding: 22px;
-  color: var(--ink, #142f49);
-  min-width: 0;
-}
-.card h2 {
-  font-size: 18px;
-  margin: 0 0 10px;
-}
-.card p,
-.metrics span,
-.metrics small {
-  color: var(--muted, #65788b);
-  font-size: 12px;
-  line-height: 1.6;
-}
-.card p {
-  margin: 0 0 16px;
-}
-.filters {
-  display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: 14px;
-}
-.filters label {
-  display: grid;
-  gap: 8px;
-  font-size: 12px;
-  font-weight: 600;
-}
-.filters p {
-  grid-column: 1/-1;
-  margin: 0;
-}
-.reports input,
-.reports select {
-  width: 100%;
-  border: 1px solid var(--line, #dae5ef);
-  background: var(--surface, #fff);
-  color: inherit;
-  border-radius: 8px;
-  padding: 10px;
-  min-width: 0;
-}
-.metrics {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 14px;
-}
-.metrics article {
-  display: grid;
-  gap: 9px;
-}
-.metrics strong {
-  font-size: 26px;
-}
-.charts {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 20px;
-}
-.card-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-}
-.card-head > span {
-  color: #319be8;
-  font-size: 12px;
-}
-.chart-scroll {
-  overflow-x: auto;
-}
-.bars {
-  height: 192px;
-  display: flex;
-  gap: 5px;
-  padding-top: 12px;
-}
-.bar-column {
-  flex: 1;
-  min-width: 12px;
-  height: 160px;
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  flex-direction: column;
-  position: relative;
-  padding: 0 1px;
-}
-.bar-column > div {
-  width: 100%;
-  max-width: 38px;
-  border: 0;
-  background: #3c9de4;
-  border-radius: 4px 4px 0 0;
-  min-height: 2px;
-}
-.bar-column small {
-  position: absolute;
-  top: 166px;
-  white-space: nowrap;
-  font-size: 10px;
-  color: var(--muted, #65788b);
-}
-.chart-foot {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  justify-content: space-between;
-  font-size: 12px;
-  margin-top: 12px;
-}
-.collection-data { flex-basis: 100%; overflow-x: auto; }
-.distribution {
-  margin: 17px 0;
-}
-.distribution > div:first-child {
-  display: flex;
-  justify-content: space-between;
-  gap: 12px;
-  font-size: 12px;
-  margin-bottom: 8px;
-}
-.distribution small {
-  font-weight: 400;
-  color: var(--muted, #65788b);
-}
-.track {
-  height: 8px;
-  border-radius: 5px;
-  background: var(--line, #e8eef4);
-  overflow: hidden;
-}
-.track i {
-  height: 100%;
-  display: block;
-  background: #3c9de4;
-  border-radius: 5px;
-}
-.channel,
-.statuses {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
-  border-top: 1px solid var(--line, #dae5ef);
-  padding-top: 16px;
-}
-.channel span {
-  flex: 1;
-  font-size: 12px;
-}
-.channel strong,
-.statuses strong {
-  display: block;
-  font-size: 20px;
-  margin-top: 7px;
-}
-.statuses {
-  margin-bottom: 16px;
-}
-.statuses span {
-  flex: 1;
-  font-size: 10px;
-  text-transform: capitalize;
-}
-.export {
-  border: 0;
-  background: #238fe0;
-  color: white;
-  border-radius: 8px;
-  padding: 11px 16px;
-  white-space: nowrap;
-  font-weight: 600;
-  cursor: pointer;
-}
-.export:disabled {
-  opacity: 0.5;
-  cursor: default;
-}
-.table-toolbar {
-  display: flex;
-  justify-content: space-between;
-  gap: 16px;
-  margin: 12px 0 20px;
-  flex-wrap: wrap;
-}
-.tabs {
-  display: flex;
-  gap: 4px;
-  flex-wrap: wrap;
-}
-.tabs button {
-  border: 0;
-  background: transparent;
-  color: var(--muted, #65788b);
-  padding: 10px 14px;
-  border-radius: 8px;
-  cursor: pointer;
-}
-.tabs button[aria-pressed="true"] {
-  background: rgba(60, 157, 228, 0.14);
-  color: #319be8;
-  font-weight: 700;
-}
-.table-toolbar input {
-  max-width: 260px;
-}
-.table-scroll {
-  overflow: auto;
-}
-table {
-  border-collapse: collapse;
-  width: 100%;
-  font-size: 12px;
-}
-th,
-td {
-  text-align: left;
-  padding: 16px 12px;
-  border-bottom: 1px solid var(--line, #dae5ef);
-  white-space: nowrap;
-}
-th {
-  color: var(--muted, #65788b);
-  font-size: 10px;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-}
-td:first-child {
-  font-weight: 600;
-}
-.empty {
-  text-align: center;
-  padding: 32px;
-}
-.card .table-note {
-  margin: 16px 0 0;
-}
-.error {
-  color: #d85563;
-}
-button:focus-visible {
-  outline: 2px solid #3c9de4;
-  outline-offset: 3px;
-}
-@media (max-width: 1100px) {
-  .filters {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-}
-@media (max-width: 700px) {
-  .filters,
-  .metrics {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-  .charts {
-    grid-template-columns: 1fr;
-  }
-  .card {
-    padding: 16px;
-  }
-  .metrics strong {
-    font-size: 22px;
-  }
-  .card-head {
-    align-items: flex-start;
-  }
-  .table-toolbar input {
-    max-width: none;
-  }
-}
+.reports { display:grid; gap:22px; min-width:0; }
+.card { background:var(--surface); border:1px solid var(--line); border-radius:16px; padding:22px; color:var(--ink); min-width:0; }
+.card h2 { display:flex; align-items:center; gap:10px; font-size:17px; margin:0 0 10px; }
+.card h2 ion-icon { color:var(--ocean); font-size:21px; flex:none; }
+.card p,.metrics span,.metrics small { color:var(--muted); font-size:12px; line-height:1.6; }
+.card p { margin:0 0 16px; }
+.card .eyebrow { margin:0 0 6px; color:var(--ocean); font-size:10px; font-weight:800; letter-spacing:.1em; }
+.filters { display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:16px; }
+.filter-heading { grid-column:1/-1; display:flex; align-items:center; justify-content:space-between; gap:16px; padding-bottom:14px; border-bottom:1px solid var(--line); }
+.filter-heading h2 { margin:0; }
+.filters label { display:grid; gap:8px; min-width:0; font-size:12px; font-weight:600; color:var(--muted); }
+.filters .filter-note { display:flex; align-items:center; gap:8px; grid-column:1/-1; margin:0; }
+.filter-note ion-icon { flex:none; font-size:17px; color:var(--ocean); }
+.reports input,.reports select { width:100%; min-height:42px; border:1px solid var(--line); background:var(--surface-soft); color:var(--ink); border-radius:9px; padding:10px 12px; min-width:0; font:inherit; font-size:12px; }
+.metrics { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:16px; }
+.metrics article { display:flex; flex-direction:column; gap:10px; padding:20px; }
+.metric-top { display:flex; align-items:center; justify-content:space-between; gap:14px; }
+.metric-top small { font-weight:600; }
+.metrics .metric-icon { display:grid; place-items:center; width:38px; height:38px; flex:none; border-radius:11px; background:var(--light-blue); color:var(--ocean); }
+.metric-icon ion-icon { font-size:21px; }
+.metrics .metric-icon.green { background:rgba(38,185,154,.12); color:#26b99a; }
+.metrics .metric-icon.amber { background:rgba(227,171,76,.12); color:#e3ab4c; }
+.metrics .metric-icon.purple { background:rgba(160,138,226,.12); color:#a08ae2; }
+.metrics strong { font-size:28px; line-height:1.2; letter-spacing:-.03em; font-variant-numeric:tabular-nums; }
+.charts { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:20px; align-items:stretch; }
+.card-head { display:flex; align-items:center; justify-content:space-between; gap:16px; }
+.trend-scale { display:flex; justify-content:space-between; gap:12px; padding-top:14px; border-top:1px solid var(--line); color:var(--muted); font-size:11px; }
+.trend-scale span:first-child { color:var(--ink); font-weight:600; }
+.chart-scroll { overflow-x:auto; }
+.bars { height:204px; display:flex; gap:8px; padding:12px 8px 0; }
+.bar-column { flex:1; min-width:12px; height:164px; display:flex; align-items:center; justify-content:flex-end; flex-direction:column; position:relative; padding:0 1px; border-bottom:1px solid var(--line); }
+.bar-column > div { width:100%; max-width:38px; background:var(--ocean); border-radius:5px 5px 0 0; min-height:2px; }
+.bar-column small { position:absolute; top:172px; white-space:nowrap; font-size:10px; color:var(--muted); }
+.chart-foot { display:flex; flex-wrap:wrap; gap:12px; justify-content:space-between; font-size:12px; margin-top:12px; border-top:1px solid var(--line); padding-top:14px; }
+.collection-data { flex-basis:100%; overflow-x:auto; }
+.collection-data summary { cursor:pointer; color:var(--ocean); padding-bottom:6px; }
+.distribution { margin:18px 0; }
+.distribution > div:first-child { display:flex; justify-content:space-between; gap:12px; font-size:12px; margin-bottom:8px; }
+.distribution small { font-weight:400; color:var(--muted); }
+.track { height:8px; border-radius:6px; background:var(--line); overflow:hidden; }
+.track i { height:100%; display:block; background:var(--ocean); border-radius:6px; }
+.channel,.statuses,.refund-summary { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; border-top:1px solid var(--line); padding-top:16px; }
+.channel span,.refund-summary span { color:var(--muted); font-size:11px; }
+.channel strong,.statuses strong,.refund-summary strong { display:block; color:var(--ink); font-size:20px; margin-top:7px; font-variant-numeric:tabular-nums; }
+.refund-summary { margin-top:16px; grid-template-columns:repeat(3,minmax(0,1fr)); }
+.refund-summary strong { font-size:15px; }
+.statuses { grid-template-columns:repeat(3,minmax(0,1fr)); margin-bottom:16px; border:0; }
+.statuses span { background:var(--surface-soft); border:1px solid var(--line); border-radius:10px; padding:12px; font-size:10px; color:var(--muted); text-transform:capitalize; }
+.statuses .completed strong { color:#26b99a; }
+.statuses .delayed strong { color:#e3ab4c; }
+.statuses .cancelled strong { color:#e77b88; }
+.export { white-space:nowrap; }
+.report-table { padding:0; overflow:hidden; }
+.report-table > .card-head { padding:22px; border-bottom:1px solid var(--line); }
+.report-table .card-head h2 { margin:0; }
+.report-table .card-head p:not(.eyebrow) { margin:7px 0 0; }
+.table-toolbar { display:flex; justify-content:space-between; align-items:center; gap:16px; padding:18px 22px 12px; flex-wrap:wrap; }
+.tabs { display:flex; gap:4px; flex-wrap:wrap; padding:4px; background:var(--surface-soft); border:1px solid var(--line); border-radius:11px; }
+.tabs button { border:0; background:transparent; color:var(--muted); padding:10px 14px; border-radius:8px; font:inherit; font-size:12px; cursor:pointer; }
+.tabs button[aria-pressed="true"] { background:var(--light-blue); color:var(--ocean); font-weight:700; }
+.report-search { display:flex; align-items:center; position:relative; flex:1; max-width:280px; }
+.report-search ion-icon { position:absolute; left:12px; color:var(--muted); font-size:17px; pointer-events:none; }
+.report-search input { padding-left:38px; }
+.card .scroll-hint { display:flex; align-items:center; gap:7px; margin:0; padding:0 22px 12px; font-size:11px; }
+.scroll-hint ion-icon { font-size:16px; }
+.table-scroll { overflow:auto; max-height:520px; margin:0 14px; border:1px solid var(--line); border-radius:11px; scrollbar-width:thin; scrollbar-color:var(--muted) var(--surface-soft); }
+table { border-collapse:separate; border-spacing:0; width:100%; font-size:12px; }
+th,td { text-align:left; padding:16px 14px; border-bottom:1px solid var(--line); white-space:nowrap; }
+th { color:var(--muted); font-size:10px; text-transform:uppercase; letter-spacing:.04em; background:var(--surface-soft); }
+.table-scroll thead th { position:sticky; top:0; z-index:2; }
+.table-scroll th:first-child,.table-scroll td:first-child { position:sticky; left:0; background:var(--surface); border-right:1px solid var(--line); z-index:1; }
+.table-scroll thead th:first-child { background:var(--surface-soft); z-index:3; }
+td:first-child { font-weight:600; }
+.table-scroll tbody tr:last-child td { border-bottom:0; }
+.table-scroll tbody tr:hover td { background:var(--surface-soft); }
+.numeric { text-align:right; font-variant-numeric:tabular-nums; font-weight:600; }
+.empty { text-align:center; padding:32px; }
+.card .table-note { margin:0; padding:16px 22px 20px; font-size:11px; }
+.report-state { display:flex; align-items:center; gap:16px; }
+.report-state > ion-icon { font-size:30px; color:var(--ocean); flex:none; }
+.report-state h3 { margin:0 0 5px; font-size:16px; }
+.report-state p { margin:0; }
+.report-state > div { flex:1; }
+.error,.error > ion-icon { color:var(--danger); }
+button:focus-visible,.table-scroll:focus-visible { outline:2px solid var(--ocean); outline-offset:3px; }
+@media(max-width:1100px) { .filters { grid-template-columns:repeat(3,minmax(0,1fr)); } }
+@media(max-width:700px) { .filters,.metrics { grid-template-columns:repeat(2,minmax(0,1fr)); } .charts { grid-template-columns:1fr; } .card { padding:16px; } .report-table { padding:0; } .metrics strong { font-size:24px; } .card-head { align-items:flex-start; flex-wrap:wrap; } .report-search { max-width:none; min-width:180px; } .table-toolbar,.report-table > .card-head { padding:16px; } .filter-heading { align-items:flex-start; } .report-state { flex-wrap:wrap; } }
+@media(max-width:420px) { .filters { grid-template-columns:1fr; } .metrics { gap:10px; } .metrics article { padding:14px; } .metric-top { align-items:flex-start; } .metrics .metric-icon { width:28px; height:28px; } .metrics strong { font-size:21px; } .refund-summary { grid-template-columns:1fr; } .tabs { width:100%; } .tabs button { flex:1; padding:10px; } }
 </style>

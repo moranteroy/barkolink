@@ -49,4 +49,17 @@ describe('operations settings', () => {
     expect(wrapper.find('[role=alert]').text()).toContain('5 minutes to 7 days')
     wrapper.unmount()
   })
+  it('previews a selected deadline before saving and retains it on failure', async () => {
+    const wrapper=mount(OperationsPanel,{global:{stubs:{RouterLink:true}}}); await flushPromises()
+    await wrapper.findAll('.deadline-presets button').find(button=>button.text()==='6 hours')!.trigger('click')
+    expect(wrapper.find('.deadline-preview strong').text()).toBe('6 hours')
+    expect(mocks.save).not.toHaveBeenCalled()
+    mocks.save.mockRejectedValueOnce(new Error('Offline'))
+    await wrapper.find('form').trigger('submit'); await flushPromises()
+    expect(mocks.save).toHaveBeenCalledWith({},360)
+    expect(wrapper.find('[role="alert"]').exists()).toBe(true)
+    expect((wrapper.find('input').element as HTMLInputElement).value).toBe('6')
+    wrapper.unmount()
+  })
+
 })

@@ -105,26 +105,7 @@
                   {{ loading ? "Loading records…" : "No records found." }}
                 </p>
               </div>
-              <div v-if="total > 30" class="catalog-pagination">
-                <button
-                  :disabled="!page || loading"
-                  @click="
-                    page--;
-                    load();
-                  "
-                >
-                  Previous</button
-                ><span>Page {{ page + 1 }} · {{ total }} records</span
-                ><button
-                  :disabled="(page + 1) * 30 >= total || loading"
-                  @click="
-                    page++;
-                    load();
-                  "
-                >
-                  Next
-                </button>
-              </div></template
+<WorkspacePagination v-if="total > 30" :page="page" :total="total" :disabled="loading" @change="page = $event; load()" /></template
             >
           </main>
         </div>
@@ -133,6 +114,7 @@
   >
 </template>
 <script setup lang="ts">
+import WorkspacePagination from "../../components/shared/WorkspacePagination.vue";
 import { setUnreadNotifications, clearNotificationUnread } from "../../composables/notificationUnread";
 import StaffLogoutButton from "../../components/staff/StaffLogoutButton.vue";
 import StaffWorkspaceHeader from "../../components/staff/StaffWorkspaceHeader.vue";

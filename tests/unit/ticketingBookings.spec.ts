@@ -140,3 +140,16 @@ describe('ticketing booking details', () => {
     wrapper.unmount()
   })
 })
+
+describe('ticketing queue pagination', () => {
+  it('loads the next queue page with the shared pager', async () => {
+    mocks.bookings.mockResolvedValue({ data: { bookings: [booking()], totalCount: 61 } })
+    const wrapper = mount(TicketingPage, { global: { stubs: { StaffWorkspaceHeader: true, StaffLogoutButton: true, RouterLink: { template: '<a><slot /></a>' }, BrandMark: true, TicketingGuide: true } } })
+    await mocks.enter.mock.calls.at(-1)![0](); await flushPromises()
+    expect(wrapper.find('.workspace-pagination').text()).toContain('Page 1 of 3')
+    await wrapper.findAll('.workspace-pagination button')[1].trigger('click'); await flushPromises()
+    expect(mocks.bookings).toHaveBeenLastCalledWith({},expect.objectContaining({page:1,pageSize:30}))
+    expect(wrapper.find('.workspace-pagination').text()).toContain('Page 2 of 3')
+    wrapper.unmount()
+  })
+})

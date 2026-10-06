@@ -72,6 +72,45 @@ beforeEach(() => {
   mocks.board.mockResolvedValue({ data: {} })
   mocks.checkIn.mockResolvedValue({ data: {} })
 })
+describe('port directory filters', () => {
+  it('filters port names and active status and resets both filters', async () => {
+    const wrapper = await load('ports')
+    expect(wrapper.findAll('.records-grid tbody tr')).toHaveLength(2)
+    await wrapper.find('#directory-search').setValue('Origin')
+    expect(wrapper.findAll('.records-grid tbody tr')).toHaveLength(1)
+    await wrapper.find('#directory-status').setValue('INACTIVE')
+    expect(wrapper.findAll('.records-grid tbody tr')).toHaveLength(0)
+    await wrapper.findAll('button').find(button => button.text() === 'Reset filters')!.trigger('click')
+    expect(wrapper.findAll('.records-grid tbody tr')).toHaveLength(2)
+    expect((wrapper.find('#directory-search').element as HTMLInputElement).value).toBe('')
+    expect((wrapper.find('#directory-status').element as HTMLSelectElement).value).toBe('ALL')
+    wrapper.unmount()
+  })
+})
+
+describe('vessel directory', () => {
+  it('filters vessel names and status and resets both filters', async () => {
+    const wrapper = await load('vessels')
+    expect(wrapper.findAll('.records-grid tbody tr')).toHaveLength(3)
+    await wrapper.find('#directory-search').setValue('Fast Ferry')
+    expect(wrapper.findAll('.records-grid tbody tr')).toHaveLength(1)
+    await wrapper.find('#directory-status').setValue('INACTIVE')
+    expect(wrapper.findAll('.records-grid tbody tr')).toHaveLength(0)
+    await wrapper.findAll('button').find(button => button.text() === 'Reset filters')!.trigger('click')
+    expect(wrapper.findAll('.records-grid tbody tr')).toHaveLength(3)
+    wrapper.unmount()
+  })
+  it('keeps existing vessel code and capacity locked while allowing name edits', async () => {
+    const wrapper = await load('vessels')
+    await wrapper.findAll('button').find(button => button.text() === 'Edit')!.trigger('click')
+    expect(wrapper.find('#vessel-code').attributes('disabled')).toBeDefined()
+    expect(wrapper.find('#vessel-capacity').attributes('disabled')).toBeDefined()
+    expect(wrapper.find('#vessel-name').attributes('disabled')).toBeUndefined()
+    expect(wrapper.text()).toContain('Capacity is fixed after creation')
+    wrapper.unmount()
+  })
+})
+
 describe('reports workspace', () => {
   it('offers authorized export on the manifest page with sailing choices', async () => {
     const wrapper = await load('manifest')
@@ -85,7 +124,7 @@ describe('reports workspace', () => {
     expect(mocks.settings).not.toHaveBeenCalled()
     expect(mocks.passengerRecords).not.toHaveBeenCalled()
     expect(wrapper.text()).toContain('Collection trend')
-    expect(wrapper.text()).toContain('No sailings match these dates and filters.')
+    expect(wrapper.text()).toContain('No sailings in this report')
     wrapper.unmount()
   })
 })

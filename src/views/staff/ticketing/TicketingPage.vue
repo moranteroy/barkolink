@@ -160,29 +160,7 @@
                     }}
                   </p>
                 </div>
-                <div
-                  v-if="isBookingsPage && queueTotal > pageSize"
-                  class="record-pagination"
-                >
-                  <button
-                    :disabled="queuePage === 0 || busy || loading"
-                    @click="queuePage--"
-                  >
-                    Previous</button
-                  ><span
-                    >Page {{ queuePage + 1 }} /
-                    {{ Math.ceil(queueTotal / pageSize) }}</span
-                  ><button
-                    :disabled="
-                      (queuePage + 1) * pageSize >= queueTotal ||
-                      busy ||
-                      loading
-                    "
-                    @click="queuePage++"
-                  >
-                    Next
-                  </button>
-                </div>
+<WorkspacePagination v-if="isBookingsPage && queueTotal > pageSize" :page="queuePage" :total="queueTotal" :page-size="pageSize" :disabled="!!busy || loading" @change="queuePage = $event" />
               </article>
               <aside v-if="isBoarding" class="panel shift-panel">
                 <p class="kicker">SELECTED SAILING</p>
@@ -460,6 +438,7 @@
   </ion-page>
 </template>
 <script setup lang="ts">
+import WorkspacePagination from "../../../components/shared/WorkspacePagination.vue";
 import StaffLogoutButton from "../../../components/staff/StaffLogoutButton.vue";
 import StaffWorkspaceHeader from "../../../components/staff/StaffWorkspaceHeader.vue";
 import StaffNavigation from "../../../components/staff/StaffNavigation.vue";
@@ -2448,19 +2427,6 @@ ion-modal.shift-detail-modal::part(content) {
   .queue-item .status {
     margin-left: 40px;
   }
-}
-.record-pagination {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-top: 16px;
-}
-.record-pagination button {
-  padding: 9px;
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  background: var(--surface-soft);
-  color: var(--ocean);
 }
 .ticket-record:has(.discount-verification) {
   flex-wrap: wrap;

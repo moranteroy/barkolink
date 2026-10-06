@@ -259,12 +259,13 @@
   font-size: 12px;
 }
 :root body .admin-bell {
-  color: var(--muted);
+  color: var(--ocean);
   font-size: 21px;
   display: grid;
   place-items: center;
   min-width: 36px;
   min-height: 40px;
+  margin-left: 0;
 }
 :root body .design-workspace .content > .heading .eyebrow {
   display: none;
@@ -281,9 +282,6 @@
 @media (max-width: 1000px) {
   :root body .admin-global-search {
     display: none;
-  }
-  :root body .admin-bell {
-    margin-left: auto;
   }
 }
 

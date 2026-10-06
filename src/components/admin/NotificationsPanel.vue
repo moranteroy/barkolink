@@ -5,15 +5,15 @@
         Send in-app notices to passengers, staff, or travelers booked on a
         selected trip.
       </p>
-      <button class="primary-button" :disabled="busy" @click="editing = !editing">
+      <Button :disabled="busy || loading" @click="start">
         New notification
-      </button>
+      </Button>
     </div>
     <p v-if="error" class="catalog-error" role="alert">{{ error }}</p>
     <p v-if="notice" role="status">{{ notice }}</p>
-    <form v-if="editing" class="catalog-form" @submit.prevent="send">
-      <fieldset :disabled="busy" style="display: contents">
-      <h2>New notification</h2>
+<IonModal :is-open="editing" :can-dismiss="canDismiss" class="communication-modal" @didDismiss="dismiss"><section class="communication-dialog"><header class="communication-dialog-heading"><div><p class="eyebrow">IN-APP BROADCAST</p><h2>New notification</h2><p>Choose an audience and review before sending.</p></div><button type="button" aria-label="Close notification" :disabled="busy" @click="close"><IonIcon :icon="closeOutline" /></button></header>    <form class="communication-form" @submit.prevent="send">
+      <div class="communication-scroll"><fieldset :disabled="busy" class="communication-fields">
+      <p v-if="formError" role="alert" class="catalog-error full-field">{{ formError }}</p><p v-if="formNotice" role="status" class="full-field">{{ formNotice }}</p>
       <label
         >Title<input
           v-model.trim="draft.title"
@@ -50,17 +50,10 @@
           required
         />
       </label>
-      <div class="catalog-actions">
-        <button class="primary-button" :disabled="busy">
-          {{ busy ? "Sending…" : "Review and send" }}</button
-        ><button type="button" :disabled="busy" @click="editing = false">
-          Cancel
-        </button>
-      </div>
-      </fieldset>
-    </form>
+</fieldset></div><footer class="communication-footer"><Button variant="outline" type="button" :disabled="busy" @click="close">Cancel</Button><Button type="submit" :disabled="busy">{{ busy ? 'Sending...' : 'Review and send' }}</Button></footer></form></section></IonModal>
     <p v-if="loading" role="status">Loading broadcasts...</p>
     <button v-if="error && !loading" type="button" @click="load">Retry loading broadcasts</button>
+    <div class="communication-directory"><div class="communication-heading"><div><p class="eyebrow">DELIVERY HISTORY</p><h2>Sent broadcasts</h2><p>{{ table.records.value.length }} of {{ rows.length }} loaded broadcasts</p></div><Badge>{{ total }} total</Badge></div>
     <TableControls v-model:query="table.query.value" v-model:sort="table.sort.value" :columns="[{ key: 'title', label: 'Title' }, { key: 'recipientCount', label: 'Recipients' }, { key: 'createdAt', label: 'Sent' }]" />
     <div v-if="!loading && !error" class="catalog-table">
       <table>
@@ -81,7 +74,7 @@
             <td data-label="Message">{{ c.message }}</td>
             <td data-label="Audience">
               {{
-                c.audience === "TRIP" ? c.sailingCode : c.audience.toLowerCase()
+                c.audience === "TRIP" ? c.sailingCode : audienceLabel(c.audience)
               }}
             </td>
             <td data-label="Recipients">{{ c.recipientCount }}</td>
@@ -93,29 +86,16 @@
         </tbody>
       </table>
     </div>
-    <div class="catalog-pagination">
-      <button
-        :disabled="!page || busy || loading"
-        @click="
-          page--;
-          load();
-        "
-      >
-        Previous</button
-      ><span>Page {{ page + 1 }} · {{ total }} campaigns</span
-      ><button
-        :disabled="(page + 1) * 30 >= total || busy || loading"
-        @click="
-          page++;
-          load();
-        "
-      >
-        Next
-      </button>
-    </div>
+    </div><WorkspacePagination :page="page" :total="total" item-label="broadcasts" :disabled="busy || loading" @change="page = $event; load()" />
   </section>
 </template>
 <script setup lang="ts">
+import WorkspacePagination from "../shared/WorkspacePagination.vue";
+import { IonModal, IonIcon } from "@ionic/vue";
+import { closeOutline } from "ionicons/icons";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import "../../theme/communication.css";
 import { confirmAction } from "../../composables/confirmation";
 import TableControls from "../shared/TableControls.vue";
 import { useTableRecords } from "../../composables/tableRecords";
@@ -149,7 +129,13 @@ const draft = reactive({
   sailingCode: "",
 });
 const table = useTableRecords(rows);
-const hasUnsavedChanges = () => editing.value && !!(draft.title || draft.message || draft.sailingCode);
+const formError = ref(''), formNotice = ref('');
+const audienceLabel = (value: string) => ({ ALL: 'All accounts', STAFF: 'Staff', PASSENGERS: 'Passengers' }[value] || value);
+function dismiss() { editing.value = false; Object.assign(draft, { title: "", message: "", audience: "PASSENGERS", sailingCode: "" }); }
+function start() { formError.value = ''; formNotice.value = ''; editing.value = true; }
+async function canDismiss() { return !busy.value && (!hasUnsavedChanges() || await confirmAction({ title: 'Discard notification?', message: 'Your unsent notification will be lost.', confirmText: 'Discard changes' })); }
+async function close() { if (await canDismiss()) { editing.value = false; Object.assign(draft, { title: '', message: '', audience: 'PASSENGERS', sailingCode: '' }); } }
+const hasUnsavedChanges = () => editing.value && !!(draft.title || draft.message || draft.sailingCode || draft.audience !== "PASSENGERS");
 useUnsavedChanges(hasUnsavedChanges);
 defineExpose({ hasUnsavedChanges });
 let requestId = crypto.randomUUID();
@@ -187,13 +173,13 @@ async function moreTrips() {
     tripPage.value++;
     tripTotal.value = r.data.totalCount;
   } catch (e) {
-    error.value = databaseRequestError(e, "Could not load trips.");
+    formError.value = databaseRequestError(e, "Could not load trips.");
   }
 }
 async function send() {
   if (!staffDatabase || busy.value) return;
   busy.value = true;
-  error.value = "";
+  formError.value = ""; formNotice.value = ""; notice.value = "";
   try {
     const args = {
       ...draft,
@@ -202,7 +188,7 @@ async function send() {
     const count = (await notificationRecipients(staffDatabase, args)).data
       .recipients;
     if (!count) {
-      notice.value = "No eligible accounts in this audience.";
+      formNotice.value = "No eligible accounts in this audience.";
       return;
     }
     if (
@@ -215,12 +201,12 @@ async function send() {
       return;
     const r = await sendNotification(staffDatabase, { ...args, requestId });
     notice.value = `Notification sent to ${r.data.sent} accounts.`;
-    editing.value = false;
+    busy.value = false; editing.value = false;
     Object.assign(draft, { title: "", message: "", audience: "PASSENGERS", sailingCode: "" });
     page.value = 0;
     await load();
   } catch (e) {
-    error.value = databaseRequestError(e, "Could not send notification.");
+    formError.value = databaseRequestError(e, "Could not send notification.");
   } finally {
     busy.value = false;
   }

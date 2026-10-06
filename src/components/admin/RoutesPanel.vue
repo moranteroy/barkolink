@@ -1,57 +1,19 @@
 <template>
-  <section class="catalog-panel">
-    <div class="catalog-tools">
-      <p>
-        Manage ferry routes between active ports and their expected sailing
-        duration.
-      </p>
-      <button class="primary-button" @click="start()">Add route</button>
-    </div>
+  <section class="routes-workspace">
     <p v-if="error" class="catalog-error" role="alert">{{ error }}</p>
     <p v-if="notice" role="status">{{ notice }}</p>
-    <form v-if="editing" class="catalog-form" @submit.prevent="save">
-      <h2>{{ form.id ? "Edit route" : "Add route" }}</h2>
-      <label
-        >Route code<input
-          v-model.trim="form.code"
-          required
-          maxlength="30" /></label
-      ><label
-        >Origin<select v-model="form.originPortId" required>
-          <option value="" disabled>Select port</option>
-          <option v-for="p in ports" :key="p.id" :value="p.id">
-            {{ p.name }}
-          </option>
-        </select></label
-      ><label
-        >Destination<select v-model="form.destinationPortId" required>
-          <option value="" disabled>Select port</option>
-          <option v-for="p in ports" :key="p.id" :value="p.id" :disabled="p.id === form.originPortId">
-            {{ p.name }}
-          </option>
-        </select></label
-      ><label
-        >Estimated duration (minutes)<input
-          v-model.number="form.durationMinutes"
-          type="number"
-          min="1"
-          max="10080"
-          required /></label
-      ><label class="catalog-checkbox"
-        ><input v-model="form.isActive" type="checkbox" />Active route</label
-      >
-      <div class="catalog-actions">
-        <button class="primary-button" :disabled="busy || loading || form.originPortId === form.destinationPortId">Save route</button
-        ><button type="button" :disabled="busy" @click="editing = false">
-          Cancel
-        </button>
-      </div>
-    </form>
     <p v-if="loading" role="status">Loading routes...</p>
     <button v-if="error && !loading" type="button" @click="load">Retry loading routes</button>
-    <p v-if="editing && form.originPortId && form.originPortId === form.destinationPortId" role="alert">Choose different origin and destination ports.</p>
-    <TableControls v-model:query="table.query.value" v-model:sort="table.sort.value" :columns="[{ key: 'code', label: 'Code' }, { key: 'origin.name', label: 'Origin' }, { key: 'durationMinutes', label: 'Duration' }]" />
-    <div class="catalog-table" v-if="!loading && !error">
+    <div class="route-filters">
+      <label class="route-search" for="route-search">Search routes<div class="search-input"><IonIcon :icon="searchOutline" aria-hidden="true" /><input id="route-search" v-model="table.query.value" type="search" placeholder="Route code or port name" /></div></label>
+      <label for="route-filter-status">Route status<select id="route-filter-status" v-model="status"><option value="ALL">All statuses</option><option value="ACTIVE">Active</option><option value="INACTIVE">Inactive</option></select></label>
+      <label for="route-sort">Sort routes<select id="route-sort" v-model="table.sort.value"><option value="">Original order</option><option value="code:asc">Code: A–Z</option><option value="code:desc">Code: Z–A</option><option value="origin.name:asc">Origin: A–Z</option><option value="durationMinutes:asc">Duration: shortest first</option><option value="durationMinutes:desc">Duration: longest first</option></select></label>
+      <Button variant="ghost" :disabled="!table.query.value && !table.sort.value && status === 'ALL'" @click="resetFilters">Reset filters</Button>
+    </div>
+    <p v-if="!loading && !error && ports.length < 2" class="route-note">Add at least two active ports to create a route. <router-link to="/admin/ports">Manage ports</router-link></p>
+    <div class="route-directory" v-if="!loading && !error">
+      <div class="directory-heading"><div><p class="eyebrow">ROUTE RECORDS</p><h2>Route directory</h2><p class="directory-hint">{{ table.records.value.length }} of {{ rows.length }} routes</p></div><Button :disabled="busy || ports.length < 2" @click="start()">Add route</Button></div>
+      <div class="route-table">
       <table>
         <thead>
           <tr>
@@ -60,20 +22,20 @@
             <th>Destination</th>
             <th>Duration</th>
             <th>Status</th>
-            <th></th>
+            <th>Actions</th>
           </tr>
         </thead>
         <tbody>
           <tr v-for="r in table.records.value" :key="r.id">
-            <td data-label="Code">{{ r.code }}</td>
+            <td data-label="Code"><strong class="route-code">{{ r.code }}</strong></td>
             <td data-label="Origin">{{ r.origin.name }}</td>
             <td data-label="Destination">{{ r.destination.name }}</td>
-            <td data-label="Duration">{{ r.durationMinutes }} min</td>
+            <td data-label="Duration"><span class="route-duration"><IonIcon :icon="timeOutline" aria-hidden="true" />{{ r.durationMinutes }} min</span></td>
             <td data-label="Status">
-              {{ r.isActive ? "Active" : "Inactive" }}
+              <Badge :variant="r.isActive ? 'success' : 'destructive'">{{ r.isActive ? "Active" : "Inactive" }}</Badge>
             </td>
             <td data-label="Actions">
-              <button @click="start(r)">Edit</button>
+              <Button variant="outline" :disabled="busy" :aria-label="`Edit route ${r.code}`" @click="start(r)">Edit</Button>
             </td>
           </tr>
           <tr v-if="!table.records.value.length">
@@ -82,11 +44,36 @@
         </tbody>
       </table>
     </div>
+    </div>
+    <IonModal :is-open="editing" :can-dismiss="canDismiss" class="route-modal" @didDismiss="editing = false">
+      <div class="route-dialog">
+        <header class="route-modal-header"><span class="route-symbol"><IonIcon :icon="navigateOutline" aria-hidden="true" /></span><div><p class="eyebrow">ROUTE DIRECTORY</p><h2>{{ form.id ? 'Edit route' : 'Add route' }}</h2><p class="route-subtitle">Connect two ports and set the expected sailing duration.</p></div><button type="button" class="route-close" aria-label="Close dialog" :disabled="busy" @click="close"><IonIcon :icon="closeOutline" aria-hidden="true" /></button></header>
+        <p v-if="formError" class="route-form-error" role="alert">{{ formError }}</p>
+        <form class="route-form" @submit.prevent="save">
+          <fieldset class="route-fields" :disabled="busy">
+            <p class="route-note">All route details are required.</p>
+            <div class="route-field-grid">
+              <label for="new-route-code">Route code<input id="new-route-code" v-model.trim="form.code" required maxlength="30" placeholder="e.g. BTG-CAL" /></label>
+              <label for="new-route-duration">Estimated duration (minutes)<input id="new-route-duration" v-model.number="form.durationMinutes" type="number" min="1" max="10080" required /><small>Used when planning departure and arrival times.</small></label>
+              <label for="new-route-origin">Origin<select id="new-route-origin" v-model="form.originPortId" required><option value="" disabled>Select origin port</option><option v-for="p in ports" :key="p.id" :value="p.id">{{ p.name }}</option></select></label>
+              <label for="new-route-destination">Destination<select id="new-route-destination" v-model="form.destinationPortId" required><option value="" disabled>Select destination port</option><option v-for="p in ports" :key="p.id" :value="p.id" :disabled="p.id === form.originPortId">{{ p.name }}</option></select></label>
+            </div>
+            <p v-if="form.originPortId && form.originPortId === form.destinationPortId" class="route-form-error" role="alert">Choose different origin and destination ports.</p>
+            <label class="route-availability"><input v-model="form.isActive" type="checkbox" /><span><strong>Active route</strong><small>Available when creating new sailings.</small></span></label>
+          </fieldset>
+          <footer class="route-modal-footer"><Button variant="outline" type="button" :disabled="busy" @click="close">Cancel</Button><Button type="submit" :disabled="busy || loading || !form.originPortId || !form.destinationPortId || form.originPortId === form.destinationPortId">{{ busy ? 'Saving…' : 'Save route' }}</Button></footer>
+        </form>
+      </div>
+    </IonModal>
   </section>
 </template>
 <script setup lang="ts">
-import { onMounted, ref, reactive } from "vue";
-import TableControls from "../shared/TableControls.vue";
+import { computed, onMounted, ref, reactive } from "vue";
+import { IonIcon, IonModal } from "@ionic/vue";
+import { closeOutline, navigateOutline, searchOutline, timeOutline } from "ionicons/icons";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { confirmAction } from "../../composables/confirmation";
 import { useTableRecords } from "../../composables/tableRecords";
 import { useUnsavedChanges } from "../../composables/unsavedChanges";
 import { staffDatabase } from "../../services/session";
@@ -104,6 +91,7 @@ const rows = ref<FerryRoute[]>([]),
   loading = ref(false),
   error = ref(""),
   notice = ref("");
+const status = ref('ALL'), formError = ref('');
 const form = reactive({
   id: "",
   code: "",
@@ -112,11 +100,18 @@ const form = reactive({
   durationMinutes: 120,
   isActive: true,
 });
-const table = useTableRecords(rows);
+const filteredRows = computed(() => rows.value.filter(row => status.value === 'ALL' || row.isActive === (status.value === 'ACTIVE')));
+const table = useTableRecords(filteredRows);
+function resetFilters() { table.query.value = ''; table.sort.value = ''; status.value = 'ALL'; }
 let initialForm = JSON.stringify(form);
 const hasUnsavedChanges = () => editing.value && JSON.stringify(form) !== initialForm;
 useUnsavedChanges(hasUnsavedChanges);
 defineExpose({ hasUnsavedChanges });
+async function canDismiss() {
+  if (busy.value) return false;
+  return !hasUnsavedChanges() || await confirmAction({ title: 'Discard route changes?', message: 'Your route changes have not been saved.', confirmText: 'Discard changes' });
+}
+async function close() { if (await canDismiss()) editing.value = false; }
 function start(r?: FerryRoute) {
   Object.assign(
     form,
@@ -132,6 +127,7 @@ function start(r?: FerryRoute) {
   editing.value = true;
   initialForm = JSON.stringify(form);
   notice.value = "";
+  formError.value = "";
 }
 async function load() {
   if (!staffDatabase) return;
@@ -152,19 +148,93 @@ async function load() {
 }
 async function save() {
   if (!staffDatabase || busy.value) return;
-  if (form.originPortId === form.destinationPortId) { error.value = "Choose different origin and destination ports."; return; }
+  if (!form.code.trim() || !form.originPortId || !form.destinationPortId) { formError.value = 'Complete the route code, origin, and destination.'; return; }
+  if (form.originPortId === form.destinationPortId) { formError.value = "Choose different origin and destination ports."; return; }
   busy.value = true;
-  error.value = "";
+  formError.value = "";
   try {
     await saveRoute(staffDatabase, { ...form, id: form.id || undefined });
+    initialForm = JSON.stringify(form);
+    busy.value = false;
     editing.value = false;
     await load();
     notice.value = "Route saved.";
   } catch (e) {
-    error.value = databaseRequestError(e, "Could not save route.");
+    formError.value = databaseRequestError(e, "Could not save route.");
   } finally {
     busy.value = false;
   }
 }
 onMounted(load);
 </script>
+<style scoped>
+.routes-workspace { display: grid; gap: 20px; min-width: 0; }
+.route-filters { display: flex; align-items: end; gap: 14px; padding: 18px 20px; border: 1px solid var(--line); border-radius: 14px; background: var(--surface); }
+label { display: grid; gap: 8px; min-width: 0; font-size: 11px; font-weight: 600; color: var(--muted); }
+input:not([type="checkbox"]), select { width: 100%; min-width: 0; min-height: 44px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 9px; background: var(--surface-soft); color: var(--ink); font: inherit; font-size: 12px; }
+.route-search { flex: 1; }
+.search-input { display: flex; align-items: center; gap: 8px; padding-left: 12px; border: 1px solid var(--line); border-radius: 9px; background: var(--surface-soft); }
+.search-input input { border: 0; background: transparent; outline: none; }
+.search-input ion-icon { flex: none; font-size: 17px; }
+.search-input:focus-within { outline: 2px solid var(--ocean); outline-offset: 2px; }
+.route-filters > button { flex: none; min-height: 44px; }
+.route-directory { border: 1px solid var(--line); border-radius: 14px; overflow: hidden; background: var(--surface); min-width: 0; }
+.directory-heading { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 20px 22px; border-bottom: 1px solid var(--line); }
+.eyebrow { margin: 0 0 6px; font-size: 10px; font-weight: 800; letter-spacing: .1em; color: var(--ocean); }
+h2 { margin: 0; font-size: 19px; color: var(--ink); }
+.directory-hint { margin: 8px 0 0; color: var(--muted); font-size: 11px; }
+.route-table { overflow-x: auto; scrollbar-width: thin; }
+table { width: 100%; border-collapse: collapse; }
+th, td { padding: 15px 18px; border-bottom: 1px solid var(--line); text-align: left; font-size: 12px; color: var(--ink); }
+th { background: var(--surface-soft); font-size: 10px; letter-spacing: .05em; text-transform: uppercase; color: var(--muted); }
+tbody tr:last-child td { border-bottom: 0; }
+tbody tr:hover { background: var(--surface-soft); }
+.route-code { color: var(--ocean); font-weight: 650; }
+.route-duration { display: inline-flex; align-items: center; gap: 7px; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.route-duration ion-icon { color: var(--muted); font-size: 16px; }
+.route-note { margin: 0; font-size: 11px; color: var(--muted); line-height: 1.6; }
+.route-note a { color: var(--ocean); }
+.route-modal { --width: min(680px, calc(100vw - 32px)); --height: auto; --max-height: calc(100dvh - 40px); --border-radius: 16px; --background: var(--surface); }
+.route-dialog { display: flex; flex-direction: column; max-height: calc(100dvh - 40px); background: var(--surface); color: var(--ink); }
+.route-modal-header { display: flex; align-items: center; gap: 14px; padding: 22px 24px; border-bottom: 1px solid var(--line); flex: none; }
+.route-symbol { display: grid; place-items: center; width: 44px; height: 44px; flex: none; border-radius: 12px; background: var(--light-blue); color: var(--ocean); font-size: 24px; }
+.route-subtitle { margin: 6px 0 0; color: var(--muted); font-size: 12px; line-height: 1.5; }
+.route-close { display: grid; place-items: center; width: 36px; height: 36px; flex: none; margin-left: auto; border: 0; border-radius: 9px; background: var(--surface-soft); color: var(--muted); font-size: 22px; cursor: pointer; }
+.route-form { display: flex; flex-direction: column; min-height: 0; overflow: hidden; }
+.route-fields { border: 0; margin: 0; min-width: 0; padding: 22px 24px; overflow-y: auto; scrollbar-width: thin; }
+.route-field-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; gap: 20px 18px; margin-top: 18px; }
+.route-fields label small { font-size: 10px; line-height: 1.5; font-weight: 400; }
+.route-availability { display: flex; align-items: center; gap: 12px; margin-top: 20px; padding: 14px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface-soft); }
+.route-availability input { width: 17px; height: 17px; flex: none; accent-color: var(--ocean); }
+.route-availability span { display: grid; gap: 4px; }
+.route-availability strong { color: var(--ink); font-size: 12px; }
+.route-modal-footer { display: flex; justify-content: flex-end; gap: 10px; flex: none; padding: 16px 24px; border-top: 1px solid var(--line); background: var(--surface-soft); }
+.route-modal-footer button { min-height: 44px; }
+.route-form-error { margin: 16px 24px 0; padding: 12px; border-radius: 9px; background: var(--danger-soft); color: var(--danger); font-size: 12px; line-height: 1.5; }
+.route-fields .route-form-error { margin: 16px 0 0; }
+input:focus-visible, select:focus-visible, button:focus-visible { outline: 2px solid var(--ocean); outline-offset: 2px; }
+button:disabled { opacity: .6; }
+@media (max-width: 1100px) {
+  .route-filters { flex-wrap: wrap; gap: 12px; }
+  .route-search { flex-basis: 100%; }
+  .route-filters > label:not(.route-search) { flex: 1; }
+}
+@media (max-width: 600px) {
+  .route-filters, .directory-heading { padding: 16px; }
+  .route-filters > button { width: 100%; }
+  .route-modal { --width: calc(100vw - 24px); --max-height: calc(100dvh - 24px); }
+  .route-dialog { max-height: calc(100dvh - 24px); }
+  .route-modal-header, .route-fields { padding: 18px; }
+  .route-modal-header { align-items: flex-start; gap: 10px; }
+  .route-field-grid { grid-template-columns: 1fr; gap: 16px; }
+  .route-modal-footer { padding: 14px 18px; }
+  .route-modal-footer button { flex: 1; }
+  table, tbody, tr, td { display: block; }
+  thead { display: none; }
+  tr { padding: 12px 16px; border-bottom: 1px solid var(--line); }
+  tbody tr:last-child { border-bottom: 0; }
+  td { display: flex; justify-content: space-between; align-items: center; gap: 14px; padding: 8px 0; border: 0; overflow-wrap: anywhere; }
+  td:before { content: attr(data-label); color: var(--muted); font-size: 10px; min-width: 80px; }
+  td[colspan]:before { display: none; }
+}
+</style>

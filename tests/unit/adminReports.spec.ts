@@ -47,4 +47,18 @@ describe('admin reports panel', () => {
     expect(wrapper.find('.table-scroll tbody').text()).not.toContain('OLD')
     wrapper.unmount()
   })
+  it('resets vessel and search filters to the current month', async () => {
+    const wrapper = mount(AdminReportsPanel, { props: { refreshToken: 0 } }); await flushPromises()
+    await wrapper.findAll('select')[2].setValue('v2')
+    await wrapper.find('input[type="search"]').setValue('missing')
+    expect(wrapper.find('.table-scroll tbody').text()).toContain('No matching records.')
+    await wrapper.find('.filter-heading button').trigger('click'); await flushPromises()
+    expect((wrapper.findAll('select')[0].element as HTMLSelectElement).value).toBe('month')
+    expect((wrapper.findAll('select')[2].element as HTMLSelectElement).value).toBe('ALL')
+    expect((wrapper.find('input[type="search"]').element as HTMLInputElement).value).toBe('')
+    expect(wrapper.findAll('.table-scroll tbody tr')).toHaveLength(2)
+    expect(mocks.reports).toHaveBeenCalledTimes(2)
+    wrapper.unmount()
+  })
+
 })

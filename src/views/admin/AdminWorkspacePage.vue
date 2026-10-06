@@ -16,7 +16,23 @@
               :key="group.label"
               class="nav-group"
             >
-              <span>{{ group.label }}</span>
+              <button
+                class="nav-group-toggle"
+                :aria-expanded="expandedNavigation === group.label"
+                :aria-controls="`admin-nav-${group.items[0].key}`"
+                @click="expandedNavigation = expandedNavigation === group.label ? '' : group.label"
+              >
+                <span class="nav-group-label">
+                  <ion-icon :icon="group.icon" aria-hidden="true" />
+                  {{ group.label }}
+                </span>
+                <ion-icon class="nav-group-chevron" :icon="chevronDownOutline" aria-hidden="true" />
+              </button>
+              <div
+                v-show="expandedNavigation === group.label"
+                :id="`admin-nav-${group.items[0].key}`"
+                class="nav-group-items"
+              >
               <router-link
                 v-for="item in group.items"
                 :key="item.key"
@@ -27,21 +43,10 @@
                   item.label
                 }}</router-link
               >
+              </div>
             </div>
           </nav>
-          <router-link class="sidebar-account" to="/admin/settings/profile"
-            ><span>{{
-              (auth?.currentUser?.displayName || "Admin User").slice(0, 1)
-            }}</span>
-            <div>
-              <strong>{{
-                auth?.currentUser?.displayName?.trim() || "Admin User"
-              }}</strong
-              ><small>Administrator</small>
-            </div></router-link
-          ><button class="logout" @click="logout">
-            <ion-icon :icon="logOutOutline" />Log out
-          </button>
+          <StaffLogoutButton />
         </aside>
         <div class="workspace">
           <header class="topbar glass-toolbar">
@@ -73,12 +78,15 @@
                 aria-label="Search all bookings"
               />
             </form>
+            <div class="admin-header-actions">
             <router-link
               to="/admin/inbox"
               class="admin-bell"
-              aria-label="Notifications"
-              ><ion-icon :icon="notificationsOutline"
-            /></router-link>
+              :aria-label="notificationUnreadCount ? `Notifications, ${notificationUnreadCount} unread` : 'Notifications'"
+              title="Notifications"
+              ><ion-icon :icon="notificationsOutline" aria-hidden="true" />
+              <span v-if="notificationUnreadCount" class="admin-unread-badge" aria-hidden="true">{{ notificationUnreadCount > 99 ? '99+' : notificationUnreadCount }}</span>
+            </router-link>
             <router-link
               to="/admin/settings/profile"
               class="admin-profile-chip"
@@ -86,7 +94,7 @@
               aria-label="Administrator account"
             >
               <span class="admin-profile-icon"
-                ><ion-icon :icon="shieldCheckmarkOutline" aria-hidden="true"
+                ><ion-icon :icon="personCircleOutline" aria-hidden="true"
               /></span>
               <span class="admin-profile-copy"
                 ><strong>{{
@@ -95,6 +103,7 @@
                 ><small>Administrator</small></span
               >
             </router-link>
+            </div>
           </header>
           <main class="content">
             <div class="heading">
@@ -165,12 +174,15 @@
               aria-label="Fare configuration"
             >
               <div class="panel fare-vessel-picker">
-                <div>
+                <div class="fare-vessel-heading">
+                  <span class="fare-card-icon"><ion-icon :icon="boatOutline" aria-hidden="true" /></span>
+                  <div>
                   <p class="eyebrow">VESSEL PRICING</p>
                   <h2>Choose a vessel</h2>
                   <p>
                     Each ferry has its own regular fare and passenger discounts.
                   </p>
+                  </div>
                 </div>
                 <div>
                   <label for="fare-vessel">Vessel</label
@@ -266,6 +278,7 @@
                       </section>
                       <section class="panel fare-card custom-discounts">
                         <div class="fare-card-heading">
+                          <span class="fare-card-icon"><ion-icon :icon="pricetagsOutline" aria-hidden="true" /></span>
                           <div>
                             <h2>Passenger discounts</h2>
                             <p>
@@ -292,7 +305,7 @@
                               "
                           /></label>
                           <label :for="'custom-percent-' + discount.id"
-                            >Discount (%)<input
+                            >Discount (%)<div class="discount-percent-input"><input
                               :id="'custom-percent-' + discount.id"
                               v-model.number="discount.percentage"
                               type="number"
@@ -300,12 +313,12 @@
                               max="99"
                               step="1"
                               required
-                          /></label>
+                          /><span aria-hidden="true">%</span></div></label>
                           <label class="custom-active"
                             ><input
                               v-model="discount.isActive"
                               type="checkbox"
-                            />Active</label
+                            />{{ discount.isActive ? 'Active' : 'Inactive' }}</label
                           >
                           <button
                             type="button"
@@ -391,6 +404,7 @@
                         <div
                           v-for="discount in fareSettingsForm.passengerDiscounts"
                           :key="discount.id"
+                          :class="{ 'fare-preview-inactive': !discount.isActive }"
                         >
                           <span
                             >{{ discount.name || "Unnamed discount"
@@ -461,7 +475,36 @@
                   >.</span
                 >
               </p>
-              <div class="toolbar">
+              <AdminManifestExport v-if="section === 'manifest'" class="manifest-download-card" :sailings="sailingOptions.map(s => ({ code: s.code, origin: s.origin.name, destination: s.destination.name, vessel: s.vessel.name }))" />
+              <div v-if="['check-in', 'boarding', 'manifest'].includes(section)" class="booking-filters check-in-filters">
+                <label class="booking-search-field" for="check-in-search"><span>Search passengers</span><div class="booking-search-input"><ion-icon :icon="searchOutline" aria-hidden="true" /><input id="check-in-search" v-model.trim="search" type="search" placeholder="Passenger name or booking reference" /></div></label>
+                <label v-if="section !== 'manifest'" for="check-in-status"><span>Ticket status</span><select id="check-in-status" v-model="statusFilter" aria-label="Filter by status"><option value="ALL">All statuses</option><option v-for="value in filterOptions" :key="value" :value="value">{{ value.replaceAll('_', ' ') }}</option></select></label>
+                <label class="check-in-sailing-filter" for="check-in-sailing"><span>Sailing</span><select id="check-in-sailing" v-model="sailingFilter" aria-label="Filter by sailing"><option value="ALL">All sailings</option><option v-for="s in sailingOptions" :key="s.code" :value="s.code">{{ s.code }} · {{ routeLabel(s) }}</option></select></label>
+                <Button variant="ghost" :disabled="!search && statusFilter === 'ALL' && sailingFilter === 'ALL'" @click="search = ''; statusFilter = 'ALL'; sailingFilter = 'ALL'">Reset filters</Button>
+              </div>
+              <div v-else-if="section === 'users'" class="booking-filters user-filters">
+                <label class="booking-search-field" for="user-search"><span>Search users</span><div class="booking-search-input"><ion-icon :icon="searchOutline" aria-hidden="true" /><input id="user-search" v-model.trim="search" type="search" placeholder="Full name or email address" /></div></label>
+                <label for="user-role-filter"><span>Account role</span><select id="user-role-filter" v-model="statusFilter"><option value="ALL">All roles</option><option v-for="value in filterOptions" :key="value" :value="value">{{ userRoleLabel(value) }}</option></select></label>
+                <Button variant="ghost" :disabled="!search && statusFilter === 'ALL'" @click="search = ''; statusFilter = 'ALL'">Reset filters</Button>
+              </div>
+              <div v-else-if="['bookings', 'passengers', 'trips', 'ports', 'vessels'].includes(section)" class="booking-filters" :class="{ 'trip-filters': section === 'trips' }">
+                <label class="booking-search-field" for="directory-search">
+                  <span>{{ section === 'vessels' ? 'Search vessels' : section === 'ports' ? 'Search ports' : section === 'trips' ? 'Search trips' : section === 'passengers' ? 'Search passengers' : 'Search bookings' }}</span>
+                  <div class="booking-search-input">
+                    <ion-icon :icon="searchOutline" aria-hidden="true" />
+                    <input id="directory-search" v-model.trim="search" type="search" :placeholder="section === 'vessels' ? 'Vessel code or name' : section === 'ports' ? 'Port code, name, city, or region' : section === 'trips' ? 'Trip code, route, or vessel' : section === 'passengers' ? 'Passenger name or booking reference' : 'Booking reference or account name'" />
+                  </div>
+                </label>
+                <label for="directory-status">
+                  <span>{{ section === 'vessels' ? 'Vessel status' : section === 'ports' ? 'Port status' : section === 'trips' ? 'Trip status' : section === 'passengers' ? 'Ticket status' : 'Payment / booking status' }}</span>
+                  <select id="directory-status" v-model="statusFilter">
+                    <option value="ALL">All statuses</option>
+                    <option v-for="value in filterOptions" :key="value" :value="value">{{ section === 'trips' ? value.toLowerCase().replaceAll('_', ' ') : value }}</option>
+                  </select>
+                </label>
+                <Button variant="ghost" :disabled="!search && statusFilter === 'ALL'" @click="search = ''; statusFilter = 'ALL'">Reset filters</Button>
+              </div>
+              <div v-else class="toolbar">
                 <input
                   v-model.trim="search"
                   type="search"
@@ -500,13 +543,14 @@
                   </option>
                 </select>
               </div>
-              <section class="panel">
+              <p v-if="section === 'check-in'" class="check-in-guidance"><ion-icon :icon="informationCircleOutline" aria-hidden="true" /><span>Check in issued tickets for paid, confirmed bookings. Choose a sailing to focus on its passengers.</span></p>
+              <section class="panel" :class="{ 'booking-records-panel': ['bookings', 'passengers', 'trips', 'ports', 'vessels', 'check-in', 'boarding', 'manifest', 'users'].includes(section), 'passenger-records-panel': section === 'passengers', 'trip-records-panel': section === 'trips', 'boarding-records-panel': section === 'boarding', 'manifest-records-panel': section === 'manifest' }">
                 <div class="panel-head">
                   <div>
-                    <p class="eyebrow">RECORDS</p>
+                    <p class="eyebrow">{{ section === 'users' ? 'ACCOUNT DIRECTORY' : section === 'manifest' ? 'PAID PASSENGER RECORDS' : section === 'boarding' ? 'PASSENGER BOARDING' : section === 'check-in' ? 'PASSENGER CHECK-IN' : section === 'vessels' ? 'FLEET RECORDS' : section === 'ports' ? 'PORT RECORDS' : section === 'trips' ? 'TRIP SCHEDULES' : section === 'passengers' ? 'PASSENGER RECORDS' : 'RECORDS' }}</p>
                     <h2>{{ page.table }}</h2>
                   </div>
-                  <span class="count"
+                  <span class="count" :class="{ 'booking-record-count': ['bookings', 'passengers', 'trips', 'ports', 'vessels', 'check-in', 'boarding', 'manifest', 'users'].includes(section) }"
                     >{{ rows.length }}
                     {{ rows.length === 1 ? "record" : "records" }}</span
                   >
@@ -517,11 +561,52 @@
                   :columns="columns"
                   :rows="rows"
                   :loading="loading"
-                  :action-width="section === 'trips' ? 340 : 170"
-                  ><template v-if="hasRowAction" #actions="{ row }"
+                  :action-width="section === 'trips' ? 220 : ['check-in', 'boarding'].includes(section) ? 140 : ['bookings', 'ports', 'vessels'].includes(section) ? 110 : 170"
+                  ><template v-if="section === 'passengers'" #cell="{ row, index, value }">
+                    <strong v-if="index === 0" class="passenger-name">{{ value }}</strong>
+                    <span v-else-if="index === 1" class="passenger-type">{{ value === 'PWD' ? 'PWD' : String(value).toLowerCase().replaceAll('_', ' ') }}</span>
+                    <Badge v-else-if="index === row.statusIndex" :variant="['CANCELLED', 'EXPIRED', 'NO_SHOW'].includes(String(value)) ? 'destructive' : value === 'PAYMENT PENDING' ? 'warning' : ['BOARDED', 'CHECKED_IN', 'ISSUED'].includes(String(value)) ? 'success' : 'default'">{{ String(value).replaceAll('_', ' ') }}</Badge>
+                    <span v-else :class="{ 'passenger-reference': index === 2 || index === 3 }">{{ value }}</span>
+                  </template>
+                  <template v-else-if="section === 'users'" #cell="{ index, value, row }">
+                    <div v-if="index === 0" class="user-name-cell"><span class="user-initials" aria-hidden="true">{{ userInitials(String(value)) }}</span><div><strong>{{ value || 'Unnamed user' }}</strong><small>{{ row.source.uid === auth?.currentUser?.uid ? 'Your account' : 'BarkoLink account' }}</small></div></div>
+                    <span v-else-if="index === 1" class="user-email">{{ value }}</span>
+                    <Badge v-else-if="index === 2" :variant="value === 'ADMIN' ? 'warning' : value === 'PASSENGER' ? 'default' : 'success'">{{ userRoleLabel(String(value)) }}</Badge>
+                    <span v-else class="user-created-date">{{ value }}</span>
+                  </template>
+                  <template v-else-if="section === 'trips'" #cell="{ row, index, value }">
+                    <strong v-if="index === 0" class="trip-reference">{{ value }}</strong>
+                    <div v-else-if="index === 4" class="trip-capacity"><strong>{{ value }}</strong><small>Booked / capacity</small></div>
+                    <Badge v-else-if="index === row.statusIndex" :variant="value === 'CANCELLED' ? 'destructive' : value === 'DELAYED' ? 'warning' : value === 'COMPLETED' ? 'success' : 'default'">{{ String(value).replaceAll('_', ' ') }}</Badge>
+                    <span v-else>{{ value }}</span>
+                  </template>
+                  <template v-else-if="['ports', 'vessels'].includes(section)" #cell="{ row, index, value }">
+                    <strong v-if="index === 0" class="port-code">{{ value }}</strong>
+                    <strong v-else-if="index === 1" class="port-name">{{ value }}</strong>
+                    <Badge v-else-if="index === row.statusIndex" :variant="row.source.isActive ? 'success' : 'destructive'">{{ row.source.isActive ? 'Active' : 'Inactive' }}</Badge>
+                    <span v-else-if="section === 'vessels' && index === 2" class="vessel-capacity">{{ value }} seats</span>
+                    <span v-else>{{ value }}</span>
+                  </template>
+                  <template v-else-if="['check-in', 'boarding'].includes(section)" #cell="{ row, index, value }">
+                    <strong v-if="index === 0" class="passenger-name">{{ value }}</strong>
+                    <Badge v-else-if="index === row.statusIndex" :variant="value === 'ISSUED' ? 'default' : 'success'">{{ String(value).replaceAll('_', ' ') }}</Badge>
+                    <Badge v-else-if="section === 'boarding' && index === 5" :variant="value === 'CANCELLED' ? 'destructive' : ['BOARDING', 'DELAYED'].includes(String(value)) ? 'warning' : value === 'COMPLETED' ? 'success' : 'default'">{{ String(value).replaceAll('_', ' ') }}</Badge>
+                    <span v-else :class="{ 'passenger-reference': index === 1 || index === 2 }">{{ value }}</span>
+                  </template>
+                  <template v-else-if="section === 'manifest'" #cell="{ row, index, value }">
+                    <strong v-if="index === 0" class="passenger-name">{{ value }}</strong>
+                    <span v-else-if="index === 1" class="manifest-sex">{{ String(value).toLowerCase() }}</span>
+                    <span v-else-if="index === 2" class="passenger-type">{{ value === 'PWD' ? 'PWD' : String(value).toLowerCase().replaceAll('_', ' ') }}</span>
+                    <Badge v-else-if="index === row.statusIndex" :variant="value === 'ISSUED' ? 'default' : 'success'">{{ String(value).replaceAll('_', ' ') }}</Badge>
+                    <span v-else-if="index === 6 && !row.source.boardedAt" class="manifest-not-boarded">Not boarded</span>
+                    <span v-else :class="{ 'passenger-reference': index === 3 || index === 4 }">{{ value }}</span>
+                  </template>
+                  <template v-if="hasRowAction" #actions="{ row }"
                     ><template v-if="section === 'bookings'"
                       ><button
                         class="text-action danger"
+                        :aria-label="`Cancel booking ${row.key}`"
+                        :title="row.source.paymentStatus === 'UNPAID' && ['PENDING', 'CONFIRMED'].includes(row.source.status) ? 'Cancel this unpaid booking' : 'Only unpaid pending or confirmed bookings can be cancelled'"
                         :disabled="
                           row.source.paymentStatus !== 'UNPAID' ||
                           !['PENDING', 'CONFIRMED'].includes(
@@ -537,6 +622,7 @@
                       v-else-if="section === 'ports' || section === 'vessels'"
                       ><button
                         class="text-action"
+                        :aria-label="`Edit ${section === 'ports' ? 'port' : 'vessel'} ${row.source.name}`"
                         @click="editRecord(row.source)"
                       >
                         Edit
@@ -545,11 +631,13 @@
                       ><div class="trip-row-actions">
                         <router-link
                           class="text-action"
+                          :aria-label="`Open operations for trip ${row.key}`"
                           :to="`/admin/trip-operations?sailing=${encodeURIComponent(row.key)}`"
                           >Operations</router-link
                         ><button
                           class="text-action"
                           type="button"
+                          :aria-label="`Edit trip ${row.key}`"
                           :disabled="!canEditTrip(row.source) || !!busy"
                           :title="
                             canEditTrip(row.source)
@@ -572,13 +660,14 @@
                             :key="state"
                             :value="state"
                           >
-                            {{ state }}
+                            {{ state.toLowerCase().replaceAll('_', ' ') }}
                           </option>
                         </select>
                       </div></template
                     ><template v-else-if="section === 'check-in'"
                       ><button
-                        class="text-action"
+                        class="text-action check-in-action"
+                        :aria-label="`Check in ${row.source.fullName}`"
                         :disabled="
                           !!ticketActionBlockReason(row.source, 'check-in') ||
                           !!busy
@@ -589,8 +678,9 @@
                         "
                         @click="processTicket(row.source, 'check-in')"
                       >
+                        <ion-icon :icon="row.source.ticketStatus === 'ISSUED' ? scanOutline : checkmarkCircleOutline" aria-hidden="true" />
                         {{
-                          row.source.ticketStatus === "ISSUED"
+                          busy === row.key ? 'Checking in…' : row.source.ticketStatus === "ISSUED"
                             ? "Check in"
                             : "Done"
                         }}
@@ -598,7 +688,8 @@
                     ><template v-else-if="section === 'boarding'"
                       ><div class="boarding-row-action">
                         <button
-                          class="text-action"
+                          class="text-action check-in-action"
+                          :aria-label="row.source.ticketStatus === 'BOARDED' ? `${row.source.fullName} has boarded` : `Board ${row.source.fullName}`"
                           :disabled="
                             !!ticketActionBlockReason(row.source, 'boarding') ||
                             !!busy
@@ -609,6 +700,7 @@
                           "
                           @click="processTicket(row.source, 'boarding')"
                         >
+                          <ion-icon :icon="row.source.ticketStatus === 'BOARDED' ? checkmarkCircleOutline : boatOutline" aria-hidden="true" />
                           {{
                             busy === row.key
                               ? "Boarding…"
@@ -629,28 +721,7 @@
                       : "Search, column sorting, and filters apply to the loaded page."
                   }}
                 </p>
-                <div v-if="recordTotal > pageSize" class="record-pagination">
-                  <button
-                    :disabled="recordPage === 0 || loading"
-                    @click="
-                      recordPage--;
-                      loadData();
-                    "
-                  >
-                    Previous</button
-                  ><span>Page {{ recordPage + 1 }}</span
-                  ><button
-                    :disabled="
-                      (recordPage + 1) * pageSize >= recordTotal || loading
-                    "
-                    @click="
-                      recordPage++;
-                      loadData();
-                    "
-                  >
-                    Next
-                  </button>
-                </div>
+<WorkspacePagination v-if="recordTotal > pageSize" :page="recordPage" :total="recordTotal" :page-size="pageSize" :disabled="loading || !!busy" @change="recordPage = $event; loadData()" />
               </section></template
             >
             <PortLocationMap
@@ -658,7 +729,6 @@
               :ports="ports"
               class="admin-port-map"
             />
-            <AdminManifestExport v-if="section === 'manifest'" :sailings="sailingOptions.map(s => ({ code: s.code, origin: s.origin.name, destination: s.destination.name, vessel: s.vessel.name }))" />
           </main>
         </div>
       </div>
@@ -668,6 +738,7 @@
         :class="{
           'trip-modal': modal === 'trip',
           'user-modal': modal === 'user',
+          'port-modal': modal === 'port' || modal === 'vessel',
         }"
         @didDismiss="resetModal"
         ><div
@@ -675,10 +746,12 @@
           :class="{
             'trip-dialog': modal === 'trip',
             'user-dialog': modal === 'user',
+            'port-dialog': modal === 'port' || modal === 'vessel',
           }"
         >
           <div class="modal-head">
             <div class="trip-modal-title">
+              <span v-if="modal === 'port' || modal === 'vessel'" class="port-title-icon"><ion-icon :icon="modal === 'vessel' ? boatOutline : locationOutline" aria-hidden="true" /></span>
               <span v-if="modal === 'user'" class="account-title-icon"
                 ><ion-icon
                   :icon="peopleCircleOutline"
@@ -689,7 +762,11 @@
               <div>
                 <p v-if="modal === 'trip'" class="eyebrow">TRIPS & SCHEDULES</p>
                 <p v-if="modal === 'user'" class="eyebrow">USER MANAGEMENT</p>
+                <p v-if="modal === 'port'" class="eyebrow">PORT DIRECTORY</p>
+                <p v-if="modal === 'vessel'" class="eyebrow">FLEET DIRECTORY</p>
                 <h2>{{ modalTitle }}</h2>
+                <p v-if="modal === 'port'" class="port-subtitle">{{ editingId ? 'Update this port’s details and availability.' : 'Add a departure or arrival port for new sailings.' }}</p>
+                <p v-if="modal === 'vessel'" class="port-subtitle">{{ editingId ? 'Update this vessel’s name and availability.' : 'Add a ferry and set its passenger capacity.' }}</p>
                 <p v-if="modal === 'user'" class="account-subtitle">
                   {{
                     createdAccount
@@ -716,65 +793,35 @@
             </button>
           </div>
           <p v-if="formError" class="alert" role="alert">{{ formError }}</p>
-          <form v-if="modal === 'port'" @submit.prevent="savePort">
-            <label
-              >Port code<input
-                v-model.trim="portForm.code"
-                :disabled="!!editingId"
-                required
-                maxlength="12" /></label
-            ><label
-              >Name<input
-                v-model.trim="portForm.name"
-                required
-                maxlength="120" /></label
-            ><label
-              >City<input
-                v-model.trim="portForm.city"
-                required
-                maxlength="120" /></label
-            ><label
-              >Region<input
-                v-model.trim="portForm.region"
-                maxlength="120" /></label
-            ><label v-if="editingId" class="checkbox"
-              ><input v-model="portForm.isActive" type="checkbox" />
-              Active</label
-            ><button class="primary" :disabled="!!busy">
-              {{ busy ? "Saving…" : "Save port" }}
-            </button>
+          <form v-if="modal === 'port'" class="port-form" @submit.prevent="savePort">
+            <fieldset class="port-fields" :disabled="!!busy">
+              <p class="port-form-note">Port code, name, and city are required.</p>
+              <div class="port-field-grid">
+                <label for="port-code">Port code<input id="port-code" v-model.trim="portForm.code" :disabled="!!editingId" required maxlength="12" placeholder="e.g. BTG" aria-describedby="port-code-hint" /><small id="port-code-hint">{{ editingId ? 'Port codes stay fixed after creation.' : 'Use a short, unique code. Saved in uppercase.' }}</small></label>
+                <label for="port-name">Port name<input id="port-name" v-model.trim="portForm.name" required maxlength="120" placeholder="e.g. Batangas Port" /></label>
+                <label for="port-city">City<input id="port-city" v-model.trim="portForm.city" required maxlength="120" placeholder="e.g. Batangas City" /></label>
+                <label for="port-region">Region (optional)<input id="port-region" v-model.trim="portForm.region" maxlength="120" placeholder="e.g. Batangas" /></label>
+              </div>
+              <label v-if="editingId" class="port-availability"><input v-model="portForm.isActive" type="checkbox" /><span><strong>Active port</strong><small>Available when creating new sailings.</small></span></label>
+            </fieldset>
+            <footer class="port-form-footer">
+              <button class="secondary" type="button" :disabled="!!busy" @click="closeModal">Cancel</button>
+              <button class="primary" type="submit" :disabled="!!busy">{{ busy ? "Saving…" : "Save port" }}</button>
+            </footer>
           </form>
-          <form v-else-if="modal === 'vessel'" @submit.prevent="saveVessel">
-            <label
-              >Vessel code<input
-                v-model.trim="vesselForm.code"
-                :disabled="!!editingId"
-                required
-                maxlength="20" /></label
-            ><label
-              >Name<input
-                v-model.trim="vesselForm.name"
-                required
-                maxlength="120" /></label
-            ><label
-              >Passenger capacity<input
-                v-model.number="vesselForm.capacity"
-                type="number"
-                min="1"
-                max="10000"
-                :disabled="!!editingId"
-                required
-            /></label>
-            <p v-if="editingId" class="form-note">
-              Capacity is fixed after creation to preserve existing sailing
-              availability.
-            </p>
-            <label v-if="editingId" class="checkbox"
-              ><input v-model="vesselForm.isActive" type="checkbox" />
-              Active</label
-            ><button class="primary" :disabled="!!busy">
-              {{ busy ? "Saving…" : "Save vessel" }}
-            </button>
+          <form v-else-if="modal === 'vessel'" class="port-form" @submit.prevent="saveVessel">
+            <div class="catalog-modal-scroll">
+              <fieldset class="port-fields" :disabled="!!busy">
+                <p class="port-form-note">Vessel code, name, and passenger capacity are required.</p>
+                <div class="port-field-grid">
+                  <label for="vessel-code">Vessel code<input id="vessel-code" v-model.trim="vesselForm.code" :disabled="!!editingId" required maxlength="20" placeholder="e.g. VSL-005" /><small>{{ editingId ? 'Vessel codes stay fixed after creation.' : 'Use a unique code. Saved in uppercase.' }}</small></label>
+                  <label for="vessel-name">Vessel name<input id="vessel-name" v-model.trim="vesselForm.name" required maxlength="120" placeholder="e.g. MV Island Ferry" /></label>
+                  <label for="vessel-capacity">Passenger capacity<input id="vessel-capacity" v-model.number="vesselForm.capacity" type="number" min="1" max="10000" :disabled="!!editingId" required /><small>{{ editingId ? 'Capacity is fixed after creation to preserve existing sailing availability.' : 'Maximum number of passenger seats, from 1 to 10,000.' }}</small></label>
+                </div>
+                <label v-if="editingId" class="port-availability"><input v-model="vesselForm.isActive" type="checkbox" /><span><strong>Active vessel</strong><small>Available when creating new sailings.</small></span></label>
+              </fieldset>
+            </div>
+            <footer class="port-form-footer"><button class="secondary" type="button" :disabled="!!busy" @click="closeModal">Cancel</button><button class="primary" type="submit" :disabled="!!busy">{{ busy ? 'Saving…' : 'Save vessel' }}</button></footer>
           </form>
           <form
             v-else-if="modal === 'trip'"
@@ -1153,7 +1200,7 @@
               </footer>
             </div>
             <form v-else class="account-form" @submit.prevent="saveUser">
-              <fieldset :disabled="!!busy">
+              <div class="account-scroll"><fieldset :disabled="!!busy">
                 <div class="account-section-heading">
                   <strong>Account details</strong
                   ><span>All fields are required</span>
@@ -1238,7 +1285,7 @@
                     {{ busy === "password" ? "Generating..." : "Generate" }}
                   </button>
                 </div>
-                <footer class="account-footer">
+                </fieldset></div><footer class="account-footer">
                   <button
                     type="button"
                     class="secondary"
@@ -1250,7 +1297,6 @@
                     {{ busy === "user" ? "Creating..." : "Create account" }}
                   </button>
                 </footer>
-              </fieldset>
             </form>
           </div>
         </div></ion-modal
@@ -1260,9 +1306,12 @@
 </template>
 
 <script setup lang="ts">
+import WorkspacePagination from "../../components/shared/WorkspacePagination.vue";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { confirmAction, requestReason } from "../../composables/confirmation";
 import { useUnsavedChanges } from "../../composables/unsavedChanges";
+import { notificationUnreadCount } from "../../composables/notificationUnread";
 import AuditLogsPanel from "../../components/admin/AuditLogsPanel.vue";
 import AdminOverviewPanel from "../../components/admin/AdminOverviewPanel.vue";
 import AccommodationPanel from "../../components/admin/AccommodationPanel.vue";
@@ -1283,7 +1332,7 @@ import { useQueueRefresh } from "../../composables/queueRefresh";
 import { databaseRequestError } from "../../data/databaseErrors";
 import { computed, onBeforeUnmount, reactive, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
-import { signOut } from "../../services/auth";
+import StaffLogoutButton from "../../components/staff/StaffLogoutButton.vue";
 import { accountFunction } from "../../services/accountFunctions";
 import {
   IonContent,
@@ -1294,6 +1343,14 @@ import {
 } from "@ionic/vue";
 import {
   bedOutline,
+  homeOutline,
+  briefcaseOutline,
+  compassOutline,
+  constructOutline,
+  walkOutline,
+  chatbubblesOutline,
+  businessOutline,
+  chevronDownOutline,
   clipboardOutline,
   documentTextOutline,
   enterOutline,
@@ -1316,10 +1373,10 @@ import {
   informationCircleOutline,
   locationOutline,
   lockClosedOutline,
-  logOutOutline,
   menuOutline,
   peopleCircleOutline,
   peopleOutline,
+  personCircleOutline,
   refreshOutline,
   scanOutline,
   shieldCheckmarkOutline,
@@ -1331,7 +1388,6 @@ import BrandMark from "../../components/shared/BrandMark.vue";
 import AdminReportsPanel from "../../components/admin/AdminReportsPanel.vue";
 import AdminManifestExport from "../../components/admin/AdminManifestExport.vue";
 import InboxPanel from "../../components/admin/InboxPanel.vue";
-import { clearSessionViews } from "../../composables/sessionViews";
 import {
   adminCancelBooking,
   adminCreatePort,
@@ -1464,10 +1520,12 @@ const sailingOptions = ref<AdminSailingsData["sailings"]>([]);
 const navigation = [
   {
     label: "OVERVIEW",
+    icon: homeOutline,
     items: [{ key: "dashboard", label: "Dashboard", icon: gridOutline }],
   },
   {
     label: "WORKSPACE",
+    icon: briefcaseOutline,
     items: [
       { key: "bookings", label: "Bookings", icon: ticketOutline },
       { key: "passengers", label: "Passengers", icon: peopleOutline },
@@ -1475,6 +1533,7 @@ const navigation = [
   },
   {
     label: "FERRY OPERATIONS",
+    icon: compassOutline,
     items: [
       { key: "trips", label: "Trips & schedules", icon: calendarOutline },
       {
@@ -1486,6 +1545,7 @@ const navigation = [
   },
   {
     label: "FLEET SETUP",
+    icon: constructOutline,
     items: [
       { key: "fares", label: "Fares & discounts", icon: pricetagsOutline },
       { key: "ports", label: "Ports", icon: locationOutline },
@@ -1496,6 +1556,7 @@ const navigation = [
   },
   {
     label: "PASSENGER OPERATIONS",
+    icon: walkOutline,
     items: [
       { key: "check-in", label: "Check-in", icon: scanOutline },
       { key: "boarding", label: "Boarding", icon: enterOutline },
@@ -1505,6 +1566,7 @@ const navigation = [
   },
   {
     label: "COMMUNICATION",
+    icon: chatbubblesOutline,
     items: [
       { key: "advisories", label: "Travel advisories", icon: megaphoneOutline },
       {
@@ -1516,6 +1578,7 @@ const navigation = [
   },
   {
     label: "MANAGEMENT",
+    icon: businessOutline,
     items: [
       { key: "reports", label: "Reports", icon: documentTextOutline },
       { key: "users", label: "Users", icon: peopleCircleOutline },
@@ -1528,6 +1591,13 @@ const navigation = [
     ],
   },
 ];
+const expandedNavigation = ref("");
+watch(section, (value) => {
+  expandedNavigation.value = navigation.find(group =>
+    group.items.some(item => item.key === value) ||
+    (value === "inbox" && group.label === "COMMUNICATION")
+  )?.label || "OVERVIEW";
+}, { immediate: true });
 const recordPage = ref(0);
 const recordTotal = ref(0);
 const pageSize = 30;
@@ -1925,11 +1995,6 @@ useQueueRefresh(
     !loading.value &&
     !modal.value,
 );
-async function logout() {
-  if (auth) await signOut(auth);
-  await router.replace("/login");
-  clearSessionViews();
-}
 const activePorts = computed(() => ports.value.filter((p) => p.isActive)),
   activeVessels = computed(() => vessels.value.filter((v) => v.isActive));
 const selectedFareVessel = computed(() =>
@@ -2128,6 +2193,8 @@ async function saveFareSettings() {
     busy.value = "";
   }
 }
+const userRoleLabel = (value: string) => ({ PASSENGER: 'Passenger', TICKETING: 'Ticketing staff', BOARDING: 'Boarding staff', ADMIN: 'Administrator' }[value] || value);
+const userInitials = (name: string) => name.trim().split(/\s+/).filter(Boolean).slice(0, 2).map(part => part.charAt(0)).join('').toUpperCase() || 'U';
 const userForm = reactive({
   fullName: "",
   email: "",
@@ -2745,6 +2812,8 @@ const filterOptions = computed(
           "CANCELLED",
         ],
         trips: sailingStatuses,
+        ports: ['ACTIVE', 'INACTIVE'],
+        vessels: ['ACTIVE', 'INACTIVE'],
         "check-in": ["ISSUED", "CHECKED_IN", "BOARDED"],
         boarding: ["ISSUED", "CHECKED_IN", "BOARDED"],
         users: ["PASSENGER", "TICKETING", "BOARDING", "ADMIN"],
@@ -2766,11 +2835,11 @@ const columns = computed(
         ],
         passengers: [
           "Passenger",
-          "Type",
-          "Booking",
-          "Sailing",
-          "Account",
-          "Ticket",
+          "Passenger type",
+          "Booking reference",
+          "Trip code",
+          "Booking account",
+          "Ticket status",
         ],
         trips: ["Trip", "Route", "Vessel", "Departure", "Booked", "Status"],
         ports: ["Code", "Port", "Location", "Status"],
@@ -2968,6 +3037,8 @@ const rows = computed<Row[]>(() => {
       (statusFilter.value === "ALL" ||
         (section.value === "users"
           ? r.source.role
+          : ["ports", "vessels"].includes(section.value)
+            ? (r.source.isActive ? "ACTIVE" : "INACTIVE")
           : section.value === "bookings"
             ? r.cells[6]
             : section.value === "passengers"
@@ -2995,6 +3066,8 @@ const rows = computed<Row[]>(() => {
   padding: 24px 26px;
   margin-bottom: 22px;
 }
+.fare-vessel-heading { display: flex; align-items: center; gap: 14px; }
+.fare-vessel-heading .fare-card-icon { flex: 0 0 46px; height: 46px; }
 .fare-vessel-picker h2 {
   margin: 7px 0;
   font-size: 18px;
@@ -3024,7 +3097,7 @@ const rows = computed<Row[]>(() => {
   display: inline-block;
   margin-top: 10px;
   padding: 4px 8px;
-  border-radius: 6px;
+  border-radius: 20px;
   color: var(--muted);
   background: var(--surface-soft);
   font-size: 10px;
@@ -3091,26 +3164,68 @@ const rows = computed<Row[]>(() => {
   align-items: center;
   gap: 9px;
   flex: none;
-  margin-left: auto;
-  padding: 4px 12px 4px 4px;
+  max-width: 240px;
+  min-height: 44px;
+  padding: 8px 12px;
   border: 1px solid var(--line);
-  border-radius: 999px;
+  border-radius: 10px;
   background: var(--surface-soft);
   color: var(--ink);
+  text-decoration: none;
 }
 .admin-profile-icon {
   display: grid;
   place-items: center;
   flex: none;
-  width: 32px;
-  height: 32px;
-  border: 1px solid var(--line);
-  border-radius: 10px;
-  background: var(--light-blue);
   color: var(--ocean);
 }
 .admin-profile-icon ion-icon {
-  font-size: 17px;
+  font-size: 23px;
+}
+.admin-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-left: auto;
+  flex: none;
+}
+.topbar .admin-global-search + .admin-header-actions {
+  margin-left: 6px;
+}
+@media (max-width: 1000px) {
+  .topbar .admin-global-search + .admin-header-actions { margin-left: auto; }
+}
+.topbar .admin-bell {
+  position: relative;
+  width: 42px;
+  height: 44px;
+  margin-left: 0;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface-soft);
+  color: var(--ocean);
+  text-decoration: none;
+}
+.admin-unread-badge {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
+  display: grid;
+  place-items: center;
+  border: 2px solid var(--surface);
+  border-radius: 20px;
+  background: #d3374d;
+  color: white;
+  font-size: 10px;
+  font-weight: 700;
+}
+.admin-header-actions a:focus-visible,
+.nav-group-toggle:focus-visible {
+  outline: 2px solid #50a9eb;
+  outline-offset: 3px;
 }
 .admin-profile-copy {
   display: grid;
@@ -3149,6 +3264,11 @@ const rows = computed<Row[]>(() => {
     padding-right: 9px;
     gap: 7px;
   }
+}
+@media (max-width: 480px) {
+  .admin-header-actions { gap: 7px; }
+  .admin-profile-chip { width: 44px; padding: 8px; justify-content: center; }
+  .admin-profile-copy { display: none; }
 }
 .fare-layout {
   display: grid;
@@ -3267,7 +3387,13 @@ const rows = computed<Row[]>(() => {
 }
 .fare-preview-card {
   padding: 26px;
+  align-self: start;
 }
+@media (min-width: 1151px) {
+  .fare-settings-panel .fare-preview-card { position: sticky; top: 20px; max-height: calc(100dvh - 40px); overflow-y: auto; scrollbar-width: thin; scrollbar-color: var(--muted) transparent; }
+}
+.fare-preview > .fare-preview-inactive { background: var(--surface-soft); padding-inline: 10px; border-radius: 8px; }
+.fare-preview-inactive strong { color: var(--muted); }
 .fare-preview-heading {
   margin-bottom: 22px;
 }
@@ -3339,6 +3465,10 @@ const rows = computed<Row[]>(() => {
   gap: 20px;
   margin-top: 22px;
   padding: 20px 26px;
+  position: sticky;
+  bottom: 16px;
+  z-index: 5;
+  box-shadow: 0 8px 28px #00000018;
 }
 .fare-save-bar strong {
   font-size: 13px;
@@ -3414,21 +3544,40 @@ input[readonly] {
   scrollbar-color: #41617a transparent;
   flex: 1;
   margin-top: 24px;
+  min-height: 0;
+  padding-bottom: 12px;
 }
 .nav-group {
   display: grid;
-  gap: 3px;
-  margin: 0 0 18px;
+  gap: 4px;
+  margin: 0 0 6px;
 }
-.nav-group > span {
-  margin: 0 10px 7px;
+.nav-group-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  min-height: 44px;
+  padding: 10px 12px;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
   color: #85abc2;
-  font-size: 10px;
-  font-weight: 800;
-  letter-spacing: 0.12em;
+  text-align: left;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  cursor: pointer;
 }
-.nav-group a,
-.logout {
+.nav-group-toggle:hover,
+.nav-group-toggle[aria-expanded="true"] { background: #ffffff08; color: #d4e6f4; }
+.nav-group-label { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.nav-group .nav-group-label ion-icon { font-size: 17px; flex: none; color: #79a9ce; }
+.nav-group .nav-group-chevron { font-size: 13px; flex: none; transition: transform 160ms ease; }
+.nav-group-toggle[aria-expanded="true"] .nav-group-chevron { transform: rotate(180deg); }
+.nav-group-items { display: grid; gap: 3px; padding: 0 0 4px 8px; margin-left: 12px; border-left: 1px solid #28445b; }
+.nav-group a {
   display: flex;
   align-items: center;
   gap: 10px;
@@ -3447,16 +3596,10 @@ input[readonly] {
   background: #174266;
   color: #fff;
 }
-.nav-group ion-icon,
-.logout ion-icon {
+.nav-group ion-icon {
   font-size: 18px;
 }
-.logout {
-  width: 100%;
-  margin-top: 10px;
-  border-top: 1px solid #28445b;
-  border-radius: 0;
-}
+.sidebar :deep(.staff-signout) { flex: none; margin-top: 12px; }
 .workspace {
   flex: 1;
   min-width: 0;
@@ -3621,6 +3764,96 @@ input[readonly] {
   gap: 10px;
   margin-bottom: 15px;
 }
+.booking-filters {
+  display: flex;
+  align-items: end;
+  gap: 16px;
+  padding: 18px 20px;
+  margin-bottom: 20px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--surface);
+}
+.booking-filters label { display: grid; gap: 8px; min-width: 0; }
+.booking-filters label > span { color: var(--muted); font-size: 11px; font-weight: 600; }
+.booking-search-field { flex: 1; }
+.booking-search-input {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 0 12px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: var(--surface-soft);
+}
+.booking-search-input ion-icon { flex: none; font-size: 17px; color: var(--muted); }
+.booking-search-input:focus-within { border-color: var(--ocean); outline: 2px solid var(--light-blue); }
+.booking-search-input input {
+  width: 100%;
+  min-width: 0;
+  min-height: 44px;
+  border: 0;
+  outline: none;
+  background: transparent;
+  color: var(--ink);
+  font-size: 12px;
+}
+.booking-filters select {
+  min-height: 44px;
+  min-width: 200px;
+  padding: 0 12px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: var(--surface-soft);
+  color: var(--ink);
+  font-size: 12px;
+}
+.booking-filters > button { min-height: 44px; flex: none; }
+.check-in-filters { flex-wrap: wrap; }
+.check-in-filters .booking-search-field { flex-basis: 100%; }
+.check-in-filters .check-in-sailing-filter { flex: 1; }
+.check-in-filters select { width: 100%; min-width: 0; }
+.check-in-guidance { display: flex; align-items: flex-start; gap: 9px; margin: -6px 0 20px; color: var(--muted); font-size: 11px; line-height: 1.6; }
+.check-in-guidance ion-icon { flex: none; margin-top: 1px; color: var(--ocean); font-size: 17px; }
+.check-in-action { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 36px; background: var(--light-blue); border-color: var(--line); white-space: nowrap; }
+.check-in-action ion-icon { font-size: 15px; }
+.check-in-action:focus-visible { outline: 2px solid var(--ocean); outline-offset: 2px; }
+.boarding-records-panel :deep([data-slot="badge"]) { white-space: normal; line-height: 1.5; }
+.boarding-records-panel :deep(.ag-cell[col-id="cell-5"]) { font-weight: 400; }
+.manifest-download-card { margin-bottom: 20px; }
+.manifest-sex { text-transform: capitalize; }
+.manifest-not-boarded { color: var(--muted); font-size: 11px; }
+.manifest-records-panel :deep([data-slot="badge"]) { white-space: normal; line-height: 1.5; }
+.manifest-records-panel :deep(.ag-cell[col-id="cell-5"]) { font-weight: 400; }
+.booking-records-panel .panel-head { padding: 20px 22px; border-bottom: 1px solid var(--line); }
+.booking-record-count { padding: 6px 10px; border-radius: 20px; background: var(--light-blue); font-weight: 600; white-space: nowrap; }
+.booking-records-panel :deep(.grid-tools) { padding: 14px 20px; background: var(--surface-soft); }
+.booking-records-panel :deep(.desktop-grid) { padding-inline: 12px; padding-bottom: 12px; }
+.booking-records-panel :deep(.ag-body-viewport),
+.booking-records-panel :deep(.ag-body-vertical-scroll-viewport),
+.booking-records-panel :deep(.ag-body-horizontal-scroll-viewport) { scrollbar-width: thin; scrollbar-color: var(--muted) var(--surface); }
+.booking-records-panel :deep(.ag-cell[col-id="cell-0"]) { font-weight: 650; }
+.booking-records-panel:not(.passenger-records-panel):not(.trip-records-panel) :deep(.ag-cell[col-id="cell-5"]) { font-weight: 650; font-variant-numeric: tabular-nums; }
+.trip-reference { color: var(--ink); font-size: 12px; font-weight: 650; }
+.trip-capacity { display: grid; gap: 3px; }
+.trip-capacity strong { font-variant-numeric: tabular-nums; font-weight: 650; }
+.trip-capacity small { color: var(--muted); font-size: 10px; }
+.trip-records-panel :deep([data-slot="badge"]) { white-space: normal; line-height: 1.5; }
+.passenger-name { color: var(--ink); font-size: 13px; font-weight: 650; }
+.passenger-type { display: inline-flex; padding: 3px 8px; border: 1px solid var(--line); border-radius: 6px; background: var(--surface-soft); color: var(--ink); font-size: 11px; text-transform: capitalize; }
+.passenger-reference { font-size: 11px; font-variant-numeric: tabular-nums; }
+.passenger-records-panel :deep([data-slot="badge"]) { white-space: normal; line-height: 1.5; }
+@media (max-width: 1100px) {
+  .booking-filters { flex-wrap: wrap; gap: 12px; }
+  .booking-search-field { flex-basis: 100%; }
+  .booking-filters label:not(.booking-search-field) { flex: 1; }
+}
+@media (max-width: 600px) {
+  .booking-filters { padding: 16px; }
+  .booking-filters select { min-width: 0; width: 100%; }
+  .booking-records-panel .panel-head { padding: 16px; }
+  .booking-records-panel :deep(.grid-tools) { padding: 12px 16px; }
+}
 .toolbar input,
 .toolbar select,
 td select,
@@ -3775,6 +4008,43 @@ td strong {
 .modal-body .primary {
   margin-top: 5px;
 }
+.port-code { color: var(--ocean); font-size: 12px; font-weight: 650; }
+.port-name { color: var(--ink); font-size: 13px; font-weight: 650; }
+.port-modal { --width: min(680px, calc(100vw - 32px)); --height: auto; --max-height: calc(100dvh - 40px); --border-radius: 16px; --background: var(--surface); }
+.modal-body.port-dialog { display: flex; flex-direction: column; width: 100%; max-height: calc(100dvh - 40px); margin: 0; padding: 0; overflow: hidden; border: 0; border-radius: 0; background: var(--surface); color: var(--ink); }
+.port-dialog .modal-head { flex: none; gap: 16px; margin: 0; padding: 22px 24px; border-bottom: 1px solid var(--line); }
+.port-title-icon { display: grid; place-items: center; width: 44px; height: 44px; flex: none; border-radius: 12px; background: var(--light-blue); color: var(--ocean); font-size: 24px; }
+.port-subtitle { margin: 6px 0 0; color: var(--muted); font-size: 12px; line-height: 1.5; }
+.port-dialog .modal-head > button { display: grid; place-items: center; width: 36px; height: 36px; flex: none; border-radius: 9px; background: var(--surface-soft); color: var(--muted); }
+.port-dialog > .alert { flex: none; margin: 16px 24px 0; }
+.port-dialog .port-form { display: flex; flex: 1 1 auto; flex-direction: column; gap: 0; min-height: 0; overflow: hidden; }
+.catalog-modal-scroll { flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; scrollbar-gutter: stable; scrollbar-color: var(--muted) var(--surface); }
+.port-dialog .catalog-modal-scroll .port-fields { overflow: visible; }
+.vessel-capacity { font-weight: 650; font-variant-numeric: tabular-nums; }
+.port-dialog .port-fields { display: block; min-height: 0; padding: 22px 24px; overflow-y: auto; scrollbar-width: thin; }
+.port-form-note { margin: 0 0 18px; color: var(--muted); font-size: 11px; }
+.port-field-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 20px 18px; align-items: start; }
+.port-dialog label { min-width: 0; gap: 8px; font-size: 11px; color: var(--muted); font-weight: 600; }
+.port-dialog input:not([type="checkbox"]) { min-height: 44px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 9px; background: var(--surface-soft); color: var(--ink); font-size: 13px; }
+.port-dialog input:disabled { opacity: 0.65; }
+.port-dialog label small { color: var(--muted); font-size: 10px; line-height: 1.5; font-weight: 400; }
+.port-dialog .port-availability { display: flex; align-items: center; gap: 12px; margin-top: 20px; padding: 14px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface-soft); }
+.port-availability input { width: 17px; height: 17px; flex: none; accent-color: var(--ocean); }
+.port-availability span { display: grid; gap: 4px; }
+.port-availability strong { color: var(--ink); font-size: 12px; }
+.port-form-footer { display: flex; justify-content: flex-end; gap: 10px; flex: none; padding: 16px 24px; border-top: 1px solid var(--line); background: var(--surface-soft); }
+.port-dialog .port-form-footer button { min-height: 44px; margin: 0; }
+.port-dialog input:focus-visible, .port-dialog button:focus-visible { outline: 2px solid var(--ocean); outline-offset: 2px; }
+@media (max-width: 600px) {
+  .port-modal { --width: calc(100vw - 24px); --max-height: calc(100dvh - 24px); }
+  .modal-body.port-dialog { max-height: calc(100dvh - 24px); }
+  .port-dialog .modal-head { padding: 18px; }
+  .port-dialog .trip-modal-title { gap: 10px; align-items: flex-start; }
+  .port-dialog .port-fields { padding: 18px; }
+  .port-field-grid { grid-template-columns: 1fr; gap: 16px; }
+  .port-form-footer { padding: 14px 18px; }
+  .port-form-footer button { flex: 1; }
+}
 .form-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -3918,13 +4188,32 @@ td strong {
   }
 }
 .trip-row-actions {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
+  width: 100%;
 }
+.trip-row-actions .text-action { display: inline-flex; align-items: center; justify-content: center; min-height: 32px; text-decoration: none; }
 .trip-row-actions select {
-  min-width: 112px;
+  grid-column: 1 / -1;
+  width: 100%;
+  min-width: 0;
+  min-height: 34px;
+  padding: 0 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface-soft);
+  color: var(--ink);
+  font: inherit;
+  font-size: 11px;
+  text-transform: capitalize;
+  text-align: center;
+  text-align-last: center;
 }
+.trip-filters select { text-align: center; text-align-last: center; }
+.trip-row-actions select:focus-visible { outline: 2px solid var(--ocean); outline-offset: 2px; }
+.trip-row-actions select:disabled { opacity: 0.65; cursor: not-allowed; }
 .trip-edit-note {
   margin: 0;
   padding: 11px 12px;
@@ -4390,12 +4679,12 @@ td strong {
 .boarding-help {
   display: flex;
   align-items: start;
-  gap: 10px;
-  margin: 0 0 18px;
-  padding: 14px 16px;
+  gap: 12px;
+  margin: 0 0 20px;
+  padding: 16px 18px;
   border: 1px solid var(--line);
-  border-radius: 10px;
-  background: var(--surface);
+  border-radius: 12px;
+  background: var(--surface-soft);
   color: var(--muted);
   font-size: 12px;
   line-height: 1.6;
@@ -4409,6 +4698,7 @@ td strong {
 .boarding-help a {
   color: var(--ocean);
 }
+.boarding-help strong { color: var(--ink); font-weight: 650; }
 .boarding-row-action {
   display: flex;
   align-items: center;
@@ -4417,21 +4707,8 @@ td strong {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 70px;
-  min-height: 32px;
-}
-.record-pagination {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  padding-top: 14px;
-}
-.record-pagination button {
-  padding: 9px 14px;
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  background: var(--surface-soft);
-  color: var(--ocean);
+  min-width: 90px;
+  min-height: 36px;
 }
 @media (max-width: 600px) {
   .table-wrap table,
@@ -4487,7 +4764,7 @@ td strong {
   }
 }
 .user-modal {
-  --width: min(540px, calc(100vw - 32px));
+  --width: min(600px, calc(100vw - 32px));
   --height: auto;
   --max-height: calc(100dvh - 48px);
   --border-radius: 20px;
@@ -4495,6 +4772,9 @@ td strong {
   --box-shadow: 0 24px 80px #0004;
 }
 .modal-body.user-dialog {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
   width: 100%;
   max-height: calc(100dvh - 48px);
   margin: 0;
@@ -4505,6 +4785,7 @@ td strong {
   color: var(--ink);
 }
 .user-dialog .modal-head {
+  flex: none;
   margin: 0;
   padding: 24px;
   border-bottom: 1px solid var(--line);
@@ -4552,9 +4833,19 @@ td strong {
   color: #c33d4b;
   border: 1px solid #c33d4b30;
 }
-.account-content {
-  padding: 24px;
-}
+.account-content { display: flex; flex-direction: column; flex: 1; min-height: 0; overflow: hidden; padding: 0; }
+.user-dialog .account-form { display: flex; flex-direction: column; flex: 1; min-height: 0; gap: 0; overflow: hidden; }
+.account-scroll { flex: 1; min-height: 0; overflow-y: auto; padding: 24px; overscroll-behavior: contain; }
+.account-scroll fieldset { display: grid; gap: 16px; min-width: 0; margin: 0; padding: 0; border: 0; }
+.account-content .account-success { padding: 24px; overflow-y: auto; }
+.user-dialog > .alert { flex: none; }
+.user-name-cell { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.user-initials { display: grid; place-items: center; width: 36px; height: 36px; border-radius: 50%; background: var(--light-blue); color: var(--ocean); font-size: 12px; font-weight: 700; flex: none; }
+.user-name-cell > div { min-width: 0; display: grid; gap: 4px; }
+.user-name-cell strong { color: var(--ink); font-size: 12px; }
+.user-name-cell small { color: var(--muted); font-size: 10px; }
+.user-email { overflow-wrap: anywhere; }
+.user-created-date { color: var(--muted); font-size: 11px; }
 .account-section-heading {
   display: flex;
   justify-content: space-between;
@@ -4576,7 +4867,7 @@ td strong {
 .user-dialog input,
 .user-dialog select {
   min-height: 44px;
-  background: var(--surface);
+  background: var(--surface-soft);
   color: var(--ink);
   border: 1px solid var(--line);
   border-radius: 9px;
@@ -4655,8 +4946,10 @@ td strong {
   justify-content: flex-end;
   gap: 10px;
   border-top: 1px solid var(--line);
-  padding-top: 20px;
-  margin-top: 6px;
+  padding: 16px 24px;
+  margin: 0;
+  flex: none;
+  background: var(--surface);
 }
 .user-dialog .account-footer .primary {
   margin: 0;
@@ -4759,7 +5052,7 @@ td strong {
   .user-dialog .modal-head {
     padding: 20px;
   }
-  .account-content {
+  .account-scroll, .account-content .account-success {
     padding: 20px;
   }
   .account-title-icon {
@@ -4798,31 +5091,55 @@ td strong {
 }
 .custom-discount-row {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 100px auto auto;
-  gap: 12px;
+  grid-template-columns: minmax(0, 1fr) 112px;
+  gap: 12px 16px;
   align-items: end;
-  padding: 16px 0;
-  border-bottom: 1px solid #e2e8f0;
+  padding: 16px;
+  margin-top: 12px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface-soft);
 }
 .custom-discount-row label {
   display: grid;
   gap: 8px;
+  margin-bottom: 0;
+  min-width: 0;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--muted);
 }
-.custom-discount-row input {
+.custom-discount-row input:not([type="checkbox"]) {
   width: 100%;
   min-width: 0;
-  padding: 10px;
-  border: 1px solid #cbd5e1;
+  min-height: 44px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
   border-radius: 8px;
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+  font-size: 12px;
 }
+.discount-percent-input { display: flex; align-items: center; gap: 6px; padding-right: 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); }
+.custom-discount-row .discount-percent-input input { border: 0; background: transparent; text-align: center; }
+.discount-percent-input > span { color: var(--muted); font-size: 12px; }
+.discount-percent-input:focus-within { border-color: var(--ocean); outline: 2px solid var(--light-blue); }
+.custom-discount-row input:focus-visible { outline: 2px solid var(--ocean); outline-offset: 2px; }
 .custom-discount-row .custom-active {
   display: flex;
   align-items: center;
-  padding-bottom: 10px;
+  gap: 8px;
+  min-height: 36px;
+  color: var(--ink);
 }
 .custom-active input {
-  width: auto;
+  width: 16px;
+  height: 16px;
+  accent-color: var(--ocean);
 }
+.custom-discount-row .text-action { justify-self: end; min-height: 36px; padding: 7px 12px; color: var(--danger); border-color: var(--line); background: var(--danger-soft); font-size: 11px; }
+.custom-discount-row .text-action:focus-visible { outline: 2px solid var(--danger); outline-offset: 2px; }
 .custom-discounts > .secondary {
   margin-top: 16px;
 }
@@ -4833,5 +5150,12 @@ td strong {
   .custom-discount-row .text-action {
     justify-self: end;
   }
+}
+@media (max-width: 480px) {
+  .custom-discount-row { padding: 12px; gap: 10px; }
+  .fare-vessel-heading { align-items: flex-start; gap: 10px; }
+  .fare-save-bar { bottom: 8px; gap: 12px; padding: 16px; }
+  .fare-preview strong { font-size: 14px; }
+  .fare-preview-regular strong { font-size: 18px; }
 }
 </style>

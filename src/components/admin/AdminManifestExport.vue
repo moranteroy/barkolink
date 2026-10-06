@@ -1,11 +1,15 @@
 <template>
   <section class="manifest-export" aria-labelledby="manifest-export-title">
-    <div>
+    <div class="export-heading">
+      <span class="export-symbol"><FileText aria-hidden="true" /></span>
+      <div>
+      <p class="eyebrow">CSV DOWNLOAD</p>
       <h2 id="manifest-export-title">Passenger manifest export</h2>
       <p>
         Choose a sailing below. CSV includes all
         passengers on paid, confirmed reservations.
       </p>
+      </div>
     </div>
     <div class="export-controls">
       <label for="export-manifest-sailing"
@@ -20,6 +24,7 @@
           </option>
         </select></label
       ><button :disabled="!selected || exporting" @click="exportManifest">
+        <Download aria-hidden="true" />
         {{ exporting ? "Exporting…" : "Export manifest" }}
       </button>
     </div>
@@ -32,6 +37,7 @@
 </template>
 <script setup lang="ts">
 import { onBeforeUnmount, ref, watch } from "vue";
+import { FileText, Download } from "@lucide/vue";
 import {
   adminExportManifest,
   type AdminExportManifestData,
@@ -175,8 +181,17 @@ select {
   border-radius: 8px;
   background: var(--surface);
   color: var(--ink);
+  min-height: 44px;
+  font: inherit;
+  font-size: 12px;
+  background: var(--surface-soft);
 }
 button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 44px;
   background: #246fba;
   color: white;
   border: 0;
@@ -196,6 +211,14 @@ button:disabled {
 .manifest-export > p {
   margin: 14px 0 0;
 }
+.export-heading { display: flex; align-items: flex-start; gap: 14px; margin-bottom: 18px; }
+.export-heading p:last-child { margin-bottom: 0; }
+.export-symbol { display: grid; place-items: center; width: 44px; height: 44px; flex: none; border-radius: 12px; background: var(--light-blue); color: var(--ocean); }
+.export-symbol svg { width: 23px; height: 23px; }
+.export-heading .eyebrow { margin: 0 0 6px; color: var(--ocean); font-size: 10px; font-weight: 800; letter-spacing: .1em; }
+.export-heading h2 { margin-bottom: 6px; }
+button svg { width: 16px; height: 16px; }
+button:focus-visible, select:focus-visible { outline: 2px solid var(--ocean); outline-offset: 3px; }
 @media (max-width: 700px) {
   .export-controls {
     flex-direction: column;
