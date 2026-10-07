@@ -9,11 +9,11 @@ function git(args, input) {
   return result.stdout
 }
 const privateValues = []
-for (const file of ['.env.supabase-management', '.env.local']) {
+for (const file of fs.readdirSync('.').filter(name => name.startsWith('.env') && name !== '.env.example')) {
   if (!fs.existsSync(file)) continue
   for (const line of fs.readFileSync(file, 'utf8').split(/\r?\n/)) {
     const match = line.match(/^([A-Z_][A-Z_0-9]*)\s*=\s*(.+)$/)
-    if (match && /TOKEN|PASSWORD|SECRET|SERVICE_ROLE/.test(match[1]) && !match[1].startsWith('VITE_')) {
+    if (match && /TOKEN|PASSWORD|SECRET|SERVICE_ROLE|KEY/.test(match[1]) && !match[1].startsWith('VITE_')) {
       const value = match[2].trim().replace(/^['"]|['"]$/g, '')
       if (value.length >= 8) privateValues.push(value)
     }
@@ -29,6 +29,7 @@ const forbidden = filename => /(^|\/)(node_modules|\.backups|\.audit|\.aws|\.ssh
 const patterns = [
   ['Supabase management token', /sbp_[a-zA-Z0-9]{20,}/g],
   ['Supabase secret key', /sb_secret_[a-zA-Z0-9_-]{12,}/g],
+  ['PayMongo secret key', /sk_(?:test|live)_[a-zA-Z0-9]{24,}/g],
   ['GitHub token', /(?:gh[pousr]_[A-Za-z0-9]{25,}|github_pat_[A-Za-z0-9_]{30,})/g],
   ['AWS access key identifier', /(?:AKIA|ASIA)[A-Z0-9]{16}/g],
   ['Slack token', /xox[baprs]-[A-Za-z0-9-]{20,}/g],

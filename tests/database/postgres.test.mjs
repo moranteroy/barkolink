@@ -44,11 +44,11 @@ const reserveArgs = (reference = "BK-TEST", count = 1) => ({
     ]).flat(),
   ),
 });
-async function reserve(reference = "BK-TEST", count = 1) {
+async function reserve(reference = "BK-TEST", count = 1, firstName) {
   await call(
     "passenger",
     `ReserveSailing${count}`,
-    reserveArgs(reference, count),
+    { ...reserveArgs(reference, count), ...(firstName ? { passenger1Name:firstName } : {}) },
   );
   return (await call("passenger", "MyBookings")).bookings.find(
     (b) => b.reference === reference,
@@ -686,7 +686,7 @@ describe("Supabase PostgreSQL migrations and business rules", () => {
 
   beforeEach(async () => {
     await db.exec(
-      "truncate public.activity_log, public.boarding_event, public.notification, public.booking_passenger, public.booking, public.sailing, public.fare_settings, public.vessel, public.port, public.app_user, auth.users cascade",
+      "truncate public.voucher, public.activity_log, public.boarding_event, public.notification, public.booking_passenger, public.booking, public.sailing, public.fare_settings, public.vessel, public.port, public.app_user, auth.users cascade",
     );
     for (const [role, id] of Object.entries(ids)) {
       await db.query(
@@ -706,6 +706,119 @@ describe("Supabase PostgreSQL migrations and business rules", () => {
       values ('TEST-TRIP',$1,$2,$3,'2099-01-01T08:00:00Z','2099-01-01T10:00:00Z',120,600,480,480,300,480,600,2)`,
       [origin, destination, vessel],
     );
+  });
+
+  const voucherArgs = {code:'SAIL50',discountType:'FIXED',value:50,minimumSpend:500,usageLimit:1,startsAt:'2020-01-01T00:00:00+08:00',expiresAt:'2099-01-01T00:00:00+08:00',isActive:true};
+  it("applies vouchers atomically to stored booking and checkout totals, preserves safe retries and records staff details",async()=>{
+    await call('admin','AdminSaveVoucher',voucherArgs);
+    const args={...reserveArgs(),voucherCode:' sail50 ',passengerCount:1};
+    const quote=await call('passenger','QuoteVoucher',args);
+    assert.equal(quote.discount,50);assert.equal(quote.total,550);
+    await assert.rejects(call('passenger','ReserveSailing1',{...args,expectedVoucherDiscount:500}),/changed/);
+    assert.equal((await call('passenger','MyBookings')).bookings.length,0);
+    await call('passenger','ReserveSailing1',{...args,expectedVoucherDiscount:50,total:1});
+    await call('passenger','ReserveSailing1',{...args,expectedVoucherDiscount:50});
+    const b=(await call('passenger','MyBookings')).bookings[0];
+    assert.equal(b.total,550);assert.equal(b.voucherCode,'SAIL50');assert.equal(b.voucherDiscount,50);
+    const listing=await call('admin','AdminVouchers');
+    assert.equal(listing.vouchers.length,1);
+    assert.equal(listing.vouchers[0].code,'SAIL50');
+    assert.equal(listing.vouchers[0].used,1);
+    assert.equal((await call('ticketing','StaffBookings')).bookings[0].voucherCode,'SAIL50');
+    const checkout=await db.query('select public.prepare_paymongo_test($1,$2) as p',[b.id,ids.passenger]);
+    assert.equal(checkout.rows[0].p.amount,55000);
+    await assert.rejects(call('passenger','QuoteVoucher',args),/already used/);
+    await assert.rejects(call('other','ReserveSailing1',{...args,reference:'OTHER',passenger1Name:'Other Passenger',expectedVoucherDiscount:50}),/usage limit/);
+  });
+  it("protects voucher admin permissions, expiration, minimum spend and discount eligibility",async()=>{
+    await assert.rejects(call('passenger','AdminSaveVoucher',voucherArgs),/Administrator/);
+    await assert.rejects(call('ticketing','AdminVouchers'),/Administrator/);
+    const saved=await call('admin','AdminSaveVoucher',{...voucherArgs,discountType:'PERCENT',value:10,usageLimit:10});
+    const args={...reserveArgs(),voucherCode:'SAIL50',passengerCount:1};
+    assert.equal((await call('passenger','QuoteVoucher',args)).discount,60);
+    await assert.rejects(call('passenger','QuoteVoucher',{...args,passenger1Type:'STUDENT'}),/Minimum spend/);
+    await call('admin','AdminSaveVoucher',{id:saved.id,isActive:false});
+    await assert.rejects(call('passenger','QuoteVoucher',args),/inactive/);
+    await db.exec("update public.voucher set is_active=true,expires_at='2021-01-01'");
+    await assert.rejects(call('passenger','QuoteVoucher',args),/expired/);
+    await db.exec("update public.voucher set expires_at='2099-01-01',minimum_spend=0");
+    await assert.rejects(call('passenger','QuoteVoucher',{...args,passenger1Type:'STUDENT'}),/regular passenger/);
+    assert.equal((await call('passenger','QuoteVoucher',{...args,passengerCount:2,passenger2Type:'STUDENT'})).discount,60);
+  });
+
+  it("records online payment once and requires authorized staff verification before issuing tickets", async () => {
+    const b = await reserve();
+    await db.exec('set role authenticated');
+    await assert.rejects(db.query('select public.prepare_paymongo_test($1,$2)', [b.id, ids.passenger]), /permission denied/);
+    await db.exec('reset role');
+    await assert.rejects(db.query('select public.prepare_paymongo_test($1,$2)', [b.id, ids.other]), /not found/);
+    const first = await db.query('select public.prepare_paymongo_test($1,$2) as p', [b.id, ids.passenger]);
+    const second = await db.query('select public.prepare_paymongo_test($1,$2) as p', [b.id, ids.passenger]);
+    assert.equal(first.rows[0].p.id, second.rows[0].p.id);
+    await db.query("update public.online_payment set session_id='cs_test' where booking_id=$1", [b.id]);
+    await assert.rejects(call('ticketing','CollectBookingPayment',{bookingId:b.id,method:'CASH'}), /Close the online checkout/);
+    await assert.rejects(db.query("select public.complete_paymongo_test('cs_test','pay_test',1,'gcash')"), /amount does not match/);
+    await db.exec("set role service_role");
+    await db.query("select public.complete_paymongo_test('cs_test','pay_test',60000,'gcash')");
+    await db.query("select public.complete_paymongo_test('cs_test','pay_test',60000,'gcash')");
+    await db.exec('reset role');
+    const paid = (await call('passenger','MyBookings')).bookings[0];
+    assert.equal(paid.paymentMethod, 'PAYMONGO_TEST');
+    assert.equal(paid.paymentProviderMethod, 'gcash');
+    for (const role of ['admin','ticketing']) {
+      const staffBooking = (await call(role,'StaffBookings')).bookings.find(item=>item.id===b.id);
+      assert.equal(staffBooking.paymentProviderMethod,'gcash');
+    }
+    assert.equal(paid.paymentStatus, 'PAID');
+    assert.equal(paid.paymentVerificationRequired, true);
+    assert.equal(paid.bookingPassengers_on_booking[0].ticketStatus, 'PENDING');
+    for (const state of ['ACTION_REQUIRED','AWAITING_VERIFICATION']) {
+      const queue=await call('ticketing','StaffBookings',{status:state,pageSize:6});
+      assert.equal(queue.totalCount,1);
+      assert.equal(queue.bookings[0].id,b.id);
+      await assert.rejects(call('passenger','StaffBookings',{status:state}),/Ticketing access required/);
+    }
+    assert.equal((await call('ticketing','StaffDashboard')).awaitingVerification,1);
+    for (const role of ['passenger','boarding']) {
+      await db.query("select set_config('request.jwt.claim.sub',$1,false)",[ids[role]]);
+      await db.exec('set role authenticated');
+      await assert.rejects(db.query('select public.verify_online_payment($1)',[b.id]), /Ticketing access required/);
+      await db.exec('reset role');
+    }
+    await db.query("select set_config('request.jwt.claim.sub',$1,false)",[ids.ticketing]);
+    await db.exec('set role authenticated');
+    await db.query('select public.verify_online_payment($1)',[b.id]);
+    await db.query('select public.verify_online_payment($1)',[b.id]);
+    await db.exec('reset role');
+    const verified = (await call('passenger','MyBookings')).bookings[0];
+    assert.equal(verified.paymentVerificationRequired,false);
+    assert.equal(verified.paymentVerifiedBy,ids.ticketing);
+    assert.ok(verified.paymentVerifiedAt);
+    assert.equal(verified.bookingPassengers_on_booking[0].ticketStatus,'ISSUED');
+    assert.equal((await call('ticketing','StaffBookings',{status:'ACTION_REQUIRED'})).totalCount,0);
+    assert.equal((await call('ticketing','StaffDashboard')).awaitingVerification,0);
+    const logs = await db.query("select count(*)::integer as n from public.activity_log where action='ONLINE_PAYMENT_VERIFIED'");
+    assert.equal(logs.rows[0].n,1);
+    const notices = await db.query("select count(*)::integer as n from public.notification where title='Payment received'");
+    assert.equal(notices.rows[0].n,1);
+  });
+
+  it("does not issue tickets or restore seats for cancelled or expired sandbox payments", async () => {
+    const b = await reserve();
+    await db.query('select public.prepare_paymongo_test($1,$2)', [b.id, ids.passenger]);
+    await db.query("update public.online_payment set session_id='cs_late' where booking_id=$1", [b.id]);
+    await call('passenger','CancelMyBooking',{id:b.id});
+    await db.query("select public.complete_paymongo_test('cs_late','pay_late',60000,'paymaya')");
+    const row = (await db.query('select payment_status,status from public.booking where id=$1',[b.id])).rows[0];
+    assert.equal(row.status,'CANCELLED'); assert.equal(row.payment_status,'REFUND_PENDING');
+    assert.equal((await db.query("select available_seats from public.sailing where code='TEST-TRIP'")).rows[0].available_seats,2);
+    assert.equal((await db.query('select ticket_status from public.booking_passenger where booking_id=$1',[b.id])).rows[0].ticket_status,'PENDING');
+    await assert.rejects(db.query("update public.booking set payment_status='REFUNDED' where id=$1",[b.id]),/no real cash refund/);
+  });
+
+  it("requires discount verification before opening sandbox checkout", async () => {
+    const b = await reserve('BK-DISCOUNT',2);
+    await assert.rejects(db.query('select public.prepare_paymongo_test($1,$2)', [b.id, ids.passenger]), /verify discounted/);
   });
 
   it("lists accommodation records through the admin RPC before and after edits", async () => {
@@ -1104,6 +1217,37 @@ describe("Supabase PostgreSQL migrations and business rules", () => {
       2,
     );
   });
+  it('blocks duplicate passenger details under different references before and after payment', async () => {
+    const b=await reserve('FIRST');
+    await assert.rejects(call('passenger','ReserveSailing1',reserveArgs('SECOND')), /Duplicate booking: FIRST/);
+    await call('ticketing','CollectBookingPayment',{bookingId:b.id,method:'CASH'});
+    await assert.rejects(call('passenger','ReserveSailing1',reserveArgs('THIRD')), /Duplicate booking: FIRST/);
+    assert.equal((await db.query('select count(*)::integer as n from public.booking')).rows[0].n,1);
+    assert.equal((await call(null,'BrowseSailings',{},'anon')).sailings[0].availableSeats,1);
+  });
+  it('matches reordered passengers and normalized names without spending extra seats', async () => {
+    await db.exec('update public.sailing set available_seats=4');
+    const args=reserveArgs('FIRST-GROUP',2);
+    await call('passenger','ReserveSailing2',args);
+    await assert.rejects(call('passenger','ReserveSailing2',{...args,reference:'SECOND-GROUP',passenger1Name:'  PASSENGER   2 ',passenger1Type:'STUDENT',passenger2Name:'passenger 1',passenger2Type:'REGULAR'}), /Duplicate booking: FIRST-GROUP/);
+    assert.equal((await call(null,'BrowseSailings',{},'anon')).sailings[0].availableSeats,2);
+  });
+  it('allows a new reservation after cancellation and distinguishes different identity details', async () => {
+    const b=await reserve('CANCEL-ME');
+    await call('passenger','CancelMyBooking',{id:b.id});
+    await reserve('REPLACEMENT');
+    await call('passenger','ReserveSailing1',{...reserveArgs('OTHER-PERSON'),passenger1BirthDate:'1990-01-01'});
+    assert.equal((await db.query('select count(*)::integer as n from public.booking')).rows[0].n,3);
+  });
+  it('rejects a second submission with a different reference and leaves a single booking', async () => {
+    await db.query("select set_config('request.jwt.claim.sub',$1,false)",[ids.passenger]);
+    await db.exec('set role authenticated');
+    const results=await Promise.allSettled(['CLICK-A','CLICK-B'].map(reference=>db.query('select public.barkolink_execute($1,$2::jsonb)', ['ReserveSailing1',JSON.stringify(reserveArgs(reference))])));
+    await db.exec('reset role');
+    assert.equal(results.filter(r=>r.status==='fulfilled').length,1);
+    assert.match(results.find(r=>r.status==='rejected').reason.message,/Duplicate booking/);
+    assert.equal((await db.query('select count(*)::integer as n from public.booking')).rows[0].n,1);
+  });
   it("makes reservation retries idempotent and rejects conflicting references", async () => {
     await reserve();
     await call("passenger", "ReserveSailing1", reserveArgs());
@@ -1490,7 +1634,7 @@ describe("Supabase PostgreSQL migrations and business rules", () => {
       bookingId: b.id,
       method: "CASH",
     });
-    const pending = await reserve("BK-UNPAID");
+    const pending = await reserve("BK-UNPAID",1,"Other Passenger");
     await call("admin", "AdminUpdateSailingStatus", {
       code: "TEST-TRIP",
       status: "CANCELLED",
@@ -1548,7 +1692,7 @@ describe("Supabase PostgreSQL migrations and business rules", () => {
   });
   it("paginates filtered staff records and protects activity logs", async () => {
     const first = await reserve("FIRST");
-    await reserve("SECOND");
+    await reserve("SECOND",1,"Second Passenger");
     await call("passenger", "CancelMyBooking", { id: first.id });
     const page = await call("ticketing", "StaffBookings", {
       page: 0,

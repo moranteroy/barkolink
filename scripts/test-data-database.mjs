@@ -4,7 +4,7 @@ import crypto from 'node:crypto'
 import { fileURLToPath } from 'node:url'
 
 export const projectRef = 'utobfkfmuepuoseszxks'
-export const dataTables = ['port', 'vessel', 'fare_settings', 'sailing', 'booking', 'booking_passenger',
+export const dataTables = ['port', 'vessel', 'fare_settings', 'sailing', 'booking', 'booking_passenger', 'online_payment', 'port_weather_cache', 'voucher',
   'notification', 'boarding_event', 'operation_settings', 'activity_log', 'travel_advisory',
   'saved_traveler', 'passenger_no_show', 'accommodation', 'ferry_route', 'notification_campaign']
 const tableRows = table => `(select coalesce(jsonb_agg(to_jsonb(t) order by to_jsonb(t)::text),'[]'::jsonb) from public.${table} t)`
@@ -20,7 +20,7 @@ const literal = value => `'${JSON.stringify(value).replaceAll("'", "''")}'::json
 export const fixtureChecks = `do $$ begin
   if exists(select 1 from public.booking b where b.passenger_count<>(select count(*) from public.booking_passenger p where p.booking_id=b.id)
     or b.passenger_fare_total<>(select sum(p.fare)+b.accommodation_surcharge*b.passenger_count from public.booking_passenger p where p.booking_id=b.id)
-    or b.total<>b.passenger_fare_total+b.service_fee) then raise exception 'Booking totals or passenger counts are inconsistent'; end if;
+    or b.total<>b.passenger_fare_total+b.service_fee-b.voucher_discount) then raise exception 'Booking totals or passenger counts are inconsistent'; end if;
   if exists(select 1 from public.sailing s join public.vessel v on v.id=s.vessel_id
     where s.available_seats<>v.passenger_capacity-coalesce((select sum(b.passenger_count) from public.booking b where b.sailing_code=s.code and b.status in ('PENDING','CONFIRMED')),0)) then raise exception 'Seat counts are inconsistent'; end if;
   if exists(select 1 from public.accommodation a join public.vessel v on v.id=a.vessel_id where a.is_active

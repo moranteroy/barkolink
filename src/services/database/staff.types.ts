@@ -596,6 +596,8 @@ export interface StaffBookingsData {
     status: string;
     passengerCount: number;
     total: number;
+    voucherCode?: string | null;
+    voucherDiscount?: number;
     serviceFee: number;
     accommodationId?: string | null;
     accommodationName?: string | null;
@@ -604,6 +606,10 @@ export interface StaffBookingsData {
     paymentDeadline?: string | null;
     cancellationReason?: string | null;
     paymentMethod?: string | null;
+    paymentProviderMethod?: string | null;
+    paymentVerificationRequired?: boolean | null;
+    paymentVerifiedAt?: string | null;
+    paymentTransactionId?: string | null;
     paidAt?: TimestampString | null;
     bookingChannel: string;
     createdAt: TimestampString;

@@ -168,6 +168,7 @@
               v-else-if="section === 'trip-operations'"
               :key="`trip-${reportsRefresh}`"
             /><OperationsPanel v-else-if="section === 'operations'" />
+            <VouchersPanel v-else-if="section === 'vouchers'" :key="`vouchers-${reportsRefresh}`" />
             <section
               v-else-if="section === 'fares'"
               class="fare-settings-panel"
@@ -545,6 +546,7 @@
               </div>
               <p v-if="section === 'check-in'" class="check-in-guidance"><ion-icon :icon="informationCircleOutline" aria-hidden="true" /><span>Check in issued tickets for paid, confirmed bookings. Choose a sailing to focus on its passengers.</span></p>
               <section class="panel" :class="{ 'booking-records-panel': ['bookings', 'passengers', 'trips', 'ports', 'vessels', 'check-in', 'boarding', 'manifest', 'users'].includes(section), 'passenger-records-panel': section === 'passengers', 'trip-records-panel': section === 'trips', 'boarding-records-panel': section === 'boarding', 'manifest-records-panel': section === 'manifest' }">
+                <WeatherTripPicker v-if="section === 'trips'" :trips="sailings" />
                 <div class="panel-head">
                   <div>
                     <p class="eyebrow">{{ section === 'users' ? 'ACCOUNT DIRECTORY' : section === 'manifest' ? 'PAID PASSENGER RECORDS' : section === 'boarding' ? 'PASSENGER BOARDING' : section === 'check-in' ? 'PASSENGER CHECK-IN' : section === 'vessels' ? 'FLEET RECORDS' : section === 'ports' ? 'PORT RECORDS' : section === 'trips' ? 'TRIP SCHEDULES' : section === 'passengers' ? 'PASSENGER RECORDS' : 'RECORDS' }}</p>
@@ -1306,6 +1308,9 @@
 </template>
 
 <script setup lang="ts">
+import { paymentMethodLabel } from '../../data/paymentMethod';
+import WeatherTripPicker from '../../components/shared/WeatherTripPicker.vue';
+import { awaitingPaymentVerification } from '../../data/paymentVerification';
 import WorkspacePagination from "../../components/shared/WorkspacePagination.vue";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -1326,6 +1331,7 @@ import RecordsGrid, {
   type RecordGridRow,
 } from "../../components/shared/RecordsGrid.vue";
 import OperationsPanel from "../../components/admin/OperationsPanel.vue";
+import VouchersPanel from "../../components/admin/VouchersPanel.vue";
 import AdvisoriesPanel from "../../components/admin/AdvisoriesPanel.vue";
 import TripOperationsPanel from "../../components/admin/TripOperationsPanel.vue";
 import { useQueueRefresh } from "../../composables/queueRefresh";
@@ -1548,6 +1554,7 @@ const navigation = [
     icon: constructOutline,
     items: [
       { key: "fares", label: "Fares & discounts", icon: pricetagsOutline },
+      { key: "vouchers", label: "Vouchers", icon: pricetagsOutline },
       { key: "ports", label: "Ports", icon: locationOutline },
       { key: "routes", label: "Routes", icon: navigateOutline },
       { key: "accommodation", label: "Accommodation", icon: bedOutline },
@@ -1673,6 +1680,7 @@ const pages: Record<
     description: "Schedule sailings and update their departure status.",
     table: "Sailing schedule",
   },
+  vouchers: { group: "WORKSPACE", title: "Vouchers", description: "Manage booking promo codes and usage limits.", table: "" },
   fares: {
     group: "FERRY OPERATIONS",
     title: "Fares & discounts",
@@ -1815,6 +1823,7 @@ async function loadData() {
       "audit-logs",
       "advisories",
       "trip-operations",
+      "vouchers",
     ].includes(section.value)
   ) {
     error.value = "";
@@ -1988,6 +1997,7 @@ useQueueRefresh(
       "operations",
       "audit-logs",
       "fares",
+      "vouchers",
       "advisories",
       "trip-operations",
     ].includes(section.value) &&
@@ -2832,6 +2842,7 @@ const columns = computed(
           "Passengers",
           "Total",
           "Status",
+          "Payment method",
         ],
         passengers: [
           "Passenger",
@@ -2886,7 +2897,7 @@ const rows = computed<Row[]>(() => {
         dateTime(b.sailing.departureAt),
         b.passengerCount,
         `PHP ${b.total.toLocaleString()}`,
-        b.paymentStatus === "REFUND_PENDING"
+        awaitingPaymentVerification(b) ? 'AWAITING STAFF VERIFICATION' : b.paymentStatus === "REFUND_PENDING"
           ? "REFUND PENDING"
           : b.paymentStatus === "REFUNDED"
             ? "REFUNDED"
@@ -2895,6 +2906,7 @@ const rows = computed<Row[]>(() => {
               : b.paymentStatus === "PAID"
                 ? "PAID"
                 : "AWAITING PAYMENT",
+        paymentMethodLabel(b) + (b.voucherCode ? ` | ${b.voucherCode} (- PHP ${b.voucherDiscount})` : ""),
       ],
     }));
   if (

@@ -131,9 +131,14 @@ export interface MyBookingsData {
     paymentDeadline?: string | null;
     cancellationReason?: string | null;
     paymentMethod?: string | null;
+    paymentProviderMethod?: string | null;
+    paymentVerificationRequired?: boolean | null;
+    paymentVerifiedAt?: string | null;
     paidAt?: TimestampString | null;
     bookingChannel: string;
     total: number;
+    voucherCode?: string | null;
+    voucherDiscount?: number;
     currency: string;
     createdAt: TimestampString;
     sailing: {

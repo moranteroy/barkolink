@@ -2750,3 +2750,407 @@ end $$;
 revoke all on function barkolink_private.execute_flexible_discounts(text,jsonb,text,text) from public,anon,authenticated;
 
 commit;
+
+-- 019_paymongo_test_payments.sql
+-- Test payments are explicitly distinct from real cash collections.
+alter table public.booking drop constraint booking_payment_method_check;
+alter table public.booking add constraint booking_payment_method_check
+  check (payment_method is null or payment_method in ('CASH','PAYMONGO_TEST'));
+
+create table public.online_payment (
+  id uuid primary key default gen_random_uuid(),
+  booking_id uuid not null unique references public.booking,
+  session_id text unique, checkout_url text,
+  amount integer not null check (amount > 0),
+  status text not null default 'OPEN' check (status in ('OPEN','CLOSED','PAID','REVIEW')),
+  provider_payment_id text unique, provider_method text,
+  created_at timestamptz not null default now(), paid_at timestamptz
+);
+alter table public.online_payment enable row level security;
+revoke all on public.online_payment from public, anon, authenticated;
+grant all on public.online_payment to service_role;
+
+-- Only the authenticated Edge Function may call these service-only RPCs.
+create function public.prepare_paymongo_test(p_booking uuid, p_owner text) returns jsonb
+language plpgsql security definer set search_path = '' as $$
+declare b public.booking; s public.sailing; p public.online_payment;
+begin
+  select * into b from public.booking where id=p_booking for update;
+  if not found or b.owner_uid <> p_owner then raise exception 'Booking was not found.'; end if;
+  select * into s from public.sailing where code=b.sailing_code for update;
+  if b.payment_status <> 'UNPAID' or b.status not in ('PENDING','CONFIRMED')
+    or b.payment_deadline <= now() or s.departure_at <= now()
+    or s.status not in ('SCHEDULED','BOARDING') then
+    raise exception 'Only active unpaid reservations before the deadline can be paid.';
+  end if;
+  if exists(select 1 from public.booking_passenger where booking_id=b.id
+    and fare<s.regular_fare and discount_verified_at is null) then
+    raise exception 'Visit ticketing to verify discounted passengers before paying online.';
+  end if;
+  insert into public.online_payment(booking_id,amount) values(b.id,b.total*100)
+    on conflict(booking_id) do nothing;
+  select * into p from public.online_payment where booking_id=b.id;
+  if p.amount <> b.total*100 then raise exception 'Fare changed. Close this checkout and pay cash at ticketing.'; end if;
+  if p.status <> 'OPEN' then raise exception 'This checkout is closed. Use cash at ticketing or create a new reservation.'; end if;
+  return to_jsonb(p) || jsonb_build_object('reference',b.reference);
+end $$;
+
+create function public.complete_paymongo_test(p_session text, p_payment text, p_amount integer, p_method text)
+returns jsonb language plpgsql security definer set search_path = '' as $$
+declare b public.booking; s public.sailing; p public.online_payment; active boolean;
+begin
+  -- Follow the existing booking -> sailing lock order.
+  select * into p from public.online_payment where session_id=p_session;
+  if not found then raise exception 'Checkout was not found.'; end if;
+  select * into b from public.booking where id=p.booking_id for update;
+  select * into s from public.sailing where code=b.sailing_code for update;
+  select * into p from public.online_payment where id=p.id for update;
+  if p.amount <> p_amount or b.total*100 <> p_amount then raise exception 'Payment amount does not match.'; end if;
+  if p.status in ('PAID','REVIEW') then return jsonb_build_object('status',p.status); end if;
+  if b.payment_status <> 'UNPAID' then
+    update public.online_payment set status='REVIEW',provider_payment_id=p_payment,provider_method=p_method,paid_at=now() where id=p.id;
+    return '{"status":"REVIEW"}'::jsonb;
+  end if;
+  active := b.status in ('PENDING','CONFIRMED') and b.payment_deadline>now()
+    and s.departure_at>now() and s.status in ('SCHEDULED','BOARDING');
+  update public.online_payment set status='PAID',provider_payment_id=p_payment,provider_method=p_method,paid_at=now() where id=p.id;
+  if active then
+    update public.booking set status='CONFIRMED',payment_status='PAID',payment_method='PAYMONGO_TEST',paid_at=now(),updated_at=now() where id=b.id;
+    update public.booking_passenger set ticket_status='ISSUED',issued_at=now() where booking_id=b.id and ticket_status='PENDING';
+  else
+    -- Late sandbox payments never restore released seats or issue a ticket.
+    if b.status in ('PENDING','CONFIRMED') then
+      update public.sailing set available_seats=available_seats+b.passenger_count,updated_at=now() where code=s.code;
+    end if;
+    update public.booking set status='CANCELLED',payment_status='REFUND_PENDING',payment_method='PAYMONGO_TEST',paid_at=now(),updated_at=now() where id=b.id;
+  end if;
+  insert into public.notification(owner_uid,title,message,category) values(b.owner_uid,
+    'Sandbox payment confirmed',case when active then 'Test payment only; no real money moved. Your demo e-tickets are ready.'
+    else 'Test payment arrived after the reservation closed. No ticket was issued and no real cash refund is due.' end,'BOOKING');
+  insert into public.activity_log(action,entity_type,entity_id,details) values('PAYMONGO_TEST_PAID','booking',b.reference,
+    jsonb_build_object('amount',b.total,'sessionId',p_session,'testMode',true));
+  return jsonb_build_object('status','PAID','ticketIssued',active);
+end $$;
+
+-- Prevent staff from collecting cash while an online checkout can still be paid.
+create function barkolink_private.guard_online_cash() returns trigger
+language plpgsql set search_path = '' as $$
+begin
+  if (new.total <> old.total or new.sailing_code <> old.sailing_code)
+    and exists(select 1 from public.online_payment where booking_id=old.id and status='OPEN') then
+    raise exception 'Close the online checkout before changing the fare or sailing.';
+  end if;
+  if new.payment_method='CASH' and new.payment_status='PAID' and old.payment_status='UNPAID'
+    and exists(select 1 from public.online_payment where booking_id=old.id and status='OPEN') then
+    raise exception 'Close the online checkout from the passenger payment panel before collecting cash.';
+  end if;
+  if old.payment_method='PAYMONGO_TEST' and new.payment_status='REFUNDED' then
+    raise exception 'Sandbox payments have no real cash refund. Do not return cash for a test payment.';
+  end if;
+  return new;
+end $$;
+create trigger guard_online_cash before update on public.booking
+for each row execute function barkolink_private.guard_online_cash();
+revoke all on function public.prepare_paymongo_test(uuid,text), public.complete_paymongo_test(text,text,integer,text) from public, anon, authenticated;
+grant execute on function public.prepare_paymongo_test(uuid,text), public.complete_paymongo_test(text,text,integer,text) to service_role;
+
+-- 020_booking_payment_details.sql
+-- Return the verified provider method alongside the existing booking fields.
+-- Payment status is still controlled by the service-only confirmation RPC.
+create or replace function barkolink_private.booking_json(b public.booking) returns jsonb
+language sql stable set search_path = '' as $$
+  select barkolink_private.booking_base(b) || jsonb_build_object(
+    'paymentProviderMethod', (select p.provider_method from public.online_payment p
+      where p.booking_id=b.id and p.status='PAID'),
+    'bookingPassengers_on_booking',
+    (select coalesce(jsonb_agg(barkolink_private.passenger_json(p) order by p.created_at, p.id), '[]'::jsonb)
+     from public.booking_passenger p where p.booking_id = b.id))
+$$;
+
+-- Preserve payment-provider confirmation separately from staff approval.
+alter table public.booking add column payment_verified_at timestamptz;
+alter table public.booking add column payment_verified_by text references public.app_user(uid);
+-- Previously issued tickets stay valid. New online payments require staff approval.
+update public.booking b set payment_verified_at=b.paid_at
+where b.payment_method='PAYMONGO_TEST' and b.payment_status='PAID'
+  and exists(select 1 from public.booking_passenger p where p.booking_id=b.id and p.ticket_status in ('ISSUED','CHECKED-IN','BOARDED'));
+
+create or replace function barkolink_private.booking_base(b public.booking) returns jsonb
+language sql stable set search_path = '' as $$
+  select to_jsonb(b) || jsonb_build_object(
+    'paymentVerificationRequired', b.payment_method='PAYMONGO_TEST' and b.payment_status='PAID' and b.payment_verified_at is null,
+    'owner', (select to_jsonb(u) from public.app_user u where u.uid=b.owner_uid),
+    'sailing', (select barkolink_private.sailing_json(s) from public.sailing s where s.code=b.sailing_code))
+$$;
+
+create or replace function barkolink_private.booking_json(b public.booking) returns jsonb
+language sql stable set search_path = '' as $$
+  select barkolink_private.booking_base(b) || jsonb_build_object(
+    'paymentProviderMethod', (select provider_method from public.online_payment where booking_id=b.id and status='PAID'),
+    'paymentTransactionId', (select provider_payment_id from public.online_payment where booking_id=b.id and status='PAID'),
+    'bookingPassengers_on_booking', (select coalesce(jsonb_agg(barkolink_private.passenger_json(p) order by p.created_at,p.id),'[]'::jsonb) from public.booking_passenger p where p.booking_id=b.id))
+$$;
+
+create or replace function public.complete_paymongo_test(p_session text, p_payment text, p_amount integer, p_method text)
+returns jsonb language plpgsql security definer set search_path = '' as $$
+declare b public.booking; s public.sailing; p public.online_payment; active boolean;
+begin
+  select * into p from public.online_payment where session_id=p_session;
+  if not found then raise exception 'Checkout was not found.'; end if;
+  select * into b from public.booking where id=p.booking_id for update;
+  select * into s from public.sailing where code=b.sailing_code for update;
+  select * into p from public.online_payment where id=p.id for update;
+  if p.amount<>p_amount or b.total*100<>p_amount then raise exception 'Payment amount does not match.'; end if;
+  if p.status in ('PAID','REVIEW') then return jsonb_build_object('status',p.status); end if;
+  if b.payment_status<>'UNPAID' then
+    update public.online_payment set status='REVIEW',provider_payment_id=p_payment,provider_method=p_method,paid_at=now() where id=p.id;
+    return '{"status":"REVIEW"}'::jsonb;
+  end if;
+  active := b.status in ('PENDING','CONFIRMED') and b.payment_deadline>now()
+    and s.departure_at>now() and s.status in ('SCHEDULED','BOARDING');
+  update public.online_payment set status='PAID',provider_payment_id=p_payment,provider_method=p_method,paid_at=now() where id=p.id;
+  if active then
+    update public.booking set status='CONFIRMED',payment_status='PAID',payment_method='PAYMONGO_TEST',paid_at=now(),updated_at=now() where id=b.id;
+    -- Tickets remain PENDING until an authorized ticketing staff member verifies payment.
+  else
+    if b.status in ('PENDING','CONFIRMED') then
+      update public.sailing set available_seats=available_seats+b.passenger_count,updated_at=now() where code=s.code;
+    end if;
+    update public.booking set status='CANCELLED',payment_status='REFUND_PENDING',payment_method='PAYMONGO_TEST',paid_at=now(),updated_at=now() where id=b.id;
+  end if;
+  insert into public.notification(owner_uid,title,message,category) values(b.owner_uid,
+    'Payment received',case when active then 'Your online payment was received. Awaiting staff verification before your e-ticket is issued.'
+    else 'Payment arrived after the reservation closed. Contact ticketing for assistance. No ticket was issued.' end,'BOOKING');
+  insert into public.activity_log(action,entity_type,entity_id,details) values('PAYMONGO_TEST_PAID','booking',b.reference,
+    jsonb_build_object('amount',b.total,'sessionId',p_session,'testMode',true,'awaitingStaffVerification',active));
+  return jsonb_build_object('status','PAID','ticketIssued',false);
+end $$;
+
+create function public.verify_online_payment(p_booking uuid) returns jsonb
+language plpgsql security definer set search_path = '' as $$
+declare actor text := auth.uid()::text; b public.booking; s public.sailing; p public.online_payment;
+begin
+  if actor is null or not exists(select 1 from public.app_user where uid=actor and role in ('TICKETING','ADMIN')) then
+    raise exception 'Ticketing access required.' using errcode='42501';
+  end if;
+  select * into b from public.booking where id=p_booking for update;
+  if not found then raise exception 'Booking was not found.'; end if;
+  select * into s from public.sailing where code=b.sailing_code for update;
+  select * into p from public.online_payment where booking_id=b.id for update;
+  if b.payment_method<>'PAYMONGO_TEST' or b.payment_status<>'PAID' or p.id is null or p.status<>'PAID'
+    or p.provider_payment_id is null or p.amount<>b.total*100 then
+    raise exception 'A confirmed online payment is required.';
+  end if;
+  if b.status<>'CONFIRMED' or s.departure_at<=now() or s.status not in ('SCHEDULED','BOARDING') then
+    raise exception 'Only an active booking before departure can be verified.';
+  end if;
+  if b.payment_verified_at is not null then return '{"verified":true}'::jsonb; end if;
+  update public.booking set payment_verified_at=now(),payment_verified_by=actor,updated_at=now() where id=b.id;
+  update public.booking_passenger set ticket_status='ISSUED',issued_at=now() where booking_id=b.id and ticket_status='PENDING';
+  insert into public.activity_log(actor_uid,action,entity_type,entity_id,details)
+    values(actor,'ONLINE_PAYMENT_VERIFIED','booking',b.reference,jsonb_build_object('amount',b.total,'method',p.provider_method,'paymentId',p.provider_payment_id));
+  insert into public.notification(owner_uid,title,message,category)
+    values(b.owner_uid,'Payment verified','Staff verified your payment. Your e-ticket is now available.','BOOKING');
+  return '{"verified":true}'::jsonb;
+end $$;
+revoke all on function public.verify_online_payment(uuid) from public, anon;
+grant execute on function public.verify_online_payment(uuid) to authenticated;
+
+create function barkolink_private.reservation_person_key(person_name text, person_type text, birth_date text, sex text, phone text, nationality text)
+returns jsonb language sql immutable set search_path='' as $$
+  select jsonb_build_array(
+    lower(regexp_replace(trim(coalesce(person_name,'')),'\s+',' ','g')),
+    upper(trim(coalesce(person_type,''))),
+    coalesce(nullif(birth_date,'')::date::text,''),
+    lower(trim(coalesce(sex,''))),
+    regexp_replace(coalesce(phone,''),'[^0-9]','','g'),
+    lower(regexp_replace(trim(coalesce(nationality,'')),'\s+',' ','g')))
+$$;
+
+alter function barkolink_private.execute_accommodation(text,jsonb,text,text) rename to execute_accommodation_v21;
+create function barkolink_private.execute_accommodation(operation text,args jsonb,actor_uid text,actor_role text)
+returns jsonb language plpgsql set search_path='' as $$
+declare s public.sailing; requested jsonb; duplicate_reference text; requested_count integer;
+begin
+  if operation ~ '^ReserveSailing[1-8]$' then
+    if actor_uid is null or actor_uid='' or actor_role is distinct from 'PASSENGER' then
+      raise exception 'Booking access required.' using errcode='42501';
+    end if;
+    select * into s from public.sailing where code=args->>'sailingCode';
+    if not found then raise exception 'Sailing was not found.'; end if;
+    -- Match the existing vessel -> reference -> sailing lock order. Concurrent
+    -- requests with different references must check duplicates after serialization.
+    perform pg_advisory_xact_lock(hashtextextended(s.vessel_id::text,42));
+    perform pg_advisory_xact_lock(hashtextextended(args->>'reference',0));
+    perform 1 from public.sailing where code=s.code for update;
+    if not exists(select 1 from public.booking where reference=args->>'reference') then
+      requested_count:=right(operation,1)::integer;
+      select jsonb_agg(k order by k::text) into requested from (
+        select barkolink_private.reservation_person_key(args->>('passenger'||n||'Name'),args->>('passenger'||n||'Type'),
+          args->>('passenger'||n||'BirthDate'),args->>('passenger'||n||'Sex'),args->>('passenger'||n||'Phone'),args->>('passenger'||n||'Nationality')) as k
+        from generate_series(1,requested_count) n) people;
+      select b.reference into duplicate_reference from public.booking b
+        where b.owner_uid=actor_uid and b.sailing_code=s.code and b.status in ('PENDING','CONFIRMED')
+        and b.passenger_count=requested_count and s.departure_at>now()
+        and (b.payment_status='PAID' or (b.payment_status='UNPAID' and b.payment_deadline>now()))
+        and requested=(select jsonb_agg(k order by k::text) from (
+          select barkolink_private.reservation_person_key(p.full_name,p.passenger_type,p.birth_date::text,p.sex,p.phone,p.nationality) k
+          from public.booking_passenger p where p.booking_id=b.id) people)
+        order by b.created_at,b.id limit 1;
+      if duplicate_reference is not null then
+        raise exception 'Duplicate booking: %. You already have an active reservation with these passenger details for this trip. Open the existing booking.',duplicate_reference;
+      end if;
+    end if;
+  end if;
+  return barkolink_private.execute_accommodation_v21(operation,args,actor_uid,actor_role);
+end $$;
+revoke all on function barkolink_private.reservation_person_key(text,text,text,text,text,text),
+  barkolink_private.execute_accommodation(text,jsonb,text,text) from public,anon,authenticated;
+
+alter function barkolink_private.execute_flexible_discounts(text,jsonb,text,text) rename to execute_flexible_discounts_v22;
+create function barkolink_private.execute_flexible_discounts(operation text,args jsonb,actor_uid text,actor_role text)
+returns jsonb language plpgsql set search_path='' as $$
+declare result jsonb; pending bigint;
+begin
+  if operation='StaffBookings' and args->>'status' in ('ACTION_REQUIRED','AWAITING_VERIFICATION') then
+    if actor_uid is null or actor_uid='' or coalesce(actor_role,'') not in ('TICKETING','ADMIN') then
+      raise exception 'Ticketing access required.' using errcode='42501';
+    end if;
+    with filtered as (
+      select b.*, (b.payment_status='PAID') as needs_verification from public.booking b join public.sailing s on s.code=b.sailing_code
+      where b.status in ('PENDING','CONFIRMED') and s.departure_at>now() and s.status in ('SCHEDULED','BOARDING')
+      and ((b.payment_status='PAID' and b.payment_method='PAYMONGO_TEST' and b.payment_verified_at is null)
+        or (args->>'status'='ACTION_REQUIRED' and b.payment_status='UNPAID' and b.payment_deadline>now()))
+      and (coalesce(args->>'search','')='' or barkolink_private.booking_json(b)::text ilike '%'||(args->>'search')||'%')
+    ), paged as (
+      select id from filtered order by needs_verification desc,created_at,id
+      limit least(100,greatest(1,coalesce((args->>'pageSize')::integer,100)))
+      offset greatest(0,coalesce((args->>'page')::integer,0))*least(100,greatest(1,coalesce((args->>'pageSize')::integer,100)))
+    )
+    select jsonb_build_object('bookings',coalesce((select jsonb_agg(barkolink_private.booking_json(b) order by (b.payment_status='PAID') desc,b.created_at,b.id)
+      from public.booking b join paged p on p.id=b.id),'[]'::jsonb),'totalCount',(select count(*) from filtered)) into result;
+    return result;
+  end if;
+  result:=barkolink_private.execute_flexible_discounts_v22(operation,args,actor_uid,actor_role);
+  if operation='StaffDashboard' then
+    select count(*) into pending from public.booking b join public.sailing s on s.code=b.sailing_code
+      where b.status='CONFIRMED' and b.payment_status='PAID' and b.payment_method='PAYMONGO_TEST' and b.payment_verified_at is null
+      and s.departure_at>now() and s.status in ('SCHEDULED','BOARDING');
+    result:=result || jsonb_build_object('awaitingVerification',pending);
+  end if;
+  return result;
+end $$;
+revoke all on function barkolink_private.execute_flexible_discounts(text,jsonb,text,text) from public,anon,authenticated;
+
+create table public.port_weather_cache (
+  port_id uuid primary key references public.port(id) on delete cascade,
+  payload jsonb not null,
+  fetched_at timestamptz not null default now(),
+  expires_at timestamptz not null
+);
+alter table public.port_weather_cache enable row level security;
+revoke all on public.port_weather_cache from public,anon,authenticated;
+grant all on public.port_weather_cache to service_role;
+
+create table public.voucher (
+  id uuid primary key default gen_random_uuid(), code text unique not null check(code ~ '^[A-Z0-9_-]{3,30}$'),
+  discount_type text not null check(discount_type in ('FIXED','PERCENT')), value integer not null check(value>0),
+  minimum_spend integer not null default 0 check(minimum_spend>=0), usage_limit integer not null check(usage_limit>0),
+  starts_at timestamptz not null, expires_at timestamptz not null, is_active boolean not null default true,
+  check(expires_at>starts_at), check(discount_type<>'PERCENT' or value<=99)
+);
+alter table public.booking add column voucher_id uuid references public.voucher(id);
+alter table public.booking add column voucher_code text;
+alter table public.booking add column voucher_discount integer not null default 0 check(voucher_discount>=0);
+do $$ declare c record; begin
+  for c in select conname from pg_constraint where conrelid='public.booking'::regclass and contype='c'
+    and pg_get_constraintdef(oid) like '%total = (passenger_fare_total + service_fee)%'
+  loop execute format('alter table public.booking drop constraint %I',c.conname); end loop;
+end $$;
+alter table public.booking add constraint booking_discounted_total check(total=passenger_fare_total+service_fee-voucher_discount and total>0);
+create unique index booking_voucher_once on public.booking(owner_uid,voucher_id) where voucher_id is not null;
+alter table public.voucher enable row level security;
+revoke all on public.voucher from public,anon,authenticated;
+grant all on public.voucher to service_role;
+
+create function barkolink_private.voucher_quote(args jsonb,actor text) returns jsonb language plpgsql set search_path='' as $$
+declare v public.voucher; s public.sailing; eligible integer:=0; subtotal integer:=0; n integer; count_people integer; discount integer; extra integer:=0; kind text;
+begin
+  select * into v from public.voucher where code=upper(trim(args->>'voucherCode'));
+  if not found or not v.is_active or now()<v.starts_at or now()>=v.expires_at then raise exception 'Voucher is invalid, inactive, or expired.'; end if;
+  if exists(select 1 from public.booking where owner_uid=actor and voucher_id=v.id) then raise exception 'You have already used this voucher.'; end if;
+  if (select count(*) from public.booking where voucher_id=v.id)>=v.usage_limit then raise exception 'Voucher usage limit has been reached.'; end if;
+  select * into s from public.sailing where code=args->>'sailingCode' and status='SCHEDULED' and departure_at>now();
+  if not found then raise exception 'Choose an available sailing.'; end if;
+  count_people:=(args->>'passengerCount')::integer;
+  if count_people is null or count_people not between 1 and 8 then raise exception 'Choose 1 to 8 passengers.'; end if;
+  for n in 1..count_people loop
+    kind:=args->>('passenger'||n||'Type');
+    subtotal:=subtotal+barkolink_private.fare(s,kind);
+    if kind='REGULAR' then eligible:=eligible+s.regular_fare; end if;
+  end loop;
+  if nullif(args->>'accommodationId','') is not null then
+    select surcharge into extra from public.accommodation where id=(args->>'accommodationId')::uuid and vessel_id=s.vessel_id and is_active;
+    if not found then raise exception 'Choose an available accommodation.'; end if;
+  end if;
+  subtotal:=subtotal+extra*count_people;
+  if subtotal<v.minimum_spend then raise exception 'Minimum spend for this voucher is PHP %.',v.minimum_spend; end if;
+  if eligible=0 then raise exception 'Voucher applies to regular passenger fares only.'; end if;
+  discount:=least(eligible,subtotal-1,case when v.discount_type='FIXED' then v.value else floor(eligible*v.value/100.0)::integer end);
+  if discount<1 then raise exception 'This voucher does not provide a discount for this booking.'; end if;
+  return jsonb_build_object('code',v.code,'discount',discount,'subtotal',subtotal,'total',subtotal-discount);
+end $$;
+
+alter function barkolink_private.execute_flexible_discounts(text,jsonb,text,text) rename to execute_flexible_discounts_v24;
+create function barkolink_private.execute_flexible_discounts(operation text,args jsonb,actor_uid text,actor_role text) returns jsonb language plpgsql set search_path='' as $$
+declare v public.voucher; b public.booking; s public.sailing; result jsonb; quote jsonb; voucher_id_value uuid;
+begin
+  if operation in ('AdminVouchers','AdminSaveVoucher') then
+    if actor_uid is null or actor_role is distinct from 'ADMIN' then raise exception 'Administrator access required.' using errcode='42501'; end if;
+    if operation='AdminVouchers' then
+      return jsonb_build_object('vouchers',(select coalesce(jsonb_agg(to_jsonb(x) order by x.expires_at desc),'[]') from
+        (select offer.*,(select count(*) from public.booking booked where booked.voucher_id=offer.id) as used from public.voucher offer) x));
+    end if;
+    voucher_id_value:=nullif(args->>'id','')::uuid;
+    if voucher_id_value is null then
+      insert into public.voucher(code,discount_type,value,minimum_spend,usage_limit,starts_at,expires_at,is_active)
+      values(upper(trim(args->>'code')),args->>'discountType',(args->>'value')::integer,(args->>'minimumSpend')::integer,(args->>'usageLimit')::integer,
+        (args->>'startsAt')::timestamptz,(args->>'expiresAt')::timestamptz,coalesce((args->>'isActive')::boolean,true)) returning id into voucher_id_value;
+    else
+      -- Terms stay immutable; admins can pause or reactivate existing codes.
+      update public.voucher set is_active=(args->>'isActive')::boolean where id=voucher_id_value;
+      if not found then raise exception 'Voucher was not found.'; end if;
+    end if;
+    insert into public.activity_log(actor_uid,action,entity_type,entity_id,details) values(actor_uid,'VOUCHER_SAVED','voucher',voucher_id_value::text,jsonb_build_object('isActive',coalesce((args->>'isActive')::boolean,true)));
+    return jsonb_build_object('id',voucher_id_value);
+  end if;
+  if operation='QuoteVoucher' then
+    if actor_uid is null or actor_role is distinct from 'PASSENGER' then raise exception 'Passenger access required.' using errcode='42501'; end if;
+    return barkolink_private.voucher_quote(args,actor_uid);
+  end if;
+  if operation ~ '^ReserveSailing[1-8]$' and nullif(trim(args->>'voucherCode'),'') is not null then
+    if actor_uid is null or actor_role is distinct from 'PASSENGER' then raise exception 'Passenger access required.' using errcode='42501'; end if;
+    select * into v from public.voucher where code=upper(trim(args->>'voucherCode')) for update;
+    if not found then raise exception 'Voucher was not found.'; end if;
+    select * into s from public.sailing where code=args->>'sailingCode';
+    if not found then raise exception 'Sailing was not found.'; end if;
+    -- Serialize both discounted and undiscounted submissions before retry checks.
+    perform pg_advisory_xact_lock(hashtextextended(s.vessel_id::text,42));
+    perform pg_advisory_xact_lock(hashtextextended(args->>'reference',0));
+    select * into b from public.booking where reference=args->>'reference';
+    if found then
+      if b.voucher_id is distinct from v.id then raise exception 'Booking reference already uses a different voucher.'; end if;
+      return barkolink_private.execute_flexible_discounts_v24(operation,args,actor_uid,actor_role);
+    end if;
+    quote:=barkolink_private.voucher_quote(args||jsonb_build_object('passengerCount',right(operation,1)::integer),actor_uid);
+    if (args->>'expectedVoucherDiscount')::integer is distinct from (quote->>'discount')::integer then raise exception 'Voucher discount changed. Apply the voucher again.'; end if;
+    result:=barkolink_private.execute_flexible_discounts_v24(operation,args,actor_uid,actor_role);
+    if (select passenger_fare_total+service_fee from public.booking where id=(result->'booking_insert'->>'id')::uuid) is distinct from (quote->>'subtotal')::integer then raise exception 'Fare changed. Review your booking and apply the voucher again.'; end if;
+    update public.booking set voucher_id=v.id,voucher_code=v.code,voucher_discount=(quote->>'discount')::integer,
+      total=passenger_fare_total+service_fee-(quote->>'discount')::integer where id=(result->'booking_insert'->>'id')::uuid;
+    insert into public.activity_log(actor_uid,action,entity_type,entity_id,details) values(actor_uid,'VOUCHER_APPLIED','booking',args->>'reference',quote);
+    return result;
+  end if;
+  return barkolink_private.execute_flexible_discounts_v24(operation,args,actor_uid,actor_role);
+end $$;
+revoke all on all functions in schema barkolink_private from public,anon,authenticated;

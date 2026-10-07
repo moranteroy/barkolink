@@ -92,6 +92,7 @@
                     aria-label="Filter reservation status"
                   >
                     <option value="ALL">All statuses</option>
+                    <option value="AWAITING_VERIFICATION">Awaiting staff verification</option>
                     <option value="UNPAID">Awaiting payment</option>
                     <option value="PAID">Paid</option>
                     <option value="CANCELLED">Cancelled</option>
@@ -102,7 +103,7 @@
                     activeSailing || "No sailing selected"
                   }}</span>
                 </div>
-                <p v-if="!isBoarding" class="queue-result-count">{{ loading ? 'Loading reservations...' : `${queueItems.length} shown / ${queueTotal} ${isBookingsPage ? 'matching reservations' : 'awaiting payment'}` }}</p>
+                <p v-if="!isBoarding" class="queue-result-count">{{ loading ? 'Loading reservations...' : `${queueItems.length} shown / ${queueTotal} ${isBookingsPage ? 'matching reservations' : 'payments requiring action'}` }}</p>
                 <div class="queue-list">
                   <div
                     v-for="item in queueItems"
@@ -127,6 +128,7 @@
                         <small class="queue-reference">{{ item.reference }}</small>
                         <p class="queue-route">{{ item.sailing.origin.name }} to {{ item.sailing.destination.name }}</p>
                         <p class="queue-departure"><ion-icon :icon="calendarOutline" aria-hidden="true" /> {{ formatQueueDeparture(item.sailing.departureAt) }}</p>
+                        <p class="queue-payment">Payment method: <strong>{{ paymentMethodLabel(item) }}</strong></p>
                       </template>
                     </div>
                     <span
@@ -288,7 +290,7 @@
               {{
                 selectedBookingCancelled
                   ? "Original booking amount"
-                  : selectedBookingPaid
+                  : selectedBooking?.paymentStatus === 'PAID'
                     ? "Amount paid"
                     : "Amount due"
               }}</span>
@@ -308,7 +310,7 @@
                       ? "Refunded"
                       : selectedBookingCancelled
                         ? "Cancelled"
-                        : selectedBookingPaid
+                        : selectedBookingNeedsVerification ? 'Awaiting staff verification' : selectedBookingPaid
                           ? "Paid"
                           : "Awaiting payment"
               }}
@@ -325,6 +327,13 @@
                   : "This reservation is cancelled. No payment is due and tickets cannot be issued."
               }}
             </p>
+            <dl class="booking-payment-details">
+              <div><dt>Payment method</dt><dd>{{ paymentMethodLabel(selectedBooking) }}</dd></div>
+              <div v-if="selectedBooking?.paidAt"><dt>Payment recorded</dt><dd>{{ formatQueueDeparture(selectedBooking.paidAt) }}</dd></div>
+            </dl>
+            <p v-if="selectedBooking?.voucherCode" class="transaction-reference">Voucher: {{selectedBooking.voucherCode}} ? Discount PHP {{selectedBooking.voucherDiscount}}</p>
+            <p v-if="selectedBooking?.paymentTransactionId" class="transaction-reference">Transaction ID: {{ selectedBooking.paymentTransactionId }}</p>
+            <p v-if="selectedBooking?.paymentVerifiedAt">Staff verified: {{ formatQueueDeparture(selectedBooking.paymentVerifiedAt) }}</p>
             <section class="dialog-sailing"><h3>
               {{ selectedBooking?.sailing.origin.name }} to
               {{ selectedBooking?.sailing.destination.name }}</h3>
@@ -354,7 +363,7 @@
                       ? "Expired"
                       : selectedBookingCancelled
                         ? "Cancelled"
-                        : selectedBookingPaid
+                        : selectedBookingNeedsVerification ? 'Awaiting staff verification' : selectedBookingPaid
                           ? person.ticketStatus
                           : "Awaiting payment"
                   }}</small
@@ -369,7 +378,7 @@
               ><code v-else-if="selectedBookingPaid">{{
                 person.ticketCode
               }}</code
-              ><small v-else>Ticket issued after payment</small
+              ><small v-else>{{ selectedBookingNeedsVerification ? 'Ticket issued after staff verification' : 'Ticket issued after payment' }}</small
               ><DiscountVerification
                 v-if="
                   selectedBookingCanPay &&
@@ -393,12 +402,13 @@
               Reason: {{ selectedBooking.cancellationReason }}
             </p>
             <RefundActions
-              v-if="selectedBooking?.paymentStatus === 'REFUND_PENDING'"
+              v-if="selectedBooking?.paymentStatus === 'REFUND_PENDING' && selectedBooking?.paymentMethod !== 'PAYMONGO_TEST'"
               :key="selectedBooking.id"
               :booking-id="selectedBooking.id"
               :amount="Number(selectedBooking.total)"
               @refunded="refreshQueues"
             />
+            <p v-if="selectedBooking?.paymentStatus === 'REFUND_PENDING' && selectedBooking?.paymentMethod === 'PAYMONGO_TEST'" class="cancellation-notice">Online payment requires operator review. Do not issue a cash refund.</p>
             <p v-if="loadError" class="scan-error" role="alert">
               {{ loadError }}
             </p>
@@ -413,6 +423,10 @@
               This sailing has departed. The booking remains for history;
               payment cannot be recorded here.
             </p>
+            <div v-if="selectedBookingNeedsVerification" class="payment-actions online-verification">
+              <p>Online payment received via {{ paymentMethodLabel(selectedBooking) }}. Verify this transaction to release the e-ticket. No cash collection is needed.</p>
+              <ion-button expand="block" class="primary" :disabled="busy || selectedBookingDeparted" @click="verifyPayment">{{ busy ? 'Verifying…' : 'Verify online payment and issue tickets' }}</ion-button>
+            </div>
             <div v-if="selectedBookingCanPay" class="payment-actions">
               <p v-if="!selectedDiscountsVerified">
                 Verify discounted passengers before collecting cash.
@@ -438,6 +452,9 @@
   </ion-page>
 </template>
 <script setup lang="ts">
+import { paymentMethodLabel } from '../../../data/paymentMethod';
+import { awaitingPaymentVerification, bookingTicketReady } from '../../../data/paymentVerification';
+import { verifyOnlinePayment } from '../../../services/payments';
 import WorkspacePagination from "../../../components/shared/WorkspacePagination.vue";
 import StaffLogoutButton from "../../../components/staff/StaffLogoutButton.vue";
 import StaffWorkspaceHeader from "../../../components/staff/StaffWorkspaceHeader.vue";
@@ -518,8 +535,9 @@ const selectedDiscountsVerified = computed(() =>
   ),
 );
 const selectedBookingPaid = computed(
-  () => selectedBooking.value?.paymentStatus === "PAID",
+  () => bookingTicketReady(selectedBooking.value),
 );
+const selectedBookingNeedsVerification = computed(() => awaitingPaymentVerification(selectedBooking.value));
 const selectedBookingDeparted = computed(
   () =>
     !!selectedBooking.value &&
@@ -550,6 +568,7 @@ const dashboardCounts = ref<{
   bookings: number;
   paid: number;
   unpaid: number;
+  awaitingVerification?: number;
   trips: number;
 } | null>(null);
 const ticketingQueue = ref<any[]>([]);
@@ -722,13 +741,14 @@ const staff = computed(() => {
           note: "Active unpaid reservations",
           value: String(dashboardCounts.value?.unpaid ?? 0),
         },
+        { ...source.metrics[1], label: 'Awaiting verification', note: 'Online payments to approve', tone: 'amber', value: String(dashboardCounts.value?.awaitingVerification ?? 0) },
       ];
   return {
     ...source,
     greeting: isBookingsPage.value ? "Bookings" : "Dashboard",
     description: !isBoarding.value && isBookingsPage.value ? "Find reservations, review payments and manage booking records." : source.description,
     queueEyebrow: !isBoarding.value && !isBookingsPage.value ? "PAYMENT QUEUE" : source.queueEyebrow,
-    queueTitle: !isBoarding.value && !isBookingsPage.value ? "Awaiting payment" : source.queueTitle,
+    queueTitle: !isBoarding.value && !isBookingsPage.value ? "Payments requiring action" : source.queueTitle,
     name:
       auth?.currentUser?.displayName ||
       auth?.currentUser?.email?.split("@")[0] ||
@@ -857,7 +877,7 @@ async function refreshQueues() {
           fetchPolicy: "SERVER_ONLY",
           page: isBookingsPage.value ? queuePage.value : 0,
           pageSize: isBookingsPage.value ? pageSize : 6,
-          status: isBookingsPage.value ? statusFilter.value : "UNPAID",
+          status: isBookingsPage.value ? statusFilter.value : "ACTION_REQUIRED",
           search: isBookingsPage.value ? searchText.value.trim() : "",
         }),
         staffDashboard(staffDatabase),
@@ -885,6 +905,7 @@ async function refreshQueues() {
 function itemStatus(item: QueueItem) {
   if (isBoarding.value) return item.status;
   const booking = item as any;
+  if (awaitingPaymentVerification(booking)) return 'AWAITING STAFF VERIFICATION';
   return booking.paymentStatus === "REFUND_PENDING"
     ? "REFUND PENDING"
     : booking.paymentStatus === "REFUNDED"
@@ -1053,6 +1074,18 @@ async function collectPayment() {
     busy.value = false;
   }
 }
+async function verifyPayment() {
+  if (!selectedBookingNeedsVerification.value || busy.value || selectedBookingDeparted.value) return;
+  const booking = selectedBooking.value;
+  if (!(await confirmAction({ title: 'Verify online payment?', message: `Verify ${paymentMethodLabel(booking)} payment of PHP ${Number(booking.total).toLocaleString()} for ${booking.reference}? This issues the passenger e-ticket.`, confirmText: 'Verify and issue ticket', danger: false }))) return;
+  busy.value = true; loadError.value = '';
+  try {
+    await verifyOnlinePayment(booking.id);
+    selectedBooking.value = null;
+    await refreshQueues();
+  } catch (cause) { loadError.value = databaseRequestError(cause, 'Could not verify payment.'); }
+  finally { busy.value = false; }
+}
 function initialsFor(name: string) {
   return name
     .split(/\s+/)
@@ -1080,6 +1113,7 @@ async function scrollToSection(id: string) {
 
 </script>
 <style scoped>
+.transaction-reference { overflow-wrap: anywhere; font-size: 12px; color: var(--muted); }
 .staff-shell {
   display: flex;
   min-height: 100vh;
@@ -2548,4 +2582,10 @@ ion-modal.shift-detail-modal::part(content) {
 .ticketing-workspace .all-bookings-link { display: inline-flex; align-items: center; gap: 7px; margin-top: 12px; min-height: 40px; padding: 8px 12px; border: 1px solid var(--line); border-radius: 8px; color: var(--ocean); text-decoration: none; font-size: 12px; }
 .all-bookings-link ion-icon { font-size: 16px; }
 
+.booking-payment-details { display: grid; gap: 12px; margin: 16px 0; padding: 14px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface-soft); }
+.booking-payment-details div { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px; }
+.booking-payment-details dt { color: var(--muted); font-size: 12px; }
+.booking-payment-details dd { margin: 0; color: var(--ink); font-size: 12px; font-weight: 600; text-align: right; overflow-wrap: anywhere; }
+.queue-person .queue-payment { font-size: 11px; color: var(--muted); }
+.queue-payment strong { color: var(--ink); font-size: inherit; }
 </style>

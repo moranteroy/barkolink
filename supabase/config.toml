@@ -4,3 +4,11 @@ project_id = "barkolink"
 # The handler verifies every user token with auth.getUser before doing any work.
 # This supports publishable API keys and asymmetric Supabase JWT signing keys.
 verify_jwt = false
+
+[functions.paymongo]
+# Authenticated actions verify tokens; webhook requests verify HMAC signatures.
+verify_jwt = false
+
+[functions.weather]
+# Weather requests verify the signed-in user with auth.getUser.
+verify_jwt = false

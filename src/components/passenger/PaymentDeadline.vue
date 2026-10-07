@@ -7,7 +7,7 @@
     <ion-icon :icon="timeOutline" aria-hidden="true" />
     <div role="status" aria-live="polite" aria-atomic="true">
       <strong>{{
-        seconds > 0 ? "Pay at the ticketing desk" : "Payment deadline reached"
+        seconds > 0 ? "Pay before the deadline" : "Payment deadline reached"
       }}</strong
       ><small>{{
         seconds > 0

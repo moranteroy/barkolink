@@ -70,6 +70,7 @@
               :options="classOptions"
               :passenger-count="passengers.length"
             />
+            <TripWeather :sailing-code="trip.id" />
             <div class="info-grid">
               <article>
                 <small>Duration</small><strong>{{ trip.duration }}</strong
@@ -109,7 +110,7 @@
             <div class="total">
               <span
                 >Estimated total<small
-                  >Pay the fare at the ticketing desk</small
+                  >Pay online or at the ticketing counter</small
                 ></span
               ><strong>PHP {{ (total + serviceFee).toLocaleString() }}</strong>
             </div>
@@ -332,24 +333,43 @@
                 ><strong>Accommodation</strong><small>{{ selectedAccommodation?.name || "Standard" }}</small></span>
               <b>PHP {{ serviceFee.toLocaleString() }}</b>
             </div>
+            <section class="voucher-entry" aria-label="Booking voucher">
+              <label for="booking-voucher">Have a voucher?</label>
+              <div><input id="booking-voucher" v-model="voucherCode" maxlength="30" placeholder="Enter voucher code" :disabled="saving || voucherBusy" @input="clearVoucher" /><button type="button" :disabled="saving || voucherBusy || !voucherCode.trim()" @click="applyVoucher">{{ voucherBusy ? 'Checking...' : 'Apply' }}</button></div>
+              <p v-if="voucherError" role="alert">{{voucherError}}</p>
+              <p v-if="voucherQuote" role="status">{{voucherQuote.code}} applied: PHP {{voucherQuote.discount.toLocaleString()}} off regular fares <button type="button" :disabled="saving" @click="voucherCode=''; clearVoucher()">Remove</button></p>
+              <small>One voucher per booking. Applies to regular passenger fares.</small>
+            </section>
+            <div v-if="voucherQuote" class="fare-row voucher-discount"><span>Voucher discount</span><b>- PHP {{voucherQuote.discount.toLocaleString()}}</b></div>
             <div class="total">
               <span>Total to pay</span
-              ><strong>PHP {{ (total + serviceFee).toLocaleString() }}</strong>
+              ><strong>PHP {{ payableTotal.toLocaleString() }}</strong>
             </div>
-            <p v-if="errorMessage" class="form-message" role="alert">
+            <section v-if="duplicateReference" class="duplicate-booking-notice" role="alert">
+              <div class="duplicate-notice-heading">
+                <span class="duplicate-notice-icon"><ion-icon :icon="ticketOutline" aria-hidden="true" /></span>
+                <div><h3>Booking already exists</h3><p>You have an active booking for this trip with the same passenger details.</p></div>
+              </div>
+              <div class="duplicate-booking-reference"><span>BOOKING REFERENCE</span><strong>{{ duplicateReference }}</strong></div>
+              <p class="duplicate-notice-help">Open your booking to check its payment status and ticket.</p>
+              <router-link class="duplicate-booking-action" :to="`/booking-details?reference=${encodeURIComponent(duplicateReference)}`"><ion-icon :icon="ticketOutline" aria-hidden="true" /> View existing booking <ion-icon :icon="arrowForwardOutline" aria-hidden="true" /></router-link>
+              <router-link class="duplicate-edit-action" to="/passenger-info" @click="clearDuplicateNotice">Edit passenger details</router-link>
+            </section>
+            <p v-else-if="errorMessage" class="form-message" role="alert">
               {{ errorMessage }}
             </p>
             <ion-button
+              v-if="!duplicateReference"
               expand="block"
               class="continue"
-              :disabled="saving"
+              :disabled="saving || voucherBusy"
               @click="confirm"
               >{{
                 saving ? "Saving reservation…" : "Confirm reservation"
               }}</ion-button
             >
-            <p class="hint">
-              Pay at the ticketing desk. Your fare and seat allocation are saved with your reservation.
+            <p v-if="!duplicateReference" class="hint">
+              Choose online payment or cash at ticketing after reserving. Your fare and seat allocation are saved with your reservation.
             </p>
           </aside>
         </section>
@@ -366,8 +386,8 @@
                 : ["CANCELLED", "EXPIRED"].includes(booking.status)
                   ? "Reservation " + booking.status.toLowerCase()
                   : booking.paymentStatus === "PAID"
-                    ? "Payment recorded."
-                    : "Pay at the ticketing desk."
+                    ? booking.paymentVerificationRequired ? "Awaiting staff verification." : "Payment recorded."
+                    : "Choose your payment option."
             }}
           </h1>
           <p class="muted">
@@ -377,8 +397,8 @@
                 : ["CANCELLED", "EXPIRED"].includes(booking.status)
                   ? "This reservation is closed. View your bookings for details."
                   : booking.paymentStatus === "PAID"
-                    ? "Your e-ticket is available in My bookings."
-                    : "Show this booking reference at the ticketing desk and pay before the deadline to receive your e-ticket."
+                    ? booking.paymentVerificationRequired ? "Your payment was received. Staff will verify the transaction before issuing your e-ticket. Do not pay again." : "Your e-ticket is available in My bookings."
+                    : "Complete your payment online or at the ticketing counter before the deadline to receive your e-ticket."
             }}
           </p>
           <p v-if="errorMessage" class="form-message" role="alert">
@@ -423,6 +443,8 @@
               >
             </div>
             <div><small>BOOKING TOTAL</small><strong>PHP {{ booking.total.toLocaleString() }}</strong></div>
+            <div><small>PAYMENT STATUS</small><strong>{{ booking.paymentStatus === 'PAID' ? booking.paymentVerificationRequired ? 'Awaiting staff verification' : 'Payment verified' : 'Awaiting payment' }}</strong></div>
+            <div v-if="booking.paymentMethod"><small>PAYMENT METHOD</small><strong>{{ paymentMethodLabel(booking) }}</strong></div>
           </article>
           <p
             v-if="
@@ -435,6 +457,8 @@
             Pay before
             {{ new Date(booking.paymentDeadline).toLocaleString("en-PH", { timeZone: "Asia/Manila" }) }} (Philippine time).
           </p>
+          <OnlinePayment v-if="booking.id && booking.paymentStatus === 'UNPAID' && ['PENDING','CONFIRMED'].includes(booking.status)"
+            :booking-id="booking.id" :reference="booking.reference" @updated="loadConfirmedBooking" />
           <div class="confirmation-actions">
             <ion-button
               v-if="booking.tripId"
@@ -452,6 +476,11 @@
 </template>
 
 <script setup lang="ts">
+import OnlinePayment from "../../components/passenger/OnlinePayment.vue";
+import TripWeather from "../../components/shared/TripWeather.vue";
+import { quoteVoucher, type VoucherQuote } from "../../services/vouchers";
+import { canResumeReservation } from "../../data/bookingReservation";
+import { paymentMethodLabel } from "../../data/paymentMethod";
 import { philippineDateKey, validBirthDate } from "../../data/travelDate";
 import {
   passengerFare,
@@ -511,8 +540,12 @@ type Passenger = {
   nationality: string;
 };
 type Booking = {
+  id?: string;
   paymentDeadline?: string | null;
   paymentStatus?: string;
+  paymentMethod?: string | null;
+  paymentProviderMethod?: string | null;
+  paymentVerificationRequired?: boolean | null;
   reference: string;
   from: string;
   to: string;
@@ -705,6 +738,22 @@ const serviceFee = computed(
     Number(selectedAccommodation.value?.surcharge || 0) *
     passengers.value.length,
 );
+const voucherCode=ref(''),voucherQuote=ref<VoucherQuote|null>(null),voucherBusy=ref(false),voucherError=ref('');
+const payableTotal=computed(()=>total.value+serviceFee.value-(voucherQuote.value?.discount || 0));
+function clearVoucher(){voucherQuote.value=null;voucherError.value='';}
+const voucherContext=computed(()=>JSON.stringify([total.value,serviceFee.value,trip.value.id,accommodationId.value,passengers.value.map(p=>passengerTypeCode(p.type))]));
+watch(voucherContext,clearVoucher);
+async function applyVoucher(){
+  if(!database || voucherBusy.value)return;
+  voucherBusy.value=true;clearVoucher();
+  const context=voucherContext.value;
+  try {
+    const args:Record<string,unknown>={voucherCode:voucherCode.value,sailingCode:trip.value.id,passengerCount:passengers.value.length,accommodationId:accommodationId.value || undefined};
+    passengers.value.forEach((p,i)=>{args[`passenger${i+1}Type`]=passengerTypeCode(p.type);});
+    const response=(await quoteVoucher(database,args)).data;
+    if(context===voucherContext.value)voucherQuote.value=response;
+  }catch(e){voucherError.value=databaseRequestError(e,'Could not apply voucher.');}finally{voucherBusy.value=false;}
+}
 const booking = ref<Booking>({
   reference: "",
   from: "",
@@ -723,6 +772,12 @@ const booking = ref<Booking>({
 const copied = ref(false);
 const saving = ref(false);
 const errorMessage = ref("");
+const duplicateReference = ref('');
+function clearDuplicateNotice() {
+  duplicateReference.value = '';
+  errorMessage.value = '';
+}
+watch(passengers, () => { if (duplicateReference.value) clearDuplicateNotice(); }, { deep: true });
 function addPassenger() {
   if (passengers.value.length < maxPassengers.value)
     passengers.value.push(makePassenger());
@@ -805,23 +860,20 @@ function readBookingIntent(): BookingIntent | null {
     return null;
   }
 }
-async function findExistingBooking(reference: string) {
-  if (!database) return false;
+async function existingBooking(reference: string) {
+  if (!database) return undefined;
   const result = await myBookings(database, { fetchPolicy: "SERVER_ONLY" });
-  return result.data.bookings.some((item) => item.reference === reference);
+  return result.data.bookings.find((item) => item.reference === reference);
 }
-function passengerSignature(people: Array<{ name: string; type: string }>) {
-  return people
-    .map(
-      (person) =>
-        `${person.name.trim().replace(/\s+/g, " ").toLowerCase()}|${passengerTypeCode(person.type)}`,
-    )
-    .sort()
-    .join(";");
+async function findExistingBooking(reference: string) {
+  return !!(await existingBooking(reference));
 }
 async function confirm() {
+  if(voucherBusy.value)return;
+  if(voucherCode.value.trim() && !voucherQuote.value){voucherError.value="Apply your voucher or remove the code before confirming.";return;}
   if (saving.value) return;
   errorMessage.value = "";
+  duplicateReference.value = '';
   attempted.value = true;
   const invalidIndex = passengers.value.findIndex(person => passengerError(person));
   if (invalidIndex >= 0) {
@@ -858,7 +910,7 @@ async function confirm() {
   }
   saving.value = true;
   const existingIntent = readBookingIntent();
-  const reference =
+  let reference =
     existingIntent?.reference ||
     `BL-${new Date().getFullYear()}-${crypto.randomUUID().slice(0, 8).toUpperCase()}`;
   try {
@@ -915,35 +967,17 @@ async function confirm() {
     }
     if (existingIntent) {
       try {
-        if (await findExistingBooking(reference)) {
-          await router.push({ name: "confirmed", query: { reference } });
-          return;
+        const previous = await existingBooking(reference);
+        if (previous) {
+          if (canResumeReservation(previous)) {
+            await router.push({ name: "confirmed", query: { reference } });
+            return;
+          }
+          sessionStorage.removeItem(bookingIntentKey);
+          reference = `BL-${new Date().getFullYear()}-${crypto.randomUUID().slice(0, 8).toUpperCase()}`;
         }
       } catch {
         /* Keep the same unique reference for a safe retry. */
-      }
-    } else {
-      const result = await myBookings(database, { fetchPolicy: "SERVER_ONLY" });
-      const requestedPassengers = passengerSignature(passengers.value);
-      const duplicate = result.data.bookings.find(
-        (item) =>
-          ["PENDING", "CONFIRMED"].includes(item.status) &&
-          item.sailing.code === trip.value.id &&
-          (item.accommodationId || "") === accommodationId.value &&
-          item.passengerCount === passengers.value.length &&
-          passengerSignature(
-            item.bookingPassengers_on_booking.map((person) => ({
-              name: person.fullName,
-              type: person.passengerType,
-            })),
-          ) === requestedPassengers,
-      );
-      if (duplicate) {
-        await router.push({
-          name: "confirmed",
-          query: { reference: duplicate.reference },
-        });
-        return;
       }
     }
     sessionStorage.setItem(
@@ -959,6 +993,8 @@ async function confirm() {
       sailingCode: trip.value.id,
       reference,
       accommodationId: accommodationId.value || undefined,
+      voucherCode: voucherQuote.value?.code,
+      expectedVoucherDiscount: voucherQuote.value?.discount,
     };
     passengers.value.forEach((person, index) => {
       const n = index + 1;
@@ -996,13 +1032,20 @@ async function confirm() {
       vessel: trip.value.vessel,
       tripId: trip.value.id,
       passengers: passengers.value.map((person) => ({ ...person })),
-      total: total.value + serviceFee.value,
+      total: payableTotal.value,
       status: "PENDING",
       createdAt: new Date().toISOString(),
     };
     sessionStorage.removeItem(draftStorageKey);
     await router.push({ name: "confirmed", query: { reference } });
   } catch (error) {
+    const duplicate = databaseRequestError(error, '').match(/Duplicate booking: ([A-Za-z0-9-]+)\./);
+    if (duplicate) {
+      duplicateReference.value = duplicate[1];
+      errorMessage.value = `You already have booking ${duplicate[1]} for this trip with the same passenger details. Open your existing booking instead of reserving again.`;
+      sessionStorage.removeItem(bookingIntentKey);
+      return;
+    }
     try {
       if (await findExistingBooking(reference)) {
         await router.push({ name: "confirmed", query: { reference } });
@@ -1045,8 +1088,9 @@ async function loadConfirmedBooking() {
       throw new Error(
         "This reservation was not found in your account. Check My Bookings or contact support with the reference above.",
       );
-    booking.value = {
-      reference: saved.reference,
+      booking.value = {
+        id: saved.id,
+        reference: saved.reference,
       from: saved.sailing.origin.name,
       to: saved.sailing.destination.name,
       date: new Date(saved.sailing.departureAt).toLocaleDateString("en-PH", {
@@ -1078,11 +1122,18 @@ async function loadConfirmedBooking() {
       })),
       paymentDeadline: saved.paymentDeadline,
       paymentStatus: saved.paymentStatus,
+      paymentMethod: saved.paymentMethod,
+      paymentProviderMethod: saved.paymentProviderMethod,
+      paymentVerificationRequired: saved.paymentVerificationRequired,
       total: saved.total,
       status: saved.status,
       createdAt: saved.createdAt,
     };
     errorMessage.value = "";
+    try {
+      const intent = JSON.parse(sessionStorage.getItem(bookingIntentKey) || 'null');
+      if (intent?.reference === saved.reference) sessionStorage.removeItem(bookingIntentKey);
+    } catch { /* Invalid saved intent must not interrupt reservation loading. */ }
   } catch (error) {
     errorMessage.value = databaseRequestError(
       error,
@@ -1098,7 +1149,7 @@ onMounted(() => {
 });
 onIonViewWillEnter(() => {
   if (flow.value === "confirmed") {
-    if (booking.value.reference !== String(route.query.reference || ""))
+    if (!booking.value.id || booking.value.reference !== String(route.query.reference || ""))
       void loadConfirmedBooking();
     return;
   }
@@ -2253,6 +2304,22 @@ watch(
 .review-fares .total strong { font-size: 24px; white-space: nowrap; }
 .review-fares .continue { width: 100%; margin: 4px 0 0; min-height: 48px; }
 .review-fares .hint { line-height: 1.7; }
+.duplicate-booking-notice { margin-top: 10px; padding: 16px; border: 1px solid color-mix(in srgb, var(--ocean) 30%, var(--line)); border-radius: 12px; background: var(--surface-soft); }
+.duplicate-notice-heading { display: flex; align-items: flex-start; gap: 10px; }
+.duplicate-notice-icon { display: grid; place-items: center; flex: none; width: 34px; height: 34px; border-radius: 9px; background: var(--light-blue); color: var(--ocean); font-size: 19px; }
+.duplicate-notice-heading > div { min-width: 0; }
+.duplicate-booking-notice h3 { margin: 0 0 6px; color: var(--ink); font-size: 14px; line-height: 1.5; }
+.duplicate-booking-notice p { margin: 0; color: var(--muted); font-size: 12px; font-weight: 400; line-height: 1.7; }
+.duplicate-booking-reference { display: grid; gap: 6px; margin: 16px 0 12px; padding: 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); }
+.duplicate-booking-reference span { color: var(--muted); font-size: 9px; font-weight: 600; letter-spacing: .07em; }
+.duplicate-booking-reference strong { color: var(--ink); font-size: 13px; line-height: 1.5; overflow-wrap: anywhere; }
+.duplicate-booking-action { display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 46px; margin-top: 16px; padding: 10px 12px; border-radius: 9px; background: var(--action); color: #fff; font-size: 12px; font-weight: 600; line-height: 1.5; text-align: center; text-decoration: none; }
+.duplicate-booking-action ion-icon { flex: none; font-size: 17px; }
+.duplicate-booking-action ion-icon:last-child { margin-left: auto; }
+.duplicate-edit-action { display: flex; align-items: center; justify-content: center; min-height: 42px; margin-top: 6px; color: var(--ocean); font-size: 12px; font-weight: 600; text-decoration: none; }
+.duplicate-booking-action:hover { filter: brightness(1.08); }
+.duplicate-edit-action:hover { text-decoration: underline; text-underline-offset: 3px; }
+.duplicate-booking-action:focus-visible, .duplicate-edit-action:focus-visible { outline: 2px solid var(--ocean); outline-offset: 3px; border-radius: 9px; }
 @container passenger (max-width:380px) {
   .summary-trip-meta { grid-template-columns: minmax(0, 1fr); gap: 12px; }
   .summary-flow .passenger-row { column-gap: 10px; }
@@ -2262,4 +2329,8 @@ watch(
 @media (prefers-reduced-motion: reduce) {
   .passenger-identity summary ion-icon { transition: none; }
 }
+</style>
+
+<style scoped>
+.voucher-entry{padding:16px 0;border-bottom:1px solid var(--line)}.voucher-entry label{display:block;font-size:13px;font-weight:600;margin-bottom:10px}.voucher-entry>div{display:flex;gap:8px}.voucher-entry input{min-width:0;flex:1;background:var(--surface);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:10px;font:inherit}.voucher-entry button{min-height:44px;border:1px solid var(--line);border-radius:8px;padding:8px 14px;color:var(--ocean);background:var(--surface);font:inherit;cursor:pointer}.voucher-entry button:disabled{opacity:.5}.voucher-entry p{font-size:12px;line-height:1.6}.voucher-entry small{display:block;margin-top:10px;color:var(--muted);font-size:11px}.voucher-discount{color:var(--ocean)}
 </style>

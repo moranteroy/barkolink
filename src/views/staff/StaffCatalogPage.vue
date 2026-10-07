@@ -27,6 +27,7 @@
               <Button variant="outline" @click="load">Refresh</Button>
             </div>
             <p v-if="error" role="alert" class="catalog-error">{{ error }}</p>
+            <WeatherTripPicker v-if="section === 'trips'" :trips="trips" />
             <NoShowsPanel
               v-if="section === 'no-shows'"
               :key="refresh"
@@ -114,6 +115,7 @@
   >
 </template>
 <script setup lang="ts">
+import WeatherTripPicker from '../../components/shared/WeatherTripPicker.vue';
 import WorkspacePagination from "../../components/shared/WorkspacePagination.vue";
 import { setUnreadNotifications, clearNotificationUnread } from "../../composables/notificationUnread";
 import StaffLogoutButton from "../../components/staff/StaffLogoutButton.vue";

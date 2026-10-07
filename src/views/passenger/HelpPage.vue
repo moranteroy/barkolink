@@ -62,7 +62,7 @@ const questions = [
     title: "How do I pay?",
     icon: cashOutline,
     answer:
-      "Show your booking reference at the ticketing desk and pay in cash before the payment deadline shown in My Bookings. E-tickets become available after staff records payment. BarkoLink currently charges PHP 0 booking fee.",
+      "Pay cash at ticketing or choose online payment in My Bookings to pay with GCash, Maya or a credit/debit card through PayMongo. E-tickets appear after payment is confirmed. Discounted passengers must be verified at ticketing first. Choose cash in the payment panel to close any open online checkout before paying at the counter. BarkoLink currently charges PHP 0 booking fee.",
   },
   {
     title: "What happens when the deadline expires?",

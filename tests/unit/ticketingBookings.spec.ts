@@ -4,6 +4,8 @@ import TicketingPage from '../../src/views/staff/ticketing/TicketingPage.vue'
 
 vi.mock('../../src/composables/confirmation', () => ({ confirmAction: vi.fn(async () => true) }))
 const mocks = vi.hoisted(() => ({ enter: vi.fn(), bookings: vi.fn(), collectPayment: vi.fn(), verify: vi.fn(), refund: vi.fn() }))
+const online = vi.hoisted(() => ({ verify: vi.fn(async () => ({ verified: true })) }));
+vi.mock('../../src/services/payments', () => ({ verifyOnlinePayment: online.verify }));
 vi.mock('../../src/services/database/workspaces', () => ({ staffDashboard: vi.fn(async () => ({data:{bookings:1,paid:0,unpaid:1,trips:1}})) }))
 vi.mock('../../src/services/database/operations', () => ({ verifyPassengerDiscount: mocks.verify, refundBooking: mocks.refund }))
 vi.mock('vue-router', () => ({
@@ -60,6 +62,31 @@ beforeEach(() => {
 afterEach(() => vi.restoreAllMocks())
 
 describe('ticketing booking details', () => {
+  it('offers a filter for received online payments awaiting staff verification', async () => {
+    const wrapper=await openDetails();
+    expect(wrapper.get('select[aria-label="Filter reservation status"]').text()).toContain('Awaiting staff verification');
+    await wrapper.get('select[aria-label="Filter reservation status"]').setValue('AWAITING_VERIFICATION');
+    wrapper.unmount();
+  });
+  it('verifies an already received online payment without collecting cash', async () => {
+    const record = { ...booking('CONFIRMED','PAID'), paymentMethod:'PAYMONGO_TEST', paymentProviderMethod:'gcash', paymentVerificationRequired:true };
+    record.bookingPassengers_on_booking[0].ticketStatus='PENDING';
+    const wrapper=await openDetails(record);
+    expect(wrapper.text()).toContain('Awaiting staff verification');
+    expect(wrapper.find('.ticket-record code').exists()).toBe(false);
+    await wrapper.get('.online-verification button').trigger('click');
+    await flushPromises();
+    expect(online.verify).toHaveBeenCalledWith('booking-1');
+    expect(mocks.collectPayment).not.toHaveBeenCalled();
+    wrapper.unmount();
+  });
+  it('shows the verified online method in the queue and payment details', async () => {
+    const wrapper = await openDetails({ ...booking('CONFIRMED','PAID'), paymentMethod:'PAYMONGO_TEST', paymentProviderMethod:'gcash' } as ReturnType<typeof booking>)
+    expect(wrapper.find('.queue-payment').text()).toContain('GCash')
+    expect(wrapper.find('.booking-payment-details').text()).toContain('GCash')
+    expect(wrapper.find('.payment-actions').exists()).toBe(false)
+    wrapper.unmount()
+  })
   it.each(['2099-10-10T02:00:00Z', '2020-10-10T02:00:00Z'])('shows cancelled reservations without payment or ticket promises (%s)', async departureAt => {
     const wrapper = await openDetails(booking('CANCELLED', 'UNPAID', departureAt))
     const details = wrapper.find('.ticket-list-modal')

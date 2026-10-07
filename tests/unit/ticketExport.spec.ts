@@ -5,6 +5,11 @@ import { ticketDocument } from '../../src/data/ticketExport'
 const code = '11111111-1111-4111-8111-111111111111'
 const booking = { reference: 'BL-TEST', status: 'CONFIRMED', paymentStatus: 'PAID', from: '<script>alert(1)</script>', to: 'Batangas', date: 'Oct 4, 2026', departure: '8:00 AM', vessel: 'Test ferry', passengers: [{ name: 'Passenger & One', type: 'Regular', ticketCode: code, ticketStatus: 'ISSUED' }] }
 describe('Downloadable tickets', () => {
+  it('uses the normal payment status on exported online tickets', async () => {
+    const html = await ticketDocument({ ...booking, paymentMethod: 'PAYMONGO_TEST' })
+    expect(html).toContain('PAID')
+    expect(html).not.toContain('TEST PAYMENT')
+  })
   it('exports issued paid tickets with embedded QR and escaped passenger text', async () => {
     const html = await ticketDocument(booking)
     expect(html).toContain('data:image/png;base64,')

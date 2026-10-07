@@ -130,6 +130,7 @@ export const staffDashboard = (dc: DatabaseClient) =>
     bookings: number;
     paid: number;
     unpaid: number;
+    awaitingVerification?: number;
     trips: number;
   }>(dc, "StaffDashboard", {});
 export const noShows = (dc: DatabaseClient, sailingCode: string) =>

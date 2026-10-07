@@ -1,0 +1,7 @@
+Voucher management is available at **Admin → Vouchers**. Create a unique code, fixed peso amount or percentage (1–99%), minimum booking total, total reservation limit, and start/expiry dates in Philippine time. Existing codes can be paused or activated; create a new code to change terms. No demo codes are created automatically.
+
+Passengers apply a code at **Booking summary → Fare summary**, before confirming their reservation. Discounts apply only to regular passenger fares. Accommodation surcharges and discounted passenger fares remain unchanged. One code is allowed per booking and one use per account. Reservations, including expired or cancelled reservations, retain their voucher use. This conservative rule prevents repeatedly reserving with a promotion. Vouchers cannot be added after a booking is created.
+
+The database validates every reservation atomically, serializes usage of the same voucher, and stores the original fare, voucher code, discount and final total. Cash payment and PayMongo use the stored final total. Staff see the voucher in booking payment details; admin sees it with the payment method. Provider confirmation still requires staff verification before issuing online tickets.
+
+For a fresh existing installation, run `node scripts/voucher-setup.mjs` with the project's existing ignored Supabase management configuration. New databases include the feature in `supabase/setup.sql`.

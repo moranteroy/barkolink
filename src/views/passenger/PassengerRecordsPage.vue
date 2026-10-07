@@ -1,7 +1,7 @@
 <template>
   <ion-page
     ><ion-content :fullscreen="true"
-      ><main class="demo-page" :class="{ 'bookings-page': kind === 'bookings' }">
+      ><main class="demo-page" :class="{ 'bookings-page': kind === 'bookings', 'ticket-page': kind === 'ticket' }">
         <PassengerHeader />
         <section class="page-title">
           <p class="kicker">{{ eyebrow }}</p>
@@ -11,46 +11,43 @@
             {{ loadError }}
           </p>
         </section>
+        <PaymentReturn v-if="kind === 'bookings' && returnedBooking" :key="returnedBooking.id"
+          :booking-id="returnedBooking.id" :reference="returnedBooking.reference"
+          :ticket-eligible="bookingTicketReady(returnedBooking)"
+          :awaiting-verification="awaitingPaymentVerification(returnedBooking)"
+          :cancelled="route.query.payment === 'cancelled'" @checking="returnVerificationPending = true" @updated="paymentVerified" />
         <template v-if="kind === 'ticket'"
           ><div
             v-if="
-              currentBooking?.status === 'CONFIRMED' &&
-              currentBooking?.paymentStatus === 'PAID'
+              bookingTicketReady(currentBooking)
             "
             class="ticket-actions"
           >
             <Button variant="outline" :disabled="ticketBusy" @click="printTicket">
-              Print / Save PDF</Button
+              <ion-icon :icon="printOutline" aria-hidden="true" /> Print / PDF</Button
             ><Button :disabled="ticketBusy" @click="exportTicket('download')">
-              {{ ticketBusy ? "Preparing…" : "Download ticket" }}</Button
+              <ion-icon :icon="downloadOutline" aria-hidden="true" />{{ ticketBusy ? "Preparing…" : "Download" }}</Button
             ><Button variant="outline" :disabled="ticketBusy" @click="exportTicket('share')">
-              Share
+              <ion-icon :icon="shareOutline" aria-hidden="true" /> Share
             </Button>
           </div>
           <p v-if="ticketNotice" role="status">{{ ticketNotice }}</p>
-          <nav
+          <label
             v-if="ticketBookings.length > 1"
             class="ticket-picker"
             aria-label="Choose an e-ticket"
           >
-            <router-link
-              v-for="item in ticketBookings"
-              :key="item.reference"
-              :to="`/ticket?reference=${encodeURIComponent(item.reference)}`"
-              :class="{
-                selected: currentBooking?.reference === item.reference,
-              }"
-              ><strong>{{ item.from }} to {{ item.to }}</strong
-              ><small
-                >{{ item.date }} · {{ item.reference }}</small
-              ></router-link
-            >
-          </nav>
+            <span>Your tickets <small>{{ ticketBookings.length }} bookings</small></span>
+            <select :value="currentBooking?.reference" @change="chooseTicket">
+              <option v-for="item in ticketBookings" :key="item.reference" :value="item.reference">
+                {{ item.from }} → {{ item.to }} · {{ item.date }} · {{ item.reference }}
+              </option>
+            </select>
+          </label>
           <article
             v-if="
               currentBooking &&
-              currentBooking.status === 'CONFIRMED' &&
-              currentBooking.paymentStatus === 'PAID'
+              bookingTicketReady(currentBooking)
             "
             class="ticket"
           >
@@ -61,14 +58,14 @@
                   BARKOLINK <span>·</span> DIGITAL BOARDING PASS</small
                 >
                 <h2>
-                  {{ currentBooking.from }}
-                  <span
+                  <span class="route-port">{{ currentBooking.from }}</span>
+                  <span class="route-arrow"
                     ><ion-icon :icon="arrowForwardOutline" aria-hidden="true"
                   /></span>
-                  {{ currentBooking.to }}
+                  <span class="route-port">{{ currentBooking.to }}</span>
                 </h2>
               </div>
-              <b>PAID</b>
+              <b><ion-icon :icon="checkmarkCircleOutline" aria-hidden="true" /> PAID</b>
             </div>
             <div class="ticket-meta">
               <div>
@@ -169,7 +166,7 @@
           <div
             v-else-if="
               currentBooking &&
-              currentBooking.paymentStatus !== 'PAID' &&
+              !bookingTicketReady(currentBooking) &&
               ['PENDING', 'CONFIRMED'].includes(currentBooking.status)
             "
             class="empty-state"
@@ -177,8 +174,9 @@
             <div class="empty-icon">
               <ion-icon :icon="ticketOutline" aria-hidden="true" />
             </div>
-            <h2>Payment pending</h2>
-            <p>
+            <h2>{{ awaitingPaymentVerification(currentBooking) ? 'Awaiting staff verification' : 'Payment pending' }}</h2>
+            <p v-if="awaitingPaymentVerification(currentBooking)">Your payment was received. Staff must verify the transaction before your e-ticket is issued. Do not pay again.</p>
+            <p v-else>
               Show booking {{ currentBooking.reference }} at the ticketing desk.
               Pay PHP {{ currentBooking.total.toLocaleString() }} to receive
               your e-ticket.
@@ -260,7 +258,7 @@
                         : ["CANCELLED", "EXPIRED"].includes(booking.status)
                           ? booking.status
                           : booking.paymentStatus === "PAID"
-                            ? "PAID"
+                            ? awaitingPaymentVerification(booking) ? "AWAITING STAFF VERIFICATION" : "PAID"
                             : "PAYMENT PENDING"
                   }}</b>
                 </div>
@@ -292,6 +290,11 @@
                     }}</span
                   >
                 </div>
+                <OnlinePayment
+                  v-if="booking.paymentStatus === 'UNPAID' && ['PENDING','CONFIRMED'].includes(booking.status) && !(returnedBooking?.id === booking.id && returnVerificationPending)"
+                  :booking-id="booking.id" :reference="booking.reference" @updated="loadData"
+                />
+                <p v-if="booking.paymentStatus === 'PAID'" class="payment-hint">{{ awaitingPaymentVerification(booking) ? 'Payment received — Awaiting staff verification' : 'Payment confirmed' }} · {{ paymentMethodLabel(booking) }}</p>
                 <PaymentDeadline
                   v-if="
                     booking.paymentDeadline &&
@@ -305,7 +308,7 @@
                   v-if="booking.paymentStatus === 'REFUND_PENDING'"
                   class="payment-hint"
                 >
-                  Visit the ticketing desk for your cash refund.
+                  {{ booking.paymentMethod === 'PAYMONGO_TEST' ? 'Contact ticketing for assistance with your online payment.' : 'Visit the ticketing desk for your cash refund.' }}
                 </p>
                 <div class="booking-actions">
                   <router-link
@@ -315,8 +318,7 @@
                   ><router-link
                     class="booking-ticket-link"
                     v-if="
-                      booking.status === 'CONFIRMED' &&
-                      booking.paymentStatus === 'PAID'
+                      bookingTicketReady(booking)
                     "
                     :to="`/ticket?reference=${encodeURIComponent(booking.reference)}`"
                     ><ion-icon :icon="ticketOutline" aria-hidden="true" /> View
@@ -384,7 +386,7 @@
                     : ["CANCELLED", "EXPIRED"].includes(currentBooking.status)
                       ? currentBooking.status
                       : currentBooking.paymentStatus === "PAID"
-                        ? "PAID"
+                        ? awaitingPaymentVerification(currentBooking) ? "AWAITING STAFF VERIFICATION" : "PAID"
                         : "PAYMENT PENDING"
               }}</b>
             </div>
@@ -399,6 +401,7 @@
               <h3 id="detail-fares-heading">Fare breakdown</h3>
               <div><span>Passenger fares</span><b>PHP {{ (currentBooking.total - (currentBooking.serviceFee || 0)).toLocaleString() }}</b></div>
               <div v-if="currentBooking.accommodationName || currentBooking.serviceFee"><span>Accommodation<small>{{ currentBooking.accommodationName || 'Standard' }}</small></span><b>PHP {{ (currentBooking.serviceFee || 0).toLocaleString() }}</b></div>
+              <div v-if="currentBooking.voucherCode" class="detail-fare-total"><span>Voucher {{currentBooking.voucherCode}}</span><strong>- PHP {{currentBooking.voucherDiscount}}</strong></div>
               <div class="detail-fare-total"><strong>Booking total</strong><strong>PHP {{ currentBooking.total.toLocaleString() }}</strong></div>
             </section>
             <div class="detail-passengers">
@@ -422,14 +425,19 @@
               "
               class="detail-payment"
             >
+            <OnlinePayment
+              v-if="currentBooking.paymentStatus === 'UNPAID' && ['PENDING','CONFIRMED'].includes(currentBooking.status)"
+              :booking-id="currentBooking.id" :reference="currentBooking.reference" @updated="loadData"
+            />
             <PaymentDeadline
               v-if="currentBooking.paymentDeadline"
               :deadline="currentBooking.paymentDeadline"
               @expired="loadData"
             />
-              <h3 v-else>Pay at the ticketing desk</h3>
-              <p>Show your booking reference and pay before the deadline to receive your QR ticket. Booking fee: PHP 0.</p>
+              <h3 v-else>Pay before departure</h3>
+              <p>Pay before the deadline to receive your QR ticket. Booking fee: PHP 0.</p>
             </div>
+            <p v-if="currentBooking.paymentStatus === 'PAID'" class="payment-hint">{{ awaitingPaymentVerification(currentBooking) ? 'Payment received — Awaiting staff verification' : 'Payment confirmed' }} · {{ paymentMethodLabel(currentBooking) }}</p>
             <p v-if="currentBooking.cancellationReason" class="payment-hint">
               {{ currentBooking.cancellationReason }}
             </p>
@@ -437,13 +445,12 @@
               v-if="currentBooking.paymentStatus === 'REFUND_PENDING'"
               class="payment-hint"
             >
-              Visit the ticketing desk for your cash refund.
+              {{ currentBooking.paymentMethod === 'PAYMONGO_TEST' ? 'Contact ticketing for assistance with your online payment.' : 'Visit the ticketing desk for your cash refund.' }}
             </p>
             <div class="detail-actions">
               <ion-button
                 v-if="
-                  currentBooking.status === 'CONFIRMED' &&
-                  currentBooking.paymentStatus === 'PAID'
+                  bookingTicketReady(currentBooking)
                 "
                 class="primary"
                 :router-link="`/ticket?reference=${encodeURIComponent(currentBooking.reference)}`"
@@ -567,6 +574,7 @@
 import { Button } from "@/components/ui/button";
 import { confirmAction } from "../../composables/confirmation";
 import PaymentDeadline from "../../components/passenger/PaymentDeadline.vue";
+import OnlinePayment from "../../components/passenger/OnlinePayment.vue";
 import { markAllNotificationsRead } from "../../services/database/experience";
 import { clearNotificationUnread, setUnreadNotifications } from "../../composables/notificationUnread";
 import { downloadTicket, shareTicket } from "../../data/ticketExport";
@@ -574,7 +582,7 @@ import { useQueueRefresh } from "../../composables/queueRefresh";
 import { databaseRequestError } from "../../data/databaseErrors";
 import { computed, ref, watch } from "vue";
 import QRCode from "qrcode";
-import { useRoute } from "vue-router";
+import { useRoute, useRouter } from "vue-router";
 import {
   IonButton,
   IonContent,
@@ -599,8 +607,14 @@ import {
   settingsOutline,
   ticketOutline,
   timeOutline,
+  printOutline,
+  downloadOutline,
+  shareOutline,
 } from "ionicons/icons";
 import PassengerHeader from "../../components/passenger/PassengerHeader.vue";
+import PaymentReturn from "../../components/passenger/PaymentReturn.vue";
+import { paymentMethodLabel } from "../../data/paymentMethod";
+import { awaitingPaymentVerification, bookingTicketReady } from "../../data/paymentVerification";
 import PassengerBottomNav from "../../components/passenger/PassengerBottomNav.vue";
 import {
   cancelMyBooking,
@@ -620,6 +634,11 @@ type Passenger = {
   ticketStatus?: string;
 };
 type Booking = {
+  paymentMethod?: string | null;
+  paymentProviderMethod?: string | null;
+  paymentVerificationRequired?: boolean | null;
+  voucherCode?: string | null;
+  voucherDiscount?: number;
   accommodationName?: string | null;
   serviceFee?: number;
   paymentDeadline?: string | null;
@@ -642,12 +661,24 @@ type Booking = {
   arrival?: string;
 };
 const route = useRoute();
+const router = useRouter();
+function chooseTicket(event: Event) {
+  const reference = (event.target as HTMLSelectElement).value;
+  void router.replace({ path: '/ticket', query: { reference } });
+}
 const kind = computed(() => String(route.name || "bookings"));
 const bookingSearch = ref(""),
   bookingPayment = ref("ALL");
 const tabs = ["Upcoming", "Past departures", "Cancelled", "Expired"];
 const selectedTab = ref("Upcoming");
 const bookings = ref<Booking[]>([]);
+const returnedBooking = computed(() => ['returned', 'cancelled'].includes(String(route.query.payment))
+  ? bookings.value.find(booking => booking.reference === route.query.reference) : undefined);
+const returnVerificationPending = ref(true);
+function paymentVerified() {
+  returnVerificationPending.value = false;
+  void loadData();
+}
 const notices = ref<
   Array<{
     id: string;
@@ -771,8 +802,7 @@ const ticketBookings = computed(() =>
   bookings.value
     .filter(
       (item) =>
-        item.status === "CONFIRMED" &&
-        item.paymentStatus === "PAID" &&
+        bookingTicketReady(item) &&
         item.passengers.some(
           (person) =>
             person.ticketCode &&
@@ -907,6 +937,11 @@ async function loadData() {
         vessel: item.sailing.vessel.name,
         status: item.status,
         paymentStatus: item.paymentStatus,
+        voucherCode: item.voucherCode,
+        voucherDiscount: item.voucherDiscount,
+        paymentMethod: item.paymentMethod,
+        paymentProviderMethod: item.paymentProviderMethod,
+        paymentVerificationRequired: item.paymentVerificationRequired,
         paymentDeadline: item.paymentDeadline,
         cancellationReason: item.cancellationReason,
         total: item.total,
@@ -2406,5 +2441,52 @@ button:disabled {
   .bookings-page .tabs button { font-size: 10px; }
   .bookings-page .booking-card .row-heading h2 { font-size: 17px; }
   .bookings-page .booking-actions { grid-template-columns: minmax(0, 1fr); }
+}
+/* E-ticket content stays within the passenger canvas at every screen size. */
+.ticket-page { font-family: var(--ion-font-family); padding-bottom: calc(120px + env(safe-area-inset-bottom)); }
+.ticket-page .page-title { margin: 28px 0 20px; }
+.ticket-page .page-title h1 { font-size: 28px; letter-spacing: -.7px; }
+.ticket-page .ticket-actions { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin: 0 0 18px; }
+.ticket-page .ticket-actions button { width: 100%; min-width: 0; min-height: 44px; padding: 9px 8px; gap: 6px; font-family: inherit; font-size: 11px; line-height: 1.4; white-space: normal; }
+.ticket-page .ticket-actions ion-icon { flex: none; font-size: 16px; }
+.ticket-page .ticket-picker { display: grid; gap: 9px; margin: 0 0 20px; overflow: visible; padding: 14px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); }
+.ticket-picker > span { display: flex; justify-content: space-between; gap: 10px; font-size: 12px; font-weight: 600; }
+.ticket-page .ticket-picker small { margin: 0; color: var(--muted); font-size: 10px; font-weight: 400; }
+.ticket-picker select { width: 100%; min-width: 0; min-height: 44px; padding: 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface-soft); color: var(--ink); font-family: inherit; font-size: 12px; text-overflow: ellipsis; }
+.ticket-page .ticket { width: 100%; border-radius: 18px; background: var(--surface); }
+.ticket-page .ticket-head { position: relative; display: block; padding: 22px 20px; }
+.ticket-page .ticket-title { min-width: 0; }
+.ticket-page .ticket-title small { padding-right: 65px; font-size: 9px; line-height: 1.6; letter-spacing: .06em; flex-wrap: wrap; }
+.ticket-page .ticket-head h2 { display: grid; grid-template-columns: minmax(0, 1fr) 22px minmax(0, 1fr); align-items: center; gap: 10px; margin-top: 18px; font-family: inherit; font-size: 20px; line-height: 1.5; font-weight: 700; overflow-wrap: anywhere; }
+.ticket-page .ticket-head h2 .route-port { color: inherit; }
+.ticket-page .ticket-head h2 .route-arrow { display: grid; place-items: center; }
+.ticket-page .ticket-head > b { position: absolute; top: 20px; right: 20px; display: inline-flex; align-items: center; gap: 4px; margin-top: 1px; padding: 6px 8px; font-size: 10px; font-weight: 600; white-space: nowrap; }
+.ticket-page .ticket-head > b ion-icon { font-size: 14px; }
+.ticket-page .ticket-meta { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px 14px; padding: 20px; }
+.ticket-page .ticket-meta > div { min-width: 0; }
+.ticket-page .ticket-meta > div:last-child { grid-column: 1 / -1; }
+.ticket-page .ticket-meta small { font-size: 9px; letter-spacing: .04em; }
+.ticket-page .ticket-meta strong { font-family: inherit; font-size: 12px; line-height: 1.7; }
+.ticket-page .ticket-passengers { padding: 20px; }
+.ticket-page .ticket-passengers h3 { font-size: 14px; margin-bottom: 14px; }
+.ticket-page .ticket-pass { margin-top: 16px; padding-top: 4px; }
+.ticket-page .ticket-person { gap: 9px; padding: 14px 0; }
+.ticket-page .ticket-person strong { font-family: inherit; font-size: 13px; line-height: 1.6; }
+.ticket-page .ticket-person small { font-size: 11px; line-height: 1.6; text-transform: capitalize; }
+.ticket-page .ticket-person > b { font-size: 9px; }
+.ticket-page .qr-block { display: grid; grid-template-columns: minmax(0, 1fr); justify-items: center; gap: 16px; margin-top: 4px; padding: 20px 14px; border: 1px solid var(--line); border-radius: 14px; background: var(--surface-soft); text-align: center; }
+.ticket-page .qr-block img { width: 190px; height: 190px; max-width: 100%; padding: 10px; border-radius: 12px; background: white; object-fit: contain; }
+.ticket-page .qr-block > div { width: 100%; min-width: 0; }
+.ticket-page .qr-block small { color: var(--ocean); font-size: 10px; letter-spacing: .08em; font-weight: 600; }
+.ticket-page .qr-block code { display: block; margin: 10px 0; padding: 9px; border: 1px dashed var(--line); border-radius: 7px; color: var(--ink); font-size: 11px; line-height: 1.6; overflow-wrap: anywhere; }
+.ticket-page .qr-block p { max-width: 280px; margin: 0 auto; font-size: 12px; line-height: 1.7; color: var(--muted); }
+@container passenger (max-width: 380px) {
+  .ticket-page .ticket-head { padding: 18px 16px; gap: 8px; }
+  .ticket-page .ticket-head h2 { font-size: 18px; }
+  .ticket-page .ticket-head > b { right: 16px; top: 16px; }
+  .ticket-page .ticket-title small { font-size: 8px; }
+  .ticket-page .ticket-meta, .ticket-page .ticket-passengers { padding: 16px; }
+  .ticket-page .ticket-person { flex-wrap: wrap; }
+  .ticket-page .ticket-person > b { margin-left: 45px; }
 }
 </style>

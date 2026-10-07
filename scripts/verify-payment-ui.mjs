@@ -1,0 +1,77 @@
+import fs from 'node:fs';
+import assert from 'node:assert/strict';
+import { chromium } from 'playwright-core';
+
+const base = 'http://localhost:8100';
+const project = fs.readFileSync('.env.local','utf8').match(/^VITE_SUPABASE_URL\s*=\s*(.+)$/m)[1].trim().replace(/^['"]|['"]$/g,'');
+const id = '11111111-1111-4111-8111-111111111111';
+const user = { id, email:'ui@example.invalid', app_metadata:{role:'PASSENGER'}, user_metadata:{fullName:'UI Passenger'}, aud:'authenticated',created_at:'2026-01-01T00:00:00Z' };
+const exp = Math.floor(Date.now()/1000)+3600, encode = value => Buffer.from(JSON.stringify(value)).toString('base64url');
+const session = {access_token:`${encode({alg:'HS256',typ:'JWT'})}.${encode({sub:id,exp,role:'authenticated',app_metadata:{role:'PASSENGER'}})}.fixture`,refresh_token:'ui-fixture',token_type:'bearer',expires_at:exp,expires_in:3600,user};
+const sailing = {code:'UI-TRIP',departureAt:'2099-10-08T04:16:00Z',arrivalAt:'2099-10-08T06:16:00Z',origin:{name:'Batangas Port'},destination:{name:'Calapan Port'},vessel:{name:'MV Isla Verde'}};
+const fixtures = ['BL-2026-1DDAD5E7','BL-2026-SECOND','BL-2026-UNPAID'].map((reference,index)=>({id:`11111111-1111-4111-8111-11111111111${index}`,reference,sailing,total:700,passengerCount:1,status:index===2?'PENDING':'CONFIRMED',paymentStatus:index===2?'UNPAID':'PAID',paymentMethod:index===2?null:'PAYMONGO_TEST',paymentDeadline:new Date(Date.now()+3600000).toISOString(),accommodationName:'Premium',serviceFee:100,createdAt:new Date().toISOString(),bookingPassengers_on_booking:[{id,fullName:'Maria Santos',passengerType:'REGULAR',fare:600,ticketStatus:index===2?'PENDING':'ISSUED',ticketCode:id}]}));
+const browser = await chromium.launch({channel:'msedge',headless:true});
+fs.mkdirSync('.audit/payment-ui',{recursive:true});
+try {
+  for (const width of [390,560,1440]) for (const theme of ['dark','light']) {
+    const context = await browser.newContext({viewport:{width,height:1000}});
+    let returnedStatus = 'UNPAID';
+    await context.addInitScript(({key,session,theme})=>{localStorage.setItem(key,JSON.stringify(session));localStorage.setItem('barkolink-theme',theme)}, {key:`sb-${new URL(project).hostname.split('.')[0]}-auth-token`,session,theme});
+    await context.route(`${project}/**`,async route=>{
+      if(route.request().url().includes('/auth/')) return route.fulfill({json:user});
+      const body = route.request().postDataJSON();
+      if(route.request().url().includes('/functions/v1/paymongo')) return route.fulfill({json:{status:body.action==='close'?'CLOSED':returnedStatus}});
+      const result = {MyBookings:{bookings:fixtures},MyProfile:{user:{fullName:'UI Passenger',role:'PASSENGER'}},MyNotifications:{notifications:[]},ActiveAdvisories:{advisories:[]}}[body.operation];
+      assert.ok(result,`Unexpected operation ${body.operation}`);
+      return route.fulfill({json:result});
+    });
+    const page = await context.newPage(),errors=[];
+    page.on('pageerror',error=>errors.push(error.message));
+    await page.goto(`${base}/ticket?reference=${fixtures[0].reference}`,{waitUntil:'networkidle'});
+    await page.locator('.qr-block img').waitFor();
+    await page.waitForTimeout(250);
+    assert.equal(await page.locator('main').evaluate(el=>el.scrollWidth>el.clientWidth+1),false,'Ticket horizontal overflow');
+    assert.equal(await page.locator('.ticket-picker select').count(),1);
+    assert.match(await page.locator('.ticket-head > b').textContent(),/PAID/);
+    assert.doesNotMatch(await page.locator('main').textContent(),/TEST PAYMENT|Sandbox|Test Mode/);
+    await page.screenshot({path:`.audit/payment-ui/ticket-${theme}-${width}.png`,fullPage:true});
+    await page.locator('.ticket-picker select').selectOption(fixtures[1].reference);
+    await page.waitForURL(`**reference=${fixtures[1].reference}`);
+    assert.match(await page.locator('.ticket-meta').textContent(),new RegExp(fixtures[1].reference));
+    await page.goto(`${base}/booking-details?reference=${fixtures[2].reference}`,{waitUntil:'networkidle'});
+    await page.locator('.online-payment').waitFor();
+    assert.equal(await page.locator('main').evaluate(el=>el.scrollWidth>el.clientWidth+1),false,'Payment horizontal overflow');
+    assert.doesNotMatch(await page.locator('.online-payment').textContent(),/Sandbox|Test Mode|TEST MODE/);
+    await page.evaluate(async () => { const content = document.querySelector('ion-content'); const scroll = await content.getScrollElement(); scroll.scrollTop = scroll.scrollHeight; });
+    await page.waitForTimeout(100);
+    await page.screenshot({path:`.audit/payment-ui/payment-${theme}-${width}.png`,fullPage:true});
+    await page.getByRole('button',{name:'Check payment',exact:true}).click();
+    await page.getByRole('status').filter({hasText:'No completed payment yet'}).waitFor();
+    await page.getByRole('button',{name:'Choose cash',exact:true}).click();
+    await page.getByRole('status').filter({hasText:'You can now pay cash'}).waitFor();
+    assert.equal(await page.getByRole('button',{name:'Online checkout closed'}).isDisabled(),true);
+    await page.goto(`${base}/bookings?payment=returned&reference=${fixtures[2].reference}`,{waitUntil:'networkidle'});
+    await page.locator('.payment-return.unpaid').waitFor();
+    assert.equal(await page.locator('.payment-return a').count(),0);
+    returnedStatus = 'PAID';
+    fixtures[0].paymentVerificationRequired=true;
+    fixtures[0].bookingPassengers_on_booking[0].ticketStatus='PENDING';
+    await page.goto(`${base}/bookings?payment=returned&reference=${fixtures[0].reference}`,{waitUntil:'networkidle'});
+    await page.getByRole('heading',{name:'Awaiting staff verification',exact:true}).waitFor();
+    assert.equal(await page.locator('.payment-return a').getAttribute('href'),`/booking-details?reference=${fixtures[0].reference}`);
+    await page.goto(`${base}/ticket?reference=${fixtures[0].reference}`,{waitUntil:'networkidle'});
+    await page.getByRole('heading',{name:'Awaiting staff verification',exact:true}).waitFor();
+    assert.equal(await page.locator('.qr-block').count(),0);
+    fixtures[0].paymentVerificationRequired=false;
+    fixtures[0].bookingPassengers_on_booking[0].ticketStatus='ISSUED';
+    await page.goto(`${base}/bookings?payment=returned&reference=${fixtures[0].reference}`,{waitUntil:'networkidle'});
+    await page.locator('.payment-return.paid').waitFor();
+    assert.match(await page.locator('.payment-return').textContent(),/Payment successful/);
+    assert.equal(await page.locator('.payment-return a').getAttribute('href'),`/ticket?reference=${fixtures[0].reference}`);
+    assert.equal(await page.locator('main').evaluate(el=>el.scrollWidth>el.clientWidth+1),false,'Confirmation horizontal overflow');
+    await page.screenshot({path:`.audit/payment-ui/confirmation-${theme}-${width}.png`,fullPage:true});
+    assert.deepEqual(errors,[]);
+    console.log(`${theme} ${width}px: ticket selection, payment states, checkout return and overflow passed.`);
+    await context.close();
+  }
+} finally { await browser.close(); }

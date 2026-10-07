@@ -185,3 +185,6 @@ Commit source, tests, SQL migrations, config templates, native source, and the n
 Further guides: [shared UI and appearance](docs/UI-COMPONENTS.md), [AG Grid integration](docs/AG-GRID-INTEGRATION.md), [operations](docs/OPERATIONS-UPGRADE.md), and [development commands](scripts/LOCAL-DEVELOPMENT.md).
 
 Current updates: [release readiness](docs/RELEASE-READINESS.md), [demonstration accounts and workflows](docs/DEMO-WORKFLOWS.md), [Vercel deployment](docs/VERCEL-DEPLOYMENT.md), and [GitHub review](docs/GITHUB-REVIEW-20261006.md).
+# PayMongo sandbox payments
+
+Cash and PayMongo test checkout (GCash, Maya and cards) are supported. See [the sandbox setup guide](docs/paymongo-sandbox-setup.md) to configure test secrets, apply migration 019 and deploy the payment Edge Function. Online payments remain unavailable until setup is complete; no live payment keys are accepted.

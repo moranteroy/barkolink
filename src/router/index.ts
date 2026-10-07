@@ -222,6 +222,7 @@ router.beforeEach(async (to) => {
       "notifications",
       "inbox",
       "analytics",
+      "vouchers",
     ].includes(String(to.params.section || ""))
   )
     return "/admin";
