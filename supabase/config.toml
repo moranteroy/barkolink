@@ -1,5 +1,9 @@
 project_id = "barkolink"
 
+[functions.chatbot]
+# The handler verifies the passenger token and uses that token for database reads.
+verify_jwt = false
+
 [functions.manage-account]
 # The handler verifies every user token with auth.getUser before doing any work.
 # This supports publishable API keys and asymmetric Supabase JWT signing keys.

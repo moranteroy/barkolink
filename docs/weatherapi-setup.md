@@ -1,6 +1,6 @@
 # WeatherAPI setup
 
-Trip details show weather for the departure and arrival port. Staff and admin Trips pages include a sailing selector to load the same panel. Weather does not change sailing status, reservations, payments or staff verification. Provider data is for travel planning; official advisories and the operator determine sailing status.
+The passenger home page shows a daily weather outlook for the selected departure port, including current temperature, daily highs/lows and rain chances. Trip details show weather for the departure and arrival port. Staff and admin Trips pages include a sailing selector to load the same panel. Weather does not change sailing status, reservations, payments or staff verification. Provider data is for travel planning; official advisories and the operator determine sailing status.
 
 ## Activate weather
 
@@ -12,8 +12,8 @@ Alternatively, apply `supabase/migrations/024_port_weather_cache.sql` in Supabas
 
 ## Behavior and limits
 
-- Uses HTTPS `forecast.json` with `days=3`, based on canonical port cities from the database, never a client-supplied weather location. Keep each port's city accurate; the response must match the Philippines.
-- The free plan currently provides 100,000 calls/month and a 3-day forecast. This integration uses general port weather; it does not query marine or tide data. See [pricing](https://www.weatherapi.com/pricing.aspx) and [documentation](https://www.weatherapi.com/docs/).
+- Uses HTTPS `forecast.json` with `days=7`, based on canonical port cities from the database, never a client-supplied weather location. If the provider rejects seven days with plan error 2009, retries with `days=3`. The home card labels the actual number of available days. Keep each port's city accurate; the response must match the Philippines.
+- The free plan provides a 3-day forecast; Starter or higher is required for seven days. This integration uses general port weather; it does not query marine or tide data. See [pricing](https://www.weatherapi.com/pricing.aspx) and [documentation](https://www.weatherapi.com/docs/).
 - Shows the departure-hour forecast when the trip falls within the returned forecast window. For later sailings, shows clearly labeled current weather and “Departure forecast is not available yet.” No forecast is fabricated for future demo trips.
 - Shares a 30-minute cache per port across passengers and staff. Two frequently viewed ports use roughly 2,880 upstream calls in a 30-day month if requested around the clock. Weather loads when opening a trip; staff/admin load only their chosen sailing.
 - On provider failure, previously cached weather is displayed for up to 6 hours with “Saved weather · update delayed.” Older data is discarded. Missing credentials, expired quotas or unavailable data do not block bookings.

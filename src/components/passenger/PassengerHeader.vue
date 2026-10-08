@@ -7,6 +7,7 @@
       @click="navigateHome"
     ><BrandMark /></a>
     <nav class="header-links" aria-label="Notifications and account access">
+      <RouterLink v-if="auth?.currentUser" to="/assistant" class="assistant-link" aria-label="Ask BarkoLink assistant" title="Ask BarkoLink"><IonIcon :icon="chatbubbleEllipsesOutline" aria-hidden="true" /></RouterLink>
       <a v-if="auth?.currentUser" href="/notifications" class="notification-link"
         :aria-label="notificationUnreadCount ? `Notifications, ${notificationUnreadCount} unread` : 'Notifications'" title="Notifications"
         :aria-current="router.currentRoute.value.path === '/notifications' ? 'page' : undefined"
@@ -20,7 +21,7 @@
 <script setup lang="ts">
 import { RouterLink, useRouter } from "vue-router";
 import { IonIcon, useIonRouter } from "@ionic/vue";
-import { notificationsOutline } from "ionicons/icons";
+import { notificationsOutline, chatbubbleEllipsesOutline } from "ionicons/icons";
 import { auth } from "../../services/session";
 import BrandMark from "../shared/BrandMark.vue";
 import { notificationUnreadCount } from "../../composables/notificationUnread";
@@ -73,7 +74,8 @@ function navigate(event: MouseEvent, path: string) {
   text-decoration: underline;
   text-underline-offset: 4px;
 }
-.header-links .notification-link {
+.header-links .notification-link,
+.header-links .assistant-link {
   position: relative;
   width: 44px;
   padding: 0;

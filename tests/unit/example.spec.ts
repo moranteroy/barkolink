@@ -11,6 +11,7 @@ vi.mock('@ionic/vue', () => ({
   IonSpinner: { template: '<span />' },
   useIonRouter: () => ({navigate: vi.fn()}),
   onIonViewWillEnter: (callback: () => void) => { mocks.enter = callback },
+  onIonViewDidLeave: vi.fn(),
 }))
 vi.mock('../../src/services/session', () => ({
   auth: { currentUser: { uid: 'passenger-test', displayName: 'Passenger One', email: 'test@example.invalid' } },
@@ -18,7 +19,7 @@ vi.mock('../../src/services/session', () => ({
 }))
 vi.mock('../../src/services/database/passenger', () => ({ myProfile: mocks.profile, myBookings: mocks.bookings }))
 
-const options = { global: { stubs: { PassengerHeader: true, PassengerBottomNav: true, TripSearchCard: true, AdvisoryBanner: true, 'router-link': { template: '<a><slot /></a>' } } } }
+const options = { global: { stubs: { PassengerHeader: true, PassengerBottomNav: true, TripSearchCard: true, AdvisoryBanner: true, PortForecast: true, SailingBoard: true, LoyaltyRewards: true, 'router-link': { template: '<a><slot /></a>' } } } }
 
 describe('HomePage.vue', () => {
   beforeEach(() => {

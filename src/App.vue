@@ -36,6 +36,7 @@ onUnmounted(() => {
   document.removeEventListener("visibilitychange", refreshVisibleNotifications);
 });
 const passengerPaths = new Set([
+  "/assistant",
   "/home",
   "/search",
   "/trip-details",

@@ -140,12 +140,12 @@
                   /><span v-else class="qr-unavailable">{{
                     qrFailedCodes.includes(person.ticketCode)
                       ? "QR image unavailable. Show the ticket code to staff."
-                      : "Preparing QR code?"
+                      : "Refresh this ticket to load its verified QR. Staff can verify the ticket code."
                   }}</span>
                   <div>
                     <small>SCAN AT THE TERMINAL</small
                     ><code>{{ person.ticketCode }}</code>
-                    <p>Staff can scan the QR code or enter this ticket code.</p>
+                    <p>QR includes your name, date and vessel. Show your passenger ID; staff verifies the live ticket before boarding.</p>
                   </div>
                 </div>
                 <p v-else class="qr-unavailable">
@@ -631,6 +631,7 @@ type Passenger = {
   type: string;
   fare: number;
   ticketCode?: string;
+  ticketQrPayload?: string | null;
   ticketStatus?: string;
 };
 type Booking = {
@@ -757,26 +758,19 @@ let qrRequest = 0;
 watch(
   () =>
     bookings.value
-      .flatMap((b) => b.passengers.map((p) => p.ticketCode || ""))
+      .flatMap((b) => b.passengers.map((p) => p.ticketQrPayload || ""))
       .join("|"),
   async () => {
     const request = ++qrRequest;
-    const codes = [
-      ...new Set(
-        bookings.value.flatMap((b) =>
-          b.passengers
-            .map((p) => p.ticketCode)
-            .filter((code): code is string => !!code),
-        ),
-      ),
-    ];
+    const tickets = bookings.value.flatMap(b=>b.passengers).filter(p=>p.ticketCode && p.ticketQrPayload);
     const results = await Promise.all(
-      codes.map(async (code) => {
+      tickets.map(async (person) => {
+        const code=person.ticketCode!;
         try {
           return [
             code,
-            await QRCode.toDataURL(code, {
-              width: 220,
+            await QRCode.toDataURL(person.ticketQrPayload!, {
+              width: 360,
               margin: 4,
               errorCorrectionLevel: "M",
             }),
@@ -953,6 +947,7 @@ async function loadData() {
           type: person.passengerType,
           fare: person.fare,
           ticketCode: person.ticketCode,
+          ticketQrPayload: person.ticketQrPayload,
           ticketStatus: person.ticketStatus,
         })),
       }));
@@ -2475,7 +2470,7 @@ button:disabled {
 .ticket-page .ticket-person small { font-size: 11px; line-height: 1.6; text-transform: capitalize; }
 .ticket-page .ticket-person > b { font-size: 9px; }
 .ticket-page .qr-block { display: grid; grid-template-columns: minmax(0, 1fr); justify-items: center; gap: 16px; margin-top: 4px; padding: 20px 14px; border: 1px solid var(--line); border-radius: 14px; background: var(--surface-soft); text-align: center; }
-.ticket-page .qr-block img { width: 190px; height: 190px; max-width: 100%; padding: 10px; border-radius: 12px; background: white; object-fit: contain; }
+.ticket-page .qr-block img { width: 280px; height: 280px; max-width: 100%; padding: 10px; border-radius: 12px; background: white; object-fit: contain; }
 .ticket-page .qr-block > div { width: 100%; min-width: 0; }
 .ticket-page .qr-block small { color: var(--ocean); font-size: 10px; letter-spacing: .08em; font-weight: 600; }
 .ticket-page .qr-block code { display: block; margin: 10px 0; padding: 9px; border: 1px dashed var(--line); border-radius: 7px; color: var(--ink); font-size: 11px; line-height: 1.6; overflow-wrap: anywhere; }

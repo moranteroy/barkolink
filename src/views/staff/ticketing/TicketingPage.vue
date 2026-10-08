@@ -262,11 +262,21 @@
               ><ion-button
                 expand="block"
                 class="primary"
-                :disabled="!ticketLookup.trim()"
+                :disabled="!ticketLookup.trim() || scanBusy"
                 @click="lookupTicket"
-                >Find ticket</ion-button
+                >{{scanBusy ? 'Verifying…' : 'Verify ticket'}}</ion-button
               ></template
             >
+            <section v-if="scannedTicket" class="verified-ticket-review">
+              <h3>Verified ticket details</h3><strong>{{scannedTicket.fullName}}</strong>
+              <p>Vessel: {{scannedTicket.booking.sailing.vessel.name}}</p>
+              <p>Departure: {{ticketDeparture(scannedTicket.booking.sailing.departureAt)}}</p>
+              <p>{{scannedTicket.booking.sailing.origin.name}} to {{scannedTicket.booking.sailing.destination.name}}</p>
+              <p>{{scannedTicket.booking.reference}} · Paid · {{scannedTicket.ticketStatus.replaceAll('_',' ')}}</p>
+              <p>Match the passenger's ID to this name before confirming.</p>
+              <ion-button v-if="['ISSUED','CHECKED_IN'].includes(scannedTicket.ticketStatus)" :disabled="busy || scanBusy" @click="confirmScannedTicket">{{scannedTicket.ticketStatus==='ISSUED' ? 'Confirm check-in' : 'Confirm boarding'}}</ion-button>
+              <p v-else>This ticket has already been boarded. Do not admit it again.</p>
+            </section>
           </div></ion-modal
         ><ion-modal
           class="booking-payment-modal"
@@ -500,9 +510,12 @@ import {
   staffBookings,
 } from "../../../services/database/staff";
 import { auth, staffDatabase } from "../../../services/session";
+import { verifyTicketQr, type VerifiedTicket } from "../../../services/ticketQr";
 const route = useRoute();
 const contentRef = ref<any>(null);
 const showScanner = ref(false);
+const scanBusy=ref(false),scannedTicket=ref<VerifiedTicket|null>(null);
+const ticketDeparture=(at:string)=>new Date(at).toLocaleString('en-PH',{timeZone:'Asia/Manila',month:'short',day:'numeric',year:'numeric',hour:'numeric',minute:'2-digit'});
 const menuOpen = ref(false);
 const activeSection = ref("overview");
 const loading = ref(false);
@@ -972,19 +985,25 @@ async function processItem(item: QueueItem) {
   }
 }
 async function lookupTicket() {
-  const item = boardingQueue.value.find(
-    (candidate) =>
-      candidate.ticketCode?.toLowerCase() ===
-      ticketLookup.value.trim().toLowerCase(),
-  );
-  if (item) {
-    showScanner.value = false;
-    ticketLookup.value = "";
-    await processItem(item);
-  } else
-    loadError.value =
-      "No ticket with that code was found on the selected sailing.";
+  if(!staffDatabase || scanBusy.value)return;
+  const code=activeSailing.value,raw=ticketLookup.value;
+  scannedTicket.value=null;scanError.value='';scanBusy.value=true;
+  try{
+    const {data}=await verifyTicketQr(staffDatabase,raw,code);
+    if(code===activeSailing.value && showScanner.value && raw===ticketLookup.value)scannedTicket.value=data.passenger;
+  }catch(cause){scanError.value=databaseRequestError(cause,'Could not verify this ticket. Check your connection and try again.');}
+  finally{scanBusy.value=false;}
 }
+async function confirmScannedTicket(){
+  const ticket=scannedTicket.value;
+  if(!ticket || ticket.booking.sailing.code!==activeSailing.value)return;
+  await processItem({passengerId:ticket.id,ticketCode:ticket.ticketCode,reference:ticket.booking.reference,name:ticket.fullName,
+    initials:ticket.fullName.slice(0,2).toUpperCase(),detail:ticket.booking.sailing.code,status:ticket.ticketStatus.replace('_','-'),tone:'blue'});
+  scannedTicket.value=null;showScanner.value=false;ticketLookup.value='';
+}
+watch(ticketLookup,()=>{scannedTicket.value=null;});
+watch(showScanner,()=>{scannedTicket.value=null;scanError.value='';});
+watch(activeSailing,()=>{scannedTicket.value=null;});
 function stopCamera() {
   if (scanFrame) cancelAnimationFrame(scanFrame);
   scanFrame = 0;

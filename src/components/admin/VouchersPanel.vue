@@ -1,6 +1,7 @@
 <template>
   <section class="voucher-panel">
     <h2>Vouchers</h2><p>Create offers for regular passenger fares. Each account can use a code once. Issued reservations count toward the limit, including cancelled reservations.</p>
+    <p class="loyalty-rule"><strong>Automatic loyalty rewards:</strong> Silver: PHP 100 at 5 completed trips. Gold: PHP 200 at 10 trips. Platinum: PHP 300 at 15 trips and every 5 trips afterward. Counted sailings must be paid and have a boarded passenger. Personal rewards apply automatically at review, discount regular fares, and expire after 90 days. Earned rewards also appear below.</p>
     <form class="voucher-form" @submit.prevent="create">
       <label>Code<input v-model.trim="form.code" required pattern="[A-Za-z0-9_\-]{3,30}" maxlength="30" placeholder="SAIL50" /></label>
       <label>Discount type<select v-model="form.discountType"><option value="FIXED">Fixed amount (PHP)</option><option value="PERCENT">Percentage (%)</option></select></label>

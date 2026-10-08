@@ -12,6 +12,7 @@ const routes: Array<RouteRecordRaw> = [
     component: () => import("../views/passenger/TravelersPage.vue"),
   },
   { path: "/help", component: () => import("../views/passenger/HelpPage.vue") },
+  { path: "/assistant", component: () => import("../views/passenger/AssistantPage.vue") },
   {
     path: "/privacy",
     component: () => import("../views/auth/PrivacyNoticePage.vue"),
@@ -227,6 +228,7 @@ router.beforeEach(async (to) => {
   )
     return "/admin";
   const protectedPassenger = [
+    "/assistant",
     "/travelers",
     "/home",
     "/trip-details",

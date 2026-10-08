@@ -8,7 +8,9 @@
           <p>Where would you like to sail today?</p>
         </section>
         <p v-if="loadError" class="home-error" role="alert">{{ loadError }} <button @click="loadData">Retry</button></p>
-        <TripSearchCard class="home-search" />
+        <TripSearchCard class="home-search" @origin-changed="weatherPortId = $event" />
+        <SailingBoard :initial-port-id="weatherPortId" :active="boardActive" />
+        <PortForecast :port-id="weatherPortId" />
         <section class="section-block upcoming-block" aria-labelledby="upcoming-heading">
           <div class="section-heading">
             <h2 id="upcoming-heading"><ion-icon :icon="boatOutline" aria-hidden="true" /> Upcoming trip</h2>
@@ -42,6 +44,7 @@
             <div><strong>Your next journey starts here</strong><p>Search a sailing above. Your active reservation will appear here.</p></div>
           </article>
         </section>
+        <LoyaltyRewards :active="boardActive" />
         <section class="section-block quick-block" aria-labelledby="quick-heading">
           <div class="section-heading"><h2 id="quick-heading"><ion-icon :icon="sparklesOutline" aria-hidden="true" /> Travel essentials</h2></div>
           <div class="essentials-grid">
@@ -73,6 +76,7 @@ import {
   IonIcon,
   IonPage,
   onIonViewWillEnter,
+  onIonViewDidLeave,
   useIonRouter,
 } from "@ionic/vue";
 import { myBookings, myProfile } from "../../services/database/passenger";
@@ -92,6 +96,11 @@ import PassengerHeader from "../../components/passenger/PassengerHeader.vue";
 import PassengerBottomNav from "../../components/passenger/PassengerBottomNav.vue";
 import AdvisoryBanner from "../../components/passenger/AdvisoryBanner.vue";
 import TripSearchCard from "../../components/passenger/TripSearchCard.vue";
+import PortForecast from "../../components/shared/PortForecast.vue";
+import SailingBoard from "../../components/passenger/SailingBoard.vue";
+import LoyaltyRewards from "../../components/passenger/LoyaltyRewards.vue";
+const weatherPortId = ref("");
+const boardActive = ref(true);
 import { readRecentSearches, recordRecentSearch, type RecentSearch } from "../../data/recentSearches";
 import { philippineDateKey } from "../../data/travelDate";
 const ionRouter = useIonRouter();
@@ -213,9 +222,11 @@ async function loadData() {
   }
 }
 onIonViewWillEnter(() => {
+  boardActive.value = true;
   recentSearches.value = readRecentSearches();
   void loadData();
 });
+onIonViewDidLeave(() => { boardActive.value = false; });
 </script>
 <style scoped>
 .home-content { --background: var(--page-background); }

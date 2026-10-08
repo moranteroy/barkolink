@@ -15,6 +15,7 @@ type TicketBooking = {
     name: string;
     type: string;
     ticketCode?: string;
+    ticketQrPayload?: string | null;
     ticketStatus?: string;
   }>;
 };
@@ -40,8 +41,9 @@ export async function ticketDocument(booking: TicketBooking) {
   const paymentLabel = 'PAID';
   const tickets = await Promise.all(
     passengers.map(async (person) => {
-      const qr = await QRCode.toDataURL(person.ticketCode!, {
-        width: 220,
+      if(!person.ticketQrPayload)throw new Error('Refresh your ticket to load its verified QR code before exporting.');
+      const qr = await QRCode.toDataURL(person.ticketQrPayload, {
+        width: 360,
         margin: 4,
         errorCorrectionLevel: "M",
       });

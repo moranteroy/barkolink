@@ -3154,3 +3154,234 @@ begin
   return barkolink_private.execute_flexible_discounts_v24(operation,args,actor_uid,actor_role);
 end $$;
 revoke all on all functions in schema barkolink_private from public,anon,authenticated;
+alter function barkolink_private.execute_flexible_discounts(text,jsonb,text,text) rename to execute_flexible_discounts_v25;
+create function barkolink_private.execute_flexible_discounts(operation text,args jsonb,actor_uid text,actor_role text)
+returns jsonb language plpgsql set search_path='' as $$
+declare start_at timestamptz := date_trunc('day',now() at time zone 'Asia/Manila') at time zone 'Asia/Manila';
+begin
+  if operation='PassengerSailingBoard' then
+    if nullif(actor_uid,'') is null or coalesce(actor_role,'') not in ('PASSENGER','ADMIN','TICKETING','BOARDING') then
+      raise exception 'Sign in to view the sailing board.' using errcode='42501';
+    end if;
+    return jsonb_build_object('updated_at',now(),'date',(now() at time zone 'Asia/Manila')::date,'sailings',(
+      select coalesce(jsonb_agg(jsonb_build_object(
+        'code',s.code,'departure_at',s.departure_at,'arrival_at',s.arrival_at,'status',s.status,
+        'origin',jsonb_build_object('id',o.id,'name',o.name,'city',o.city),
+        'destination',jsonb_build_object('id',d.id,'name',d.name,'city',d.city),
+        'vessel',jsonb_build_object('name',v.name)) order by s.departure_at,s.code),'[]'::jsonb)
+      from public.sailing s join public.port o on o.id=s.origin_port_id
+      join public.port d on d.id=s.destination_port_id join public.vessel v on v.id=s.vessel_id
+      where (s.departure_at>=start_at and s.departure_at<start_at+interval '1 day')
+        or (s.arrival_at>=start_at and s.arrival_at<start_at+interval '1 day')
+    ));
+  end if;
+  return barkolink_private.execute_flexible_discounts_v25(operation,args,actor_uid,actor_role);
+end $$;
+revoke all on function barkolink_private.execute_flexible_discounts(text,jsonb,text,text) from public,anon,authenticated;
+alter table public.voucher add column owner_uid text references public.app_user(uid);
+alter table public.voucher add column loyalty_reward_number integer;
+alter table public.voucher add constraint loyalty_voucher_owner check (
+  (owner_uid is null and loyalty_reward_number is null) or (owner_uid is not null and loyalty_reward_number>0));
+create unique index voucher_loyalty_reward_once on public.voucher(owner_uid,loyalty_reward_number) where owner_uid is not null;
+
+create function barkolink_private.loyalty_trip_count(actor text) returns integer language sql set search_path='' as $$
+  select count(distinct b.sailing_code)::integer from public.booking b join public.sailing s on s.code=b.sailing_code
+  where b.owner_uid=actor and b.status='CONFIRMED' and b.payment_status='PAID' and s.status='COMPLETED'
+    and exists(select 1 from public.booking_passenger p where p.booking_id=b.id and p.ticket_status='BOARDED');
+$$;
+create function barkolink_private.issue_loyalty_vouchers(actor text) returns void language plpgsql set search_path='' as $$
+declare earned integer; reward integer; created_id uuid;
+begin
+  if not exists(select 1 from auth.users where id::text=actor and coalesce(raw_app_meta_data->>'role','PASSENGER')='PASSENGER') then return; end if;
+  perform pg_advisory_xact_lock(hashtextextended('loyalty:'||actor,0));
+  earned:=barkolink_private.loyalty_trip_count(actor)/5;
+  for reward in 1..earned loop
+    created_id:=null;
+    insert into public.voucher(code,discount_type,value,minimum_spend,usage_limit,starts_at,expires_at,is_active,owner_uid,loyalty_reward_number)
+    values('LOYAL-'||upper(substr(replace(gen_random_uuid()::text,'-',''),1,20)),'FIXED',50,0,1,now(),now()+interval '90 days',true,actor,reward)
+    on conflict (owner_uid,loyalty_reward_number) where owner_uid is not null do nothing returning id into created_id;
+    if created_id is not null then
+      insert into public.notification(owner_uid,title,message,category) values(actor,'Your loyalty voucher is ready',
+        'You earned PHP 50 off regular fares after 5 completed, paid trips. Your personal voucher applies automatically to your next eligible booking and is valid for 90 days.','PROMO');
+    end if;
+  end loop;
+end $$;
+
+alter function barkolink_private.voucher_quote(jsonb,text) rename to voucher_quote_v25;
+create function barkolink_private.voucher_quote(args jsonb,actor text) returns jsonb language plpgsql set search_path='' as $$
+declare voucher_owner text;
+begin
+  select owner_uid into voucher_owner from public.voucher where code=upper(trim(args->>'voucherCode'));
+  if voucher_owner is not null and voucher_owner is distinct from actor then raise exception 'This loyalty voucher belongs to another passenger.' using errcode='42501'; end if;
+  return barkolink_private.voucher_quote_v25(args,actor);
+end $$;
+
+alter function barkolink_private.execute_flexible_discounts(text,jsonb,text,text) rename to execute_flexible_discounts_v26;
+create function barkolink_private.execute_flexible_discounts(operation text,args jsonb,actor_uid text,actor_role text)
+returns jsonb language plpgsql set search_path='' as $$
+declare result jsonb; completed integer; v public.voucher; quote jsonb; passenger_owner text;
+begin
+  if operation in ('MyLoyalty','QuoteLoyaltyVoucher') then
+    if nullif(actor_uid,'') is null or actor_role is distinct from 'PASSENGER' then raise exception 'Passenger access required.' using errcode='42501'; end if;
+    perform barkolink_private.issue_loyalty_vouchers(actor_uid);
+    if operation='MyLoyalty' then
+      completed:=barkolink_private.loyalty_trip_count(actor_uid);
+      return jsonb_build_object('completed_trips',completed,'trips_per_reward',5,'reward_value',50,'trips_to_next_reward',5-(completed%5),
+        'vouchers',(select coalesce(jsonb_agg(jsonb_build_object('code',offer.code,'value',offer.value,'expires_at',offer.expires_at) order by offer.expires_at),'[]')
+          from public.voucher offer where offer.owner_uid=actor_uid and offer.is_active and offer.starts_at<=now() and offer.expires_at>now()
+            and not exists(select 1 from public.booking b where b.voucher_id=offer.id)));
+    end if;
+    -- Voucher restrictions match regular promo codes; student/senior-only bookings keep the reward for a later booking.
+    for v in select * from public.voucher offer where offer.owner_uid=actor_uid and offer.is_active and offer.starts_at<=now() and offer.expires_at>now()
+      and not exists(select 1 from public.booking b where b.voucher_id=offer.id) order by offer.expires_at,offer.loyalty_reward_number
+    loop
+      begin
+        quote:=barkolink_private.voucher_quote(args||jsonb_build_object('voucherCode',v.code),actor_uid);
+        return jsonb_build_object('quote',quote);
+      exception when raise_exception then
+        -- No eligible regular fare (or the sailing is unavailable): leave the reward unused.
+        return jsonb_build_object('quote',null);
+      end;
+    end loop;
+    return jsonb_build_object('quote',null);
+  end if;
+  result:=barkolink_private.execute_flexible_discounts_v26(operation,args,actor_uid,actor_role);
+  if operation='AdminUpdateSailingStatus' and args->>'status'='COMPLETED' then
+    for passenger_owner in select distinct b.owner_uid from public.booking b where b.sailing_code=args->>'code' and b.status='CONFIRMED' and b.payment_status='PAID'
+    loop perform barkolink_private.issue_loyalty_vouchers(passenger_owner); end loop;
+  end if;
+  return result;
+end $$;
+revoke all on all functions in schema barkolink_private from public,anon,authenticated;
+create function barkolink_private.loyalty_reward_value(reward_number integer) returns integer
+language sql immutable set search_path='' as $$ select least(300,greatest(1,reward_number)*100); $$;
+
+create or replace function barkolink_private.issue_loyalty_vouchers(actor text) returns void language plpgsql set search_path='' as $$
+declare earned integer; reward integer; created_id uuid; amount integer;
+begin
+  if not exists(select 1 from auth.users where id::text=actor and coalesce(raw_app_meta_data->>'role','PASSENGER')='PASSENGER') then return; end if;
+  perform pg_advisory_xact_lock(hashtextextended('loyalty:'||actor,0));
+  earned:=barkolink_private.loyalty_trip_count(actor)/5;
+  for reward in 1..earned loop
+    created_id:=null;amount:=barkolink_private.loyalty_reward_value(reward);
+    insert into public.voucher(code,discount_type,value,minimum_spend,usage_limit,starts_at,expires_at,is_active,owner_uid,loyalty_reward_number)
+    values('LOYAL-'||upper(substr(replace(gen_random_uuid()::text,'-',''),1,20)),'FIXED',amount,0,1,now(),now()+interval '90 days',true,actor,reward)
+    on conflict (owner_uid,loyalty_reward_number) where owner_uid is not null do nothing returning id into created_id;
+    if created_id is not null then
+      insert into public.notification(owner_uid,title,message,category) values(actor,'Your loyalty voucher is ready',
+        'You earned PHP '||amount||' off regular fares after '||(reward*5)||' completed, paid trips. Your personal voucher applies automatically to your next eligible booking and is valid for 90 days.','PROMO');
+    end if;
+  end loop;
+end $$;
+
+-- Upgrade unspent, unexpired rewards while preserving codes, expiry and existing booking totals.
+with upgraded as (
+  update public.voucher v set value=barkolink_private.loyalty_reward_value(v.loyalty_reward_number)
+  where v.owner_uid is not null and v.expires_at>now()
+    and v.value<barkolink_private.loyalty_reward_value(v.loyalty_reward_number)
+    and not exists(select 1 from public.booking b where b.voucher_id=v.id)
+  returning v.owner_uid,v.value
+)
+insert into public.notification(owner_uid,title,message,category)
+select owner_uid,'Your loyalty reward just got bigger','Your unused loyalty voucher has been upgraded to PHP '||value||' off regular fares. Your existing expiry date still applies.','PROMO' from upgraded;
+
+alter function barkolink_private.execute_flexible_discounts(text,jsonb,text,text) rename to execute_flexible_discounts_v27;
+create function barkolink_private.execute_flexible_discounts(operation text,args jsonb,actor_uid text,actor_role text)
+returns jsonb language plpgsql set search_path='' as $$
+declare result jsonb; completed integer;
+begin
+  result:=barkolink_private.execute_flexible_discounts_v27(operation,args,actor_uid,actor_role);
+  if operation='MyLoyalty' then
+    completed:=(result->>'completed_trips')::integer;
+    return result||jsonb_build_object(
+      'reward_value',barkolink_private.loyalty_reward_value(completed/5+1),
+      'current_tier',case when completed>=15 then 'Platinum' when completed>=10 then 'Gold' when completed>=5 then 'Silver' else 'Getting started' end,
+      'tiers',jsonb_build_array(jsonb_build_object('name','Silver','trips',5,'value',100),jsonb_build_object('name','Gold','trips',10,'value',200),jsonb_build_object('name','Platinum','trips',15,'value',300)));
+  end if;
+  return result;
+end $$;
+revoke all on all functions in schema barkolink_private from public,anon,authenticated;
+alter table public.booking_passenger add column qr_verification_token text not null
+  default (replace(gen_random_uuid()::text,'-','')||replace(gen_random_uuid()::text,'-',''));
+
+create function barkolink_private.ticket_qr_payload(p public.booking_passenger) returns text
+language sql stable set search_path='' as $$
+  select jsonb_build_object('BarkoLink','Ticket v2','Name',p.full_name,
+    'Date',to_char(s.departure_at at time zone 'Asia/Manila','YYYY-MM-DD HH24:MI')||' Philippine time',
+    'Vessel',v.name,'Route',o.name||' to '||d.name,'Booking',b.reference,
+    'Ticket',p.ticket_code::text,'Verification',p.qr_verification_token)::text
+  from public.booking b join public.sailing s on s.code=b.sailing_code
+  join public.vessel v on v.id=s.vessel_id join public.port o on o.id=s.origin_port_id join public.port d on d.id=s.destination_port_id
+  where b.id=p.booking_id and b.status='CONFIRMED' and b.payment_status='PAID'
+    and (b.payment_method is distinct from 'PAYMONGO_TEST' or b.payment_verified_at is not null)
+    and p.ticket_status in ('ISSUED','CHECKED_IN','BOARDED');
+$$;
+create or replace function barkolink_private.passenger_json(p public.booking_passenger) returns jsonb
+language sql stable set search_path='' as $$
+  select (to_jsonb(p)-'qr_verification_token')||jsonb_build_object('ticket_qr_payload',barkolink_private.ticket_qr_payload(p),
+    'booking',(select barkolink_private.booking_base(b) from public.booking b where b.id=p.booking_id));
+$$;
+
+alter function barkolink_private.execute_flexible_discounts(text,jsonb,text,text) rename to execute_flexible_discounts_v28;
+create function barkolink_private.execute_flexible_discounts(operation text,args jsonb,actor_uid text,actor_role text)
+returns jsonb language plpgsql set search_path='' as $$
+declare raw text; ticket_code_value text; payload jsonb; p public.booking_passenger; b public.booking; s public.sailing;
+begin
+  if operation='VerifyTicketQr' then
+    if nullif(actor_uid,'') is null or coalesce(actor_role,'') not in ('ADMIN','TICKETING','BOARDING') then
+      raise exception 'Staff access required to verify tickets.' using errcode='42501';
+    end if;
+    raw:=trim(args->>'payload');
+    if raw is null or length(raw)>4096 or length(raw)=0 then raise exception 'Enter a valid BarkoLink ticket QR or ticket code.'; end if;
+    if raw ~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$' then
+      -- Previously printed tickets and staff-entered codes still undergo live payment and sailing checks.
+      ticket_code_value:=lower(raw);
+    else
+      begin payload:=raw::jsonb; exception when invalid_text_representation then raise exception 'This is not a valid BarkoLink ticket QR.'; end;
+      if jsonb_typeof(payload)<>'object' or payload->>'BarkoLink' is distinct from 'Ticket v2' then raise exception 'This is not a valid BarkoLink ticket QR.'; end if;
+      ticket_code_value:=payload->>'Ticket';
+    end if;
+    select * into p from public.booking_passenger where ticket_code::text=ticket_code_value;
+    if not found then raise exception 'Ticket was not found. This QR cannot be used to travel.'; end if;
+    select * into b from public.booking where id=p.booking_id;
+    select * into s from public.sailing where code=b.sailing_code;
+    if nullif(args->>'sailingCode','') is null or s.code is distinct from args->>'sailingCode' then raise exception 'This ticket belongs to a different sailing.'; end if;
+    if b.status<>'CONFIRMED' or b.payment_status<>'PAID'
+      or (b.payment_method='PAYMONGO_TEST' and b.payment_verified_at is null)
+      or p.ticket_status not in ('ISSUED','CHECKED_IN','BOARDED') then raise exception 'This ticket is unpaid, cancelled, or not issued. Do not admit this passenger.'; end if;
+    if s.status not in ('SCHEDULED','BOARDING') or (s.status<>'BOARDING' and s.departure_at<=now()) then raise exception 'This sailing is not open for check-in or boarding.'; end if;
+    if payload is not null and payload is distinct from barkolink_private.ticket_qr_payload(p)::jsonb then
+      raise exception 'QR verification failed: ticket details were changed or the trip was updated. Ask the passenger to open their current BarkoLink ticket.';
+    end if;
+    return jsonb_build_object('passenger',barkolink_private.passenger_json(p),'already_boarded',p.ticket_status='BOARDED','legacy_code',payload is null);
+  end if;
+  return barkolink_private.execute_flexible_discounts_v28(operation,args,actor_uid,actor_role);
+end $$;
+revoke all on all functions in schema barkolink_private from public,anon,authenticated;
+create table barkolink_private.chatbot_usage (
+  actor_id uuid primary key references auth.users(id) on delete cascade,
+  window_at timestamptz not null,
+  window_count integer not null,
+  usage_day date not null,
+  day_count integer not null
+);
+revoke all on barkolink_private.chatbot_usage from public, anon, authenticated;
+
+create function public.consume_chatbot_allowance() returns boolean
+language plpgsql security definer set search_path='' as $$
+declare actor uuid:=auth.uid(); usage barkolink_private.chatbot_usage;
+begin
+  if actor is null or not exists(select 1 from auth.users where id=actor and coalesce(raw_app_meta_data->>'role','PASSENGER')='PASSENGER') then
+    raise exception 'Passenger sign-in required.' using errcode='42501';
+  end if;
+  insert into barkolink_private.chatbot_usage values(actor,now(),1,(now() at time zone 'UTC')::date,1)
+  on conflict(actor_id) do update set
+    window_at=case when chatbot_usage.window_at<=now()-interval '10 minutes' then now() else chatbot_usage.window_at end,
+    window_count=case when chatbot_usage.window_at<=now()-interval '10 minutes' then 1 else chatbot_usage.window_count+1 end,
+    usage_day=(now() at time zone 'UTC')::date,
+    day_count=case when chatbot_usage.usage_day<>(now() at time zone 'UTC')::date then 1 else chatbot_usage.day_count+1 end
+  returning * into usage;
+  return usage.window_count<=12 and usage.day_count<=100;
+end $$;
+revoke all on function public.consume_chatbot_allowance() from public,anon;
+grant execute on function public.consume_chatbot_allowance() to authenticated;

@@ -295,6 +295,9 @@
                     </div>
                   </div>
                   <dl class="details">
+                    <div><dt>Vessel</dt><dd>{{ selectedPassenger.vesselName || selectedSailing?.vessel.name }}</dd></div>
+                    <div><dt>Departure date & time</dt><dd>{{ formatDate(selectedPassenger.departureAt || selectedSailing?.departureAt || '') }}</dd></div>
+                    <div><dt>Payment</dt><dd>Paid · Issued ticket</dd></div>
                     <div>
                       <dt>Accommodation</dt>
                       <dd>
@@ -332,7 +335,7 @@
                       <dd>{{ formatDate(selectedPassenger.boardedAt) }}</dd>
                     </div>
                   </dl>
-                  <p class="review-help">{{ actionHint }}</p>
+                  <p class="review-help">{{ actionHint }} Match the passenger's ID to the verified name before confirming.</p>
                   <button
                     v-if="
                       (pageMode === 'check-in' && selectedPassenger.status === 'ISSUED') ||
@@ -472,9 +475,9 @@
             /><button
               class="primary-button"
               type="submit"
-              :disabled="!ticketLookup"
+              :disabled="!ticketLookup || scanBusy"
             >
-              Find ticket
+              {{ scanBusy ? 'Verifying…' : 'Verify ticket' }}
             </button>
           </form>
         </div></ion-modal
@@ -528,11 +531,14 @@ import {
   type BoardingSailingsData,
 } from "../../../services/database/staff";
 import { staffDatabase } from "../../../services/session";
+import { verifyTicketQr } from "../../../services/ticketQr";
 
 type Sailing = BoardingSailingsData["sailings"][number];
 type Ticket =
   BoardingManifestData["bookings"][number]["bookingPassengers_on_booking"][number];
 type Passenger = {
+  vesselName?: string;
+  departureAt?: string;
   accommodationName?: string | null;
   id: Ticket["id"];
   name: string;
@@ -582,6 +588,7 @@ const scannerVideo = ref<HTMLVideoElement | null>(null);
 const cameraActive = ref(false);
 const ticketLookup = ref("");
 const scanError = ref("");
+const scanBusy = ref(false);
 let cameraStream: MediaStream | null = null;
 let scanFrame = 0;
 let requestNumber = 0;
@@ -830,21 +837,22 @@ function closeScanner() {
   scannerOpen.value = false;
   scanError.value = "";
 }
-function findTicket() {
-  const code = ticketLookup.value.trim().toLowerCase();
-  const person = passengers.value.find(
-    (item) => item.ticketCode.toLowerCase() === code,
-  );
-  if (!person) {
-    scanError.value =
-      "Ticket not found on this sailing. Check the code and selected sailing.";
-    return;
-  }
-  selectPassenger(person);
-  statusFilter.value = "ALL";
-  search.value = "";
-  closeScanner();
-  void revealReview();
+async function findTicket() {
+  if(!staffDatabase || scanBusy.value)return;
+  const code=selectedSailingCode.value,raw=ticketLookup.value;
+  scanBusy.value=true;scanError.value='';
+  try{
+    const {data}=await verifyTicketQr(staffDatabase,raw,code);
+    if(code!==selectedSailingCode.value || !scannerOpen.value || raw!==ticketLookup.value)return;
+    const ticket=data.passenger;
+    const person:Passenger={id:ticket.id,name:ticket.fullName,type:ticket.passengerType,ticketCode:ticket.ticketCode,
+      reference:ticket.booking.reference,status:ticket.ticketStatus,accommodationName:ticket.booking.accommodationName,
+      checkedInAt:ticket.checkedInAt,boardedAt:ticket.boardedAt,vesselName:ticket.booking.sailing.vessel.name,departureAt:ticket.booking.sailing.departureAt};
+    const index=passengers.value.findIndex(item=>item.id===person.id);
+    if(index<0)passengers.value.push(person);else passengers.value[index]=person;
+    selectPassenger(person);statusFilter.value='ALL';search.value='';closeScanner();void revealReview();
+  }catch(cause){scanError.value=databaseRequestError(cause,'Could not verify this ticket. Check your connection and try again.');}
+  finally{scanBusy.value=false;}
 }
 function stopCamera() {
   if (scanFrame) cancelAnimationFrame(scanFrame);
@@ -894,7 +902,7 @@ async function startCamera() {
         if (code?.data) {
           ticketLookup.value = code.data;
           stopCamera();
-          findTicket();
+          void findTicket();
           return;
         }
       }

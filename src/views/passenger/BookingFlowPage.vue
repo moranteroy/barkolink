@@ -126,7 +126,7 @@
               confirming.
             </p>
           </aside>
-          <PortLocationMap class="trip-port-map" :ports="tripPorts" />
+          <PortLocationMap class="trip-port-map" :ports="tripPorts" journey />
         </section>
 
         <section
@@ -334,10 +334,12 @@
               <b>PHP {{ serviceFee.toLocaleString() }}</b>
             </div>
             <section class="voucher-entry" aria-label="Booking voucher">
-              <label for="booking-voucher">Have a voucher?</label>
-              <div><input id="booking-voucher" v-model="voucherCode" maxlength="30" placeholder="Enter voucher code" :disabled="saving || voucherBusy" @input="clearVoucher" /><button type="button" :disabled="saving || voucherBusy || !voucherCode.trim()" @click="applyVoucher">{{ voucherBusy ? 'Checking...' : 'Apply' }}</button></div>
+              <label for="booking-voucher">{{ loyaltyApplied ? 'Your loyalty reward' : 'Have a voucher?' }}</label>
+              <div><input id="booking-voucher" v-model="voucherCode" maxlength="30" placeholder="Enter voucher code" :disabled="saving || voucherBusy" @input="editVoucher" /><button type="button" :disabled="saving || voucherBusy || !voucherCode.trim()" @click="applyVoucher">{{ voucherBusy ? 'Checking...' : 'Apply' }}</button></div>
+              <p v-if="voucherBusy && !voucherCode" role="status">Checking your automatic loyalty reward…</p>
               <p v-if="voucherError" role="alert">{{voucherError}}</p>
-              <p v-if="voucherQuote" role="status">{{voucherQuote.code}} applied: PHP {{voucherQuote.discount.toLocaleString()}} off regular fares <button type="button" :disabled="saving" @click="voucherCode=''; clearVoucher()">Remove</button></p>
+              <button v-if="voucherError && !voucherCode && !automaticVoucherRemoved" type="button" :disabled="saving || voucherBusy" @click="applyAutomaticVoucher">Check loyalty reward again</button>
+              <p v-if="voucherQuote" role="status">{{ loyaltyApplied ? 'Loyalty voucher automatically applied' : voucherQuote.code + ' applied' }}: PHP {{voucherQuote.discount.toLocaleString()}} off regular fares <button type="button" :disabled="saving" @click="removeVoucher">Remove</button></p>
               <small>One voucher per booking. Applies to regular passenger fares.</small>
             </section>
             <div v-if="voucherQuote" class="fare-row voucher-discount"><span>Voucher discount</span><b>- PHP {{voucherQuote.discount.toLocaleString()}}</b></div>
@@ -478,7 +480,7 @@
 <script setup lang="ts">
 import OnlinePayment from "../../components/passenger/OnlinePayment.vue";
 import TripWeather from "../../components/shared/TripWeather.vue";
-import { quoteVoucher, type VoucherQuote } from "../../services/vouchers";
+import { quoteVoucher, quoteLoyaltyVoucher, type VoucherQuote } from "../../services/vouchers";
 import { canResumeReservation } from "../../data/bookingReservation";
 import { paymentMethodLabel } from "../../data/paymentMethod";
 import { philippineDateKey, validBirthDate } from "../../data/travelDate";
@@ -739,20 +741,45 @@ const serviceFee = computed(
     passengers.value.length,
 );
 const voucherCode=ref(''),voucherQuote=ref<VoucherQuote|null>(null),voucherBusy=ref(false),voucherError=ref('');
+const loyaltyApplied=ref(false),automaticVoucherRemoved=ref(false);
+let voucherRequest=0;
 const payableTotal=computed(()=>total.value+serviceFee.value-(voucherQuote.value?.discount || 0));
-function clearVoucher(){voucherQuote.value=null;voucherError.value='';}
+function clearVoucher(){++voucherRequest;voucherQuote.value=null;voucherError.value='';voucherBusy.value=false;}
+function editVoucher(){automaticVoucherRemoved.value=true;loyaltyApplied.value=false;clearVoucher();}
+function removeVoucher(){voucherCode.value='';editVoucher();}
 const voucherContext=computed(()=>JSON.stringify([total.value,serviceFee.value,trip.value.id,accommodationId.value,passengers.value.map(p=>passengerTypeCode(p.type))]));
-watch(voucherContext,clearVoucher);
+watch(voucherContext,()=>{
+  if(loyaltyApplied.value){voucherCode.value='';loyaltyApplied.value=false;}
+  clearVoucher();
+  if(flow.value==='summary')void applyAutomaticVoucher();
+});
+function voucherArgs(){
+  const args:Record<string,unknown>={sailingCode:trip.value.id,passengerCount:passengers.value.length,accommodationId:accommodationId.value || undefined};
+  passengers.value.forEach((p,i)=>{args[`passenger${i+1}Type`]=passengerTypeCode(p.type);});
+  return args;
+}
+async function applyAutomaticVoucher(){
+  if(!database || saving.value || voucherCode.value.trim() || automaticVoucherRemoved.value)return;
+  const id=++voucherRequest,context=voucherContext.value;
+  voucherBusy.value=true;voucherError.value='';
+  try{
+    const response=(await quoteLoyaltyVoucher(database,voucherArgs())).data;
+    if(id===voucherRequest && context===voucherContext.value && response.quote){
+      voucherQuote.value=response.quote;voucherCode.value=response.quote.code;loyaltyApplied.value=true;
+    }
+  }catch{if(id===voucherRequest)voucherError.value='Could not check loyalty rewards. You can continue without a voucher or try again.';}
+  finally{if(id===voucherRequest)voucherBusy.value=false;}
+}
 async function applyVoucher(){
   if(!database || voucherBusy.value)return;
-  voucherBusy.value=true;clearVoucher();
+  clearVoucher();voucherBusy.value=true;loyaltyApplied.value=false;
+  const id=++voucherRequest;
   const context=voucherContext.value;
   try {
-    const args:Record<string,unknown>={voucherCode:voucherCode.value,sailingCode:trip.value.id,passengerCount:passengers.value.length,accommodationId:accommodationId.value || undefined};
-    passengers.value.forEach((p,i)=>{args[`passenger${i+1}Type`]=passengerTypeCode(p.type);});
+    const args={...voucherArgs(),voucherCode:voucherCode.value};
     const response=(await quoteVoucher(database,args)).data;
-    if(context===voucherContext.value)voucherQuote.value=response;
-  }catch(e){voucherError.value=databaseRequestError(e,'Could not apply voucher.');}finally{voucherBusy.value=false;}
+    if(id===voucherRequest && context===voucherContext.value)voucherQuote.value=response;
+  }catch(e){if(id===voucherRequest)voucherError.value=databaseRequestError(e,'Could not apply voucher.');}finally{if(id===voucherRequest)voucherBusy.value=false;}
 }
 const booking = ref<Booking>({
   reference: "",
@@ -771,6 +798,11 @@ const booking = ref<Booking>({
 });
 const copied = ref(false);
 const saving = ref(false);
+watch(()=>selectedTrip.value?.selectionId,()=>{automaticVoucherRemoved.value=false;loyaltyApplied.value=false;voucherCode.value='';clearVoucher();});
+watch(flow,value=>{
+  if(value==='summary')void applyAutomaticVoucher();
+  else{if(loyaltyApplied.value){voucherCode.value='';loyaltyApplied.value=false;}clearVoucher();}
+},{immediate:true});
 const errorMessage = ref("");
 const duplicateReference = ref('');
 function clearDuplicateNotice() {

@@ -163,6 +163,7 @@ export interface MyBookingsData {
       passengerType: string;
       fare: number;
       ticketCode: UUIDString;
+      ticketQrPayload?: string | null;
       ticketStatus: string;
       discountVerifiedAt?: string | null;
       discountVerificationNote?: string | null;

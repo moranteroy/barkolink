@@ -3,7 +3,8 @@ import QRCode from 'qrcode'
 import jsQR from 'jsqr'
 import { ticketDocument } from '../../src/data/ticketExport'
 const code = '11111111-1111-4111-8111-111111111111'
-const booking = { reference: 'BL-TEST', status: 'CONFIRMED', paymentStatus: 'PAID', from: '<script>alert(1)</script>', to: 'Batangas', date: 'Oct 4, 2026', departure: '8:00 AM', vessel: 'Test ferry', passengers: [{ name: 'Passenger & One', type: 'Regular', ticketCode: code, ticketStatus: 'ISSUED' }] }
+const payload=JSON.stringify({BarkoLink:'Ticket v2',Name:'Passenger & One',Date:'2026-10-04 08:00 Philippine time',Vessel:'Test ferry',Route:'Calapan to Batangas',Booking:'BL-TEST',Ticket:code,Verification:'a'.repeat(64)})
+const booking = { reference: 'BL-TEST', status: 'CONFIRMED', paymentStatus: 'PAID', from: '<script>alert(1)</script>', to: 'Batangas', date: 'Oct 4, 2026', departure: '8:00 AM', vessel: 'Test ferry', passengers: [{ name: 'Passenger & One', type: 'Regular', ticketCode: code, ticketQrPayload:payload, ticketStatus: 'ISSUED' }] }
 describe('Downloadable tickets', () => {
   it('uses the normal payment status on exported online tickets', async () => {
     const html = await ticketDocument({ ...booking, paymentMethod: 'PAYMONGO_TEST' })
@@ -21,9 +22,10 @@ describe('Downloadable tickets', () => {
     await expect(ticketDocument({ ...booking, paymentStatus: 'UNPAID' })).rejects.toThrow('paid')
     await expect(ticketDocument({ ...booking, status: 'CANCELLED' })).rejects.toThrow('paid')
     await expect(ticketDocument({ ...booking, passengers: [{ ...booking.passengers[0], ticketStatus: 'CANCELLED' }] })).rejects.toThrow('No issued')
+    await expect(ticketDocument({ ...booking, passengers: [{ ...booking.passengers[0], ticketQrPayload:null }] })).rejects.toThrow('verified QR')
   })
   it('encodes a real ticket value that the boarding decoder can read', () => {
-    const qr = QRCode.create(code, { errorCorrectionLevel: 'M' })
+    const qr = QRCode.create(payload, { errorCorrectionLevel: 'M' })
     const scale = 6, margin = 4, size = (qr.modules.size + margin * 2) * scale
     const pixels = new Uint8ClampedArray(size * size * 4).fill(255)
     for (let y = 0; y < qr.modules.size; y++) for (let x = 0; x < qr.modules.size; x++) {
@@ -33,6 +35,8 @@ describe('Downloadable tickets', () => {
         pixels[offset] = pixels[offset + 1] = pixels[offset + 2] = 0
       }
     }
-    expect(jsQR(pixels, size, size)?.data).toBe(code)
+    const scanned=jsQR(pixels, size, size)?.data
+    expect(scanned).toBe(payload)
+    expect(JSON.parse(scanned!)).toMatchObject({Name:'Passenger & One',Vessel:'Test ferry',Date:'2026-10-04 08:00 Philippine time'})
   })
 })

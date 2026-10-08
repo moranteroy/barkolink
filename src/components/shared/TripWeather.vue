@@ -10,7 +10,7 @@
         <template v-else>
           <div class="weather-conditions"><strong>{{ format((port.forecast || port.current)?.temperatureC) }}<span>°C</span></strong><div><b>{{ (port.forecast || port.current)?.condition }}</b><small>{{ port.forecast ? 'Forecast at departure' : 'Current weather' }}</small></div></div>
           <dl><div><dt>Wind</dt><dd>{{ format((port.forecast || port.current)?.windKph) }} km/h</dd></div><div><dt>Visibility</dt><dd>{{ format((port.forecast || port.current)?.visibilityKm) }} km</dd></div><div v-if="port.forecast"><dt>Chance of rain</dt><dd>{{ format(port.forecast.rainChance) }}%</dd></div></dl>
-          <p v-if="!port.forecast" class="forecast-notice">Departure forecast is not available yet. Forecasts cover the next 3 days.</p>
+          <p v-if="!port.forecast" class="forecast-notice">Departure forecast is not available yet. Check again closer to your trip.</p>
           <p class="weather-updated">{{ port.stale ? 'Saved weather · update delayed' : 'Last updated' }} · {{ timestamp(port.current?.at) }}</p>
         </template>
       </article>

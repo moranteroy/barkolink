@@ -6,3 +6,10 @@ export async function tripWeather(sailingCode:string):Promise<TripWeatherData>{
   if(error || data?.error)throw new Error('Weather updates are temporarily unavailable.');
   return data;
 }
+export type WeatherDay = { date:string;condition:string;conditionCode:number|null;highC:number|null;lowC:number|null;rainChance:number|null;windKph:number|null };
+export type PortForecastData = { configured:boolean;ports:Array<{id:string;name:string;city:string;available:boolean;stale?:boolean;current?:WeatherReading;days?:WeatherDay[]}> };
+export async function portForecast(portId:string):Promise<PortForecastData>{
+  const {data,error}=await requireSupabase().functions.invoke('weather',{body:{portId}});
+  if(error || data?.error)throw new Error('Weather updates are temporarily unavailable.');
+  return data;
+}

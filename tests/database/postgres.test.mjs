@@ -56,6 +56,22 @@ async function reserve(reference = "BK-TEST", count = 1, firstName) {
 }
 
 describe("Supabase PostgreSQL migrations and business rules", () => {
+  it('persists chatbot limits per passenger and rejects anonymous/staff access', async () => {
+    const allowance=async(role)=>{
+      await db.query("select set_config('request.jwt.claim.sub', $1, false)",[ids[role] || '']);
+      await db.exec('set role authenticated');
+      try{return (await db.query('select public.consume_chatbot_allowance() as allowed')).rows[0].allowed;}finally{await db.exec('reset role');}
+    };
+    await assert.rejects(allowance('admin'),/Passenger sign-in/);
+    await assert.rejects(allowance('none'),/Passenger sign-in/);
+    for(let i=0;i<12;i++)assert.equal(await allowance('passenger'),true);
+    assert.equal(await allowance('passenger'),false);assert.equal(await allowance('other'),true);
+    await db.query("update barkolink_private.chatbot_usage set window_at=now()-interval '11 minutes' where actor_id=$1",[ids.passenger]);
+    assert.equal(await allowance('passenger'),true);
+    await db.query('update barkolink_private.chatbot_usage set day_count=100 where actor_id=$1',[ids.passenger]);assert.equal(await allowance('passenger'),false);
+    await db.query("update barkolink_private.chatbot_usage set usage_day=current_date-1 where actor_id=$1",[ids.passenger]);assert.equal(await allowance('passenger'),true);
+    await db.exec('set role authenticated');await assert.rejects(db.query('select * from barkolink_private.chatbot_usage'),/permission denied/);await db.exec('reset role');
+  });
   before(async () => {
     db = new PGlite();
     await db.exec(`
@@ -706,6 +722,136 @@ describe("Supabase PostgreSQL migrations and business rules", () => {
       values ('TEST-TRIP',$1,$2,$3,'2099-01-01T08:00:00Z','2099-01-01T10:00:00Z',120,600,480,480,300,480,600,2)`,
       [origin, destination, vessel],
     );
+  });
+
+  it('shows today’s departures and overnight arrivals with operator statuses and no passenger records', async () => {
+    await db.exec(`update public.sailing set departure_at='2099-01-01T08:00:00Z',arrival_at='2099-01-01T10:00:00Z';
+      update public.sailing set departure_at=(date_trunc('day',now() at time zone 'Asia/Manila') at time zone 'Asia/Manila')-interval '1 hour',
+      arrival_at=(date_trunc('day',now() at time zone 'Asia/Manila') at time zone 'Asia/Manila')+interval '1 hour',status='DELAYED' where code='TEST-TRIP';`);
+    let result = await call('passenger','PassengerSailingBoard');
+    assert.equal(result.sailings.length,1);
+    assert.equal(result.sailings[0].status,'DELAYED');
+    assert.equal(result.sailings[0].origin.id,origin);
+    assert.equal(result.sailings[0].destination.id,destination);
+    assert.ok(result.updatedAt);
+    assert.equal(result.sailings[0].availableSeats,undefined);
+    assert.equal(result.sailings[0].bookingPassengers,undefined);
+    await db.exec(`update public.sailing set status='COMPLETED' where code='TEST-TRIP'`);
+    result = await call('passenger','PassengerSailingBoard');
+    assert.equal(result.sailings[0].status,'COMPLETED');
+    await assert.rejects(call(null,'PassengerSailingBoard',{},'anon'),/Sign in/);
+    assert.ok(!(await call('passenger','BrowseSailings')).sailings.some(s => s.code === 'TEST-TRIP'));
+  });
+
+  async function loyaltyHistory(count) {
+    for(let n=1;n<=count;n++) {
+      await db.query(`insert into public.sailing select (jsonb_populate_record(null::public.sailing,to_jsonb(s)||jsonb_build_object('code',$1::text,'departure_at',s.departure_at+$2::integer*interval '1 day','arrival_at',s.arrival_at+$2::integer*interval '1 day'))).* from public.sailing s where code='TEST-TRIP'`,[`HISTORY-${n}`,n]);
+      await call('passenger','ReserveSailing1',{...reserveArgs(`HISTORY-${n}`),sailingCode:`HISTORY-${n}`});
+      await db.query(`update public.booking set status='CONFIRMED',payment_status='PAID' where reference=$1;
+        `,[`HISTORY-${n}`]);
+      await db.query(`update public.booking_passenger set ticket_status='BOARDED' where booking_id=(select id from public.booking where reference=$1)`,[`HISTORY-${n}`]);
+      await db.query(`update public.sailing set status='BOARDING',departure_at=now()-($2::integer*interval '1 day'),arrival_at=now()-($2::integer*interval '1 day')+interval '2 hours' where code=$1`,[`HISTORY-${n}`,n]);
+      await call('admin','AdminUpdateSailingStatus',{code:`HISTORY-${n}`,status:'COMPLETED'});
+    }
+  }
+  it('issues personal loyalty vouchers once per five boarded completed trips and excludes no-shows, unpaid and cancelled bookings',async()=>{
+    await loyaltyHistory(5);
+    assert.equal((await db.query("select count(*)::int as n from public.voucher where owner_uid is not null")).rows[0].n,1);
+    let wallet=await call('passenger','MyLoyalty');
+    assert.equal(wallet.completedTrips,5);assert.equal(wallet.vouchers.length,1);assert.equal(wallet.vouchers[0].value,100);
+    assert.equal(wallet.currentTier,'Silver');assert.equal(wallet.rewardValue,200);
+    assert.ok(Date.parse(wallet.vouchers[0].expiresAt)>Date.now()+89*86400000);
+    await call('passenger','MyLoyalty');
+    assert.equal((await db.query("select count(*)::int as n from public.notification where category='PROMO'")).rows[0].n,1);
+    const args={...reserveArgs(),passengerCount:1};
+    const auto=await call('passenger','QuoteLoyaltyVoucher',args);
+    assert.equal(auto.quote.discount,100);
+    await assert.rejects(call('other','QuoteVoucher',{...args,voucherCode:auto.quote.code}),/another passenger/);
+    await assert.rejects(call('other','ReserveSailing1',{...args,reference:'STOLEN',voucherCode:auto.quote.code,expectedVoucherDiscount:100}),/another passenger/);
+    await call('passenger','ReserveSailing1',{...args,voucherCode:auto.quote.code,expectedVoucherDiscount:100});
+    await call('passenger','ReserveSailing1',{...args,voucherCode:auto.quote.code,expectedVoucherDiscount:100});
+    assert.equal((await call('passenger','MyBookings')).bookings.find(b=>b.reference==='BK-TEST').total,500);
+    assert.equal((await call('passenger','MyLoyalty')).vouchers.length,0);
+    assert.equal((await call('passenger','QuoteLoyaltyVoucher',args)).quote,null);
+    await db.exec("update public.booking set payment_status='UNPAID' where reference='HISTORY-1'; update public.booking set status='CANCELLED' where reference='HISTORY-2'; update public.booking_passenger set ticket_status='ISSUED' where booking_id=(select id from public.booking where reference='HISTORY-3')");
+    wallet=await call('passenger','MyLoyalty');assert.equal(wallet.completedTrips,2);
+    await assert.rejects(call('admin','MyLoyalty'),/Passenger/);
+    await assert.rejects(call(null,'MyLoyalty',{},'anon'),/Passenger/);
+  });
+  it('keeps rewards unused for discount-only bookings and awards another voucher at ten distinct sailings',async()=>{
+    await loyaltyHistory(10);
+    const wallet=await call('passenger','MyLoyalty');assert.equal(wallet.vouchers.length,2);assert.equal(wallet.completedTrips,10);
+    assert.deepEqual(wallet.vouchers.map(v=>v.value),[100,200]);assert.equal(wallet.currentTier,'Gold');assert.equal(wallet.rewardValue,300);
+    const args={...reserveArgs(),passengerCount:1,passenger1Type:'STUDENT'};
+    assert.equal((await call('passenger','QuoteLoyaltyVoucher',args)).quote,null);
+    assert.equal((await call('passenger','MyLoyalty')).vouchers.length,2);
+    await db.exec("update public.voucher set starts_at=now()-interval '91 days',expires_at=now()-interval '1 second'");
+    assert.equal((await call('passenger','MyLoyalty')).vouchers.length,0);
+    assert.equal((await call('passenger','QuoteLoyaltyVoucher',{...args,passenger1Type:'REGULAR'})).quote,null);
+  });
+  it('awards Platinum rewards at fifteen trips and every five trips afterward',async()=>{
+    await loyaltyHistory(20);
+    const wallet=await call('passenger','MyLoyalty');
+    assert.deepEqual(wallet.vouchers.map(v=>v.value),[100,200,300,300]);
+    assert.equal(wallet.currentTier,'Platinum');assert.equal(wallet.rewardValue,300);
+    await call('passenger','MyLoyalty');
+    assert.equal((await db.query('select count(*)::int as n from public.voucher where owner_uid is not null')).rows[0].n,4);
+  });
+  it('upgrades only unspent rewards once and preserves booked discounts and expiry dates',async()=>{
+    await loyaltyHistory(10);
+    const wallet=await call('passenger','MyLoyalty');
+    await call('passenger','ReserveSailing1',{...reserveArgs(),voucherCode:wallet.vouchers[0].code,expectedVoucherDiscount:100});
+    await db.exec("update public.voucher set value=50 where owner_uid is not null; update public.booking set voucher_discount=50,total=550 where reference='BK-TEST'");
+    const migration=fs.readFileSync('supabase/migrations/028_loyalty_reward_tiers.sql','utf8');
+    const upgrade=migration.slice(migration.indexOf('with upgraded as'),migration.indexOf('\nalter function'));
+    await db.exec(upgrade);await db.exec(upgrade);
+    const reward=(await call('passenger','MyLoyalty')).vouchers[0];
+    assert.equal(reward.value,200);assert.equal(reward.expiresAt,wallet.vouchers[1].expiresAt);
+    assert.equal((await call('passenger','MyBookings')).bookings.find(b=>b.reference==='BK-TEST').total,550);
+    assert.equal((await db.query("select value from public.voucher where code=$1",[wallet.vouchers[0].code])).rows[0].value,50);
+    assert.equal((await db.query("select count(*)::int as n from public.notification where title='Your loyalty reward just got bigger'")).rows[0].n,1);
+  });
+
+  it('issues detailed QR payloads only for paid issued tickets and verifies them against the live record',async()=>{
+    const b=await reserve();
+    assert.equal(b.bookingPassengers_on_booking[0].ticketQrPayload,null);
+    assert.equal(b.bookingPassengers_on_booking[0].qrVerificationToken,undefined);
+    await assert.rejects(call('boarding','VerifyTicketQr',{payload:b.bookingPassengers_on_booking[0].ticketCode,sailingCode:'TEST-TRIP'}),/unpaid/);
+    await call('ticketing','CollectBookingPayment',{bookingId:b.id,method:'CASH'});
+    const ticket=(await call('passenger','MyBookings')).bookings[0].bookingPassengers_on_booking[0];
+    const payload=JSON.parse(ticket.ticketQrPayload);
+    assert.equal(payload.Name,'Passenger 1');assert.ok(payload.Date.includes('Philippine time'));assert.ok(payload.Vessel);assert.ok(payload.Route);assert.equal(payload.Booking,b.reference);
+    assert.match(payload.Verification,/^[0-9a-f]{64}$/);
+    const verified=await call('boarding','VerifyTicketQr',{payload:ticket.ticketQrPayload,sailingCode:'TEST-TRIP'});
+    assert.equal(verified.passenger.fullName,'Passenger 1');assert.equal(verified.passenger.booking.paymentStatus,'PAID');assert.equal(verified.legacyCode,false);
+    assert.equal(verified.passenger.qrVerificationToken,undefined);
+    await assert.rejects(call('passenger','VerifyTicketQr',{payload:ticket.ticketQrPayload,sailingCode:'TEST-TRIP'}),/Staff/);
+    await assert.rejects(call(null,'VerifyTicketQr',{payload:ticket.ticketQrPayload,sailingCode:'TEST-TRIP'},'anon'),/Staff/);
+    assert.equal((await call('boarding','VerifyTicketQr',{payload:ticket.ticketCode,sailingCode:'TEST-TRIP'})).legacyCode,true);
+    await assert.rejects(call('boarding','VerifyTicketQr',{payload:ticket.ticketQrPayload,sailingCode:'WRONG-TRIP'}),/different sailing/);
+    for(const key of ['Name','Date','Vessel','Verification']){
+      await assert.rejects(call('boarding','VerifyTicketQr',{payload:JSON.stringify({...payload,[key]:'FAKE'}),sailingCode:'TEST-TRIP'}),/verification failed/);
+    }
+    await assert.rejects(call('boarding','VerifyTicketQr',{payload:JSON.stringify({...payload,Ticket:'99999999-9999-4999-8999-999999999999'}),sailingCode:'TEST-TRIP'}),/not found/);
+    await assert.rejects(call('boarding','VerifyTicketQr',{payload:'{broken json',sailingCode:'TEST-TRIP'}),/not a valid/);
+    await assert.rejects(call('boarding','VerifyTicketQr',{payload:'x'.repeat(5000),sailingCode:'TEST-TRIP'}),/valid BarkoLink/);
+    await db.exec('set role authenticated');
+    await assert.rejects(db.query('select qr_verification_token from public.booking_passenger'),/permission denied/);
+    await db.exec('reset role');
+  });
+  it('shows repeat scans as already boarded and rejects duplicate boarding, cancelled and stale trip tickets',async()=>{
+    const b=await reserve();await call('ticketing','CollectBookingPayment',{bookingId:b.id,method:'CASH'});
+    const ticket=(await call('passenger','MyBookings')).bookings[0].bookingPassengers_on_booking[0];
+    await call('boarding','CheckInTicket',{passengerId:ticket.id});
+    await call('admin','AdminUpdateSailingStatus',{code:'TEST-TRIP',status:'BOARDING'});
+    await call('boarding','BoardTicket',{passengerId:ticket.id});
+    assert.equal((await call('boarding','VerifyTicketQr',{payload:ticket.ticketQrPayload,sailingCode:'TEST-TRIP'})).alreadyBoarded,true);
+    await assert.rejects(call('boarding','BoardTicket',{passengerId:ticket.id}),/Check in/);
+    await db.exec("update public.sailing set departure_at=departure_at+interval '1 day',arrival_at=arrival_at+interval '1 day' where code='TEST-TRIP'");
+    await assert.rejects(call('boarding','VerifyTicketQr',{payload:ticket.ticketQrPayload,sailingCode:'TEST-TRIP'}),/trip was updated/);
+    await db.query("update public.booking set status='CANCELLED' where id=$1",[b.id]);
+    await assert.rejects(call('boarding','VerifyTicketQr',{payload:ticket.ticketQrPayload,sailingCode:'TEST-TRIP'}),/cancelled/);
+    assert.equal((await call('passenger','MyBookings')).bookings[0].bookingPassengers_on_booking[0].ticketQrPayload,null);
   });
 
   const voucherArgs = {code:'SAIL50',discountType:'FIXED',value:50,minimumSpend:500,usageLimit:1,startsAt:'2020-01-01T00:00:00+08:00',expiresAt:'2099-01-01T00:00:00+08:00',isActive:true};

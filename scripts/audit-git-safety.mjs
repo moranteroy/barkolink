@@ -5,7 +5,7 @@ import { spawnSync } from 'node:child_process'
 // Reports locations/types only. Never print matched credential values or blob contents.
 function git(args, input) {
   const result = spawnSync('git', args, { input, maxBuffer: 256 * 1024 * 1024 })
-  if (result.status !== 0) throw new Error(`Git read failed: ${args[0]}`)
+  if (result.status !== 0) throw new Error(`Git read failed: ${args[0]} (${result.error?.code || result.status}); response omitted.`)
   return result.stdout
 }
 const privateValues = []
@@ -59,7 +59,17 @@ for (const file of candidates) {
   if (forbidden(file)) forbiddenWorking.push(file)
   for (const type of scan(fs.readFileSync(file))) working.push({ file, type })
 }
-const objects = git(['rev-list', '--objects', scope]).toString('utf8').trim().split('\n').map(line => {
+// An index blob can differ from both HEAD and the current file on disk.
+const index = git(['ls-files', '--stage', '-z']).toString('utf8').split('\0').filter(Boolean).map(entry => {
+  const at = entry.indexOf('\t'); const [, oid, stage] = entry.slice(0, at).split(' ');
+  return { oid, stage, file: entry.slice(at + 1) };
+})
+const indexFindings = [], forbiddenIndexPaths = []
+for (const entry of index) {
+  if (forbidden(entry.file)) forbiddenIndexPaths.push(entry.file)
+  for (const type of scan(git(['cat-file', 'blob', entry.oid]))) indexFindings.push({ file: entry.file, stage: entry.stage, type })
+}
+const objects = git(['rev-list', '--objects', '--all']).toString('utf8').trim().split('\n').map(line => {
   const at = line.indexOf(' '); return { oid: at < 0 ? line : line.slice(0, at), file: at < 0 ? '' : line.slice(at + 1) }
 })
 const metadata = git(['cat-file', '--batch-check=%(objectname) %(objecttype) %(objectsize)'], objects.map(obj => obj.oid).join('\n') + '\n').toString('utf8').trim().split('\n')
@@ -89,6 +99,7 @@ const report = {
   scope, currentRemoteFiles: tree.length, remoteForbiddenPaths: tree.filter(forbidden),
   remoteDependencyFiles: tree.filter(file => file.includes('node_modules/')).length,
   eligibleWorkingFiles: candidates.length, forbiddenWorkingPaths: forbiddenWorking, workingFindings: working,
+  indexFilesScanned: index.length, forbiddenIndexPaths, indexFindings, historyScope: 'all local and fetched remote refs',
   historyBlobsScanned: blobs.length, historyFindings: history, historicalVendorPatternFindings: vendorExamples,
   historyDependencyBlobs: blobs.filter(blob => blob.file.includes('node_modules/')).length,
   completeHistoricalVendorPrivateKeys: completeVendorKeys,
@@ -97,4 +108,4 @@ const report = {
 fs.mkdirSync('.audit', { recursive: true })
 fs.writeFileSync(path.join('.audit', 'git-safety-report.json'), JSON.stringify(report, null, 2))
 console.log(JSON.stringify(report))
-if (working.length || history.length || report.remoteForbiddenPaths.length || forbiddenWorking.length) process.exitCode = 2
+if (working.length || history.length || report.remoteForbiddenPaths.length || forbiddenWorking.length || indexFindings.length || forbiddenIndexPaths.length) process.exitCode = 2

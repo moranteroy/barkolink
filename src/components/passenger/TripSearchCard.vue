@@ -65,7 +65,7 @@
   </section>
 </template>
 <script setup lang="ts">
-import { computed, onMounted, ref } from "vue";
+import { computed, onMounted, ref, watch } from "vue";
 import { useRouter } from "vue-router";
 import { Button } from "@/components/ui/button";
 import { IonIcon } from "@ionic/vue";
@@ -74,7 +74,7 @@ import { browseActivePorts } from "../../services/database/passenger";
 import { database } from "../../services/session";
 import { philippineDateKey } from "../../data/travelDate";
 import { recordRecentSearch } from "../../data/recentSearches";
-const emit = defineEmits<{ searched: [] }>();
+const emit = defineEmits<{ searched: []; originChanged: [portId: string] }>();
 const props = withDefaults(defineProps<{ navigateOnSearch?: boolean }>(), {
   navigateOnSearch: true,
 });
@@ -110,13 +110,14 @@ const count = ref(
     ),
   ),
 );
-const ports = ref<{ city: string }[]>([]),
+const ports = ref<{ id: string; city: string }[]>([]),
   loading = ref(true),
   portError = ref(""),
   routeError = ref("");
 const cities = computed(() => [
   ...new Set(ports.value.map((port) => port.city)),
 ]);
+watch(() => ports.value.find(port => port.city === from.value)?.id || "", portId => emit("originChanged", portId));
 onMounted(async () => {
   try {
     if (!database) throw new Error("Supabase is unavailable.");
