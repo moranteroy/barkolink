@@ -44,7 +44,7 @@ const ionRouter = useIonRouter();
 const currentPath = computed(() => route.path);
 const items = [
   { label: "Home", to: "/home", icon: home },
-  { label: "Trips", to: "/search?all=1", icon: boatOutline },
+  { label: "Trips", to: "/trips?all=1", icon: boatOutline },
   { label: "Bookings", to: "/bookings", icon: ticketOutline },
   { label: "Profile", to: "/profile", icon: personOutline },
 ];

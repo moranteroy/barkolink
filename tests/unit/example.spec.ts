@@ -12,14 +12,16 @@ vi.mock('@ionic/vue', () => ({
   useIonRouter: () => ({navigate: vi.fn()}),
   onIonViewWillEnter: (callback: () => void) => { mocks.enter = callback },
   onIonViewDidLeave: vi.fn(),
+  onIonViewDidEnter: vi.fn(),
 }))
+vi.mock('vue-router', () => ({ useRoute: () => ({ path: '/home', hash: '' }) }))
 vi.mock('../../src/services/session', () => ({
   auth: { currentUser: { uid: 'passenger-test', displayName: 'Passenger One', email: 'test@example.invalid' } },
   database: {},
 }))
-vi.mock('../../src/services/database/passenger', () => ({ myProfile: mocks.profile, myBookings: mocks.bookings }))
+vi.mock('../../src/services/database/passenger', () => ({ myProfile: mocks.profile, myBookings: mocks.bookings, browseSailings: vi.fn().mockResolvedValue({ data: { sailings: [] } }) }))
 
-const options = { global: { stubs: { PassengerHeader: true, PassengerBottomNav: true, TripSearchCard: true, AdvisoryBanner: true, PortForecast: true, SailingBoard: true, LoyaltyRewards: true, 'router-link': { template: '<a><slot /></a>' } } } }
+const options = { global: { stubs: { PassengerHeader: true, PassengerBottomNav: true, TripSearchCard: true, AdvisoryBanner: true, PortForecast: true, SailingBoard: true, LoyaltyRewards: true, FrequentRoutes: true, 'router-link': { template: '<a><slot /></a>' } } } }
 
 describe('HomePage.vue', () => {
   beforeEach(() => {

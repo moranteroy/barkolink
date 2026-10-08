@@ -6,6 +6,7 @@
         <LandingNav :scrolled="scrolled" @navigate="scrollTo" />
         <main id="landing-main" tabindex="-1">
           <LandingHero :routes="catalog.routes.length" :vessels="catalog.vessels.length" :loading="loading || !!catalogError" />
+          <LandingGuides />
           <LandingRoutes :routes="catalog.routes" :loading="loading" :error="catalogError" @retry="loadCatalog" @select="selectRoute" />
           <LandingFeatures />
           <LandingHowItWorks />
@@ -27,6 +28,7 @@ import BrandMark from '../../components/shared/BrandMark.vue';
 import PortLocationMap from '../../components/shared/PortLocationMap.vue';
 import LandingNav from '../../components/landing/LandingNav.vue';
 import LandingHero from '../../components/landing/LandingHero.vue';
+import LandingGuides from '../../components/landing/LandingGuides.vue';
 import LandingRoutes from '../../components/landing/LandingRoutes.vue';
 import LandingFeatures from '../../components/landing/LandingFeatures.vue';
 import LandingHowItWorks from '../../components/landing/LandingHowItWorks.vue';
@@ -71,7 +73,7 @@ function selectRoute(sailing: LandingSailing) {
   localStorage.setItem('barkolink-search-iso-date', philippineDateKey(new Date(sailing.departureAt)));
   localStorage.setItem('barkolink-search-date', new Date(sailing.departureAt).toLocaleDateString('en-PH', { month: 'short', day: '2-digit', year: 'numeric', timeZone: 'Asia/Manila' }));
   localStorage.setItem('barkolink-search-passengers', '1');
-  void router.push('/search');
+  void router.push('/trips');
 }
 onMounted(() => { void loadCatalog(); void loadPorts(); });
 </script>

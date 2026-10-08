@@ -3,12 +3,12 @@
     <div class="landing-container nav-row">
       <RouterLink to="/" aria-label="BarkoLink home"><BrandMark /></RouterLink>
       <nav class="desktop-links" aria-label="Main navigation"><a v-for="link in links" :key="link.id" :href="`#${link.id}`" @click.prevent="emit('navigate', link.id)">{{ link.label }}</a></nav>
-      <div class="desktop-actions"><RouterLink to="/login">Sign in</RouterLink><RouterLink class="landing-button small" to="/search?all=1">Book Now</RouterLink></div>
+      <div class="desktop-actions"><RouterLink to="/login">Sign in</RouterLink><RouterLink class="landing-button small" to="/trips?all=1">Book Now</RouterLink></div>
       <button ref="toggle" class="menu-toggle" type="button" :aria-expanded="open" aria-controls="landing-mobile-menu" :aria-label="open ? 'Close navigation' : 'Open navigation'" @click="open = !open"><IonIcon :icon="open ? closeOutline : menuOutline" aria-hidden="true" /></button>
     </div>
     <nav v-if="open" id="landing-mobile-menu" class="mobile-links landing-container" aria-label="Mobile navigation">
       <a v-for="link in links" :key="link.id" :href="`#${link.id}`" @click.prevent="closeMenu(); emit('navigate', link.id)">{{ link.label }}</a>
-      <RouterLink to="/login" @click="closeMenu()">Sign in</RouterLink><RouterLink class="landing-button" to="/search?all=1" @click="closeMenu()">Book Now</RouterLink>
+      <RouterLink to="/login" @click="closeMenu()">Sign in</RouterLink><RouterLink class="landing-button" to="/trips?all=1" @click="closeMenu()">Book Now</RouterLink>
     </nav>
   </header>
 </template>

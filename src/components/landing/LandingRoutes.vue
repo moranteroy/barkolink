@@ -3,7 +3,7 @@
     <div class="landing-heading"><span class="section-eyebrow">FIND YOUR CROSSING</span><h2 id="routes-heading">Explore our routes</h2><p>Choose from upcoming sailings and find a fare that fits your journey.</p></div>
     <div v-if="loading" class="landing-state" role="status">Loading upcoming routes…</div>
     <div v-else-if="error" class="landing-state" role="alert">{{ error }} <button type="button" class="text-action" @click="emit('retry')">Try again</button></div>
-    <div v-else-if="!routes.length" class="landing-state">No upcoming routes with seats available. <RouterLink to="/search?all=1">Browse sailing schedules</RouterLink></div>
+    <div v-else-if="!routes.length" class="landing-state">No upcoming routes with seats available. <RouterLink to="/trips?all=1">Browse sailing schedules</RouterLink></div>
     <div v-else class="landing-grid routes-grid"><article v-for="route in routes.slice(0, 4)" :key="route.id" class="landing-card route-card">
       <span class="landing-icon"><IonIcon :icon="boatOutline" aria-hidden="true" /></span>
       <h3>{{ route.sailing.origin.city }} <IonIcon :icon="arrowForwardOutline" aria-hidden="true" /><span class="sr-only">to</span> {{ route.sailing.destination.city }}</h3>
@@ -12,7 +12,7 @@
       <div class="route-bottom"><div><small>Regular fare from</small><strong>{{ route.fare === null ? 'See fares' : money.format(route.fare) }}</strong></div><button class="landing-button pale small" type="button" :aria-label="`Find ${route.sailing.origin.city} to ${route.sailing.destination.city} sailings`" @click="emit('select', route.sailing)">Book Now</button></div>
     </article></div>
     <p v-if="routes.length" class="landing-note">Regular passenger fare shown. Service fees and accommodation charges are displayed before you reserve.</p>
-    <RouterLink class="section-link" to="/search?all=1">View all sailings <IonIcon :icon="searchOutline" aria-hidden="true" /></RouterLink>
+    <RouterLink class="section-link" to="/trips?all=1">View all sailings <IonIcon :icon="searchOutline" aria-hidden="true" /></RouterLink>
   </section>
 </template>
 <script setup lang="ts">

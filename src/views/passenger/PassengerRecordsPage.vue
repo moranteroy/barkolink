@@ -1,7 +1,7 @@
 <template>
   <ion-page
     ><ion-content :fullscreen="true"
-      ><main class="demo-page" :class="{ 'bookings-page': kind === 'bookings', 'ticket-page': kind === 'ticket' }">
+      ><main class="demo-page" :class="{ 'bookings-page': kind === 'bookings', 'notifications-page': kind === 'notifications', 'ticket-page': kind === 'ticket' }">
         <PassengerHeader />
         <section class="page-title">
           <p class="kicker">{{ eyebrow }}</p>
@@ -196,7 +196,7 @@
               Pay for your reservation at the ticketing desk to receive a
               passenger e-ticket.
             </p>
-            <ion-button class="primary" router-link="/search"
+            <ion-button class="primary" router-link="/trips"
               >Find a sailing</ion-button
             >
           </div>
@@ -208,33 +208,40 @@
           <div class="empty-state"><h2>Could not load {{ title.toLowerCase() }}</h2><ion-button class="primary" @click="loadData">Retry</ion-button></div>
         </template>
         <template v-else-if="kind === 'bookings'"
-          ><div class="booking-filters">
+          ><div class="booking-filter-panel">
+          <div class="filter-panel-heading"><span><ion-icon :icon="ticketOutline" aria-hidden="true" /> Your reservations</span><small>{{ bookings.length }} total</small></div>
+          <div class="booking-filters">
             <label
-              >Find a booking<input
+              ><span><ion-icon :icon="searchOutline" aria-hidden="true" /> Find a booking</span><input
                 v-model.trim="bookingSearch"
                 type="search"
                 placeholder="Reference, route, vessel or passenger" /></label
             ><label
-              >Payment status<select v-model="bookingPayment">
+              ><span><ion-icon :icon="walletOutline" aria-hidden="true" /> Payment status</span><select v-model="bookingPayment">
                 <option value="ALL">All payments</option>
                 <option value="UNPAID">Awaiting payment</option>
-                <option value="PAID">Paid</option>
+                <option value="PAID">All paid bookings</option>
+                <option value="AWAITING_VERIFICATION">Awaiting staff verification</option>
                 <option value="REFUND_PENDING">Refund pending</option>
                 <option value="REFUNDED">Refunded</option>
               </select></label
             >
+          </div>
           </div>
           <div class="tabs" role="group" aria-label="Filter by booking status">
             <button
               v-for="tab in tabs"
               :key="tab"
               :aria-pressed="selectedTab === tab"
+              :aria-label="tab"
               :class="{ selected: selectedTab === tab }"
               @click="selectedTab = tab"
             >
-              {{ tab }}
+              <ion-icon :icon="tabIcon(tab)" aria-hidden="true" />
+              <span>{{ tab }}</span><small aria-hidden="true">{{ tabCounts[tab] }}</small>
             </button>
           </div>
+          <div class="booking-results" aria-live="polite"><span><strong>{{ visibleBookings.length }}</strong> {{ visibleBookings.length === 1 ? 'reservation' : 'reservations' }} <small>· {{ selectedTab }}</small></span><button v-if="bookingSearch || bookingPayment !== 'ALL'" @click="bookingSearch = ''; bookingPayment = 'ALL'">Reset filters</button></div>
           <div v-if="visibleBookings.length" class="booking-list">
             <article
               v-for="booking in visibleBookings"
@@ -244,23 +251,13 @@
               <div class="booking-copy">
                 <div class="row-heading">
                   <h2>
-                    {{ booking.from }}
+                    <span class="booking-port">{{ booking.from }}</span>
                     <span
                       ><ion-icon :icon="arrowForwardOutline" aria-hidden="true"
                     /></span>
-                    {{ booking.to }}
+                    <span class="booking-port">{{ booking.to }}</span>
                   </h2>
-                  <b :class="[booking.status.toLowerCase(), booking.paymentStatus.toLowerCase()]">{{
-                    booking.paymentStatus === "REFUND_PENDING"
-                      ? "REFUND PENDING"
-                      : booking.paymentStatus === "REFUNDED"
-                        ? "REFUNDED"
-                        : ["CANCELLED", "EXPIRED"].includes(booking.status)
-                          ? booking.status
-                          : booking.paymentStatus === "PAID"
-                            ? awaitingPaymentVerification(booking) ? "AWAITING STAFF VERIFICATION" : "PAID"
-                            : "PAYMENT PENDING"
-                  }}</b>
+                  <b class="booking-status" :class="bookingStatus(booking).tone"><ion-icon :icon="bookingStatus(booking).icon" aria-hidden="true" />{{ bookingStatus(booking).label }}</b>
                 </div>
                 <div class="booking-meta">
                   <span
@@ -271,6 +268,7 @@
                     {{ booking.vessel }}</span
                   >
                 </div>
+                <div class="booking-schedule"><div><small>Departure</small><strong>{{ booking.departure || booking.time || 'Not listed' }}</strong></div><span class="schedule-track"><ion-icon :icon="boatOutline" aria-hidden="true" /></span><div><small>Arrival</small><strong>{{ booking.arrival || 'Not listed' }}</strong></div></div>
                 <div class="booking-fare-panel">
                 <div class="booking-total"><span>Booking total</span><strong>PHP {{ booking.total.toLocaleString() }}</strong></div>
                 <p v-if="booking.accommodationName" class="booking-accommodation">
@@ -294,7 +292,7 @@
                   v-if="booking.paymentStatus === 'UNPAID' && ['PENDING','CONFIRMED'].includes(booking.status) && !(returnedBooking?.id === booking.id && returnVerificationPending)"
                   :booking-id="booking.id" :reference="booking.reference" @updated="loadData"
                 />
-                <p v-if="booking.paymentStatus === 'PAID'" class="payment-hint">{{ awaitingPaymentVerification(booking) ? 'Payment received — Awaiting staff verification' : 'Payment confirmed' }} · {{ paymentMethodLabel(booking) }}</p>
+                <p v-if="booking.paymentStatus === 'PAID'" class="payment-hint">{{ awaitingPaymentVerification(booking) ? 'Payment received. Staff verification is pending; your e-ticket will appear once verified.' : 'Payment confirmed' }} · {{ paymentMethodLabel(booking) }}</p>
                 <PaymentDeadline
                   v-if="
                     booking.paymentDeadline &&
@@ -340,7 +338,7 @@
           </div>
           <div v-else class="empty-state">
             <div class="empty-icon">
-              <ion-icon :icon="calendarOutline" aria-hidden="true" />
+              <ion-icon :icon="tabIcon(selectedTab)" aria-hidden="true" />
             </div>
             <h2>
               {{
@@ -359,8 +357,8 @@
             >
               Clear filters
             </button>
-            <p>Your reservations will show here once you book a sailing.</p>
-            <ion-button class="primary" router-link="/search"
+            <p>{{ bookingSearch || bookingPayment !== 'ALL' ? 'Try another reference, route or payment status. You can also check another tab.' : bookingEmptyDescription }}</p>
+            <ion-button class="primary" router-link="/trips"
               >Browse sailings</ion-button
             >
           </div></template
@@ -463,56 +461,49 @@
           <div v-else class="empty-state">
             <h2>No active reservation</h2>
             <p>Book a sailing to see trip details here.</p>
-            <ion-button class="primary" router-link="/search"
+            <ion-button class="primary" router-link="/trips"
               >Find a sailing</ion-button
             >
           </div></template
         >
-        <template v-else-if="kind === 'notifications'"
-          ><div class="notification-toolbar">
-            <span>{{ unreadCount }} unread</span
-            ><button
-              :disabled="noticeBusy || !unreadCount"
-              @click="markAllRead"
-            >
-              {{ noticeBusy ? "Updating?" : "Mark all read" }}
+        <template v-else-if="kind === 'notifications'">
+          <section class="notification-toolbar" aria-label="Inbox overview">
+            <span class="inbox-icon"><ion-icon :icon="notificationsOutline" aria-hidden="true" /></span>
+            <div><strong>{{ unreadCount ? `${unreadCount} unread ${unreadCount === 1 ? 'update' : 'updates'}` : 'You are all caught up' }}</strong><p>{{ unreadCount ? 'Keep track of your latest travel updates.' : 'Your booking and travel updates stay here.' }}</p></div>
+            <button :disabled="noticeBusy || !!noticeUpdating || !unreadCount" @click="markAllRead"><ion-icon :icon="checkmarkOutline" aria-hidden="true" />{{ noticeBusy ? 'Updating...' : 'Mark all read' }}</button>
+          </section>
+          <div class="notification-view" role="group" aria-label="Read status">
+            <button :aria-pressed="!unreadOnly" :class="{ selected: !unreadOnly }" @click="unreadOnly = false">All updates <small>{{ notices.length }}</small></button>
+            <button :aria-pressed="unreadOnly" :class="{ selected: unreadOnly }" @click="unreadOnly = true">Unread <small>{{ unreadCount }}</small></button>
+          </div>
+          <div class="notification-filters" role="group" aria-label="Notification category">
+            <button v-for="category in notificationCategories" :key="category" :aria-pressed="notificationFilter === category" :aria-label="notificationCategoryLabel(category)" :class="{ active: notificationFilter === category }" @click="notificationFilter = category">
+              <ion-icon :icon="noticeIcon(category)" aria-hidden="true" />{{ notificationCategoryLabel(category) }}<small aria-hidden="true">{{ notificationCategoryCount(category) }}</small>
             </button>
           </div>
-          <div class="notification-filters">
-            <button
-              v-for="category in notificationCategories"
-              :key="category"
-              :class="{ active: notificationFilter === category }"
-              @click="notificationFilter = category"
-            >
-              {{ category }}
-            </button>
-          </div>
-          <div class="notifications">
-            <article
-              v-for="notice in filteredNotices"
-              :key="notice.id"
-              :class="{ unread: notice.unread }"
-            >
-              <span class="notice-icon" :class="notice.type.toLowerCase()"
-                ><ion-icon :icon="noticeIcon(notice.type)" aria-hidden="true"
-              /></span>
-              <div>
-                <strong>{{ notice.title }}</strong>
+          <p v-if="noticeError" class="notice-error" role="alert">{{ noticeError }}</p>
+          <p class="notification-results" aria-live="polite">{{ filteredNotices.length }} {{ filteredNotices.length === 1 ? 'update' : 'updates' }}<span>Latest first</span></p>
+          <div v-if="filteredNotices.length" class="notifications">
+            <article v-for="notice in filteredNotices" :key="notice.id" :class="{ unread: notice.unread }">
+              <span class="notice-icon" :class="notice.type.toLowerCase()"><ion-icon :icon="noticeIcon(notice.type)" aria-hidden="true" /></span>
+              <div class="notice-copy">
+                <div class="notice-eyebrow"><span>{{ notificationCategoryLabel(notice.type) }}</span><b v-if="notice.unread"><i aria-hidden="true"></i>Unread</b></div>
+                <h2>{{ notice.title }}</h2>
                 <p>{{ notice.body }}</p>
-                <small>{{ notice.time }}</small>
+                <div class="notice-footer"><time :datetime="notice.createdAt"><ion-icon :icon="timeOutline" aria-hidden="true" />{{ notice.time }}</time>
+                  <button v-if="notice.unread" :disabled="noticeBusy || !!noticeUpdating" :aria-label="`Mark read: ${notice.title}`" @click="markNotice(notice)"><ion-icon :icon="checkmarkOutline" aria-hidden="true" />{{ noticeUpdating === notice.id ? 'Updating...' : 'Mark read' }}</button>
+                  <span v-else class="notice-read"><ion-icon :icon="checkmarkCircleOutline" aria-hidden="true" />Read</span>
+                </div>
               </div>
-              <button v-if="notice.unread" @click="markNotice(notice)">
-                <ion-icon :icon="checkmarkOutline" aria-hidden="true" /> Mark
-                read
-              </button>
             </article>
           </div>
-          <div v-if="!filteredNotices.length" class="empty-state">
-            <h2>No notifications</h2>
-            <p>Booking and sailing updates will appear here.</p>
-          </div></template
-        >
+          <div v-else class="empty-state">
+            <div class="empty-icon"><ion-icon :icon="notificationsOutline" aria-hidden="true" /></div>
+            <h2>{{ unreadOnly ? 'No unread updates' : notificationFilter !== 'ALL' ? `No ${notificationCategoryLabel(notificationFilter).toLowerCase()} updates` : 'Your inbox is ready' }}</h2>
+            <p>{{ unreadOnly ? 'You have read all updates in this view. Check all updates to see your history.' : 'Booking confirmations, sailing changes and other travel updates will appear here.' }}</p>
+            <button v-if="unreadOnly || notificationFilter !== 'ALL'" class="reset-notices" @click="unreadOnly = false; notificationFilter = 'ALL'">View all updates</button>
+          </div>
+        </template>
         <template v-else
           ><section class="profile-card glass-panel">
             <div class="profile-identity">
@@ -610,6 +601,11 @@ import {
   printOutline,
   downloadOutline,
   shareOutline,
+  searchOutline,
+  walletOutline,
+  closeCircleOutline,
+  hourglassOutline,
+  giftOutline,
 } from "ionicons/icons";
 import PassengerHeader from "../../components/passenger/PassengerHeader.vue";
 import PaymentReturn from "../../components/passenger/PaymentReturn.vue";
@@ -687,10 +683,12 @@ const notices = ref<
     body: string;
     type: string;
     time: string;
+    createdAt: string;
     unread: boolean;
   }>
 >([]);
 const loadError = ref("");
+const unreadOnly = ref(false), noticeUpdating = ref(''), noticeError = ref('');
 const notificationFilter = ref("ALL"),
   noticeBusy = ref(false),
   ticketBusy = ref(false),
@@ -705,21 +703,21 @@ const notificationCategories = computed(() => [
 const filteredNotices = computed(() =>
   notices.value.filter(
     (n) =>
-      notificationFilter.value === "ALL" || n.type === notificationFilter.value,
+      (notificationFilter.value === "ALL" || n.type === notificationFilter.value) && (!unreadOnly.value || n.unread),
   ),
 );
 async function markAllRead() {
-  if (!database || noticeBusy.value) return;
+  if (!database || noticeBusy.value || noticeUpdating.value) return;
   const uid = auth?.currentUser?.uid;
   noticeBusy.value = true;
-  loadError.value = "";
+  noticeError.value = "";
   try {
     await markAllNotificationsRead(database);
     clearNotificationUnread(undefined, uid);
     notices.value.forEach(notice => { notice.unread = false; });
-    await loadData();
+
   } catch (cause) {
-    loadError.value = databaseRequestError(
+    noticeError.value = databaseRequestError(
       cause,
       "Could not mark notifications read.",
     );
@@ -827,38 +825,38 @@ const currentBooking = computed(() => {
     ) || null
   );
 });
-const visibleBookings = computed(() =>
-  bookings.value
-    .filter((item) => {
-      if (selectedTab.value === "Cancelled") return item.status === "CANCELLED";
-      if (selectedTab.value === "Expired") return item.status === "EXPIRED";
-      if (selectedTab.value === "Past departures")
-        return (
-          !["CANCELLED", "EXPIRED"].includes(item.status) &&
-          new Date(item.departureAt) <= new Date()
-        );
-      return (
-        !["CANCELLED", "EXPIRED"].includes(item.status) &&
-        new Date(item.departureAt) > new Date()
-      );
-    })
-    .filter(
-      (item) =>
-        (bookingPayment.value === "ALL" ||
-          item.paymentStatus === bookingPayment.value) &&
-        (!bookingSearch.value ||
-          [
-            item.reference,
-            item.from,
-            item.to,
-            item.vessel,
-            ...item.passengers.map((p) => p.name),
-          ]
-            .join(" ")
-            .toLowerCase()
-            .includes(bookingSearch.value.toLowerCase())),
-    ),
-);
+function belongsToBookingTab(item: Booking, tab: string) {
+  if (tab === "Cancelled") return item.status === "CANCELLED";
+  if (tab === "Expired") return item.status === "EXPIRED";
+  if (["CANCELLED", "EXPIRED"].includes(item.status)) return false;
+  return tab === "Past departures" ? new Date(item.departureAt) <= new Date() : new Date(item.departureAt) > new Date();
+}
+const filteredBookings = computed(() => bookings.value.filter(item =>
+  (bookingPayment.value === 'ALL' || (bookingPayment.value === 'AWAITING_VERIFICATION'
+    ? awaitingPaymentVerification(item) : item.paymentStatus === bookingPayment.value)) &&
+  (!bookingSearch.value || [item.reference, item.from, item.to, item.vessel, ...item.passengers.map(p => p.name)]
+    .join(' ').toLowerCase().includes(bookingSearch.value.toLowerCase()))
+));
+const visibleBookings = computed(() => filteredBookings.value.filter(item => belongsToBookingTab(item, selectedTab.value)));
+const tabCounts = computed(() => Object.fromEntries(tabs.map(tab => [tab, filteredBookings.value.filter(item => belongsToBookingTab(item, tab)).length])));
+function tabIcon(tab: string) {
+  return ({ Upcoming: calendarOutline, 'Past departures': boatOutline, Cancelled: closeCircleOutline, Expired: hourglassOutline })[tab] || calendarOutline;
+}
+const bookingEmptyDescription = computed(() => ({
+  Upcoming: 'Ready for your next journey? Book a sailing and manage your reservation here.',
+  'Past departures': 'Reservations for departures that have already passed will appear here.',
+  Cancelled: 'Your cancelled reservations and any refund updates will appear here.',
+  Expired: 'Reservations whose payment window has expired will appear here. Browse sailings to reserve again.',
+})[selectedTab.value] || 'Your reservations will appear here.');
+function bookingStatus(booking: Booking) {
+  if (booking.paymentStatus === 'REFUND_PENDING') return { label: 'Refund pending', tone: 'warning', icon: walletOutline };
+  if (booking.paymentStatus === 'REFUNDED') return { label: 'Refunded', tone: 'neutral', icon: walletOutline };
+  if (booking.status === 'CANCELLED') return { label: 'Cancelled', tone: 'cancelled', icon: closeCircleOutline };
+  if (booking.status === 'EXPIRED') return { label: 'Expired', tone: 'warning', icon: hourglassOutline };
+  if (awaitingPaymentVerification(booking)) return { label: 'Awaiting staff verification', tone: 'warning', icon: timeOutline };
+  if (booking.paymentStatus === 'PAID') return { label: 'Paid', tone: 'success', icon: checkmarkCircleOutline };
+  return { label: 'Awaiting payment', tone: 'warning', icon: walletOutline };
+}
 const title = computed(
   () =>
     ({
@@ -962,9 +960,10 @@ async function loadData() {
         title: item.title,
         body: item.message,
         type: item.category,
-        time: formatDay(item.createdAt),
+        createdAt: item.createdAt,
+        time: new Date(item.createdAt).toLocaleString('en-PH', { timeZone: 'Asia/Manila', month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' }),
         unread: !item.readAt,
-      }));
+      })).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
       setUnreadNotifications(result.data.notifications, uid);
     }
     if (kind.value === "profile") {
@@ -1031,25 +1030,32 @@ async function cancel(reference: string) {
     );
   }
 }
+function notificationCategoryLabel(category: string) {
+  const labels: Record<string, string> = { ALL: 'All categories', BOOKING: 'Bookings', TRIPS: 'Sailings', PROMO: 'Promos', GENERAL: 'General', SYSTEM: 'System' };
+  return labels[category] || category.charAt(0) + category.slice(1).toLowerCase().replaceAll('_', ' ');
+}
+function notificationCategoryCount(category: string) {
+  return notices.value.filter(n => (category === 'ALL' || n.type === category) && (!unreadOnly.value || n.unread)).length;
+}
 function noticeIcon(type: string) {
-  return type === "TRIPS"
-    ? timeOutline
-    : type === "SYSTEM"
-      ? notificationsOutline
-      : ticketOutline;
+  if (type === 'TRIPS') return boatOutline;
+  if (type === 'PROMO') return giftOutline;
+  if (type === 'BOOKING') return ticketOutline;
+  return notificationsOutline;
 }
 async function markNotice(notice: { id: string; unread: boolean }) {
-  if (!database) return;
+  if (!database || noticeBusy.value || noticeUpdating.value) return;
   const uid = auth?.currentUser?.uid;
+  noticeUpdating.value = notice.id;
+  noticeError.value = '';
   try {
     await markNotificationRead(database, { id: notice.id });
     notice.unread = false;
     clearNotificationUnread(notice.id, uid);
   } catch (error) {
-    loadError.value = databaseRequestError(
-      error,
-      "Could not update notification.",
-    );
+    noticeError.value = databaseRequestError(error, 'Could not update notification. Try marking it read again.');
+  } finally {
+    noticeUpdating.value = '';
   }
 }
 async function saveProfile() {
@@ -2436,6 +2442,117 @@ button:disabled {
   .bookings-page .tabs button { font-size: 10px; }
   .bookings-page .booking-card .row-heading h2 { font-size: 17px; }
   .bookings-page .booking-actions { grid-template-columns: minmax(0, 1fr); }
+}
+.bookings-page { font-family: var(--ion-font-family); padding-bottom: calc(120px + env(safe-area-inset-bottom)); }
+.bookings-page .page-title h1 { letter-spacing: -.7px; }
+.bookings-page .booking-filter-panel { padding: 16px; margin-bottom: 18px; border: 1px solid var(--line); border-radius: 16px; background: var(--surface); }
+.bookings-page .filter-panel-heading { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 16px; }
+.bookings-page .filter-panel-heading > span { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 650; }
+.bookings-page .filter-panel-heading ion-icon { color: var(--ocean); font-size: 18px; }
+.bookings-page .filter-panel-heading small { color: var(--muted); font-size: 11px; }
+.bookings-page .booking-filters { margin-bottom: 0; }
+.bookings-page .booking-filters label > span { display: flex; align-items: center; gap: 6px; }
+.bookings-page .booking-filters label ion-icon { color: var(--ocean); font-size: 15px; }
+.bookings-page .booking-filters select { background-color: var(--surface-soft); }
+.bookings-page .tabs { gap: 6px; padding: 6px; margin-bottom: 14px; border-radius: 14px; }
+.bookings-page .tabs button { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; padding: 10px 3px; border-radius: 10px; min-height: 88px; line-height: 1.35; transition: background .18s, color .18s; }
+.bookings-page .tabs button > ion-icon { font-size: 19px; color: var(--ocean); }
+.bookings-page .tabs button:nth-child(3) > ion-icon { color: #e47d86; }
+.bookings-page .tabs button:nth-child(4) > ion-icon { color: #dca948; }
+.bookings-page .tabs button small { display: grid; place-items: center; min-width: 22px; padding: 1px 6px; border-radius: 6px; background: var(--surface); font-size: 10px; }
+.bookings-page .tabs button.selected > ion-icon { color: #fff; }
+.bookings-page .tabs button.selected small { color: #fff; background: #ffffff24; }
+.bookings-page .tabs button:hover:not(.selected) { background: var(--light-blue); }
+.bookings-page .booking-results { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin: 0 0 14px; font-size: 12px; color: var(--muted); }
+.bookings-page .booking-results strong { color: var(--ink); }
+.bookings-page .booking-results small { font-size: 10px; }
+.bookings-page .booking-results button { padding: 8px 0 8px 8px; border: 0; background: transparent; color: var(--ocean); font-size: 11px; }
+.bookings-page .booking-card { border-radius: 18px; border-top: 3px solid color-mix(in srgb, var(--ocean) 55%, var(--line)); }
+.bookings-page .booking-card .row-heading h2 { display: grid; grid-template-columns: minmax(0, 1fr) 22px minmax(0, 1fr); gap: 8px; width: 100%; align-items: center; font-family: inherit; font-size: 18px; line-height: 1.4; }
+.bookings-page .booking-card .row-heading h2 span { margin: 0; }
+.bookings-page .booking-card .row-heading h2 .booking-port { color: var(--ink); }
+.bookings-page .booking-card .row-heading > .booking-status { display: inline-flex; align-items: center; gap: 6px; text-transform: none; letter-spacing: 0; font-family: inherit; font-size: 11px; font-weight: 600; }
+.bookings-page .booking-status ion-icon { font-size: 15px; flex: none; }
+.bookings-page .booking-status.warning { color: #895500; background: #fff0d3; }
+.bookings-page .booking-status.success { color: #13724e; background: #e2f6ec; }
+.bookings-page .booking-status.cancelled { color: #a13e4b; background: #ffebee; }
+.bookings-page .booking-status.neutral { color: var(--muted); background: var(--surface-soft); }
+.bookings-page .booking-schedule { display: grid; grid-template-columns: minmax(0, 1fr) 70px minmax(0, 1fr); gap: 10px; align-items: center; margin: 0 0 16px; padding: 14px 0; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+.bookings-page .booking-schedule > div:last-child { text-align: right; }
+.bookings-page .booking-schedule small { display: block; margin-bottom: 5px; color: var(--muted); font-size: 10px; }
+.bookings-page .booking-schedule strong { font-size: 16px; font-weight: 650; }
+.bookings-page .schedule-track { display: flex; align-items: center; gap: 6px; color: var(--ocean); }
+.bookings-page .schedule-track::before, .bookings-page .schedule-track::after { content: ''; flex: 1; height: 1px; background: var(--line); }
+.bookings-page .schedule-track ion-icon { font-size: 20px; }
+.bookings-page .booking-card .payment-hint { padding: 12px; border-radius: 10px; background: var(--light-blue); color: var(--ink); font-size: 11px; line-height: 1.7; font-weight: 400; }
+.bookings-page .empty-state { margin-top: 0; padding: 32px 20px; border: 1px solid var(--line); border-radius: 18px; background: radial-gradient(ellipse at top, var(--light-blue), var(--surface) 75%); }
+.bookings-page .empty-state h2 { font-family: inherit; font-size: 21px; }
+.bookings-page .empty-state p { max-width: 320px; margin: 12px auto 20px; font-size: 13px; line-height: 1.8; }
+.bookings-page .empty-state .empty-icon { width: 60px; height: 60px; border-radius: 18px; }
+.bookings-page button:focus-visible, .bookings-page a:focus-visible { outline: 2px solid var(--ocean); outline-offset: 3px; }
+:global(:root[data-theme="dark"]) .bookings-page .booking-status.warning { background: #392b13; color: #ffd17b; }
+:global(:root[data-theme="dark"]) .bookings-page .booking-status.success { background: #15362c; color: #80dfb2; }
+:global(:root[data-theme="dark"]) .bookings-page .booking-status.cancelled { background: #3b222b; color: #ffabb6; }
+@container passenger (max-width: 380px) {
+  .bookings-page .booking-card .row-heading h2 { font-size: 16px; }
+  .bookings-page .booking-results { flex-wrap: wrap; }
+  .bookings-page .tabs button { min-height: 90px; }
+  .bookings-page .booking-schedule { grid-template-columns: minmax(0, 1fr) 44px minmax(0, 1fr); }
+  .bookings-page .booking-schedule strong { font-size: 14px; }
+}
+/* Notification inbox uses the same passenger canvas and theme. */
+.notifications-page { font-family: var(--ion-font-family); padding-bottom: calc(120px + env(safe-area-inset-bottom)); }
+.notifications-page .page-title { margin: 24px 0 20px; }
+.notifications-page .page-title h1 { font-size: 28px; letter-spacing: -.7px; }
+.notifications-page .notification-toolbar { display: grid; grid-template-columns: 44px minmax(0, 1fr); gap: 10px 12px; margin: 0 0 18px; padding: 18px; border: 1px solid var(--line); border-radius: 16px; background: linear-gradient(120deg, var(--light-blue), var(--surface)); }
+.notifications-page .inbox-icon { display: grid; place-items: center; width: 44px; height: 44px; border-radius: 13px; background: var(--surface); color: var(--ocean); font-size: 24px; }
+.notifications-page .notification-toolbar strong { font-size: 15px; line-height: 1.5; }
+.notifications-page .notification-toolbar p { margin: 4px 0 0; color: var(--muted); font-size: 11px; line-height: 1.7; }
+.notifications-page .notification-toolbar button { grid-column: 2; justify-self: start; display: inline-flex; align-items: center; gap: 6px; min-height: 44px; padding: 9px 12px; background: var(--surface); color: var(--ocean); border: 1px solid var(--line); border-radius: 9px; font: inherit; font-size: 12px; font-weight: 600; }
+.notifications-page .notification-view { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 5px; padding: 5px; margin-bottom: 14px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface-soft); }
+.notifications-page .notification-view button { display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px; border: 0; border-radius: 8px; background: transparent; color: var(--muted); font: inherit; font-size: 12px; font-weight: 600; }
+.notifications-page .notification-view button.selected { background: var(--action); color: #fff; }
+.notifications-page .notification-view small { display: grid; place-items: center; min-width: 22px; padding: 2px 5px; border-radius: 5px; background: var(--surface); font-size: 10px; }
+.notifications-page .notification-view .selected small { background: #ffffff26; }
+.notifications-page .notification-filters { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 18px; }
+.notifications-page .notification-filters button { display: inline-flex; align-items: center; gap: 6px; min-height: 40px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 9px; background: var(--surface); color: var(--muted); font: inherit; font-size: 11px; font-weight: 500; }
+.notifications-page .notification-filters ion-icon { font-size: 15px; color: var(--ocean); }
+.notifications-page .notification-filters small { font-size: 10px; color: inherit; }
+.notifications-page .notification-filters .active { background: var(--light-blue); color: var(--ocean); border-color: var(--ocean); }
+.notifications-page .notification-results { display: flex; align-items: center; justify-content: space-between; margin: 0 0 12px; color: var(--muted); font-size: 11px; }
+.notifications-page .notification-results span { font-size: 10px; }
+.notifications-page .notifications { max-width: none; gap: 12px; }
+.notifications-page .notifications article { display: grid; grid-template-columns: 40px minmax(0, 1fr); align-items: start; gap: 12px; padding: 18px; border: 1px solid var(--line); border-radius: 16px; background: var(--surface); box-shadow: none; }
+.notifications-page .notifications article.unread { border-left: 3px solid var(--ocean); background: color-mix(in srgb, var(--light-blue) 25%, var(--surface)); }
+.notifications-page .notice-icon { width: 40px; height: 40px; border-radius: 11px; background: var(--light-blue); color: var(--ocean); }
+.notifications-page .notice-icon.promo { color: #937100; background: #fff2c9; }
+.notifications-page .notice-icon.general, .notifications-page .notice-icon.system { color: #197767; background: #e1f4ed; }
+.notifications-page .notice-icon.trips { color: #8455bb; background: #f1e8ff; }
+.notifications-page .notice-eyebrow { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 6px; font-size: 10px; color: var(--muted); }
+.notifications-page .notice-eyebrow b { display: inline-flex; align-items: center; gap: 5px; color: var(--ocean); font-size: 10px; font-weight: 600; }
+.notifications-page .notice-eyebrow i { width: 5px; height: 5px; border-radius: 50%; background: var(--ocean); }
+.notifications-page .notice-copy h2 { margin: 0; font-size: 14px; line-height: 1.6; font-weight: 650; overflow-wrap: anywhere; }
+.notifications-page .notice-copy p { margin: 7px 0 12px; font-size: 12px; line-height: 1.8; }
+.notifications-page .notice-footer { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 12px; padding-top: 10px; border-top: 1px solid var(--line); }
+.notifications-page .notice-footer time, .notifications-page .notice-read { display: inline-flex; align-items: center; gap: 5px; color: var(--muted); font-size: 10px; line-height: 1.7; }
+.notifications-page .notice-footer ion-icon { flex: none; font-size: 14px; }
+.notifications-page .notice-footer button { margin: 0; min-height: 40px; padding: 8px 10px; font-size: 11px; font-weight: 600; }
+.notifications-page .notice-read { margin-left: auto; }
+.notifications-page button { cursor: pointer; }
+.notifications-page button:disabled { opacity: .5; cursor: default; }
+.notifications-page button:focus-visible { outline: 2px solid var(--ocean); outline-offset: 3px; }
+.notifications-page .notice-error { padding: 12px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface); color: var(--danger); font-size: 12px; line-height: 1.7; }
+.notifications-page .empty-state { padding: 32px 20px; border: 1px solid var(--line); border-radius: 16px; background: var(--surface); }
+.notifications-page .empty-state h2 { font-family: inherit; font-size: 21px; }
+.notifications-page .empty-state p { font-size: 12px; line-height: 1.8; }
+.notifications-page .reset-notices { min-height: 44px; padding: 10px 14px; border: 1px solid var(--line); border-radius: 9px; background: var(--light-blue); color: var(--ocean); font: inherit; font-size: 12px; }
+:global(:root[data-theme="dark"]) .notifications-page .notice-icon.promo { color: #f0ce75; background: #352d1a; }
+:global(:root[data-theme="dark"]) .notifications-page .notice-icon.general, :global(:root[data-theme="dark"]) .notifications-page .notice-icon.system { color: #74d7bd; background: #17372e; }
+:global(:root[data-theme="dark"]) .notifications-page .notice-icon.trips { color: #c6a3f4; background: #30213e; }
+@container passenger (max-width: 380px) {
+  .notifications-page .notification-toolbar { padding: 14px; }
+  .notifications-page .notifications article { padding: 14px; gap: 10px; grid-template-columns: 34px minmax(0,1fr); }
+  .notifications-page .notice-icon { width: 34px; height: 34px; }
 }
 /* E-ticket content stays within the passenger canvas at every screen size. */
 .ticket-page { font-family: var(--ion-font-family); padding-bottom: calc(120px + env(safe-area-inset-bottom)); }

@@ -33,7 +33,11 @@ const routes: Array<RouteRecordRaw> = [
   },
   {
     path: "/search",
-    name: "Search",
+    redirect: (to) => ({ path: "/trips", query: to.query, hash: to.hash }),
+  },
+  {
+    path: "/trips",
+    name: "Trips",
     component: () => import("../views/passenger/SearchPage.vue"),
   },
   {
@@ -277,7 +281,7 @@ router.beforeEach(async (to) => {
     path === "/register" ||
     path === "/" ||
     path === "/reset-password" ||
-    path === "/privacy" || path === "/search" || path === "/help"
+    path === "/privacy" || path === "/trips" || path === "/help"
   )
     return true;
   const authInstance = auth;

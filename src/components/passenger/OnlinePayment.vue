@@ -5,7 +5,7 @@
       <div><h3>Awaiting payment</h3><p>Your seat is reserved. Payment has not been completed.</p></div>
     </div>
     <div class="online-option">
-      <div class="option-heading"><strong>Pay online</strong><span><ion-icon :icon="shieldCheckmarkOutline" aria-hidden="true" /> Secure checkout</span></div>
+      <div class="option-heading"><strong><ion-icon :icon="cardOutline" aria-hidden="true" /> Pay online</strong><span><ion-icon :icon="shieldCheckmarkOutline" aria-hidden="true" /> Secure checkout</span></div>
       <p>Choose a method and complete payment at checkout. We will verify your payment before issuing your e-ticket.</p>
       <div class="payment-methods" aria-label="Accepted online payment methods">
         <span class="gcash">GCash</span><span class="maya">Maya</span><span><ion-icon :icon="cardOutline" aria-hidden="true" /> Credit / debit card</span>
@@ -87,4 +87,16 @@ async function run(action: 'checkout' | 'status' | 'close') {
 .online-payment button:disabled { opacity: .6; cursor: default; }
 .online-payment button:focus-visible { outline: 2px solid var(--ocean); outline-offset: 3px; }
 @media (max-width: 380px) { .online-payment { padding: 14px; } .online-option { padding: 12px; } }
+.online-payment { border-radius: 18px; padding: 20px; }
+.online-option { border-color: color-mix(in srgb, var(--ocean) 40%, var(--line)); border-radius: 14px; }
+.option-heading strong { display: inline-flex; align-items: center; gap: 8px; }
+.option-heading strong > ion-icon { padding: 5px; border-radius: 6px; background: var(--light-blue); color: var(--ocean); font-size: 16px; }
+.payment-methods .gcash { background: var(--light-blue); border-color: transparent; }
+.payment-methods .maya { background: color-mix(in srgb, #20ba90 12%, var(--surface)); border-color: transparent; }
+.cash-option { padding: 14px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface-soft); }
+.cash-option > ion-icon { padding: 5px; border-radius: 7px; background: color-mix(in srgb, #20ba90 12%, var(--surface)); color: #20a485; }
+.cash-option button { min-height: 44px; background: var(--surface); }
+.payment-support button { min-height: 44px; }
+.pay-button { min-height: 48px; border-radius: 10px; }
+@container passenger (max-width: 380px) { .online-payment { padding: 14px; } .online-option { padding: 12px; } }
 </style>

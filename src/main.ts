@@ -37,6 +37,7 @@ import './theme/workspace.css';
 import './theme/catalog.css';
 import './theme/confirmation.css';
 import './theme/ui.css';
+import './theme/selects.css';
 
 const app = createApp(App)
   .use(IonicVue)

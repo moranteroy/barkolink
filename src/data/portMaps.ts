@@ -59,7 +59,7 @@ export function googleMapDirections(port: MapPort) {
   return url.toString();
 }
 export function googleMapSearch(port: MapPort) {
-  const url = new URL("https://www.google.com/maps/search/");
+  const url = new URL("https://www.google.com/maps/trips/");
   url.searchParams.set("api", "1");
   url.searchParams.set("query", portMapQuery(port));
   return url.toString();

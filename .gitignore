@@ -61,6 +61,8 @@ credentials.json
 
 # Generated browser verification output
 /docs/screenshots/
+# Unused mascot design draft; keep only the active guide assets in Git.
+/public/images/mascot/barkolink-captain-female-anime-v1.png
 /cypress/screenshots/
 /cypress/videos/
 /cypress/downloads/

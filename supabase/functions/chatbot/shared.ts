@@ -7,7 +7,7 @@ export const tools = [
   {name:'get_my_bookings',description:'Current signed-in passenger bookings and payment status. Optional reference filters own records only.',parameters:{type:'object',properties:{reference:{type:'string'}},additionalProperties:false}},
   {name:'get_my_rewards',description:'Current personal loyalty rewards and voucher amounts/expiry.',parameters:{type:'object',properties:{},additionalProperties:false}},
   {name:'get_advisories',description:'Published active travel notices, delays and operator advisories.',parameters:{type:'object',properties:{},additionalProperties:false}},
-  {name:'get_help',description:'Verified BarkoLink booking, payment, QR and boarding instructions.',parameters:{type:'object',properties:{},additionalProperties:false}},
+  {name:'get_help',description:'Verified BarkoLink booking, payment, QR and boarding instructions. Choose the topic to link directly to the relevant guide section.',parameters:{type:'object',properties:{topic:{type:'string',enum:['booking','payment','boarding','loyalty','weather']}},additionalProperties:false}},
 ].map(fn=>({type:'function',function:fn}));
 export const help = {
   booking:'Search route and travel date, choose a sailing, enter passenger details, review fares and confirm. A reservation is successful only when the booking appears in My Bookings.',
@@ -27,16 +27,20 @@ export function parseTool(call: any) {
   if(!tools.some(tool=>tool.function.name===name))throw new Error('unsupported tool');
   const args=JSON.parse(call.function.arguments || '{}');
   if(!args || Array.isArray(args) || typeof args!=='object')throw new Error('invalid tool');
-  const allowed=name==='get_sailings'?['from','to','date','event']:name==='get_my_bookings'?['reference']:[];
+  const allowed=name==='get_sailings'?['from','to','date','event']:name==='get_my_bookings'?['reference']:name==='get_help'?['topic']:[];
   if(Object.keys(args).some(key=>!allowed.includes(key) || typeof args[key]!=='string' || args[key].length>80))throw new Error('invalid tool');
   if(args.date && (!/^\d{4}-\d{2}-\d{2}$/.test(args.date) || !Number.isFinite(Date.parse(args.date)) || new Date(args.date).toISOString().slice(0,10)!==args.date))throw new Error('invalid date');
   if(args.event && !['departure','arrival'].includes(args.event))throw new Error('invalid event');
+  if(args.topic && !Object.hasOwn(help,args.topic))throw new Error('invalid topic');
   return {name,args};
 }
 export async function readTool(name: string,args: any,rpc: (operation:string,args:object)=>Promise<any>,now: string) {
   const philippineTime=(value?:string|null)=>value?new Date(Date.parse(value)+8*3600000).toISOString().replace('Z','+08:00'):value;
   const result: any={checkedAt:now,timezone:'Asia/Manila',currency:'PHP',records:[],links:[]};
-  if(name==='get_help')return {...result,guide:help,links:[{label:'Travel guide',path:'/help'}]};
+  if(name==='get_help') {
+    const destinations:Record<string,{label:string;path:string}>={booking:{label:'How to reserve a sailing',path:'/help#reserve-sailing'},payment:{label:'Payment guide',path:'/help#payment'},boarding:{label:'QR ticket & boarding guide',path:'/help#e-ticket'},loyalty:{label:'My loyalty rewards',path:'/home#loyalty-rewards'},weather:{label:'Port weather outlook',path:'/home#weather-outlook'}};
+    return {...result,guide:help,links:[destinations[args.topic] || {label:'Travel guide',path:'/help'}]};
+  }
   if(name==='get_sailings') {
     const data=await rpc('BrowseSailings',{});
     const today=new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Manila',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date(now));
@@ -44,7 +48,9 @@ export async function readTool(name: string,args: any,rpc: (operation:string,arg
     const match=(city:string,filter?:string)=>!filter || city.toLowerCase().replace(/\s+city$/,'').includes(filter.trim().toLowerCase().replace(/\s+city$/,''));
     const eventAt=args.event==='arrival'?'arrivalAt':'departureAt';
     const rows=(data.sailings || []).filter((s:any)=>match(s.origin.city,args.from) && match(s.destination.city,args.to) && (args.date?day(s[eventAt])===args.date:day(s[eventAt])>=today)).sort((a:any,b:any)=>Date.parse(a[eventAt])-Date.parse(b[eventAt]));
-    return {...result,totalMatches:rows.length,limit:6,filters:args,records:rows.slice(0,6).map((s:any)=>({code:s.code,origin:s.origin.name,from:s.origin.city,destination:s.destination.name,to:s.destination.city,vessel:s.vessel.name,departureAt:philippineTime(s.departureAt),arrivalAt:philippineTime(s.arrivalAt),status:s.status,availableSeats:s.availableSeats,regularFare:s.regularFare,studentFare:s.studentFare,seniorFare:s.seniorFare,childFare:s.childFare,pwdFare:s.pwdFare})),links:[{label:'Search sailings',path:'/search'}]};
+    const query=new URLSearchParams({source:'assistant'});
+    for(const key of ['from','to','date','event'])if(args[key])query.set(key,args[key]);
+    return {...result,totalMatches:rows.length,limit:6,filters:args,records:rows.slice(0,6).map((s:any)=>({code:s.code,origin:s.origin.name,from:s.origin.city,destination:s.destination.name,to:s.destination.city,vessel:s.vessel.name,departureAt:philippineTime(s.departureAt),arrivalAt:philippineTime(s.arrivalAt),status:s.status,availableSeats:s.availableSeats,regularFare:s.regularFare,studentFare:s.studentFare,seniorFare:s.seniorFare,childFare:s.childFare,pwdFare:s.pwdFare})),links:[{label:'Search sailings',path:`/search?${query}`} ]};
   }
   if(name==='get_my_bookings') {
     const data=await rpc('MyBookings',{});
@@ -56,11 +62,11 @@ export async function readTool(name: string,args: any,rpc: (operation:string,arg
   }
   if(name==='get_my_rewards') {
     const data=await rpc('MyLoyalty',{});
-    return {...result,completedTrips:data.completedTrips,currentTier:data.currentTier,tripsToNextReward:data.tripsToNextReward,nextRewardValue:data.rewardValue,records:(data.vouchers || []).slice(0,6).map((v:any)=>({value:v.value,expiresAt:philippineTime(v.expiresAt)})),links:[{label:'My loyalty rewards',path:'/home'}]};
+    return {...result,completedTrips:data.completedTrips,currentTier:data.currentTier,tripsToNextReward:data.tripsToNextReward,nextRewardValue:data.rewardValue,records:(data.vouchers || []).slice(0,6).map((v:any)=>({value:v.value,expiresAt:philippineTime(v.expiresAt)})),links:[{label:'My loyalty rewards',path:'/home#loyalty-rewards'}]};
   }
   if(name==='get_advisories') {
     const data=await rpc('ActiveAdvisories',{});
-    return {...result,totalMatches:(data.advisories||[]).length,limit:6,records:(data.advisories || []).slice(0,6).map((a:any)=>({title:a.title,message:a.message,priority:a.priority,category:a.category})),links:[{label:'Travel advisories',path:'/home'}]};
+    return {...result,totalMatches:(data.advisories||[]).length,limit:6,records:(data.advisories || []).slice(0,6).map((a:any)=>({title:a.title,message:a.message,priority:a.priority,category:a.category})),links:[{label:'Travel advisories',path:'/home#travel-advisories'}]};
   }
   throw new Error('unsupported tool');
 }

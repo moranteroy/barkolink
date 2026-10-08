@@ -1,7 +1,7 @@
 ﻿<template>
   <ion-page>
     <ion-content :fullscreen="true" class="home-content">
-      <main class="page-shell passenger-home">
+      <main ref="homeMain" class="page-shell passenger-home">
         <PassengerHeader class="topbar" />
         <section class="welcome-section">
           <h1>{{ greeting }}, {{ firstName }}!</h1>
@@ -10,7 +10,7 @@
         <p v-if="loadError" class="home-error" role="alert">{{ loadError }} <button @click="loadData">Retry</button></p>
         <TripSearchCard class="home-search" @origin-changed="weatherPortId = $event" />
         <SailingBoard :initial-port-id="weatherPortId" :active="boardActive" />
-        <PortForecast :port-id="weatherPortId" />
+        <PortForecast id="weather-outlook" tabindex="-1" :port-id="weatherPortId" />
         <section class="section-block upcoming-block" aria-labelledby="upcoming-heading">
           <div class="section-heading">
             <h2 id="upcoming-heading"><ion-icon :icon="boatOutline" aria-hidden="true" /> Upcoming trip</h2>
@@ -44,24 +44,26 @@
             <div><strong>Your next journey starts here</strong><p>Search a sailing above. Your active reservation will appear here.</p></div>
           </article>
         </section>
-        <LoyaltyRewards :active="boardActive" />
+        <LoyaltyRewards id="loyalty-rewards" tabindex="-1" :active="boardActive" />
         <section class="section-block quick-block" aria-labelledby="quick-heading">
           <div class="section-heading"><h2 id="quick-heading"><ion-icon :icon="sparklesOutline" aria-hidden="true" /> Travel essentials</h2></div>
           <div class="essentials-grid">
-            <router-link to="/travelers"><span class="quick-icon"><ion-icon :icon="peopleOutline" aria-hidden="true" /></span><span><strong>Saved travelers</strong><small>Book with saved details</small></span><ion-icon :icon="chevronForwardOutline" aria-hidden="true" /></router-link>
-            <router-link to="/help"><span class="quick-icon"><ion-icon :icon="helpCircleOutline" aria-hidden="true" /></span><span><strong>Travel guide</strong><small>Payment & boarding help</small></span><ion-icon :icon="chevronForwardOutline" aria-hidden="true" /></router-link>
+            <router-link to="/travelers" class="travelers-shortcut"><span class="quick-icon"><UsersRound :size="20" aria-hidden="true" /></span><span><strong>Saved travelers</strong><small>Save details for faster booking</small></span><ChevronRight :size="16" class="shortcut-arrow" aria-hidden="true" /></router-link>
+            <router-link to="/help" class="guide-shortcut"><span class="quick-icon"><LifeBuoy :size="20" aria-hidden="true" /></span><span><strong>Travel guide</strong><small>Payment & boarding help</small></span><ChevronRight :size="16" class="shortcut-arrow" aria-hidden="true" /></router-link>
           </div>
         </section>
         <section v-if="recentSearches.length" class="section-block recent-block" aria-labelledby="recent-heading">
           <div class="section-heading"><h2 id="recent-heading"><ion-icon :icon="timeOutline" aria-hidden="true" /> Recent searches</h2></div>
           <div class="recent-list">
             <article v-for="item in recentSearches" :key="`${item.from}-${item.to}-${item.date}-${item.passengers}`">
-              <div><strong>{{ item.from }} <ion-icon :icon="arrowForwardOutline" aria-label="to" /> {{ item.to }}</strong><p>{{ searchDate(item.date) }} <span aria-hidden="true">·</span> {{ item.passengers }} passenger{{ item.passengers === 1 ? '' : 's' }}</p></div>
-              <button @click="repeatSearch(item)" :aria-label="`Search again: ${item.from} to ${item.to}`"><ion-icon :icon="searchOutline" aria-hidden="true" /> Search again</button>
+              <span class="recent-icon"><Search :size="16" aria-hidden="true" /></span>
+              <div><strong>{{ item.from }} <ArrowRight :size="13" aria-hidden="true" /><span class="sr-only">to</span> {{ item.to }}</strong><p><span><CalendarDays :size="11" aria-hidden="true" />{{ searchDate(item.date) }}</span><span><UsersRound :size="11" aria-hidden="true" />{{ item.passengers }} {{ item.passengers === 1 ? 'passenger' : 'passengers' }}</span></p></div>
+              <button @click="repeatSearch(item)" :aria-label="`Search again: ${item.from} to ${item.to}`">Search again<ArrowUpRight :size="13" aria-hidden="true" /></button>
             </article>
           </div>
         </section>
-        <AdvisoryBanner class="home-advisories" show-heading />
+        <FrequentRoutes :routes="usualRoutes" :loading="loading" :history-error="loadError" :fares-loading="faresLoading" :fares-error="faresError" @select="bookFrequentRoute" @retry="loadRouteFares" />
+        <AdvisoryBanner id="travel-advisories" tabindex="-1" class="home-advisories" show-heading show-empty />
       </main>
       <PassengerBottomNav />
     </ion-content>
@@ -70,6 +72,7 @@
 <script setup lang="ts">
 import { databaseRequestError } from "../../data/databaseErrors";
 import { computed, ref } from "vue";
+import { useSectionNavigation } from '../../composables/useSectionNavigation';
 import {
   IonButton,
   IonContent,
@@ -79,18 +82,17 @@ import {
   onIonViewDidLeave,
   useIonRouter,
 } from "@ionic/vue";
-import { myBookings, myProfile } from "../../services/database/passenger";
+import { myBookings, myProfile, browseSailings, type MyBookingsData, type BrowseSailingsData } from "../../services/database/passenger";
+import { UsersRound, LifeBuoy, ChevronRight, Search, CalendarDays, ArrowRight, ArrowUpRight } from '@lucide/vue';
+import { frequentRoutes, type FrequentRoute } from '../../data/frequentRoutes';
+import FrequentRoutes from '../../components/passenger/FrequentRoutes.vue';
 import { auth, database } from "../../services/session";
 import {
   arrowForwardOutline,
   boatOutline,
   sparklesOutline,
-  peopleOutline,
-  helpCircleOutline,
-  chevronForwardOutline,
   timeOutline,
   ticketOutline,
-  searchOutline,
 } from "ionicons/icons";
 import PassengerHeader from "../../components/passenger/PassengerHeader.vue";
 import PassengerBottomNav from "../../components/passenger/PassengerBottomNav.vue";
@@ -101,10 +103,33 @@ import SailingBoard from "../../components/passenger/SailingBoard.vue";
 import LoyaltyRewards from "../../components/passenger/LoyaltyRewards.vue";
 const weatherPortId = ref("");
 const boardActive = ref(true);
+const homeMain = ref<HTMLElement>();
+useSectionNavigation(homeMain, '/home', ['#loyalty-rewards', '#travel-advisories', '#weather-outlook', '#frequent-routes']);
 import { readRecentSearches, recordRecentSearch, type RecentSearch } from "../../data/recentSearches";
 import { philippineDateKey } from "../../data/travelDate";
 const ionRouter = useIonRouter();
 const recentSearches = ref(readRecentSearches());
+const bookingHistory = ref<MyBookingsData['bookings']>([]);
+const routeSailings = ref<BrowseSailingsData['sailings']>([]);
+const faresLoading = ref(false), faresError = ref(false);
+const usualRoutes = computed(() => frequentRoutes(bookingHistory.value, routeSailings.value));
+let fareRequest = 0;
+async function loadRouteFares() {
+  const request = ++fareRequest;
+  const uid = auth?.currentUser?.uid;
+  routeSailings.value = []; faresError.value = false; faresLoading.value = true;
+  try {
+    if (!database || !uid) throw new Error('Account unavailable.');
+    const result = await browseSailings(database);
+    if (request === fareRequest && auth?.currentUser?.uid === uid) routeSailings.value = result.data.sailings;
+  } catch { if (request === fareRequest) faresError.value = true; }
+  finally { if (request === fareRequest) faresLoading.value = false; }
+}
+function bookFrequentRoute(route: FrequentRoute) {
+  localStorage.setItem('barkolink-search-route', JSON.stringify({ from: route.from, to: route.to }));
+  localStorage.setItem('barkolink-search-passengers', '1');
+  ionRouter.navigate(`/trips?all=1&source=frequent-route&from=${encodeURIComponent(route.from)}&to=${encodeURIComponent(route.to)}`, 'forward', 'push');
+}
 function searchDate(date: string) {
   return new Date(`${date}T00:00:00+08:00`).toLocaleDateString("en-PH", { timeZone: "Asia/Manila", month: "short", day: "numeric", year: "numeric" });
 }
@@ -115,7 +140,7 @@ function repeatSearch(item: RecentSearch) {
   localStorage.setItem("barkolink-search-date", searchDate(date));
   localStorage.setItem("barkolink-search-passengers", String(item.passengers));
   recordRecentSearch({ ...item, date });
-  ionRouter.navigate("/search", "forward", "push");
+  ionRouter.navigate("/trips", "forward", "push");
 }
 type Journey = {
   reference: string;
@@ -162,6 +187,7 @@ async function loadData() {
   displayName.value =
     user?.displayName || user?.email?.split("@")[0] || "there";
   savedJourney.value = null;
+  bookingHistory.value = [];
   loadError.value = "";
   if (!user || !database) {
     loadError.value = "Your account is unavailable. Please sign in again.";
@@ -176,6 +202,7 @@ async function loadData() {
     if (request !== loadRequest || auth?.currentUser?.uid !== user.uid) return;
     if (profile.data.user?.fullName)
       displayName.value = profile.data.user.fullName;
+    bookingHistory.value = bookings.data.bookings;
     const item = bookings.data.bookings
       .filter(
         (x) =>
@@ -225,11 +252,14 @@ onIonViewWillEnter(() => {
   boardActive.value = true;
   recentSearches.value = readRecentSearches();
   void loadData();
+  void loadRouteFares();
 });
 onIonViewDidLeave(() => { boardActive.value = false; });
 </script>
 <style scoped>
 .home-content { --background: var(--page-background); }
+#loyalty-rewards, #travel-advisories, #weather-outlook, #frequent-routes { scroll-margin-top: 16px; }
+#loyalty-rewards:target, #travel-advisories:target, #weather-outlook:target, #frequent-routes:target { outline: 2px solid var(--ocean); outline-offset: 4px; border-radius: 16px; }
 .page-shell { display: block; width: 100%; max-width: 680px; margin: 0 auto; padding: 20px 16px calc(108px + env(safe-area-inset-bottom)); color: var(--ink); }
 .topbar { margin-bottom: 22px; }
 .welcome-section { margin: 0 0 22px; }
@@ -240,14 +270,14 @@ onIonViewDidLeave(() => { boardActive.value = false; });
 .home-search :deep(.eyebrow) { display: none; }
 .home-search :deep(h2) { margin: 0; font-size: 17px; letter-spacing: -.3px; }
 .home-search :deep(.route-badge) { padding: 7px 9px; background: var(--light-blue); color: var(--ocean); border-radius: 7px; font-size: 9px; }
-.home-search :deep(.route-fields) { grid-template-columns: minmax(0, 1fr) 30px minmax(0, 1fr); gap: 6px; }
+.home-search :deep(.route-fields) { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
 .home-search :deep(.detail-fields) { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 14px 12px; margin-top: 16px; }
 .home-search :deep(.search-button) { grid-column: 1 / -1; width: 100%; height: 46px; margin: 0; border-radius: 10px; background: var(--action); }
 .home-search :deep(select), .home-search :deep(input), .home-search :deep(.counter) { background: var(--surface); border-radius: 10px; }
 .home-search :deep(input) { min-width: 0; max-width: 100%; }
 :global(:root[data-theme="dark"]) .home-search :deep(input[type="date"]) { color-scheme: dark; }
 .home-search :deep(label) { font-size: 10px; font-weight: 600; letter-spacing: .02em; }
-.home-search :deep(.swap-button) { display: grid; place-items: center; width: 30px; min-height: 44px; margin: 0; padding: 0; background: transparent; color: var(--ocean); }
+.home-search :deep(.swap-button) { display: grid; place-items: center; width: 44px; min-height: 44px; margin: 0; padding: 0; background: transparent; color: var(--ocean); }
 .section-block { margin-top: 26px; }
 .section-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
 .section-heading h2 { display: flex; align-items: center; gap: 8px; margin: 0; font-size: 14px; font-weight: 650; line-height: 1.5; }
@@ -259,7 +289,7 @@ onIonViewDidLeave(() => { boardActive.value = false; });
 .journey-status-row > span { font-size: 10px; font-weight: 650; letter-spacing: .04em; text-transform: uppercase; color: #c6e0fa; }
 .journey-status { padding: 5px 9px; border-radius: 7px; background: #ffffff24; color: #fff; font-size: 10px; font-weight: 650; }
 .journey-status.pending { background: #fff0cd; color: #784909; }
-.upcoming-route { display: grid; grid-template-columns: minmax(0, 1fr) 24px minmax(0, 1fr); align-items: center; gap: 10px; margin-top: 24px; }
+.upcoming-route { display: grid; grid-template-columns: minmax(0, 1fr); align-items: center; gap: 10px; margin-top: 24px; }
 .upcoming-route > div { min-width: 0; }
 .upcoming-route strong { display: block; font-size: 23px; line-height: 1.25; letter-spacing: -.5px; overflow-wrap: anywhere; }
 .upcoming-route span { display: block; margin-top: 6px; font-size: 13px; color: #e1efff; }
@@ -276,20 +306,16 @@ onIonViewDidLeave(() => { boardActive.value = false; });
 .upcoming-empty strong { color: var(--ink); font-size: 13px; }
 .upcoming-empty p { margin: 6px 0 0; color: var(--muted); font-size: 12px; line-height: 1.7; }
 .empty-icon, .quick-icon { display: grid; place-items: center; flex: none; width: 36px; height: 36px; border-radius: 10px; background: var(--light-blue); color: var(--ocean); font-size: 20px; }
-.essentials-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
-.essentials-grid a { display: flex; align-items: center; gap: 10px; min-width: 0; min-height: 80px; padding: 13px 12px; border: 1px solid var(--line); border-radius: 13px; background: var(--surface); color: var(--ink); text-decoration: none; }
-.essentials-grid a > span:nth-child(2) { min-width: 0; }
-.essentials-grid strong { display: block; font-size: 12px; line-height: 1.5; }
-.essentials-grid small { display: block; margin-top: 4px; font-size: 10px; line-height: 1.5; color: var(--muted); }
-.essentials-grid a > ion-icon { margin-left: auto; flex: none; font-size: 14px; color: var(--muted); }
-.essentials-grid a:hover, .recent-list article:hover { border-color: var(--ocean); }
-.recent-list { display: grid; gap: 9px; }
-.recent-list article { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); }
-.recent-list article > div { min-width: 0; }
-.recent-list strong { font-size: 12px; line-height: 1.7; overflow-wrap: anywhere; }
-.recent-list strong ion-icon { margin: 0 4px; vertical-align: middle; color: var(--muted); }
-.recent-list p { margin: 4px 0 0; font-size: 11px; color: var(--muted); }
-.recent-list button { display: inline-flex; align-items: center; justify-content: center; gap: 5px; flex: none; min-height: 44px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); color: var(--ocean); font-size: 11px; cursor: pointer; }
+.essentials-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; }
+.essentials-grid a { display:grid; grid-template-columns:36px minmax(0,1fr) 12px; align-items:center; gap:9px; min-width:0; min-height:90px; padding:14px 12px; border:1px solid var(--line); border-radius:14px; background:var(--surface); color:var(--ink); text-decoration:none; transition:border-color .18s,background .18s; }
+.essentials-grid a > span:nth-child(2) { min-width:0; }.essentials-grid strong { display:block; font-size:12px; line-height:1.5; }.essentials-grid small { display:block; margin-top:4px; font-size:10px; line-height:1.6; color:var(--muted); }.shortcut-arrow { color:var(--muted); }
+.guide-shortcut .quick-icon { color:#299e91; background:color-mix(in srgb,#299e91 12%,var(--surface)); }.essentials-grid a:hover { border-color:var(--ocean); background:color-mix(in srgb,var(--ocean) 3%,var(--surface)); }
+.recent-list { display:grid; gap:9px; }.recent-list article { display:grid; grid-template-columns:30px minmax(0,1fr) auto; align-items:center; gap:10px; padding:13px; border:1px solid var(--line); border-radius:13px; background:var(--surface); }.recent-list article > div { min-width:0; }
+.recent-icon { display:grid; place-items:center; width:30px; height:30px; border-radius:9px; color:var(--ocean); background:var(--light-blue); }.recent-list strong { display:flex; align-items:center; flex-wrap:wrap; gap:5px; font-size:12px; line-height:1.6; overflow-wrap:anywhere; }.recent-list strong svg { color:var(--muted); flex-shrink:0; }
+.recent-list p { display:flex; flex-wrap:wrap; gap:5px 10px; margin:5px 0 0; font-size:10px; color:var(--muted); }.recent-list p span { display:flex; align-items:center; gap:4px; }.recent-list p svg { flex-shrink:0; }
+.recent-list button { display:flex; align-items:center; justify-content:center; gap:5px; min-height:44px; padding:8px 10px; border:1px solid var(--line); border-radius:9px; background:var(--surface-soft); color:var(--ocean); font:inherit; font-size:10px; font-weight:650; white-space:nowrap; cursor:pointer; }.recent-list button:hover { border-color:var(--ocean); background:var(--light-blue); }
+@container passenger (max-width:360px) { .recent-list article { grid-template-columns:30px minmax(0,1fr); }.recent-list button { grid-column:2; justify-self:start; }.essentials-grid { grid-template-columns:1fr; } }
+@media(prefers-reduced-motion:reduce) { .essentials-grid a { transition:none; } }
 .home-advisories { margin: 26px 0 0; }
 .home-advisories :deep(article) { border-radius: 13px; border-left-width: 1px; }
 .home-advisories :deep(article > ion-icon) { box-sizing: content-box; padding: 9px; border-radius: 10px; background: var(--light-blue); font-size: 18px; }
@@ -305,8 +331,8 @@ a:focus-visible, button:focus-visible { outline: 2px solid var(--ocean); outline
 @container passenger (max-width: 380px) {
   .welcome-section h1 { font-size: 21px; }
   .home-search { padding: 16px 12px; }
-  .home-search :deep(.route-fields) { gap: 3px; grid-template-columns: minmax(0, 1fr) 24px minmax(0, 1fr); }
-  .home-search :deep(.swap-button) { width: 24px; }
+  .home-search :deep(.route-fields) { gap: 3px; grid-template-columns: minmax(0, 1fr); }
+  .home-search :deep(.swap-button) { width: 44px; }
   .journey-banner { padding: 16px; }
   .upcoming-route { gap: 6px; }
   .upcoming-route strong { font-size: 19px; }
@@ -314,7 +340,7 @@ a:focus-visible, button:focus-visible { outline: 2px solid var(--ocean); outline
   .journey-footer ion-button { width: 100%; }
   .essentials-grid a { align-items: flex-start; gap: 8px; padding: 12px 10px; }
   .essentials-grid a > ion-icon { display: none; }
-  .quick-icon { width: 30px; height: 30px; font-size: 17px; }
+  .quick-icon { width: 34px; height: 34px; font-size: 17px; }
   .recent-list article { flex-wrap: wrap; }
 }
 </style>

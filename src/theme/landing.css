@@ -45,7 +45,7 @@
 .landing-page .search-frame :is(input, select) { font-size: 16px; min-height: 48px; }
 .landing-page .search-frame .counter { height: 48px; padding: 0 2px; }
 .landing-page .search-frame .counter button { min-width: 44px; min-height: 44px; }
-.landing-page .search-frame .swap-button { width: 34px; min-height: 44px; margin-bottom: 2px; }
+.landing-page .search-frame .swap-button { width: 44px; min-height: 44px; }
 .landing-page .search-benefits { display: flex; justify-content: center; flex-wrap: wrap; gap: 16px; margin-top: 16px; color: #e0f0f6; font-size: 12px; }
 .landing-page .search-benefits span { display: flex; align-items: center; gap: 6px; }
 .landing-page .hero-waves { position: absolute; bottom: -1px; left: 0; width: 100%; height: 80px; color: var(--surface); }
@@ -103,7 +103,8 @@
 .landing-page .landing-footer nav a { min-height: 44px; display: inline-flex; align-items: center; color: var(--muted); font-size: 13px; }
 @container landing-search (max-width: 390px) {
   .landing-page .search-frame .route-fields { grid-template-columns: 1fr; }
-  .landing-page .search-frame .swap-button { display: none; }
+  .landing-page .search-frame .detail-fields { grid-template-columns: 1fr; }
+  .landing-page .search-frame .heading-actions { flex-direction: column; }
   .landing-page .search-frame .search-card { padding: 22px 16px; }
 }
 @media (max-width: 1050px) {

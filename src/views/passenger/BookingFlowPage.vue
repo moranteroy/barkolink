@@ -13,16 +13,18 @@
           <div
             v-for="(step, index) in steps"
             :key="step"
+            :aria-current="index === activeStep ? 'step' : undefined"
             :class="[
               'step',
               { active: index <= activeStep, current: index === activeStep },
             ]"
           >
-            <span>{{ index + 1 }}</span
+            <span><ion-icon v-if="index < activeStep" :icon="checkmarkOutline" aria-hidden="true" /><template v-else>{{ index + 1 }}</template></span
             ><b>{{ step }}</b>
           </div>
         </nav>
 
+        <p class="step-caption"><span>Step {{ activeStep + 1 }} of {{ steps.length }}</span><strong>{{ steps[activeStep] }}</strong></p>
         <AdvisoryBanner :sailing-code="trip.id" />
         <section v-if="flow === 'details'" class="flow-layout details-flow">
           <div>
@@ -43,7 +45,7 @@
                   <span class="route-mark"
                     ><ion-icon :icon="boatOutline" aria-hidden="true" /></span
                   ><i></i><b>{{ trip.duration }}</b
-                  ><i></i><span>TRIP</span>
+                  ><i></i>
                 </div>
                 <div class="right">
                   <small>ARRIVAL</small><strong>{{ trip.arrival }}</strong
@@ -61,7 +63,7 @@
                   <p>Passenger ferry | Trip {{ trip.id }}</p>
                 </div>
                 <span class="available"
-                  >{{ trip.available }} slots available</span
+                  >{{ trip.available }} seats left</span
                 >
               </div>
             </article>
@@ -83,7 +85,7 @@
               </article>
               <article>
                 <small>Ticket type</small><strong>Mobile e-ticket</strong
-                ><span>Issued after payment at the terminal</span>
+                ><span>Issued after payment verification</span>
               </article>
             </div>
           </div>
@@ -119,8 +121,9 @@
               class="continue"
               :disabled="classOptions.length > 0 && !selectedAccommodation"
               @click="go('passengers')"
-              >Continue to passengers</ion-button
+              >Continue to passengers <ion-icon :icon="arrowForwardOutline" aria-hidden="true" /></ion-button
             >
+            <p v-if="classOptions.length > 0 && !selectedAccommodation" class="selection-hint" role="status">Select an available accommodation to continue.</p>
             <p class="hint">
               Your fare is based on passenger type. Review the details before
               confirming.
@@ -149,7 +152,7 @@
                 :data-passenger-index="index"
               >
                 <div class="passenger-heading">
-                  <strong>PASSENGER {{ index + 1 }}</strong
+                  <strong><ion-icon :icon="peopleOutline" aria-hidden="true" /> Passenger {{ index + 1 }}</strong
                   ><button
                     v-if="passengers.length > 1"
                     type="button"
@@ -237,7 +240,7 @@
                     :icon="boatOutline"
                     aria-hidden="true" /></router-link
                 ><ion-button class="continue" type="submit"
-                  >Review booking</ion-button
+                  >Review booking <ion-icon :icon="arrowForwardOutline" aria-hidden="true" /></ion-button
                 >
               </div>
             </form>
@@ -280,7 +283,7 @@
             </p>
             <article class="summary-card glass-panel">
               <div class="summary-heading">
-                <strong>Trip details</strong
+                <strong><ion-icon :icon="boatOutline" aria-hidden="true" /> Trip details</strong
                 ><router-link to="/trip-details" aria-label="Edit trip details">Edit trip</router-link>
               </div>
               <div class="summary-route">
@@ -292,7 +295,7 @@
                 <div><dt>Ferry</dt><dd>{{ trip.vessel }}</dd></div>
               </dl>
               <div class="summary-heading passengers-heading">
-                <strong>Passengers ({{ passengers.length }})</strong>
+                <strong><ion-icon :icon="peopleOutline" aria-hidden="true" /> Passengers ({{ passengers.length }})</strong>
                 <router-link to="/passenger-info" aria-label="Edit passenger details">Edit passengers</router-link>
               </div>
               <article
@@ -323,7 +326,7 @@
             </article>
           </div>
           <aside class="flow-aside glass-panel review-fares">
-            <p class="kicker">FARE SUMMARY</p>
+            <p class="kicker"><ion-icon :icon="walletOutline" aria-hidden="true" /> FARE SUMMARY</p>
             <div v-for="(person, index) in passengers" :key="person.id" class="fare-row">
               <span><strong>{{ person.name || `Passenger ${index + 1}` }}</strong><small>{{ person.type }} passenger</small></span>
               <b>PHP {{ fareFor(person.type).toLocaleString() }}</b>
@@ -377,10 +380,10 @@
         </section>
 
         <section v-else class="confirmed-page">
-          <div class="success-icon" aria-hidden="true">
-            <ion-icon :icon="checkmarkOutline" />
+          <div class="success-icon" :class="{ pending: booking.paymentStatus !== 'PAID' || booking.paymentVerificationRequired, closed: ['CANCELLED', 'EXPIRED'].includes(booking.status) }" aria-hidden="true">
+            <ion-icon :icon="['CANCELLED', 'EXPIRED'].includes(booking.status) ? closeCircleOutline : booking.paymentStatus !== 'PAID' || booking.paymentVerificationRequired ? timeOutline : checkmarkOutline" />
           </div>
-          <p class="kicker">SEAT RESERVED</p>
+          <p class="kicker">{{ !booking.tripId ? 'RESERVATION' : ['CANCELLED', 'EXPIRED'].includes(booking.status) ? 'RESERVATION CLOSED' : 'SEAT RESERVED' }}</p>
           <h1>
             {{
               !booking.tripId
@@ -512,6 +515,9 @@ import {
   checkmarkOutline,
   locationOutline,
   peopleOutline,
+  walletOutline,
+  timeOutline,
+  closeCircleOutline,
 } from "ionicons/icons";
 import PortLocationMap from "../../components/shared/PortLocationMap.vue";
 import PassengerHeader from "../../components/passenger/PassengerHeader.vue";
@@ -571,7 +577,7 @@ const bookingBack = computed(() => flow.value === 'passengers'
   ? { path: '/trip-details', label: 'Back to trip details', icon: boatOutline }
   : flow.value === 'summary' ? { path: '/passenger-info', label: 'Back to passengers', icon: peopleOutline }
   : flow.value === 'confirmed' ? { path: '/bookings', label: 'Back to my bookings', icon: ticketOutline }
-  : { path: '/search', label: 'Back to sailings', icon: boatOutline });
+  : { path: '/trips', label: 'Back to sailings', icon: boatOutline });
 const activeStep = computed(() =>
   Math.max(
     0,
@@ -1175,7 +1181,7 @@ async function loadConfirmedBooking() {
 }
 onMounted(() => {
   if (!selectedTrip.value && flow.value !== "confirmed")
-    router.replace("/search");
+    router.replace("/trips");
   if (flow.value === "confirmed") void loadConfirmedBooking();
   else void prefillAccountPassenger();
 });
@@ -1187,7 +1193,7 @@ onIonViewWillEnter(() => {
   }
   const latestTrip = readSelectedTrip();
   if (!latestTrip?.id) {
-    router.replace("/search");
+    router.replace("/trips");
     return;
   }
   if (
@@ -2365,4 +2371,119 @@ watch(
 
 <style scoped>
 .voucher-entry{padding:16px 0;border-bottom:1px solid var(--line)}.voucher-entry label{display:block;font-size:13px;font-weight:600;margin-bottom:10px}.voucher-entry>div{display:flex;gap:8px}.voucher-entry input{min-width:0;flex:1;background:var(--surface);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:10px;font:inherit}.voucher-entry button{min-height:44px;border:1px solid var(--line);border-radius:8px;padding:8px 14px;color:var(--ocean);background:var(--surface);font:inherit;cursor:pointer}.voucher-entry button:disabled{opacity:.5}.voucher-entry p{font-size:12px;line-height:1.6}.voucher-entry small{display:block;margin-top:10px;color:var(--muted);font-size:11px}.voucher-discount{color:var(--ocean)}
+</style>
+
+<style scoped>
+.booking-page { font-family: var(--ion-font-family); padding-bottom: calc(48px + env(safe-area-inset-bottom)); }
+.booking-page .booking-back { gap: 8px; min-height: 44px; border-radius: 10px; font-size: 12px; }
+.booking-page .progress { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; margin: 22px 0 12px; padding: 12px 6px; border: 1px solid var(--line); border-radius: 16px; background: var(--surface); }
+.booking-page .progress .step { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: start; gap: 8px; padding: 0; min-width: 0; text-align: center; }
+.booking-page .progress .step::after { display: none; }
+.booking-page .progress .step > span { display: grid; place-items: center; width: 30px; height: 30px; background: var(--surface-soft); color: var(--muted); font-size: 12px; }
+.booking-page .progress .step.active > span { background: var(--light-blue); color: var(--ocean); border-color: var(--line); }
+.booking-page .progress .step.current > span { background: var(--action); border-color: transparent; color: #fff; box-shadow: 0 0 0 4px var(--light-blue); }
+.booking-page .progress .step b { display: block; font-size: 10px; line-height: 1.5; font-weight: 600; color: var(--muted); }
+.booking-page .progress .step.active b { color: var(--ocean); }
+.booking-page .step-caption { display: flex; justify-content: space-between; gap: 10px; margin: 0 0 24px; padding: 0 2px; font-size: 11px; color: var(--muted); }
+.booking-page .step-caption strong { color: var(--ocean); font-weight: 600; }
+.booking-page .flow-layout h1, .booking-page .confirmed-page h1 { font-size: 28px; line-height: 1.3; letter-spacing: -.7px; overflow-wrap: anywhere; }
+.booking-page .muted { font-size: 12px; line-height: 1.8; }
+.booking-page .journey-card { padding: 20px; border-radius: 18px; border-top: 3px solid var(--ocean); }
+.booking-page .journey-time { grid-template-columns: minmax(0, 1fr) 76px minmax(0, 1fr); gap: 10px; }
+.booking-page .journey-time > div { min-width: 0; }
+.booking-page .journey-time strong { font-size: 24px; letter-spacing: -.5px; }
+.booking-page .journey-time small { font-size: 9px; letter-spacing: .05em; }
+.booking-page .journey-time span { font-size: 11px; line-height: 1.5; overflow-wrap: anywhere; }
+.booking-page .journey-line { display: grid; grid-template-columns: 1fr 24px 1fr; gap: 4px; }
+.booking-page .journey-line .route-mark { grid-column: 2; grid-row: 1; color: var(--ocean); }
+.booking-page .journey-line i { grid-row: 1; }
+.booking-page .journey-line b { grid-column: 1 / -1; text-align: center; margin-top: 4px; }
+.booking-page .vessel-detail { display: grid; grid-template-columns: 38px minmax(0, 1fr); gap: 8px 12px; }
+.booking-page .vessel-detail > div { min-width: 0; overflow-wrap: anywhere; }
+.booking-page .vessel-detail strong { font-size: 14px; line-height: 1.5; }
+.booking-page .vessel-detail p { font-size: 10px; line-height: 1.7; }
+.booking-page .vessel-detail .available { grid-column: 2; margin: 0; justify-self: start; padding: 4px 8px; border-radius: 6px; background: color-mix(in srgb, #20ae87 12%, var(--surface)); color: var(--ink); font-size: 10px; }
+.booking-page .flow-aside { padding: 20px; border-radius: 18px; box-shadow: none; }
+.booking-page .flow-aside .kicker { display: flex; align-items: center; gap: 7px; margin-bottom: 8px; }
+.booking-page .flow-aside .kicker ion-icon { font-size: 16px; }
+.booking-page .fare-row { font-size: 12px; padding: 14px 0; }
+.booking-page .fare-row span small, .booking-page .total span small { display: block; font-size: 11px; line-height: 1.6; }
+.booking-page .total { margin-top: 12px; padding-top: 18px; }
+.booking-page .total strong { font-size: 24px; white-space: nowrap; }
+.booking-page .continue { --background: var(--action); --border-radius: 11px; --padding-start: 14px; --padding-end: 14px; height: 48px; font-size: 13px; letter-spacing: 0; font-weight: 650; }
+.booking-page .continue ion-icon { margin-left: 10px; font-size: 18px; }
+.booking-page .hint { font-size: 11px; line-height: 1.8; }
+.booking-page .selection-hint { color: var(--ocean); font-size: 11px; line-height: 1.6; padding: 10px; border-radius: 8px; background: var(--light-blue); }
+.booking-page .info-grid article { min-width: 0; padding: 14px 10px; min-height: 100px; border-radius: 12px; }
+.booking-page .info-grid strong { font-size: 12px; line-height: 1.6; overflow-wrap: anywhere; }
+.booking-page .info-grid span { font-size: 10px; line-height: 1.6; }
+.booking-page .passenger-flow { gap: 20px; }
+.booking-page .passenger-flow > .trip-summary { margin-top: 0; padding: 16px; position: static; }
+.booking-page .trip-summary .hint { text-align: left; }
+.booking-page .passenger-card { padding: 18px; border-radius: 16px; box-shadow: none; border-top: 3px solid color-mix(in srgb, var(--ocean) 50%, var(--line)); }
+.booking-page .passenger-heading { margin-bottom: 14px; letter-spacing: 0; gap: 10px; }
+.booking-page .passenger-heading strong { display: flex; align-items: center; gap: 8px; font-size: 13px; }
+.booking-page .passenger-heading ion-icon { display: grid; padding: 7px; border-radius: 8px; background: var(--light-blue); font-size: 18px; }
+.booking-page .passenger-heading .remove { min-height: 44px; padding: 7px; font-size: 11px; }
+.booking-page .form-grid { gap: 16px; }
+.booking-page .form-grid label { min-width: 0; gap: 8px; font-size: 12px; font-weight: 500; }
+.booking-page .form-grid input, .booking-page .form-grid select { min-width: 0; height: 46px; font-size: 14px; font-weight: 400; border-radius: 10px; background-color: var(--surface-soft); }
+.booking-page .form-grid input[aria-invalid="true"], .booking-page .form-grid select[aria-invalid="true"] { border-color: var(--danger); }
+.booking-page .passenger-card p[role="alert"], .booking-page .form-message { padding: 12px; border-radius: 10px; color: var(--danger); background: color-mix(in srgb, var(--danger) 8%, var(--surface)); font-size: 12px; line-height: 1.7; }
+.booking-page .passenger-actions { gap: 12px; }
+.booking-page .passenger-actions .continue { flex: 1; }
+.booking-page .summary-card { padding: 20px; border-radius: 18px; }
+.booking-page .summary-heading > strong { display: flex; align-items: center; gap: 7px; }
+.booking-page .summary-heading ion-icon { color: var(--ocean); font-size: 18px; }
+.booking-page .summary-heading a { padding: 5px 8px; border-radius: 8px; background: var(--light-blue); font-size: 11px; min-height: 36px; }
+.booking-page .summary-flow .passenger-row { padding: 16px 0; }
+.booking-page .passenger-identity summary { padding: 8px 10px; border-radius: 8px; background: var(--surface-soft); }
+.booking-page .voucher-entry { margin: 6px 0; padding: 16px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface-soft); }
+.booking-page .voucher-entry input { width: 0; min-height: 44px; font-size: 13px; }
+.booking-page .voucher-entry button { font-size: 12px; }
+.booking-page .confirmed-page { margin-top: 12px; }
+.booking-page .success-icon { border-radius: 18px; background: color-mix(in srgb, #24b791 16%, var(--surface)); color: #24a58c; }
+.booking-page .success-icon.pending { background: var(--light-blue); color: var(--ocean); }
+.booking-page .success-icon.closed { color: var(--danger); background: color-mix(in srgb, var(--danger) 12%, var(--surface)); }
+.booking-page .reference { border-style: solid; border-radius: 14px; padding: 16px; gap: 12px; }
+.booking-page .reference button { padding: 8px 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); min-height: 44px; }
+.booking-page .confirmed-card { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; padding: 18px; border-radius: 16px; }
+.booking-page .confirmed-card > div { border: 0; padding: 0; }
+.booking-page .confirmed-card > div:first-child { grid-column: 1 / -1; padding-bottom: 14px; border-bottom: 1px solid var(--line); }
+.booking-page .confirmed-card > div:first-child strong { font-size: 18px; line-height: 1.5; }
+.booking-page .confirmed-card strong { font-size: 13px; line-height: 1.7; }
+.booking-page .confirmed-card small { font-size: 9px; line-height: 1.6; }
+.booking-page .confirmation-actions { width: 100%; }
+.booking-page .confirmation-actions ion-button { max-width: none; }
+.booking-page .trip-port-map :deep(.map-heading) { padding: 20px 18px 14px; }
+.booking-page .trip-port-map :deep(.map-heading h2) { font-size: 21px; line-height: 1.4; }
+.booking-page .trip-port-map :deep(.port-tabs) { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); padding: 0 18px 14px; }
+.booking-page .trip-port-map :deep(.port-tabs button) { min-width: 0; }
+.booking-page .trip-port-map :deep(.port-tabs button > span:last-child) { overflow-wrap: anywhere; }
+.booking-page .trip-port-map :deep(.map-window) { height: 270px; }
+.booking-page .trip-port-map :deep(.leaflet-map) { height: 100%; }
+@container passenger (max-width: 800px) {
+  .booking-page .flow-layout { grid-template-columns: minmax(0, 1fr); gap: 20px; }
+  .booking-page .passenger-flow > .trip-summary { order: -1; display: block; }
+  .booking-page .passenger-flow .trip-summary .trip-route { flex-wrap: wrap; }
+  .booking-page .trip-summary .trip-vessel { margin-top: 12px; }
+  .booking-page .trip-summary .total { display: flex; flex-direction: row; align-items: center; justify-content: space-between; padding: 8px 0 0; }
+  .booking-page .trip-summary .hint { display: none; }
+  .booking-page .details-flow > .flow-aside, .booking-page .summary-flow > .flow-aside { margin-top: 0; }
+}
+@container passenger (max-width: 380px) {
+  .booking-page .journey-card, .booking-page .flow-aside, .booking-page .passenger-card, .booking-page .summary-card { padding: 16px; }
+  .booking-page .journey-time { grid-template-columns: minmax(0, 1fr) 50px minmax(0, 1fr); gap: 6px; }
+  .booking-page .journey-time strong { font-size: 20px; }
+  .booking-page .journey-time span { font-size: 10px; }
+  .booking-page .info-grid { gap: 6px; }
+  .booking-page .info-grid article { padding: 12px 8px; }
+  .booking-page .confirmed-card { grid-template-columns: minmax(0, 1fr); }
+  .booking-page .total strong { font-size: 21px; }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .booking-page .step.current > span { animation: booking-step-in .25s ease-out; }
+  @keyframes booking-step-in { from { transform: scale(.85); } to { transform: scale(1); } }
+}
+
 </style>

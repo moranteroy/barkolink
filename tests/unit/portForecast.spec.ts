@@ -12,16 +12,19 @@ describe('home port forecast', () => {
   it('shows seven daily forecasts and actual rain chances', async () => {
     mocks.load.mockResolvedValue(fixture);
     const wrapper = mount(PortForecast, { props: { portId: 'batangas' } }); await flushPromises();
-    expect(wrapper.findAll('article')).toHaveLength(7);
+    expect(wrapper.findAll('button.forecast-day')).toHaveLength(7);
     expect(wrapper.text()).toContain('7-day forecast');
     expect(wrapper.text()).toContain('Today');
     expect(wrapper.text()).toContain('70%');
+    await wrapper.findAll('button.forecast-day')[0].trigger('click');
+    expect(wrapper.find('.selected-forecast').text()).toContain('Light rain');
+    expect(wrapper.find('.selected-forecast').text()).toContain('18 km/h');
     wrapper.unmount();
   });
   it('labels shorter provider forecasts without inventing the remaining days', async () => {
     mocks.load.mockResolvedValue({ ...fixture, ports: [{ ...fixture.ports[0], days: days.slice(0, 3) }] });
     const wrapper = mount(PortForecast, { props: { portId: 'batangas' } }); await flushPromises();
-    expect(wrapper.findAll('article')).toHaveLength(3);
+    expect(wrapper.findAll('button.forecast-day')).toHaveLength(3);
     expect(wrapper.text()).toContain('3-day forecast');
     expect(wrapper.text()).toContain('3 forecast days are currently available');
     wrapper.unmount();
@@ -34,7 +37,7 @@ describe('home port forecast', () => {
     resolve(fixture); await flushPromises();
     expect(mocks.load).toHaveBeenLastCalledWith('calapan');
     expect(wrapper.text()).not.toContain('Batangas');
-    expect(wrapper.findAll('article')).toHaveLength(0);
+    expect(wrapper.findAll('button.forecast-day')).toHaveLength(0);
     expect(wrapper.text()).toContain('currently unavailable');
     wrapper.unmount();
   });

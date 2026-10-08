@@ -8,7 +8,7 @@
         <small>{{ port.role }}</small><h3>{{ port.name }}</h3>
         <p v-if="!port.available" class="weather-message">Weather unavailable for this port.</p>
         <template v-else>
-          <div class="weather-conditions"><strong>{{ format((port.forecast || port.current)?.temperatureC) }}<span>°C</span></strong><div><b>{{ (port.forecast || port.current)?.condition }}</b><small>{{ port.forecast ? 'Forecast at departure' : 'Current weather' }}</small></div></div>
+          <div class="weather-conditions"><span class="condition-icon"><WeatherSymbol :kind="weatherPresentation((port.forecast || port.current)?.condition || '').kind" active /></span><strong>{{ format((port.forecast || port.current)?.temperatureC) }}<span>°C</span></strong><div class="condition-copy"><b>{{ (port.forecast || port.current)?.condition }}</b><small>{{ port.forecast ? 'Forecast at departure time' : 'Current weather' }}</small></div></div>
           <dl><div><dt>Wind</dt><dd>{{ format((port.forecast || port.current)?.windKph) }} km/h</dd></div><div><dt>Visibility</dt><dd>{{ format((port.forecast || port.current)?.visibilityKm) }} km</dd></div><div v-if="port.forecast"><dt>Chance of rain</dt><dd>{{ format(port.forecast.rainChance) }}%</dd></div></dl>
           <p v-if="!port.forecast" class="forecast-notice">Departure forecast is not available yet. Check again closer to your trip.</p>
           <p class="weather-updated">{{ port.stale ? 'Saved weather · update delayed' : 'Last updated' }} · {{ timestamp(port.current?.at) }}</p>
@@ -23,6 +23,8 @@ import { ref,watch } from 'vue';
 import { IonIcon } from '@ionic/vue';
 import { partlySunnyOutline } from 'ionicons/icons';
 import { tripWeather,type TripWeatherData } from '../../services/weather';
+import WeatherSymbol from './WeatherSymbol.vue';
+import { weatherPresentation } from '../../data/weatherPresentation';
 const props=defineProps<{sailingCode:string}>();
 const data=ref<TripWeatherData|null>(null),loading=ref(false),error=ref(false);
 let requestId=0;
@@ -62,4 +64,16 @@ dt { font-size: 10px; color: var(--muted); } dd { margin: 5px 0 0; font-size: 12
 .weather-footer a { font-size: 10px; color: var(--ocean); text-decoration: none; }
 .weather-footer p { margin-top: 6px; }
 @media(max-width:600px){.weather-ports{grid-template-columns:minmax(0,1fr)}.trip-weather{padding:16px}}
+.trip-weather { font-family: var(--ion-font-family); }
+.weather-heading h2 { font-size: 18px; }
+.weather-ports { grid-template-columns: minmax(0, 1fr); }
+.weather-port { border-radius: 14px; padding: 16px; }
+.weather-port > small { display: inline-block; padding: 4px 7px; border-radius: 5px; color: var(--ocean); background: var(--light-blue); }
+.weather-port h3 { margin: 8px 0 14px; font-size: 15px; }
+.weather-conditions { display: grid; grid-template-columns: 42px auto minmax(0, 1fr); gap: 10px; }
+.condition-icon { display: block; width: 42px; height: 42px; padding: 5px; border-radius: 12px; background: var(--light-blue); }
+.weather-conditions strong { font-size: 29px; }
+.condition-copy { min-width: 0; overflow-wrap: anywhere; }
+dl { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 8px; }
+@container passenger (min-width: 780px) { .weather-ports { grid-template-columns: repeat(2, minmax(0,1fr)); } }
 </style>

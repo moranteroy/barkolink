@@ -68,11 +68,13 @@ describe('database-backed multilingual chatbot',()=>{
   it('redacts voucher codes and displays current reward progress',async()=>{
     planning[0].function={name:'get_my_rewards',arguments:'{}'};
     const data=await (await handler(request())).json();assert.equal(data.sources[0].currentTier,'Silver');assert.equal(data.sources[0].records[0].value,100);assert.doesNotMatch(JSON.stringify(requests),/SECRET VOUCHER/);
+    assert.equal(data.links[0].path,'/home#loyalty-rewards');
   });
   it('filters live sailings by Philippine date and route and bounds result count',async()=>{
     const sailing={code:'TRIP',origin:{name:'Batangas Port',city:'Batangas'},destination:{name:'Calapan Port',city:'Calapan'},vessel:{name:'MV Route'},departureAt:'2099-10-07T18:00:00Z',arrivalAt:'2099-10-07T20:00:00Z',regularFare:600,availableSeats:20};
     const rpc=async operation=>{assert.equal(operation,'BrowseSailings');return {sailings:[...Array(8).fill(sailing),{...sailing,departureAt:'2099-10-06T18:00:00Z'}]};};
     const data=await shared.readTool('get_sailings',{from:'Batangas City',to:'Calapan',date:'2099-10-08'},rpc,'2026-10-08T00:00:00Z');assert.equal(data.totalMatches,8);assert.equal(data.records.length,6);assert.equal(data.records[0].vessel,'MV Route');assert.equal(data.records[0].departureAt,'2099-10-08T02:00:00.000+08:00');
+    const destination=new URL(data.links[0].path,'https://barkolink.test');assert.equal(destination.searchParams.get('from'),'Batangas City');assert.equal(destination.searchParams.get('date'),'2099-10-08');
     const missing=await shared.readTool('get_sailings',{to:'Unknown'},rpc,'2026-10-08T00:00:00Z');assert.equal(missing.totalMatches,0);
   });
   it('includes overnight arrivals based on arrival date rather than departure date',async()=>{
@@ -80,5 +82,13 @@ describe('database-backed multilingual chatbot',()=>{
     const rpc=async()=>({sailings:[sailing]});
     assert.equal((await shared.readTool('get_sailings',{event:'arrival',date:'2099-10-08'},rpc,'2026-10-08T00:00:00Z')).totalMatches,1);
     assert.equal((await shared.readTool('get_sailings',{event:'departure',date:'2099-10-08'},rpc,'2026-10-08T00:00:00Z')).totalMatches,0);
+  });
+  it('targets the specific guide and advisories sections',async()=>{
+    const rpc=async()=>({advisories:[]});
+    for(const [topic,path] of [['booking','/help#reserve-sailing'],['payment','/help#payment'],['boarding','/help#e-ticket'],['weather','/home#weather-outlook']]) {
+      assert.deepEqual(shared.parseTool({function:{name:'get_help',arguments:JSON.stringify({topic})}}),{name:'get_help',args:{topic}});
+      assert.equal((await shared.readTool('get_help',{topic},rpc,'2026-10-08T00:00:00Z')).links[0].path,path);
+    }
+    assert.equal((await shared.readTool('get_advisories',{},rpc,'2026-10-08T00:00:00Z')).links[0].path,'/home#travel-advisories');
   });
 });

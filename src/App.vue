@@ -38,7 +38,7 @@ onUnmounted(() => {
 const passengerPaths = new Set([
   "/assistant",
   "/home",
-  "/search",
+  "/trips",
   "/trip-details",
   "/passenger-info",
   "/booking-summary",
