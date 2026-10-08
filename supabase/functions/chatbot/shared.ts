@@ -13,7 +13,7 @@ export const help = {
   booking:'Search route and travel date, choose a sailing, enter passenger details, review fares and confirm. A reservation is successful only when the booking appears in My Bookings.',
   payment:'Check the method, status and deadline on your booking. Pay at the ticketing desk for cash bookings. Online payment must be verified by the system before a ticket can be used. Do not infer payment from a screenshot or reference alone.',
   boarding:'Open the current e-ticket for a confirmed paid booking. Staff verify the QR against the current sailing and review passenger details. Bring identification matching the ticket; follow your operator’s boarding requirements. A screenshot or recreated QR does not prove validity.',
-  loyalty:'Personal rewards are earned per five distinct completed, paid trips with a boarded passenger: Silver PHP 100 at 5, Gold PHP 200 at 10, Platinum PHP 300 at 15 and each further 5. Rewards expire after 90 days, apply to eligible regular fares, and one voucher is used per booking. Check your personal rewards for current eligibility.',
+  loyalty:'Personal rewards are earned from distinct completed, paid trips with a boarded passenger. Milestones, reward amounts and validity follow saved loyalty settings. Rewards apply to eligible regular fares, and one voucher is used per booking. Check your personal rewards for current milestones and eligibility.',
   weather:'Weather forecasts are travel estimates. Sailing status and operator advisories determine travel updates. Contact the operator for baggage, cancellation/refund rules and exact boarding requirements not specified in your booking.',
 };
 export function validateInput(body: any) {

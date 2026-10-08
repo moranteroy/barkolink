@@ -38,7 +38,7 @@ vi.mock('../../src/services/database/staff', () => ({
   adminSailings: async () => ({ data: { sailings: [sailing] } }),
   adminSailingOptions: async () => ({ data: { sailings: [sailing] } }),
   adminUsers: async () => ({ data: { users: [] } }),
-  adminPorts: async () => ({ data: { ports: [{ id: 'origin', name: 'Origin', isActive: true }, { id: 'destination', name: 'Destination', isActive: true }] } }),
+  adminPorts: async () => ({ data: { ports: [{ id: 'origin', code: 'ORG', name: 'Origin', city: 'Origin City', isActive: true }, { id: 'destination', code: 'DST', name: 'Destination', city: 'Destination City', isActive: true }] } }),
   adminVessels: async () => ({ data: { vessels: [{ id: 'vessel', code: 'F1', name: 'Ferry', passengerCapacity: 100, isActive: true }, { id: 'vessel-2', code: 'F2', name: 'Fast Ferry', passengerCapacity: 80, isActive: true }, { id: 'unpriced', code: 'F3', name: 'New Ferry', passengerCapacity: 50, isActive: true }] } }),
   adminPassengerRecords: mocks.passengerRecords,
   adminDashboardStats: async () => ({ data: {} }),
@@ -73,6 +73,24 @@ beforeEach(() => {
   mocks.checkIn.mockResolvedValue({ data: {} })
 })
 describe('port directory filters', () => {
+  it('counts ports independently of passenger totals and does not paginate an unpaged catalog', async () => {
+    mocks.passengerRecords.mockResolvedValue({ data: { bookingPassengers: [], totalCount: 169 } })
+    const wrapper = await load('ports')
+    expect(wrapper.find('.table-foot').text()).toContain('2 of 2 ports.')
+    expect(wrapper.find('.workspace-pagination').exists()).toBe(false)
+    await wrapper.find('#directory-search').setValue('Origin')
+    expect(wrapper.find('.table-foot').text()).toContain('1 of 2 ports.')
+    wrapper.unmount()
+  })
+  it('keeps the port code fixed while allowing details and availability to be edited', async () => {
+    const wrapper = await load('ports')
+    await wrapper.findAll('button').find(button => button.text() === 'Edit')!.trigger('click')
+    expect(wrapper.find('#port-code').attributes('disabled')).toBeDefined()
+    expect(wrapper.find('#port-name').attributes('disabled')).toBeUndefined()
+    expect(wrapper.find('.port-availability input').exists()).toBe(true)
+    expect(wrapper.find('.port-form-footer').text()).toContain('Save changes')
+    wrapper.unmount()
+  })
   it('filters port names and active status and resets both filters', async () => {
     const wrapper = await load('ports')
     expect(wrapper.findAll('.records-grid tbody tr')).toHaveLength(2)

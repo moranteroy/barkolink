@@ -1,18 +1,18 @@
 <template>
-  <section class="manifest-export" aria-labelledby="manifest-export-title">
+  <section class="manifest-export" :class="{ 'workspace-export': sailingCode }" aria-labelledby="manifest-export-title">
     <div class="export-heading">
       <span class="export-symbol"><FileText aria-hidden="true" /></span>
       <div>
       <p class="eyebrow">CSV DOWNLOAD</p>
       <h2 id="manifest-export-title">Passenger manifest export</h2>
       <p>
-        Choose a sailing below. CSV includes all
+        {{ sailingCode ? `Sailing ${sailingCode}.` : 'Choose a sailing below.' }} CSV includes all
         passengers on paid, confirmed reservations.
       </p>
       </div>
     </div>
     <div class="export-controls">
-      <label for="export-manifest-sailing"
+      <label v-if="!sailingCode" for="export-manifest-sailing"
         >Sailing<select
           id="export-manifest-sailing"
           v-model="selected"
@@ -47,12 +47,20 @@ import { reportCsv, type ReportSailing } from "../../data/reportAnalytics";
 import { ticketRequestError } from "../../data/ticketActions";
 const props = defineProps<{
   sailings: Pick<ReportSailing, "code" | "origin" | "destination" | "vessel">[];
+  sailingCode?: string;
 }>();
 const selected = ref(""),
   exporting = ref(false),
   error = ref(""),
   notice = ref("");
 let request = 0;
+watch(() => props.sailingCode, (code) => {
+  request++;
+  exporting.value = false;
+  selected.value = code && props.sailings.some(s => s.code === code) ? code : '';
+  error.value = '';
+  notice.value = '';
+}, { immediate: true });
 watch(
   () => props.sailings,
   (sailings) => {
@@ -151,6 +159,11 @@ async function exportManifest() {
   border-radius: 16px;
   color: var(--ink);
 }
+.workspace-export { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 14px; padding: 16px 18px; border-radius: 12px; }
+.workspace-export .export-heading { margin: 0; }
+.workspace-export h2 { font-size: 15px; }
+.workspace-export > p { grid-column: 1 / -1; margin: 0; }
+.workspace-export button { font-size: 12px; min-height: 40px; padding: 10px 14px; }
 h2 {
   font-size: 18px;
   margin: 0 0 10px;
@@ -220,6 +233,7 @@ button:disabled {
 button svg { width: 16px; height: 16px; }
 button:focus-visible, select:focus-visible { outline: 2px solid var(--ocean); outline-offset: 3px; }
 @media (max-width: 700px) {
+  .workspace-export { grid-template-columns: 1fr; }
   .export-controls {
     flex-direction: column;
     align-items: stretch;

@@ -32,7 +32,7 @@
     </button>
     </div>
     <p v-if="error" role="alert" class="catalog-error">{{ error }}</p>
-    <p v-if="notice" role="status">{{ notice }}</p>
+    <p v-if="notice" role="status" class="no-show-notice">{{ notice }}</p>
     <div class="catalog-tools no-show-search">
       <label class="no-show-search-label" for="no-show-search">Search passengers<div class="no-show-search-input"><IonIcon :icon="searchOutline" aria-hidden="true" /><input
         id="no-show-search"
@@ -46,19 +46,21 @@
         marked</span
       >
     </div>
-    <div class="no-show-counts"><div><span>Passengers not boarded</span><strong>{{ rows.length }}</strong></div><div><span>Not yet recorded</span><strong>{{ eligibleCount }}</strong></div><div><span>No-shows recorded</span><strong>{{ rows.filter(p => p.noShow).length }}</strong></div></div>
-    <div v-if="!visible.length && !error" class="no-show-empty" role="status"><span class="no-show-empty-symbol"><IonIcon :icon="code && !search ? checkmarkCircleOutline : personRemoveOutline" aria-hidden="true" /></span><strong>{{ loading ? 'Loading passengers...' : search ? 'No matching passengers' : code ? 'No passengers to record' : 'Choose a completed trip' }}</strong><p>{{ search ? 'Try another passenger name or booking reference.' : code ? 'No non-boarded paid passengers were found for this completed sailing.' : 'Select a completed sailing to review attendance.' }}</p></div>
+    <div class="no-show-counts" aria-label="Attendance totals"><div><span class="count-icon"><IonIcon :icon="peopleOutline" aria-hidden="true" /></span><div><span>Passengers not boarded</span><strong>{{ rows.length }}</strong></div></div><div class="pending-count"><span class="count-icon"><IonIcon :icon="timeOutline" aria-hidden="true" /></span><div><span>Not yet recorded</span><strong>{{ eligibleCount }}</strong></div></div><div class="recorded-count"><span class="count-icon"><IonIcon :icon="checkmarkCircleOutline" aria-hidden="true" /></span><div><span>No-shows recorded</span><strong>{{ rows.filter(p => p.noShow).length }}</strong></div></div></div>
+    <div v-if="loading" class="no-show-empty" role="status">Loading passenger attendance…</div>
+    <div v-else-if="!visible.length && !error" class="no-show-empty" role="status"><span class="no-show-empty-symbol"><IonIcon :icon="code && !search ? checkmarkCircleOutline : personRemoveOutline" aria-hidden="true" /></span><strong>{{ search ? 'No matching passengers' : code ? 'No passengers to record' : 'Choose a completed trip' }}</strong><p>{{ search ? 'Try another passenger name or booking reference.' : code ? 'No non-boarded paid passengers were found for this completed sailing.' : 'Select a completed sailing to review attendance.' }}</p></div>
     <div v-else-if="visible.length" class="catalog-table">
       <div class="no-show-table-heading"><p class="eyebrow">PASSENGER ATTENDANCE</p><h2>Passengers who did not board</h2></div>
-      <table>
+      <div class="no-show-table-scroll" tabindex="0" role="region" aria-label="Passenger no-show records"><table>
+        <caption class="sr-only">Attendance review for paid passengers who did not board the selected completed sailing</caption>
         <thead>
           <tr>
-            <th>Passenger</th>
-            <th>Booking</th>
-            <th>Accommodation</th>
-            <th>Ticket</th>
-            <th>Attendance</th>
-            <th>Action</th>
+            <th scope="col">Passenger</th>
+            <th scope="col">Booking</th>
+            <th scope="col">Accommodation</th>
+            <th scope="col">Ticket</th>
+            <th scope="col">Attendance</th>
+            <th scope="col">Action</th>
           </tr>
         </thead>
         <tbody>
@@ -82,7 +84,7 @@
                 @click="mark(p.id)"
               >
                 Mark no-show</button
-              ><span v-else>Recorded</span>
+              ><span v-else class="attendance-recorded"><IonIcon :icon="checkmarkCircleOutline" aria-hidden="true" /> Recorded</span>
             </td>
           </tr>
           <tr v-if="!visible.length">
@@ -97,14 +99,14 @@
             </td>
           </tr>
         </tbody>
-      </table>
+      </table></div>
     </div>
   </section>
 </template>
 <script setup lang="ts">
 import { confirmAction } from "../../composables/confirmation";
 import { IonIcon } from "@ionic/vue";
-import { personRemoveOutline, searchOutline, checkmarkCircleOutline } from "ionicons/icons";
+import { personRemoveOutline, searchOutline, checkmarkCircleOutline, peopleOutline, timeOutline } from "ionicons/icons";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { computed, onMounted, ref } from "vue";
@@ -271,5 +273,48 @@ onMounted(async () => {
  .no-shows-panel tr { margin-bottom: 12px; padding: 8px; border: 1px solid var(--line); border-radius: 9px; }
  .no-shows-panel td { display: grid; grid-template-columns: 90px minmax(0, 1fr); gap: 8px; padding: 9px 4px; }
  .no-shows-panel td::before { content: attr(data-label); color: var(--muted); font-size: 11px; }
+}
+.no-shows-panel { gap: 18px; }
+.no-shows-panel .no-show-picker-card { padding: 20px; }
+.no-shows-panel .no-show-intro h2 { font-size: 20px; line-height: 1.4; }
+.no-shows-panel .catalog-tools p { font-size: 13px; }
+.no-shows-panel .catalog-tools.no-show-heading { align-items: center; gap: 20px; }
+.no-shows-panel .no-show-heading > button { max-width: 230px; min-height: 44px; background: var(--light-blue); color: var(--ocean); font-weight: 650; }
+.no-shows-panel .catalog-picker { font-size: 12px; font-weight: 600; }
+.no-shows-panel select, .no-shows-panel input { min-height: 46px; font-family: inherit; font-size: 13px; }
+.no-shows-panel .no-show-search { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px 14px; padding: 16px 20px; }
+.no-shows-panel .no-show-search > span { grid-column: 1 / -1; padding: 0; font-size: 12px; }
+.no-shows-panel .no-show-search-label { font-size: 12px; }
+.no-shows-panel .no-show-counts > div { display: flex; align-items: center; gap: 14px; padding: 18px; }
+.no-show-counts > div > div { display: grid; gap: 8px; min-width: 0; }
+.no-show-counts .count-icon { display: grid; place-items: center; width: 40px; height: 40px; flex: none; border-radius: 10px; background: var(--light-blue); color: var(--ocean); font-size: 22px; }
+.no-show-counts .pending-count .count-icon { background: #fffbeb; color: #92400e; }
+.no-show-counts .recorded-count .count-icon { background: #f0fdf4; color: #166534; }
+:global(:root[data-theme="dark"]) .no-show-counts .pending-count .count-icon { background: #3c2d17; color: #fcd34d; }
+:global(:root[data-theme="dark"]) .no-show-counts .recorded-count .count-icon { background: #18382b; color: #86efac; }
+.no-show-counts strong { font-size: 30px; line-height: 1.2; }
+.no-show-counts > div > div > span { font-size: 12px; line-height: 1.5; }
+.no-show-table-scroll { max-height: 480px; overflow: auto; scrollbar-width: thin; }
+.no-show-table-scroll:focus-visible { outline: 2px solid var(--ocean); outline-offset: -2px; }
+.no-shows-panel table { border-collapse: separate; border-spacing: 0; font-size: 13px; }
+.no-shows-panel th { position: sticky; top: 0; padding: 12px 16px; font-size: 10px; white-space: nowrap; }
+.no-shows-panel td { padding: 16px; line-height: 1.6; }
+.no-shows-panel tbody tr:hover { background: var(--surface-soft); }
+.no-shows-panel [data-slot="badge"] { font-size: 11px; white-space: nowrap; }
+.attendance-recorded { display: inline-flex; align-items: center; gap: 6px; color: var(--muted); font-size: 12px; }
+.attendance-recorded ion-icon { color: var(--ocean); font-size: 17px; }
+.no-show-notice { padding: 12px 16px; margin: 0; border: 1px solid var(--line); border-radius: 10px; background: var(--light-blue); color: var(--ocean); font-size: 13px; }
+@media (max-width: 1000px) { .no-shows-panel .no-show-counts > div { flex-direction: column; align-items: flex-start; gap: 10px; padding: 16px; } }
+@media (max-width: 700px) {
+  .no-shows-panel .catalog-tools.no-show-heading { align-items: stretch; }
+  .no-shows-panel .no-show-heading > button { max-width: none; }
+  .no-shows-panel .no-show-picker-card { padding: 16px; }
+  .no-shows-panel .no-show-search { padding: 16px; }
+  .no-shows-panel .no-show-counts { grid-template-columns: minmax(0, 1fr); gap: 10px; }
+  .no-shows-panel .no-show-counts > div { flex-direction: row; align-items: center; }
+  .no-show-table-scroll { max-height: none; padding: 12px; }
+  .no-shows-panel table { display: block; }
+  .no-shows-panel td { padding: 9px 4px; font-size: 12px; }
+  .no-shows-panel tr:last-child { margin-bottom: 0; }
 }
 </style>

@@ -16,6 +16,17 @@ beforeEach(() => {
 })
 afterEach(() => { vi.restoreAllMocks(); vi.unstubAllGlobals() })
 describe('manifest export in reports', () => {
+  it('exports the workspace sailing without a second selector and updates when the sailing changes', async () => {
+    mocks.query.mockResolvedValue({ data: { bookingPassengers: [] } })
+    const wrapper = mount(AdminManifestExport, { props: { sailings: [sailing], sailingCode: 'TRP1' } })
+    expect(wrapper.find('select').exists()).toBe(false)
+    await wrapper.find('button').trigger('click'); await flushPromises()
+    expect(mocks.query).toHaveBeenLastCalledWith({}, { sailingCode: 'TRP1', offset: 0 }, { fetchPolicy: 'SERVER_ONLY' })
+    await wrapper.setProps({ sailings: [{ ...sailing, code: 'TRP2' }], sailingCode: 'TRP2' })
+    await wrapper.find('button').trigger('click'); await flushPromises()
+    expect(mocks.query).toHaveBeenLastCalledWith({}, { sailingCode: 'TRP2', offset: 0 }, { fetchPolicy: 'SERVER_ONLY' })
+    wrapper.unmount()
+  })
   it('exports the selected sailing with every page of passengers', async () => {
     mocks.query.mockResolvedValueOnce({ data: { bookingPassengers: Array.from({ length: 500 }, () => passenger) } }).mockResolvedValueOnce({ data: { bookingPassengers: [{ ...passenger, fullName: 'Last Passenger' }] } })
     const wrapper = mount(AdminManifestExport,{ props: { sailings: [sailing] } })

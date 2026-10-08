@@ -12,17 +12,6 @@
         item.label
       }}</router-link
     >
-    <p>ACCOUNT</p>
-
-    <router-link
-      :to="`/staff/${role}/settings/account`"
-      :class="{ active: route.path.startsWith(`/staff/${role}/settings/`) }"
-      :aria-current="
-        route.path.startsWith(`/staff/${role}/settings/`) ? 'page' : undefined
-      "
-      @click="$emit('navigate')"
-      ><ion-icon :icon="settingsOutline" />Settings</router-link
-    >
   </nav>
 </template>
 <script setup lang="ts">
@@ -40,7 +29,6 @@ import {
   listOutline,
   personRemoveOutline,
   pricetagOutline,
-  settingsOutline,
 } from "ionicons/icons";
 const props = defineProps<{ role: "ticketing" | "boarding" }>();
 defineEmits<{ navigate: [] }>();

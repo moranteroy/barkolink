@@ -1,6 +1,6 @@
 <template>
-  <section class="trip-weather" aria-label="Trip weather">
-    <div class="weather-heading"><div><small>PLAN YOUR JOURNEY</small><h2><ion-icon :icon="partlySunnyOutline" aria-hidden="true" /> Port weather</h2></div><button v-if="error" :disabled="loading" @click="load">Try again</button></div>
+  <section class="trip-weather" :class="{ 'compact-weather': compact }" aria-label="Trip weather">
+    <div v-if="!compact" class="weather-heading"><div><small>PLAN YOUR JOURNEY</small><h2><ion-icon :icon="partlySunnyOutline" aria-hidden="true" /> Port weather</h2></div><button v-if="error" :disabled="loading" @click="load">Try again</button></div>
     <p v-if="loading" role="status" class="weather-message">Checking the latest port weather…</p>
     <p v-else-if="error || !data?.configured" role="status" class="weather-message">Weather updates are currently unavailable. Check your trip advisories for sailing updates.</p>
     <div v-else class="weather-ports">
@@ -15,7 +15,9 @@
         </template>
       </article>
     </div>
-    <div class="weather-footer"><a href="https://www.weatherapi.com/" target="_blank" rel="noopener noreferrer">Powered by WeatherAPI.com</a><p>Weather estimates are for travel planning and may change. They do not confirm sailing safety. Follow official advisories and your operator’s trip status.</p></div>
+    <div v-if="!compact" class="weather-footer"><a href="https://www.weatherapi.com/" target="_blank" rel="noopener noreferrer">Powered by WeatherAPI.com</a><p>Weather estimates are for travel planning and may change. They do not confirm sailing safety. Follow official advisories and your operator’s trip status.</p></div>
+    <p v-if="compact && data?.configured" class="compact-weather-hint">Swipe to view both ports</p>
+    <details v-if="compact" class="compact-weather-details"><summary>Forecast info &amp; source</summary><p>Weather estimates are for travel planning and may change. They do not confirm sailing safety. Follow official advisories and your operator's trip status.</p><a href="https://www.weatherapi.com/" target="_blank" rel="noopener noreferrer">Powered by WeatherAPI.com</a></details>
   </section>
 </template>
 <script setup lang="ts">
@@ -25,7 +27,7 @@ import { partlySunnyOutline } from 'ionicons/icons';
 import { tripWeather,type TripWeatherData } from '../../services/weather';
 import WeatherSymbol from './WeatherSymbol.vue';
 import { weatherPresentation } from '../../data/weatherPresentation';
-const props=defineProps<{sailingCode:string}>();
+const props=withDefaults(defineProps<{sailingCode:string;compact?:boolean}>(), {compact:false});
 const data=ref<TripWeatherData|null>(null),loading=ref(false),error=ref(false);
 let requestId=0;
 async function load(){
@@ -76,4 +78,17 @@ dt { font-size: 10px; color: var(--muted); } dd { margin: 5px 0 0; font-size: 12
 .condition-copy { min-width: 0; overflow-wrap: anywhere; }
 dl { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 8px; }
 @container passenger (min-width: 780px) { .weather-ports { grid-template-columns: repeat(2, minmax(0,1fr)); } }
+</style>
+
+<style scoped>
+.compact-weather-hint { display: none; margin: 5px 0 0; color: var(--muted); font-size: 9px; }
+.compact-weather .weather-ports { gap: 8px; }
+.compact-weather .weather-port { padding: 10px; border-radius: 9px; background: var(--surface-soft); }
+.compact-weather .weather-port > small { padding: 0; background: transparent; border-radius: 0; font-size: 9px; }
+.compact-weather .weather-port h3 { font-size: 12px; margin: 3px 0 7px; line-height: 1.4; }
+.compact-weather .weather-conditions { grid-template-columns: 28px auto minmax(0, 1fr); gap: 7px; }.compact-weather .condition-icon { width: 28px; height: 28px; padding: 3px; border-radius: 8px; }
+.compact-weather .weather-conditions strong { font-size: 22px; }.compact-weather .weather-conditions strong span { font-size: 12px; }.compact-weather .weather-conditions b { font-size: 10px; line-height: 1.4; }.compact-weather .weather-conditions small { font-size: 9px; margin-top: 2px; }
+.compact-weather dl { gap: 6px; padding-top: 7px; margin-top: 7px; }.compact-weather dt { font-size: 9px; }.compact-weather dd { font-size: 10px; margin-top: 3px; }
+.compact-weather .weather-updated { font-size: 9px; margin: 5px 0 0; line-height: 1.4; }.compact-weather .forecast-notice { padding: 6px; font-size: 10px; margin-top: 6px; }
+.compact-weather-details { margin-top: 7px; color: var(--muted); font-size: 10px; }.compact-weather-details summary { display: flex; align-items: center; min-height: 28px; gap: 5px; cursor: pointer; color: var(--ocean); }.compact-weather-details summary::before { content: '+'; font-size: 13px; }.compact-weather-details[open] summary::before { content: '-'; }.compact-weather-details summary:focus-visible { outline: 2px solid var(--ocean); outline-offset: 2px; }.compact-weather-details p { font-size: 10px; line-height: 1.6; margin: 4px 0; }.compact-weather-details a { color: var(--ocean); }
 </style>

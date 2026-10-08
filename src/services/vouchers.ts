@@ -4,6 +4,9 @@ export type Voucher = {id:string;code:string;discountType:'FIXED'|'PERCENT';valu
 export const quoteVoucher=(client:DatabaseClient,args:object)=>executeDatabase<VoucherQuote>(client,'QuoteVoucher',args);
 export const listVouchers=(client:DatabaseClient)=>executeDatabase<{vouchers:Voucher[]}>(client,'AdminVouchers',{});
 export const saveVoucher=(client:DatabaseClient,args:object)=>executeDatabase(client,'AdminSaveVoucher',args);
-export type LoyaltyData = {completedTrips:number;tripsPerReward:number;rewardValue:number;tripsToNextReward:number;currentTier:string;tiers:{name:string;trips:number;value:number}[];vouchers:{code:string;value:number;expiresAt:string}[]};
+export type LoyaltySettings = { tripsPerReward:number; silverReward:number; goldReward:number; platinumReward:number; expiryDays:number };
+export const adminLoyaltySettings = (client:DatabaseClient) => executeDatabase<{settings:LoyaltySettings}>(client,'AdminLoyaltySettings',{});
+export const saveLoyaltySettings = (client:DatabaseClient,args:LoyaltySettings) => executeDatabase<{settings:LoyaltySettings}>(client,'AdminSaveLoyaltySettings',args);
+export type LoyaltyData = {completedTrips:number;tripsPerReward:number;rewardValue:number;tripsToNextReward:number;currentTier:string;expiryDays?:number;tiers:{name:string;trips:number;value:number}[];vouchers:{code:string;value:number;expiresAt:string}[]};
 export const myLoyalty=(client:DatabaseClient)=>executeDatabase<LoyaltyData>(client,'MyLoyalty',{});
 export const quoteLoyaltyVoucher=(client:DatabaseClient,args:object)=>executeDatabase<{quote:VoucherQuote|null}>(client,'QuoteLoyaltyVoucher',args);

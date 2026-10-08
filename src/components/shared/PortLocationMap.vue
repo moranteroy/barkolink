@@ -1,9 +1,9 @@
 <template>
-  <section v-if="ports.length" class="port-map" aria-label="Port location guide">
+  <section v-if="ports.length" class="port-map" :class="{ 'admin-map': admin }" :aria-label="admin ? 'Port location directory' : 'Port location guide'">
     <div class="map-heading">
-      <p class="map-eyebrow">{{ journey ? 'YOUR JOURNEY ON THE MAP' : 'KNOW YOUR PORT' }}</p>
-      <h2>{{ journey ? 'Know your departure and arrival ports.' : 'Find your way to the terminal.' }}</h2>
-      <p>Explore the port areas before you travel.</p>
+      <p class="map-eyebrow">{{ admin ? 'PORT LOCATIONS' : journey ? 'YOUR JOURNEY ON THE MAP' : 'KNOW YOUR PORT' }}</p>
+      <h2>{{ admin ? 'Location map' : journey ? 'Know your departure and arrival ports.' : 'Find your way to the terminal.' }}</h2>
+      <p>{{ admin ? 'Select a port to review its area and open directions.' : 'Explore the port areas before you travel.' }}</p>
     </div>
     <div class="port-tabs" role="group" aria-label="Choose a port">
       <button v-for="(port, index) in ports" :key="port.id" type="button"
@@ -23,7 +23,7 @@
       <span><strong>{{ selected.name }}</strong><small>{{ [selected.city, selected.region].filter(Boolean).join(', ') }}</small></span>
       <a :href="directionsUrl" target="_blank" rel="noopener noreferrer">Get directions <ion-icon :icon="openOutline" aria-hidden="true" /></a>
     </div>
-    <p class="map-note">Markers show port areas. Confirm your exact boarding terminal in your booking.<template v-if="journey"> The dashed line connects ports for reference; it is not the vessel’s sailing path.</template></p>
+    <p class="map-note">{{ admin ? 'Markers show verified port-area references. Directions can search for ports without a map marker.' : 'Markers show port areas. Confirm your exact boarding terminal in your booking.' }}<template v-if="journey"> The dashed line connects ports for reference; it is not the vessel’s sailing path.</template></p>
   </section>
 </template>
 <script setup lang="ts">
@@ -33,7 +33,7 @@ import { openOutline } from 'ionicons/icons';
 import type { Map, LayerGroup, Marker, TileLayer } from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { googleMapDirections, portCoordinates, type MapPort } from '../../data/portMaps';
-const props = defineProps<{ ports: MapPort[]; journey?: boolean }>();
+const props = defineProps<{ ports: MapPort[]; journey?: boolean; admin?: boolean }>();
 const portLetter = (index: number) => props.journey ? (index === 0 ? 'A' : 'B') : String(index + 1);
 const portRole = (index: number) => props.journey ? (index === 0 ? 'Departure' : 'Arrival') : 'Port location';
 const selectedId = ref(''), mapElement = ref<HTMLElement>(), ready = ref(false), tileError = ref(false), mapError = ref('');
@@ -122,6 +122,16 @@ onBeforeUnmount(() => { generation++; destroyMap(); });
 .map-footer a { display: flex; align-items: center; gap: 8px; min-height: 44px; padding: 10px 14px; border-radius: 10px; background: var(--action); color: white; font-weight: 800; text-decoration: none; }
 .map-note,.map-status { margin: 0; padding: 0 24px 20px; color: var(--muted); font-size: 11px; line-height: 1.6; }
 .map-status { padding-top: 14px; }
+.admin-map { border-radius: 14px; box-shadow: none; }
+.admin-map .map-heading { padding: 16px 18px 12px; }
+.admin-map .map-heading h2 { font-size: 17px; margin-bottom: 5px; letter-spacing: -.02em; }
+.admin-map .map-heading p:not(.map-eyebrow) { font-size: 12px; }
+.admin-map .port-tabs { padding: 0 18px 14px; gap: 8px; }
+.admin-map .port-tabs button { min-height: 42px; padding: 7px 10px; border-radius: 8px; }
+.admin-map .map-window { height: 260px; }
+.admin-map .map-footer { padding: 12px 18px; }
+.admin-map .map-footer a { min-height: 36px; padding: 8px 12px; border-radius: 8px; font-size: 11px; }
+.admin-map .map-note, .admin-map .map-status { padding-inline: 18px; padding-bottom: 14px; }
 .map-status button { min-height: 44px; border: 0; background: transparent; color: var(--ocean); font: inherit; text-decoration: underline; cursor: pointer; }
 :deep(.port-pin) { background: transparent; border: 0; }
 :deep(.port-pin span) { display: grid; place-items: center; width: 36px; height: 36px; border: 3px solid white; border-radius: 50% 50% 50% 5px; background: #216cb0; color: white; font-weight: 800; font-size: 14px; box-shadow: 0 3px 10px #12283e50; }

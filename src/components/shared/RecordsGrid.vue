@@ -1,5 +1,5 @@
 <template>
-  <section class="records-grid" :aria-label="title">
+  <section class="records-grid" :class="{ 'dense-grid': density === 'compact' }" :aria-label="title">
     <div class="grid-tools">
       <div class="grid-summary"><Badge>{{ visibleCount }} of {{ rows.length }} records</Badge><span>Sort and filter the loaded page.</span></div>
       <div>
@@ -62,7 +62,7 @@
       :default-col-def="defaultColDef"
       :get-row-id="getRowId"
       :loading="loading"
-      :row-height="60"
+      :row-height="density === 'compact' ? 44 : 60"
       :header-height="44"
       :enable-cell-text-selection="true"
       :ensure-dom-order="true"
@@ -128,10 +128,13 @@ const props = withDefaults(
     columns: string[];
     rows: RecordGridRow[];
     loading?: boolean;
+    density?: "comfortable" | "compact";
     actionWidth?: number;
+    columnMinWidths?: number[];
+    maxGridHeight?: number;
     displayOnlyColumns?: number[];
   }>(),
-  { loading: false, actionWidth: 300, displayOnlyColumns: () => [] },
+  { loading: false, density: "comfortable", actionWidth: 300, columnMinWidths: () => [], maxGridHeight: 560, displayOnlyColumns: () => [] },
 );
 const emit = defineEmits<{ ready: [api: GridApi<RecordGridRow>] }>();
 const slots = useSlots();
@@ -197,7 +200,7 @@ const gridTheme = themeQuartz.withParams({
   spacing: 6,
 });
 const gridHeight = computed(
-  () => `${Math.min(560, Math.max(250, props.rows.length * 60 + 48))}px`,
+  () => `${Math.min(props.maxGridHeight, Math.max(250, props.rows.length * (props.density === "compact" ? 44 : 60) + 48))}px`,
 );
 const defaultColDef: ColDef<RecordGridRow> = {
   sortable: true,
@@ -261,7 +264,7 @@ const columnDefs = computed<ColDef<RecordGridRow>[]>(() => [
       valueGetter: ({ data }) => data?.cells[index] ?? "",
       tooltip: ({ value }) => String(value ?? ""),
       cellRenderer: renderer(index),
-      minWidth: index === 0 ? 170 : 150,
+      minWidth: props.columnMinWidths[index] ?? (index === 0 ? 170 : 150),
       comparator: (a, b, nodeA, nodeB) => {
         const left = nodeA.data?.sortValues?.[index] ?? a,
           right = nodeB.data?.sortValues?.[index] ?? b;
@@ -415,4 +418,8 @@ defineExpose({ getApi: () => api.value, resetView, fitColumns });
 .loading-cards { display: grid; gap: 12px; }
 .loading-card { padding: 18px; display: grid; gap: 15px; }
 @media (max-width: 1000px) { .grid-tools { flex-wrap: wrap; } }
+.dense-grid :deep(.grid-cell-content) { padding: 6px 0; line-height: 1.5; }
+.dense-grid .mobile-records { gap: 7px; padding: 10px; }
+.dense-grid .mobile-record { padding: 10px 12px; }
+.dense-grid .mobile-field { padding: 3px 0; font-size: 11px; }
 </style>

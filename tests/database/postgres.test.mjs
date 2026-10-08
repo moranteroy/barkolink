@@ -754,6 +754,30 @@ describe("Supabase PostgreSQL migrations and business rules", () => {
       await call('admin','AdminUpdateSailingStatus',{code:`HISTORY-${n}`,status:'COMPLETED'});
     }
   }
+  it('uses admin loyalty settings for milestones, issuance and expiry while preserving earned vouchers', async () => {
+    const defaults={tripsPerReward:5,silverReward:100,goldReward:200,platinumReward:300,expiryDays:90};
+    const settings={tripsPerReward:4,silverReward:125,goldReward:250,platinumReward:400,expiryDays:60};
+    await assert.rejects(call('passenger','AdminLoyaltySettings'),/Administrator/);
+    await assert.rejects(call('ticketing','AdminSaveLoyaltySettings',settings),/Administrator/);
+    await assert.rejects(call('admin','AdminSaveLoyaltySettings',{...settings,tripsPerReward:0}),/check constraint/);
+    try {
+      await call('admin','AdminSaveLoyaltySettings',settings);
+      assert.equal((await call('admin','AdminLoyaltySettings')).settings.silverReward,125);
+      await loyaltyHistory(12);
+      const wallet=await call('passenger','MyLoyalty');
+      assert.deepEqual(wallet.vouchers.map(v=>v.value),[125,250,400]);
+      assert.deepEqual(wallet.tiers.map(t=>t.trips),[4,8,12]);
+      assert.equal(wallet.tripsToNextReward,4); assert.equal(wallet.expiryDays,60);
+      assert.equal(wallet.currentTier,'Platinum');
+      const days=(Date.parse(wallet.vouchers[0].expiresAt)-Date.now())/86400000;
+      assert.ok(days>59.9 && days<=60.1);
+      await call('admin','AdminSaveLoyaltySettings',{...settings,platinumReward:500});
+      const changed=await call('passenger','MyLoyalty');
+      assert.equal(changed.rewardValue,500);
+      assert.deepEqual(changed.vouchers.map(v=>v.value),[125,250,400]);
+      assert.equal(changed.vouchers[0].expiresAt,wallet.vouchers[0].expiresAt);
+    } finally { await call('admin','AdminSaveLoyaltySettings',defaults); }
+  });
   it('issues personal loyalty vouchers once per five boarded completed trips and excludes no-shows, unpaid and cancelled bookings',async()=>{
     await loyaltyHistory(5);
     assert.equal((await db.query("select count(*)::int as n from public.voucher where owner_uid is not null")).rows[0].n,1);

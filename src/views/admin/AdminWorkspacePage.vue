@@ -1,7 +1,7 @@
 <template>
   <ion-page
     ><ion-content :fullscreen="true">
-      <div class="shell design-workspace">
+      <div class="shell design-workspace" :class="{ 'admin-booking-directory': section === 'bookings', 'admin-passenger-directory': section === 'passengers', 'admin-trips-directory': section === 'trips', 'admin-port-directory': section === 'ports' }">
         <button
           v-if="menuOpen"
           class="scrim"
@@ -46,7 +46,6 @@
               </div>
             </div>
           </nav>
-          <StaffLogoutButton />
         </aside>
         <div class="workspace">
           <header class="topbar glass-toolbar">
@@ -60,7 +59,7 @@
               <ion-icon :icon="menuOutline" />
             </button>
             <div class="admin-breadcrumbs">
-              <strong>{{ page.title }}</strong>
+              <strong>Admin workspace</strong>
             </div>
             <form
               class="admin-global-search"
@@ -87,22 +86,7 @@
               ><ion-icon :icon="notificationsOutline" aria-hidden="true" />
               <span v-if="notificationUnreadCount" class="admin-unread-badge" aria-hidden="true">{{ notificationUnreadCount > 99 ? '99+' : notificationUnreadCount }}</span>
             </router-link>
-            <router-link
-              to="/admin/settings/profile"
-              class="admin-profile-chip"
-              :title="auth?.currentUser?.email || 'Administrator account'"
-              aria-label="Administrator account"
-            >
-              <span class="admin-profile-icon"
-                ><ion-icon :icon="personCircleOutline" aria-hidden="true"
-              /></span>
-              <span class="admin-profile-copy"
-                ><strong>{{
-                  auth?.currentUser?.displayName?.trim() || "Admin User"
-                }}</strong
-                ><small>Administrator</small></span
-              >
-            </router-link>
+            <AdminAccountMenu />
             </div>
           </header>
           <main class="content">
@@ -134,6 +118,7 @@
             <AdminOverviewPanel
               v-else-if="section === 'dashboard' || section === 'analytics'"
               :refresh-token="reportsRefresh"
+              :analytics="section === 'analytics'"
             />
             <AccommodationPanel
               ref="childEditorRef"
@@ -243,7 +228,7 @@
                 >
                   <div class="fare-layout">
                     <div class="fare-editor">
-                      <section class="panel fare-card">
+                      <section class="panel fare-card fare-base-card">
                         <div class="fare-card-heading">
                           <span class="fare-card-icon"
                             ><ion-icon :icon="ticketOutline" aria-hidden="true"
@@ -259,6 +244,7 @@
                             </p>
                           </div>
                         </div>
+                        <div class="regular-fare-control">
                         <label for="regular-fare">Base fare</label>
                         <div class="fare-input fare-base-input">
                           <span aria-hidden="true">PHP</span
@@ -276,6 +262,7 @@
                         <p id="regular-fare-hint" class="fare-hint">
                           Passenger discounts are calculated from this amount.
                         </p>
+                        </div>
                       </section>
                       <section class="panel fare-card custom-discounts">
                         <div class="fare-card-heading">
@@ -287,6 +274,7 @@
                               Active discounts become available on new trips.
                             </p>
                           </div>
+                          <span class="discount-count">{{ fareSettingsForm.passengerDiscounts?.filter(d => d.isActive).length || 0 }} active</span>
                         </div>
                         <div
                           v-for="(
@@ -294,6 +282,7 @@
                           ) in fareSettingsForm.passengerDiscounts"
                           :key="discount.id"
                           class="custom-discount-row"
+                          :class="{ 'discount-row-inactive': !discount.isActive }"
                         >
                           <label :for="'custom-name-' + discount.id"
                             >Discount name<input
@@ -319,6 +308,7 @@
                             ><input
                               v-model="discount.isActive"
                               type="checkbox"
+                              :aria-label="'Enable discount ' + (discount.name || index + 1)"
                             />{{ discount.isActive ? 'Active' : 'Inactive' }}</label
                           >
                           <button
@@ -545,8 +535,8 @@
                 </select>
               </div>
               <p v-if="section === 'check-in'" class="check-in-guidance"><ion-icon :icon="informationCircleOutline" aria-hidden="true" /><span>Check in issued tickets for paid, confirmed bookings. Choose a sailing to focus on its passengers.</span></p>
+              <details v-if="section === 'trips'" class="admin-trip-weather"><summary><span><ion-icon :icon="boatOutline" aria-hidden="true" /> Port weather</span><span>Choose a sailing to view its forecast</span></summary><WeatherTripPicker :trips="sailings" /></details>
               <section class="panel" :class="{ 'booking-records-panel': ['bookings', 'passengers', 'trips', 'ports', 'vessels', 'check-in', 'boarding', 'manifest', 'users'].includes(section), 'passenger-records-panel': section === 'passengers', 'trip-records-panel': section === 'trips', 'boarding-records-panel': section === 'boarding', 'manifest-records-panel': section === 'manifest' }">
-                <WeatherTripPicker v-if="section === 'trips'" :trips="sailings" />
                 <div class="panel-head">
                   <div>
                     <p class="eyebrow">{{ section === 'users' ? 'ACCOUNT DIRECTORY' : section === 'manifest' ? 'PAID PASSENGER RECORDS' : section === 'boarding' ? 'PASSENGER BOARDING' : section === 'check-in' ? 'PASSENGER CHECK-IN' : section === 'vessels' ? 'FLEET RECORDS' : section === 'ports' ? 'PORT RECORDS' : section === 'trips' ? 'TRIP SCHEDULES' : section === 'passengers' ? 'PASSENGER RECORDS' : 'RECORDS' }}</p>
@@ -563,11 +553,21 @@
                   :columns="columns"
                   :rows="rows"
                   :loading="loading"
-                  :action-width="section === 'trips' ? 220 : ['check-in', 'boarding'].includes(section) ? 140 : ['bookings', 'ports', 'vessels'].includes(section) ? 110 : 170"
-                  ><template v-if="section === 'passengers'" #cell="{ row, index, value }">
+                  :column-min-widths="section === 'bookings' ? [180, 210, 85, 100, 165] : section === 'passengers' ? [160, 95, 155, 155, 125, 125] : section === 'trips' ? [220, 120, 155, 95, 135] : section === 'ports' ? [110, 190, 210, 100] : []"
+                  :density="['bookings', 'passengers', 'trips', 'ports'].includes(section) ? 'compact' : 'comfortable'"
+                  :max-grid-height="section === 'ports' ? 360 : ['bookings', 'passengers', 'trips'].includes(section) ? 480 : 560"
+                  :action-width="section === 'trips' ? 150 : ['check-in', 'boarding'].includes(section) ? 140 : ['bookings', 'ports', 'vessels'].includes(section) ? 110 : 170"
+                  ><template v-if="section === 'bookings'" #cell="{ row, index, value }">
+                    <div v-if="index === 0" class="booking-identity"><strong>{{ row.source.reference }}</strong><small>{{ row.source.owner.fullName }}</small></div>
+                    <div v-else-if="index === 1" class="booking-sailing"><strong>{{ row.source.sailing.origin.name }} → {{ row.source.sailing.destination.name }}</strong><small>{{ dateTime(row.source.sailing.departureAt) }}</small></div>
+                    <span v-else-if="index === 2" class="booking-passengers">{{ value }}</span>
+                    <strong v-else-if="index === 3" class="booking-amount">{{ value }}</strong>
+                    <div v-else class="booking-payment"><Badge :class="['booking-status-badge', String(value).toLowerCase().replaceAll(' ', '-')]" :variant="value === 'PAID' ? 'success' : ['CANCELLED', 'EXPIRED'].includes(String(value)) ? 'destructive' : ['AWAITING PAYMENT', 'AWAITING STAFF VERIFICATION', 'REFUND PENDING'].includes(String(value)) ? 'warning' : 'default'">{{ String(value).toLowerCase().replace(/\b\w/g, letter => letter.toUpperCase()) }}</Badge><small>{{ paymentMethodLabel(row.source) }}</small><small v-if="row.source.voucherCode" class="booking-voucher">{{ row.source.voucherCode }} · − PHP {{ (row.source.voucherDiscount ?? 0).toLocaleString() }}</small></div>
+                  </template>
+                  <template v-else-if="section === 'passengers'" #cell="{ row, index, value }">
                     <strong v-if="index === 0" class="passenger-name">{{ value }}</strong>
                     <span v-else-if="index === 1" class="passenger-type">{{ value === 'PWD' ? 'PWD' : String(value).toLowerCase().replaceAll('_', ' ') }}</span>
-                    <Badge v-else-if="index === row.statusIndex" :variant="['CANCELLED', 'EXPIRED', 'NO_SHOW'].includes(String(value)) ? 'destructive' : value === 'PAYMENT PENDING' ? 'warning' : ['BOARDED', 'CHECKED_IN', 'ISSUED'].includes(String(value)) ? 'success' : 'default'">{{ String(value).replaceAll('_', ' ') }}</Badge>
+                    <Badge v-else-if="index === row.statusIndex" :class="['passenger-status-badge', String(value).toLowerCase().replaceAll('_', '-').replaceAll(' ', '-')]" :variant="['CANCELLED', 'NO_SHOW'].includes(String(value)) ? 'destructive' : value === 'PAYMENT PENDING' ? 'warning' : value === 'BOARDED' ? 'success' : 'default'">{{ String(value).toLowerCase().replaceAll('_', ' ').replace(/\b\w/g, letter => letter.toUpperCase()) }}</Badge>
                     <span v-else :class="{ 'passenger-reference': index === 2 || index === 3 }">{{ value }}</span>
                   </template>
                   <template v-else-if="section === 'users'" #cell="{ index, value, row }">
@@ -577,9 +577,9 @@
                     <span v-else class="user-created-date">{{ value }}</span>
                   </template>
                   <template v-else-if="section === 'trips'" #cell="{ row, index, value }">
-                    <strong v-if="index === 0" class="trip-reference">{{ value }}</strong>
-                    <div v-else-if="index === 4" class="trip-capacity"><strong>{{ value }}</strong><small>Booked / capacity</small></div>
-                    <Badge v-else-if="index === row.statusIndex" :variant="value === 'CANCELLED' ? 'destructive' : value === 'DELAYED' ? 'warning' : value === 'COMPLETED' ? 'success' : 'default'">{{ String(value).replaceAll('_', ' ') }}</Badge>
+                    <div v-if="index === 0" class="schedule-identity"><strong class="trip-reference">{{ row.source.code }}</strong><small>{{ routeLabel(row.source) }}</small></div>
+                    <div v-else-if="index === 3" class="trip-capacity"><strong>{{ value }}</strong><div class="schedule-seat-track" aria-hidden="true"><i :style="{ width: `${row.source.vessel.passengerCapacity ? Math.max(0, Math.min(100, 100 * (row.source.vessel.passengerCapacity - row.source.availableSeats) / row.source.vessel.passengerCapacity)) : 0}%` }"></i></div></div>
+                    <template v-else-if="index === row.statusIndex"><select v-if="nextStatuses(row.source).length > 1" class="schedule-status-select" :class="row.source.status.toLowerCase()" :value="row.source.status" :disabled="!!busy" :aria-label="`Change status for ${row.key}`" @change="changeSailingStatus(row.source, $event)"><option v-for="state in nextStatuses(row.source)" :key="state" :value="state">{{ state.toLowerCase().replaceAll('_', ' ') }}</option></select><Badge v-else class="schedule-status-badge" :class="row.source.status.toLowerCase()" :variant="value === 'CANCELLED' ? 'destructive' : value === 'COMPLETED' ? 'success' : 'default'">{{ String(value).toLowerCase() }}</Badge></template>
                     <span v-else>{{ value }}</span>
                   </template>
                   <template v-else-if="['ports', 'vessels'].includes(section)" #cell="{ row, index, value }">
@@ -606,6 +606,7 @@
                   <template v-if="hasRowAction" #actions="{ row }"
                     ><template v-if="section === 'bookings'"
                       ><button
+                        v-if="row.source.paymentStatus === 'UNPAID' && ['PENDING', 'CONFIRMED'].includes(row.source.status)"
                         class="text-action danger"
                         :aria-label="`Cancel booking ${row.key}`"
                         :title="row.source.paymentStatus === 'UNPAID' && ['PENDING', 'CONFIRMED'].includes(row.source.status) ? 'Cancel this unpaid booking' : 'Only unpaid pending or confirmed bookings can be cancelled'"
@@ -619,7 +620,7 @@
                         @click="cancelBooking(row.source)"
                       >
                         Cancel
-                      </button></template
+                      </button><span v-else class="booking-no-action" title="Only unpaid pending or confirmed bookings can be cancelled" aria-label="Cancellation unavailable">—</span></template
                     ><template
                       v-else-if="section === 'ports' || section === 'vessels'"
                       ><button
@@ -649,22 +650,7 @@
                           @click="openTripEditor(row.source)"
                         >
                           Edit</button
-                        ><select
-                          :value="row.source.status"
-                          :disabled="
-                            !!busy || nextStatuses(row.source).length === 1
-                          "
-                          :aria-label="`Status for ${row.key}`"
-                          @change="changeSailingStatus(row.source, $event)"
                         >
-                          <option
-                            v-for="state in nextStatuses(row.source)"
-                            :key="state"
-                            :value="state"
-                          >
-                            {{ state.toLowerCase().replaceAll('_', ' ') }}
-                          </option>
-                        </select>
                       </div></template
                     ><template v-else-if="section === 'check-in'"
                       ><button
@@ -716,20 +702,21 @@
                   ></RecordsGrid
                 >
                 <p class="table-foot">
-                  {{ recordTotal }} records.
+                  {{ section === 'ports' ? `${rows.length} of ${recordTotal} ports.` : `${recordTotal} records.` }}
                   {{
-                    ['bookings', 'trips', 'users', 'passengers', 'check-in', 'boarding', 'manifest'].includes(section)
+                    section === 'ports' ? 'Search and status filters apply to all ports. Inactive ports are unavailable for new sailings.' : section === 'bookings' ? 'Search and status filters apply to all bookings. Cancellation is available only for eligible unpaid reservations.' : ['trips', 'users', 'passengers', 'check-in', 'boarding', 'manifest'].includes(section)
                       ? "Primary filters search all records. Column sorting and filtering apply to the loaded page."
                       : "Search, column sorting, and filters apply to the loaded page."
                   }}
                 </p>
-<WorkspacePagination v-if="recordTotal > pageSize" :page="recordPage" :total="recordTotal" :page-size="pageSize" :disabled="loading || !!busy" @change="recordPage = $event; loadData()" />
+<WorkspacePagination v-if="!['ports', 'vessels'].includes(section) && (['bookings', 'passengers'].includes(section) ? recordTotal > 0 : recordTotal > pageSize)" :page="recordPage" :total="recordTotal" :page-size="pageSize" :disabled="loading || !!busy" @change="recordPage = $event; loadData()"><span v-if="['bookings', 'passengers'].includes(section)">{{ rows.length ? recordPage * pageSize + 1 : 0 }}–{{ rows.length ? recordPage * pageSize + rows.length : 0 }} of {{ recordTotal.toLocaleString() }} {{ section === 'passengers' ? 'passengers' : 'bookings' }}</span><span v-else>{{ recordTotal.toLocaleString() }} records</span></WorkspacePagination>
               </section></template
             >
             <PortLocationMap
               v-if="section === 'ports' && ports.length"
               :ports="ports"
               class="admin-port-map"
+              admin
             />
           </main>
         </div>
@@ -741,6 +728,7 @@
           'trip-modal': modal === 'trip',
           'user-modal': modal === 'user',
           'port-modal': modal === 'port' || modal === 'vessel',
+          'port-editor-modal': modal === 'port',
         }"
         @didDismiss="resetModal"
         ><div
@@ -749,6 +737,7 @@
             'trip-dialog': modal === 'trip',
             'user-dialog': modal === 'user',
             'port-dialog': modal === 'port' || modal === 'vessel',
+            'port-editor-dialog': modal === 'port',
           }"
         >
           <div class="modal-head">
@@ -797,18 +786,22 @@
           <p v-if="formError" class="alert" role="alert">{{ formError }}</p>
           <form v-if="modal === 'port'" class="port-form" @submit.prevent="savePort">
             <fieldset class="port-fields" :disabled="!!busy">
-              <p class="port-form-note">Port code, name, and city are required.</p>
+              <p class="port-form-note">Fields marked * are required.</p>
+              <h3 class="port-field-heading">Port details</h3>
               <div class="port-field-grid">
-                <label for="port-code">Port code<input id="port-code" v-model.trim="portForm.code" :disabled="!!editingId" required maxlength="12" placeholder="e.g. BTG" aria-describedby="port-code-hint" /><small id="port-code-hint">{{ editingId ? 'Port codes stay fixed after creation.' : 'Use a short, unique code. Saved in uppercase.' }}</small></label>
-                <label for="port-name">Port name<input id="port-name" v-model.trim="portForm.name" required maxlength="120" placeholder="e.g. Batangas Port" /></label>
-                <label for="port-city">City<input id="port-city" v-model.trim="portForm.city" required maxlength="120" placeholder="e.g. Batangas City" /></label>
+                <label for="port-code">Port code *<input id="port-code" v-model.trim="portForm.code" :disabled="!!editingId" required maxlength="12" placeholder="e.g. BTG" aria-describedby="port-code-hint" /><small id="port-code-hint">{{ editingId ? 'Port codes stay fixed after creation.' : 'Use a short, unique code. Saved in uppercase.' }}</small></label>
+                <label for="port-name">Port name *<input id="port-name" v-model.trim="portForm.name" required maxlength="120" placeholder="e.g. Batangas Port" /></label>
+              </div>
+              <h3 class="port-field-heading">Location</h3>
+              <div class="port-field-grid">
+                <label for="port-city">City *<input id="port-city" v-model.trim="portForm.city" required maxlength="120" placeholder="e.g. Batangas City" /></label>
                 <label for="port-region">Region (optional)<input id="port-region" v-model.trim="portForm.region" maxlength="120" placeholder="e.g. Batangas" /></label>
               </div>
               <label v-if="editingId" class="port-availability"><input v-model="portForm.isActive" type="checkbox" /><span><strong>Active port</strong><small>Available when creating new sailings.</small></span></label>
             </fieldset>
             <footer class="port-form-footer">
               <button class="secondary" type="button" :disabled="!!busy" @click="closeModal">Cancel</button>
-              <button class="primary" type="submit" :disabled="!!busy">{{ busy ? "Saving…" : "Save port" }}</button>
+              <button class="primary" type="submit" :disabled="!!busy">{{ busy ? "Saving…" : editingId ? "Save changes" : "Add port" }}</button>
             </footer>
           </form>
           <form v-else-if="modal === 'vessel'" class="port-form" @submit.prevent="saveVessel">
@@ -1338,7 +1331,7 @@ import { useQueueRefresh } from "../../composables/queueRefresh";
 import { databaseRequestError } from "../../data/databaseErrors";
 import { computed, onBeforeUnmount, reactive, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
-import StaffLogoutButton from "../../components/staff/StaffLogoutButton.vue";
+import AdminAccountMenu from "../../components/admin/AdminAccountMenu.vue";
 import { accountFunction } from "../../services/accountFunctions";
 import {
   IonContent,
@@ -1382,7 +1375,6 @@ import {
   menuOutline,
   peopleCircleOutline,
   peopleOutline,
-  personCircleOutline,
   refreshOutline,
   scanOutline,
   shieldCheckmarkOutline,
@@ -1690,7 +1682,7 @@ const pages: Record<
   },
   ports: {
     group: "FERRY OPERATIONS",
-    title: "Ports & routes",
+    title: "Ports",
     description: "Manage ports available for new sailings.",
     table: "Port directory",
   },
@@ -1922,6 +1914,8 @@ async function loadData() {
     if (result.status === "rejected") failed.push(names[index]);
   });
   const [b, s, u, p, v, a, d, f, c, routeResult] = results;
+  if (section.value === 'ports') recordTotal.value = p.status === 'fulfilled' ? p.value.data.ports.length : 0;
+  if (section.value === 'vessels') recordTotal.value = v.status === 'fulfilled' ? v.value.data.vessels.length : 0;
   if (routeResult.status === "fulfilled")
     routeOptions.value = routeResult.value.data.routes.filter(
       (r) => r.isActive,
@@ -2835,14 +2829,11 @@ const columns = computed(
     (
       ({
         bookings: [
-          "Reference",
-          "Account",
-          "Route",
-          "Departure",
+          "Booking / Account",
+          "Route / Departure",
           "Passengers",
           "Total",
-          "Status",
-          "Payment method",
+          "Status / Payment",
         ],
         passengers: [
           "Passenger",
@@ -2852,7 +2843,7 @@ const columns = computed(
           "Booking account",
           "Ticket status",
         ],
-        trips: ["Trip", "Route", "Vessel", "Departure", "Booked", "Status"],
+        trips: ["Trip / Route", "Vessel", "Departure", "Booked / Capacity", "Status"],
         ports: ["Code", "Port", "Location", "Status"],
         vessels: ["Code", "Vessel", "Capacity", "Status"],
         "check-in": ["Passenger", "Booking", "Sailing", "Departure", "Ticket"],
@@ -2889,12 +2880,11 @@ const rows = computed<Row[]>(() => {
     output = bookings.value.map((b) => ({
       key: b.reference,
       source: b,
-      statusIndex: 6,
+      statusIndex: 4,
+      sortValues: [b.reference, new Date(b.sailing.departureAt).getTime(), b.passengerCount, b.total],
       cells: [
-        b.reference,
-        b.owner.fullName,
-        `${b.sailing.origin.name} → ${b.sailing.destination.name}`,
-        dateTime(b.sailing.departureAt),
+        `${b.reference} ${b.owner.fullName}`,
+        `${b.sailing.origin.name} → ${b.sailing.destination.name} ${dateTime(b.sailing.departureAt)}`,
         b.passengerCount,
         `PHP ${b.total.toLocaleString()}`,
         awaitingPaymentVerification(b) ? 'AWAITING STAFF VERIFICATION' : b.paymentStatus === "REFUND_PENDING"
@@ -2906,7 +2896,6 @@ const rows = computed<Row[]>(() => {
               : b.paymentStatus === "PAID"
                 ? "PAID"
                 : "AWAITING PAYMENT",
-        paymentMethodLabel(b) + (b.voucherCode ? ` | ${b.voucherCode} (- PHP ${b.voucherDiscount})` : ""),
       ],
     }));
   if (
@@ -2978,10 +2967,9 @@ const rows = computed<Row[]>(() => {
     output = sailings.value.map((s) => ({
       key: s.code,
       source: s,
-      statusIndex: 5,
+      statusIndex: 4,
       cells: [
-        s.code,
-        routeLabel(s),
+        `${s.code} ${routeLabel(s)}`,
         s.vessel.name,
         dateTime(s.departureAt),
         `${s.vessel.passengerCapacity - s.availableSeats} / ${s.vessel.passengerCapacity}`,
@@ -3021,11 +3009,15 @@ const rows = computed<Row[]>(() => {
   output = output.map((row) => {
     const sortValues = [...row.cells];
     if (section.value === "bookings") {
-      sortValues[3] = new Date(row.source.sailing.departureAt).getTime();
-      sortValues[5] = Number(row.source.total);
+      sortValues[0] = row.source.reference;
+      sortValues[1] = new Date(row.source.sailing.departureAt).getTime();
+      sortValues[3] = Number(row.source.total);
     }
-    if (section.value === "trips")
-      sortValues[3] = new Date(row.source.departureAt).getTime();
+    if (section.value === "trips") {
+      sortValues[0] = row.source.code;
+      sortValues[2] = new Date(row.source.departureAt).getTime();
+      sortValues[3] = row.source.vessel.passengerCapacity - row.source.availableSeats;
+    }
     if (section.value === "users")
       sortValues[3] = new Date(row.source.createdAt).getTime();
     if (section.value === "check-in")
@@ -3064,6 +3056,161 @@ const rows = computed<Row[]>(() => {
 </script>
 
 <style scoped>
+.admin-port-directory .content { padding: 24px 28px; }
+.admin-port-directory .heading { margin-bottom: 16px; }
+.admin-port-directory .booking-filters { display: grid; grid-template-columns: minmax(0, 1fr) 170px auto; gap: 12px; padding: 12px 16px; margin-bottom: 16px; }
+.admin-port-directory .booking-filters input, .admin-port-directory .booking-filters select { min-height: 40px; font: inherit; font-size: 12px; }
+.admin-port-directory .booking-filters select { width: 100%; min-width: 0; }
+.admin-port-directory .booking-records-panel { border-radius: 14px; overflow: hidden; }
+.admin-port-directory .booking-records-panel .panel-head { padding: 14px 16px; }
+.admin-port-directory .panel-head h2 { font-size: 17px; margin: 4px 0 0; }
+.admin-port-directory :deep(.grid-tools) { padding: 8px 16px; border-bottom: 1px solid var(--line); background: var(--surface); }
+.admin-port-directory :deep(.grid-tools button) { min-height: 34px; padding: 6px 8px; }
+.admin-port-directory :deep(.desktop-grid) { padding: 8px; }
+.admin-port-directory :deep(.grid-cell-content) { padding: 7px 0; font-size: 12px; line-height: 1.5; }
+.admin-port-directory :deep(.grid-row-actions) { display: flex; align-items: center; min-height: 44px; padding: 7px 0; }
+.admin-port-directory .port-code, .admin-port-directory .port-name { font-size: 12px; }
+.admin-port-directory .text-action { min-height: 32px; padding: 5px 10px; font-size: 11px; }
+.admin-port-directory .table-foot { margin: 0; padding: 10px 16px; border-top: 1px solid var(--line); font-size: 11px; line-height: 1.5; }
+.admin-port-directory .admin-port-map { margin-top: 18px; }
+.port-modal.port-editor-modal { --width: min(640px, calc(100vw - 32px)); }
+.port-dialog.port-editor-dialog .modal-head { padding: 18px 20px; }
+.port-dialog.port-editor-dialog .port-fields { padding: 16px 20px 20px; }
+.port-dialog.port-editor-dialog .port-field-heading { margin: 0 0 12px; font-size: 12px; color: var(--ink); font-weight: 650; }
+.port-dialog.port-editor-dialog .port-field-grid + .port-field-heading { margin-top: 22px; padding-top: 16px; border-top: 1px solid var(--line); }
+.port-dialog.port-editor-dialog .port-field-grid { gap: 16px; }
+.port-dialog.port-editor-dialog input:not([type="checkbox"]) { min-height: 40px; font-family: inherit; font-size: 12px; }
+.port-dialog.port-editor-dialog .port-form-footer { padding: 14px 20px; }
+.port-dialog.port-editor-dialog .port-form-footer button { min-height: 40px; }
+@media (max-width: 1000px) {
+  .admin-port-directory .booking-filters { grid-template-columns: minmax(0, 1fr) 170px; }
+  .admin-port-directory .booking-filters > button { grid-column: 1 / -1; justify-self: start; }
+}
+@media (max-width: 600px) {
+  .admin-port-directory .content { padding: 20px 16px; }
+  .admin-port-directory .booking-filters { grid-template-columns: minmax(0, 1fr); }
+  .admin-port-directory :deep(.grid-tools) { flex-wrap: wrap; }
+  .port-dialog.port-editor-dialog .modal-head, .port-dialog.port-editor-dialog .port-fields, .port-dialog.port-editor-dialog .port-form-footer { padding-inline: 16px; }
+}
+.admin-trips-directory .content { padding: 24px 28px; }
+.admin-trips-directory .heading { margin-bottom: 16px; }
+.admin-trips-directory .booking-filters { display: grid; grid-template-columns: minmax(0, 1fr) 190px auto; gap: 12px; padding: 12px 16px; margin-bottom: 14px; }
+.admin-trips-directory .booking-filters input, .admin-trips-directory .booking-filters select { min-height: 40px; font-size: 12px; font-family: inherit; }
+.admin-trips-directory .booking-filters select { width: 100%; min-width: 0; }
+.admin-trip-weather { margin-bottom: 16px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); }
+.admin-trip-weather summary { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 16px; cursor: pointer; color: var(--ocean); font-size: 12px; font-weight: 600; list-style: none; }
+.admin-trip-weather summary::-webkit-details-marker { display: none; }
+.admin-trip-weather summary > span:first-child { display: flex; gap: 8px; align-items: center; }
+.admin-trip-weather summary > span:last-child { font-size: 11px; color: var(--muted); font-weight: 400; }
+.admin-trip-weather summary::after { content: '+'; font-size: 18px; }.admin-trip-weather[open] summary::after { content: '−'; }
+.admin-trip-weather :deep(.weather-trip-picker) { margin: 0; width: 100%; max-width: none; border: 0; padding: 12px 16px 16px; }
+.admin-trip-weather :deep(.weather-trigger strong) { font-size: 12px; }.admin-trip-weather :deep(.weather-trigger small) { font-size: 11px; }
+.admin-trips-directory .trip-records-panel { overflow: hidden; border-radius: 14px; }
+.admin-trips-directory .trip-records-panel .panel-head { padding: 12px 16px; }
+.admin-trips-directory .panel-head h2 { font-size: 17px; margin: 4px 0 0; }
+.admin-trips-directory :deep(.grid-tools) { padding: 8px 16px; background: var(--surface); border-bottom: 1px solid var(--line); }
+.admin-trips-directory :deep(.grid-tools button) { min-height: 34px; padding: 6px 8px; }
+.admin-trips-directory :deep(.desktop-grid) { padding: 8px; }
+.admin-trips-directory :deep(.grid-cell-content) { padding: 7px 0; font-size: 12px; line-height: 1.5; }
+.admin-trips-directory :deep(.grid-row-actions) { display: flex; align-items: center; min-height: 48px; padding: 7px 0; }
+.schedule-identity { display: grid; gap: 3px; line-height: 1.5; }
+.schedule-identity strong { font-size: 12px; }.schedule-identity small { font-size: 11px; font-weight: 400; color: var(--muted); }
+.admin-trips-directory .trip-row-actions { grid-template-columns: minmax(0, 1fr) auto; gap: 6px; }
+.admin-trips-directory .trip-row-actions .text-action { min-height: 32px; padding: 5px 7px; font-size: 10px; }
+.schedule-seat-track { height: 4px; background: var(--line); border-radius: 8px; overflow: hidden; margin-top: 5px; }.schedule-seat-track i { display: block; height: 100%; background: var(--ocean); border-radius: inherit; }
+.schedule-status-select { width: 100%; min-height: 34px; padding: 5px 24px 5px 8px; border: 1px solid var(--line); border-radius: 7px; font-family: inherit; font-size: 11px; text-transform: capitalize; cursor: pointer; }
+.schedule-status-badge { font-size: 11px; text-transform: capitalize; }
+.schedule-status-select.scheduled { background: #eff6ff; color: #1d4ed8; }.schedule-status-select.boarding { background: #f5f3ff; color: #6d28d9; }.schedule-status-select.delayed { background: #fffbeb; color: #92400e; }
+:global(:root[data-theme="dark"]) .schedule-status-select.scheduled { background: #172e4d; color: #93c5fd; }
+:global(:root[data-theme="dark"]) .schedule-status-select.boarding { background: #30234e; color: #c4b5fd; }
+:global(:root[data-theme="dark"]) .schedule-status-select.delayed { background: #3c2d17; color: #fcd34d; }
+.admin-trip-weather summary:focus-visible, .schedule-status-select:focus-visible { outline: 2px solid var(--ocean); outline-offset: 2px; }
+.admin-trips-directory .table-foot { margin: 0; padding: 8px 16px; font-size: 10px; line-height: 1.5; border-top: 1px solid var(--line); }
+.admin-trips-directory :deep(.workspace-pagination) { padding: 10px 16px; font-size: 11px; }
+@media (max-width: 1000px) { .admin-trips-directory .booking-filters { grid-template-columns: minmax(0, 1fr) 170px; }.admin-trips-directory .booking-filters > button { grid-column: 1 / -1; justify-self: start; } }
+@media (max-width: 600px) { .admin-trips-directory .content { padding: 20px 16px; }.admin-trips-directory .booking-filters { grid-template-columns: minmax(0, 1fr); }.admin-trip-weather summary > span:last-child { display: none; }.admin-trips-directory :deep(.grid-tools) { flex-wrap: wrap; } }
+</style>
+
+<style scoped>
+.admin-passenger-directory .content { padding: 24px 28px; }
+.admin-passenger-directory .heading { margin-bottom: 16px; }
+.admin-passenger-directory .booking-filters { display: grid; grid-template-columns: minmax(0, 1fr) 190px auto; gap: 12px; padding: 12px 16px; margin-bottom: 14px; }
+.admin-passenger-directory .booking-filters label > span { font-size: 12px; }
+.admin-passenger-directory .booking-filters input, .admin-passenger-directory .booking-filters select { font-family: inherit; font-size: 12px; min-height: 40px; }
+.admin-passenger-directory .booking-filters select { min-width: 0; width: 100%; }
+.admin-passenger-directory .passenger-records-panel { overflow: hidden; border-radius: 14px; }
+.admin-passenger-directory .passenger-records-panel .panel-head { padding: 12px 16px; }
+.admin-passenger-directory .panel-head h2 { font-size: 17px; margin: 4px 0 0; }
+.admin-passenger-directory :deep(.grid-tools) { padding: 8px 16px; background: var(--surface); border-bottom: 1px solid var(--line); }
+.admin-passenger-directory :deep(.grid-tools button) { min-height: 34px; padding: 6px 8px; }
+.admin-passenger-directory :deep(.desktop-grid) { padding: 8px; }
+.admin-passenger-directory :deep(.grid-cell-content) { padding: 7px 0; font-size: 12px; line-height: 1.5; }
+.admin-passenger-directory .passenger-name { font-size: 13px; }
+.admin-passenger-directory .passenger-reference { font-size: 11px; font-weight: 400; }
+.admin-passenger-directory .passenger-type { font-size: 10px; padding: 3px 6px; }
+.admin-passenger-directory .passenger-status-badge { font-size: 10px; border-radius: 6px; padding: 4px 7px; white-space: nowrap; }
+.admin-passenger-directory .passenger-status-badge.issued { color: #1d4ed8; background: #eff6ff; }
+.admin-passenger-directory .passenger-status-badge.checked-in { color: #6d28d9; background: #f5f3ff; }
+.admin-passenger-directory .passenger-status-badge.expired { color: var(--muted); background: var(--surface-soft); border-color: var(--line); }
+:global(:root[data-theme="dark"]) .admin-passenger-directory .passenger-status-badge.issued { color: #93c5fd; background: #172e4d; }
+:global(:root[data-theme="dark"]) .admin-passenger-directory .passenger-status-badge.checked-in { color: #c4b5fd; background: #30234e; }
+.admin-passenger-directory .table-foot { padding: 8px 16px; font-size: 10px; line-height: 1.5; margin: 0; border-top: 1px solid var(--line); }
+.admin-passenger-directory :deep(.workspace-pagination) { padding: 10px 16px; font-size: 11px; }
+.admin-passenger-directory :deep(.workspace-pagination button) { min-height: 36px; }
+@media (max-width: 1000px) { .admin-passenger-directory .booking-filters { grid-template-columns: minmax(0, 1fr) 170px; }.admin-passenger-directory .booking-filters > button { grid-column: 1 / -1; justify-self: start; } }
+@media (max-width: 600px) {
+  .admin-passenger-directory .content { padding: 20px 16px; }
+  .admin-passenger-directory .booking-filters { grid-template-columns: minmax(0, 1fr); padding: 16px; }
+  .admin-passenger-directory :deep(.grid-tools) { flex-direction: column; align-items: stretch; padding: 12px 16px; }
+  .admin-passenger-directory :deep(.grid-tools > div:last-child) { flex-wrap: wrap; }
+}
+</style>
+
+<style scoped>
+.admin-booking-directory .content { padding: 24px 28px; }
+.admin-booking-directory .heading { margin-bottom: 16px; }
+.admin-booking-directory .booking-filters { display: grid; grid-template-columns: minmax(0, 1fr) 210px auto; gap: 12px; padding: 12px 16px; margin-bottom: 14px; }
+.admin-booking-directory .booking-filters label > span { font-size: 12px; }
+.admin-booking-directory .booking-filters input, .admin-booking-directory .booking-filters select { font-family: inherit; font-size: 12px; min-height: 40px; }
+.admin-booking-directory .booking-filters select { min-width: 0; width: 100%; }
+.admin-booking-directory .booking-records-panel { overflow: hidden; border-radius: 14px; }
+.admin-booking-directory .booking-records-panel .panel-head { padding: 12px 16px; }
+.admin-booking-directory .panel-head h2 { font-size: 17px; margin: 4px 0 0; }
+.admin-booking-directory :deep(.grid-tools) { background: var(--surface); border-bottom: 1px solid var(--line); padding: 8px 16px; }
+.admin-booking-directory :deep(.grid-tools button) { min-height: 34px; padding: 6px 8px; }
+.admin-booking-directory :deep(.grid-summary) { flex-wrap: wrap; align-items: center; }
+.admin-booking-directory :deep(.desktop-grid) { padding: 8px; }
+.admin-booking-directory :deep(.grid-cell-content) { padding: 5px 0; font-size: 12px; line-height: 1.4; }
+.admin-booking-directory :deep(.grid-row-actions) { display: flex; align-items: center; min-height: 44px; padding: 4px 0; }
+.booking-identity, .booking-sailing, .booking-payment { display: grid; gap: 2px; line-height: 1.4; }
+.booking-identity > *, .booking-sailing > * { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.booking-identity strong { font-size: 12px; font-weight: 650; letter-spacing: .1px; }
+.booking-identity small, .booking-sailing small, .booking-payment small { font-size: 11px; color: var(--muted); font-weight: 400; line-height: 1.4; }
+.booking-sailing strong { font-size: 12px; font-weight: 500; }
+.booking-sailing small { font-variant-numeric: tabular-nums; }
+.booking-passengers { font-size: 13px; font-variant-numeric: tabular-nums; }
+.booking-amount { font-size: 13px; white-space: nowrap; font-weight: 650; font-variant-numeric: tabular-nums; }
+.booking-status-badge { justify-self: start; font-size: 10px; line-height: 1.3; border-radius: 5px; padding: 3px 6px; white-space: normal; }
+.booking-payment .booking-voucher { color: var(--ocean); font-size: 10px; }
+.booking-status-badge.expired, .booking-status-badge.refunded { color: var(--muted); background: var(--surface-soft); border-color: var(--line); }
+.booking-no-action { display: inline-block; color: var(--muted); font-size: 18px; }
+.admin-booking-directory .text-action.danger { min-height: 30px; padding: 5px 8px; font-size: 11px; }
+.admin-booking-directory .table-foot { margin: 0; padding: 8px 16px; font-size: 10px; line-height: 1.5; color: var(--muted); border-top: 1px solid var(--line); }
+.admin-booking-directory :deep(.workspace-pagination) { padding: 10px 16px; font-size: 11px; }
+.admin-booking-directory :deep(.workspace-pagination button) { min-height: 36px; }
+@media (max-width: 1000px) { .admin-booking-directory .booking-filters { grid-template-columns: minmax(0, 1fr) 190px; }.admin-booking-directory .booking-filters > button { grid-column: 1 / -1; justify-self: start; } }
+@media (max-width: 600px) {
+  .admin-booking-directory .content { padding: 20px 16px; }
+  .booking-identity > *, .booking-sailing > * { white-space: normal; }
+  .admin-booking-directory .booking-filters { grid-template-columns: minmax(0, 1fr); padding: 16px; gap: 12px; }
+  .admin-booking-directory :deep(.grid-tools) { flex-direction: column; align-items: stretch; padding: 12px 16px; }
+  .admin-booking-directory :deep(.grid-tools > div:last-child) { flex-wrap: wrap; }
+  .admin-booking-directory :deep(.mobile-record) { padding: 16px; }
+  .admin-booking-directory .table-foot { padding: 12px 16px; }
+}
+</style>
+
+<style scoped>
 .admin-port-map {
   margin-top: 24px;
 }
@@ -3073,16 +3220,16 @@ const rows = computed<Row[]>(() => {
 .fare-vessel-picker {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(220px, 340px);
-  gap: 24px;
+  gap: 18px;
   align-items: center;
-  padding: 24px 26px;
-  margin-bottom: 22px;
+  padding: 16px 18px;
+  margin-bottom: 16px;
 }
 .fare-vessel-heading { display: flex; align-items: center; gap: 14px; }
-.fare-vessel-heading .fare-card-icon { flex: 0 0 46px; height: 46px; }
+.fare-vessel-heading .fare-card-icon { flex: 0 0 38px; height: 38px; }
 .fare-vessel-picker h2 {
   margin: 7px 0;
-  font-size: 18px;
+  font-size: 15px;
 }
 .fare-vessel-picker p:last-child {
   margin: 0;
@@ -3092,14 +3239,14 @@ const rows = computed<Row[]>(() => {
 }
 .fare-vessel-picker select {
   width: 100%;
-  min-height: 46px;
+  min-height: 40px;
   padding: 10px 12px;
   border: 1px solid var(--line);
   border-radius: 10px;
   color: var(--ink);
   background: var(--surface-soft);
   font: inherit;
-  font-size: 13px;
+  font-size: 12px;
 }
 .fare-vessel-picker select:focus-visible {
   outline: 2px solid var(--ocean);
@@ -3107,7 +3254,7 @@ const rows = computed<Row[]>(() => {
 }
 .fare-config-status {
   display: inline-block;
-  margin-top: 10px;
+  margin-top: 6px;
   padding: 4px 8px;
   border-radius: 20px;
   color: var(--muted);
@@ -3284,38 +3431,38 @@ const rows = computed<Row[]>(() => {
 }
 .fare-layout {
   display: grid;
-  grid-template-columns: minmax(0, 1.4fr) minmax(280px, 1fr);
-  gap: 22px;
+  grid-template-columns: minmax(0, 1.8fr) minmax(250px, 1fr);
+  gap: 16px;
   align-items: start;
 }
 .fare-editor {
   display: grid;
-  gap: 22px;
+  gap: 16px;
   min-width: 0;
 }
 .fare-card {
-  padding: 26px;
+  padding: 18px;
 }
 .fare-card-heading {
   display: flex;
   align-items: center;
   gap: 13px;
-  margin-bottom: 24px;
+  margin-bottom: 16px;
 }
 .fare-card-icon {
   display: grid;
   place-items: center;
-  flex: 0 0 42px;
-  height: 42px;
-  border-radius: 12px;
+  flex: 0 0 36px;
+  height: 36px;
+  border-radius: 10px;
   background: var(--light-blue);
   color: var(--ocean);
-  font-size: 21px;
+  font-size: 19px;
 }
 .fare-card h2,
 .fare-preview-heading h2 {
   margin: 0;
-  font-size: 18px;
+  font-size: 15px;
   letter-spacing: -0.02em;
 }
 .fare-card-heading p,
@@ -3398,7 +3545,7 @@ const rows = computed<Row[]>(() => {
   line-height: 1.5;
 }
 .fare-preview-card {
-  padding: 26px;
+  padding: 18px;
   align-self: start;
 }
 @media (min-width: 1151px) {
@@ -3407,7 +3554,7 @@ const rows = computed<Row[]>(() => {
 .fare-preview > .fare-preview-inactive { background: var(--surface-soft); padding-inline: 10px; border-radius: 8px; }
 .fare-preview-inactive strong { color: var(--muted); }
 .fare-preview-heading {
-  margin-bottom: 22px;
+  margin-bottom: 14px;
 }
 .fare-preview-heading .eyebrow {
   margin-bottom: 8px;
@@ -3420,31 +3567,31 @@ const rows = computed<Row[]>(() => {
   align-items: center;
   justify-content: space-between;
   gap: 14px;
-  padding: 17px 0;
+  padding: 12px 0;
   border-bottom: 1px solid var(--line);
 }
 .fare-preview > div:last-child {
   border-bottom: 0;
 }
 .fare-preview span {
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 700;
 }
 .fare-preview span small {
   display: block;
-  margin-top: 5px;
+  margin-top: 3px;
   color: var(--muted);
   font-size: 11px;
   font-weight: 400;
 }
 .fare-preview strong {
   flex-shrink: 0;
-  font-size: 16px;
+  font-size: 14px;
   font-variant-numeric: tabular-nums;
 }
 .fare-preview > .fare-preview-regular {
-  margin: 0 -10px 3px;
-  padding: 16px 10px;
+  margin: 0 0 3px;
+  padding: 12px;
   border: 0;
   border-radius: 10px;
   background: var(--light-blue);
@@ -3475,12 +3622,10 @@ const rows = computed<Row[]>(() => {
   align-items: center;
   justify-content: space-between;
   gap: 20px;
-  margin-top: 22px;
-  padding: 20px 26px;
-  position: sticky;
-  bottom: 16px;
-  z-index: 5;
-  box-shadow: 0 8px 28px #00000018;
+  margin-top: 16px;
+  padding: 14px 18px;
+  position: static;
+  box-shadow: none;
 }
 .fare-save-bar strong {
   font-size: 13px;
@@ -5169,5 +5314,87 @@ td strong {
   .fare-save-bar { bottom: 8px; gap: 12px; padding: 16px; }
   .fare-preview strong { font-size: 14px; }
   .fare-preview-regular strong { font-size: 18px; }
+}
+</style>
+
+<style scoped>
+.trip-modal { --width: min(940px, calc(100vw - 32px)); --max-height: calc(100dvh - 32px); --border-radius: 16px; }
+.modal-body.trip-dialog { max-height: calc(100dvh - 32px); }
+.trip-dialog .modal-head { padding: 16px 22px; }
+.trip-dialog .modal-head h2 { font-size: 21px; }
+.trip-dialog .trip-title-icon { width: 38px; height: 38px; border-radius: 10px; font-size: 22px; }
+.trip-dialog .trip-scroll { padding: 16px 22px; }
+.trip-dialog .trip-code-banner { padding: 10px 14px; margin-bottom: 14px; gap: 3px 12px; }
+.trip-dialog .trip-code-banner > p { font-size: 10px; }
+.trip-dialog .trip-grid { grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); gap: 14px; align-items: start; }
+.trip-dialog .trip-details { display: contents; }
+.trip-dialog .trip-section { padding: 16px; gap: 12px; border-radius: 11px; }
+.trip-dialog .trip-section-heading { gap: 9px; }
+.trip-dialog .trip-section-heading h3 { font-size: 14px; }
+.trip-dialog .trip-section-heading p { font-size: 11px; }
+.trip-dialog .trip-section-heading > span { width: 30px; height: 30px; font-size: 17px; }
+.trip-dialog .trip-details > .trip-section:nth-child(2) .form-grid { grid-template-columns: minmax(0, 1fr); }
+.trip-dialog .form-grid { gap: 12px; }
+.trip-dialog label { font-size: 12px; gap: 6px; }
+.trip-dialog input, .trip-dialog select { min-height: 40px; padding: 8px 10px; font-family: inherit; font-size: 12px; }
+.trip-dialog .trip-code-banner input { min-height: 24px; padding: 0; }
+.trip-dialog .trip-fare-section { grid-column: 1 / -1; }
+.trip-dialog .trip-fare-values { grid-template-columns: 160px minmax(0, 1fr); gap: 16px; align-items: start; }
+.trip-dialog .trip-regular-fare { padding: 12px; gap: 4px; }
+.trip-dialog .trip-regular-fare input { font-size: 25px; min-height: 32px; }
+.trip-dialog .trip-discount-fares { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px 16px; }
+.trip-dialog .trip-discount-fares label { padding: 7px 0; gap: 8px; font-size: 11px; }
+.trip-dialog .trip-discount-fares input { width: 70px; min-height: 28px; font-size: 13px; padding: 2px 0; }
+.trip-dialog .trip-fares-empty { grid-template-columns: 30px auto minmax(0, 1fr); align-items: center; justify-items: start; gap: 12px; padding: 10px 0; text-align: left; }
+.trip-dialog .trip-fares-empty ion-icon { font-size: 26px; }.trip-dialog .trip-fares-empty p { font-size: 12px; }
+.trip-dialog .trip-form-footer { padding: 12px 22px; }
+.trip-dialog .trip-form-footer button { min-height: 40px; }
+.fare-settings-panel .fare-base-card { display: grid; grid-template-columns: minmax(0, 1fr) minmax(170px, .85fr); align-items: center; gap: 16px; }
+.fare-base-card .fare-card-heading { margin-bottom: 0; align-items: flex-start; }
+.fare-settings-panel .regular-fare-control { min-width: 0; }
+.fare-settings-panel .regular-fare-control > label { font-size: 10px; color: var(--muted); margin-bottom: 6px; }
+.fare-settings-panel .fare-base-input input { min-height: 44px; font-size: 23px; padding: 8px 10px; }
+.fare-settings-panel .fare-base-input > span { padding-left: 12px; font-size: 11px; }
+.fare-settings-panel .fare-base-card .fare-hint { font-size: 10px; margin-top: 6px; }
+.fare-settings-panel .discount-count { flex: none; margin-left: auto; padding: 4px 7px; border-radius: 6px; background: var(--light-blue); color: var(--ocean); font-size: 10px; font-weight: 600; white-space: nowrap; }
+.fare-settings-panel .custom-discounts .fare-card-heading { align-items: flex-start; gap: 10px; }
+.fare-settings-panel .custom-discounts .fare-card-heading p { font-size: 11px; }
+.fare-settings-panel .custom-discount-row { grid-template-columns: minmax(0, 1fr) 76px 74px 52px; padding: 12px 0; gap: 10px; margin-top: 0; border: 0; border-top: 1px solid var(--line); border-radius: 0; background: transparent; }
+.fare-settings-panel .custom-discount-row label { gap: 5px; font-size: 10px; }
+.fare-settings-panel .custom-discount-row input:not([type="checkbox"]) { min-height: 38px; padding: 8px 10px; background: var(--surface-soft); }
+.fare-settings-panel .custom-discount-row .discount-percent-input { background: var(--surface-soft); padding-right: 8px; gap: 3px; }
+.fare-settings-panel .custom-discount-row .discount-percent-input input { background: transparent; padding-inline: 6px; }
+.fare-settings-panel .custom-discount-row .custom-active { min-height: 38px; gap: 6px; font-size: 11px; }
+.fare-settings-panel .custom-discount-row .text-action { min-height: 38px; padding: 8px; border: 0; background: transparent; font-size: 11px; }
+.fare-settings-panel .custom-discount-row .text-action:hover { background: var(--danger-soft); }
+.fare-settings-panel .discount-row-inactive { background: var(--surface-soft); }
+.fare-settings-panel .discount-row-inactive .custom-active { color: var(--muted); }
+.fare-settings-panel .custom-discounts > .secondary { margin-top: 8px; min-height: 36px; font-size: 11px; }
+.fare-settings-panel .fare-save-bar { border-radius: 12px; }
+.fare-settings-panel .fare-save-bar .primary { min-height: 40px; font-size: 12px; }
+.fare-settings-panel .fare-save-bar strong { font-size: 12px; }
+.fare-settings-panel .fare-save-bar p { font-size: 10px; }
+@media (min-width: 1001px) { .fare-settings-panel .fare-layout { grid-template-columns: minmax(0, 1.8fr) minmax(250px, 1fr); } }
+@media (max-width: 1000px) {
+  .fare-settings-panel .fare-layout { grid-template-columns: 1fr; }
+  .fare-settings-panel .fare-preview-card { position: static; max-height: none; }
+  .fare-settings-panel .fare-preview { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 18px; }
+  .fare-settings-panel .fare-preview-regular { grid-column: 1 / -1; }
+}
+@media (max-width: 600px) {
+  .fare-settings-panel .fare-vessel-picker { padding: 16px; gap: 12px; }
+  .fare-settings-panel .fare-base-card { grid-template-columns: 1fr; }
+  .fare-settings-panel .fare-card, .fare-settings-panel .fare-preview-card { padding: 16px; }
+  .fare-settings-panel .custom-discount-row { grid-template-columns: minmax(0, 1fr) 85px; gap: 8px 12px; }
+  .fare-settings-panel .discount-count { font-size: 9px; }
+  .fare-settings-panel .fare-save-bar { padding: 14px 16px; gap: 12px; }
+}
+@media (max-width: 380px) { .fare-settings-panel .fare-preview { grid-template-columns: 1fr; } }
+@media (max-width: 740px) {
+  .trip-dialog .trip-grid { grid-template-columns: minmax(0, 1fr); }
+  .trip-dialog .trip-fare-values { grid-template-columns: minmax(0, 1fr); }
+  .trip-dialog .trip-discount-fares { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .trip-dialog .trip-fares-empty { grid-template-columns: 30px minmax(0, 1fr); }.trip-dialog .trip-fares-empty p { grid-column: 2; }
+  .trip-dialog .modal-head, .trip-dialog .trip-scroll, .trip-dialog .trip-form-footer { padding: 16px; }
 }
 </style>

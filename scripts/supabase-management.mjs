@@ -69,6 +69,47 @@ if (['inspect-admin-filters', 'upgrade-admin-filters', 'verify-admin-filters'].i
     if (result.length !== 4 || result.some(row => !row.valid_response || !row.expected_shape)) throw new Error('Authorized admin directory verification failed.')
     console.log(JSON.stringify({ adminDirectoryVerification: 'passed', result, security }))
   }
+} else if (['inspect-loyalty-settings', 'upgrade-loyalty-settings', 'verify-loyalty-settings'].includes(mode)) {
+  const env = fs.readFileSync('.env.local', 'utf8')
+  const url = env.match(/^VITE_SUPABASE_URL\s*=\s*(.+)$/m)?.[1]?.trim().replace(/^['"]|['"]$/g, '')
+  if (!url || new URL(url).hostname !== `${projectRef}.supabase.co`) throw new Error('Frontend and management project must match before applying loyalty settings.')
+  const inspect = `select
+    to_regclass('barkolink_private.loyalty_settings') is not null as settings_table,
+    to_regprocedure('barkolink_private.execute_flexible_discounts_v30(text,jsonb,text,text)') is not null as backup,
+    to_regprocedure('barkolink_private.loyalty_reward_value(integer)') is not null as reward_ready,
+    to_regprocedure('barkolink_private.issue_loyalty_vouchers(text)') is not null as issuance_ready,
+    coalesce((select position('AdminLoyaltySettings' in pg_get_functiondef(p.oid))>0 from pg_proc p where p.oid=to_regprocedure('barkolink_private.execute_flexible_discounts(text,jsonb,text,text)')),false) as installed`
+  let state = (await sql(inspect))[0]
+  if (mode === 'upgrade-loyalty-settings') {
+    if (!state.reward_ready || !state.issuance_ready || state.settings_table !== state.backup || state.backup !== state.installed) throw new Error('Unexpected loyalty migration state; inspect before applying.')
+    if (state.installed) console.log('Migration 031 already installed; saved settings preserved.')
+    else {
+      const guard = `do $$ begin
+        perform pg_advisory_xact_lock(hashtext('barkolink-migration-031'));
+        if to_regclass('barkolink_private.loyalty_settings') is not null or to_regprocedure('barkolink_private.execute_flexible_discounts_v30(text,jsonb,text,text)') is not null then
+          raise exception 'Loyalty migration state changed; inspect before retrying';
+        end if;
+      end $$;`
+      await sql('begin;\n' + guard + '\n' + fs.readFileSync('supabase/migrations/031_loyalty_settings.sql', 'utf8') + '\ncommit;', false)
+      console.log('Applied migration 031 transactionally. Existing vouchers, bookings and reward expiry dates preserved.')
+      state = (await sql(inspect))[0]
+    }
+  }
+  console.log(JSON.stringify({ projectRef, loyaltySettings: state }))
+  if (mode !== 'inspect-loyalty-settings') {
+    if (!state.settings_table || !state.backup || !state.installed) throw new Error('Migration 031 is not installed.')
+    const security = (await sql(`select
+      has_table_privilege('authenticated','barkolink_private.loyalty_settings','SELECT') as browser_settings_read,
+      has_table_privilege('authenticated','barkolink_private.loyalty_settings','UPDATE') as browser_settings_write,
+      has_table_privilege('anon','barkolink_private.loyalty_settings','SELECT') as anonymous_settings_read,
+      has_function_privilege('authenticated','barkolink_private.execute_flexible_discounts(text,jsonb,text,text)','EXECUTE') as browser_private_execute,
+      has_function_privilege('authenticated','barkolink_private.execute_flexible_discounts_v30(text,jsonb,text,text)','EXECUTE') as browser_backup_execute`))[0]
+    if (Object.values(security).some(Boolean)) throw new Error('Unexpected direct access to private loyalty settings.')
+    const results = await sql(`select barkolink_private.execute_flexible_discounts('AdminLoyaltySettings','{}'::jsonb,uid,'ADMIN') as data
+      from public.app_user where role='ADMIN' limit 1`, false)
+    if (results.length !== 1 || !results[0].data?.settings?.trips_per_reward) throw new Error('Admin loyalty settings response verification failed.')
+    console.log(JSON.stringify({ verification: 'passed', settings: results[0].data.settings, security }))
+  }
 } else if (mode === 'inspect') {
   const existing = await sql(inspectQuery)
   const functions = await sql("select routine_name from information_schema.routines where routine_schema='public' and routine_name='barkolink_execute'")

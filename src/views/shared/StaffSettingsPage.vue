@@ -1,8 +1,12 @@
 <template>
   <ion-page>
     <ion-content :fullscreen="true">
-      <main class="staff-settings-page">
-        <StaffWorkspaceHeader :role="String(route.params.role)" title="Account settings" />
+      <div class="staff-settings-shell design-workspace">
+        <button v-if="menuOpen" class="settings-scrim" aria-label="Close navigation" @click="menuOpen = false"></button>
+        <aside class="staff-sidebar" :class="{ 'mobile-open': menuOpen }"><BrandMark /><StaffNavigation :role="role === 'boarding' ? 'boarding' : 'ticketing'" @navigate="menuOpen = false" /></aside>
+        <section class="staff-settings-main">
+          <StaffWorkspaceHeader :role="role" navigation :menu-open="menuOpen" @toggle-menu="menuOpen = !menuOpen" />
+          <main class="staff-settings-page">
 
         <section class="page-heading">
           <div>
@@ -27,7 +31,7 @@
               ></a>
           </nav>
 
-          <section class="settings-card">
+          <section class="settings-card" :class="{ 'account-section': section === 'account' }">
             <template v-if="section === 'account'">
               <div class="card-heading">
                 <div>
@@ -37,6 +41,7 @@
                 </div>
                 <ion-icon :icon="personOutline" />
               </div>
+              <div class="account-overview">
               <div class="identity-card">
                 <span class="avatar">{{ initials }}</span>
                 <div>
@@ -66,6 +71,7 @@
                 <div class="detail">
                   <span>Staff role</span><strong>{{ roleLabel }}</strong>
                 </div>
+              </div>
               </div>
               <form class="phone-form" @submit.prevent="savePhone">
                 <div>
@@ -186,11 +192,15 @@
           </section>
         </div>
       </main>
+        </section>
+      </div>
     </ion-content>
   </ion-page>
 </template>
 
 <script setup lang="ts">
+import BrandMark from "../../components/shared/BrandMark.vue";
+import StaffNavigation from "../../components/staff/StaffNavigation.vue";
 import StaffWorkspaceHeader from "../../components/staff/StaffWorkspaceHeader.vue";
 import { useUnsavedChanges } from "../../composables/unsavedChanges";
 import { validatedProfile } from "../../data/profileValidation";
@@ -228,6 +238,7 @@ type StaffProfile = {
 };
 const route = useRoute();
 const ionRouter = useIonRouter();
+const menuOpen = ref(false);
 const role = computed(() => String(route.params.role));
 const section = computed(() => String(route.params.section || "account"));
 const workspacePath = computed(() => `/staff/${role.value}`);
@@ -872,4 +883,42 @@ async function changePassword() {
  .settings-nav .workspace-link { display: none; }
 }
 
+</style>
+
+<style scoped>
+.staff-settings-shell { min-height: 100dvh; background: var(--cloud); color: var(--ink); }
+.staff-sidebar { position: fixed; inset: 0 auto 0 0; width: 235px; box-sizing: border-box; display: flex; flex-direction: column; padding: 26px 16px; z-index: 20; }
+.staff-sidebar :deep(.brand-copy strong), .staff-sidebar :deep(.brand-copy b) { color: white; }
+.staff-sidebar :deep(.brand-copy small) { color: #8eb8cc; }
+.staff-sidebar :deep(.staff-navigation) { flex: 1; min-height: 0; overflow-y: auto; margin-top: 22px; }
+.staff-settings-main { margin-left: 235px; min-width: 0; }
+.settings-scrim { display: none; }
+.staff-settings-page { max-width: 1100px; padding: 24px 28px 40px; }
+.page-heading { margin: 0 0 20px; gap: 12px; }.page-heading h1 { font-size: 28px; }
+.settings-layout { grid-template-columns: 180px minmax(0, 1fr); gap: 16px; }
+.settings-nav, .settings-card { border-radius: 12px; box-shadow: none; }.settings-nav { padding: 10px; }.settings-card { padding: 20px; }
+.card-heading { margin-bottom: 16px; }.card-heading h2 { font-size: 19px; }.card-heading > ion-icon { width: 36px; height: 36px; padding: 8px; border-radius: 10px; }
+.identity-card { padding: 12px; }.identity-card .avatar { width: 38px; height: 38px; border-radius: 10px; }.detail-grid { gap: 10px; }.detail { padding: 12px; }
+.phone-actions input, .password-form input { min-height: 44px; }.phone-actions button, .password-form > button { min-height: 44px; }
+@media(max-width:1100px) { .settings-layout { grid-template-columns: minmax(0, 1fr); }.settings-nav { display: flex; flex-wrap: wrap; gap: 5px; }.nav-title { display: none; }.settings-nav a { flex: 1; justify-content: center; font-size: 12px; gap: 6px; } }
+@media(max-width:800px) { .staff-settings-main { margin-left: 0; }.staff-sidebar { display: none; }.staff-sidebar.mobile-open { display: flex; width: min(84vw, 300px); z-index: 31; box-shadow: 12px 0 36px #020b1880; }.settings-scrim { position: fixed; inset: 0; display: block; width: 100%; height: 100%; z-index: 30; border: 0; background: #061222a8; }.staff-settings-page { padding: 20px 16px 32px; } }
+@media(max-width:480px) { .settings-card { padding: 16px; }.page-heading { flex-wrap: wrap; }.page-heading h1 { font-size: 25px; }.settings-nav a { min-width: 0; padding: 0 6px; font-size: 11px; }.settings-nav a ion-icon { font-size: 16px; } }
+</style>
+
+<style scoped>
+.staff-settings-page { max-width: 1000px; margin: 0; padding: 24px 28px 36px; }
+.page-heading { align-items: center; margin-bottom: 18px; }.page-heading h1 { font-size: 27px; }.settings-back { min-height: 40px; font-size: 11px; }
+.settings-layout { display: grid; grid-template-columns: minmax(0, 1fr); gap: 14px; }
+.settings-nav { position: static; display: flex; align-items: center; flex-wrap: nowrap; gap: 5px; width: fit-content; max-width: 100%; padding: 5px; border-radius: 10px; background: var(--surface-soft); }
+.settings-nav .nav-title { display: none; }.settings-nav a { min-width: 0; min-height: 44px; flex: initial; justify-content: center; gap: 7px; padding: 8px 16px; font-size: 12px; border: 1px solid transparent; border-radius: 7px; }.settings-nav a.active { border-color: var(--line); background: var(--surface); color: var(--ocean); box-shadow: 0 1px 4px #061a3510; }
+.settings-nav a ion-icon { font-size: 17px; }
+.settings-card { min-height: 0; padding: 20px; border-radius: 12px; }.settings-card.account-section { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px 22px; }
+.account-section > .card-heading { grid-column: 1 / -1; margin: 0; padding-bottom: 14px; }.card-heading h2 { margin-top: 4px; font-size: 18px; }.card-heading > ion-icon { width: 32px; height: 32px; padding: 7px; }
+.account-overview { min-width: 0; }.identity-card { margin: 0 0 12px; padding: 10px; border-radius: 9px; }.identity-card strong { font-size: 13px; }.identity-card .avatar { width: 36px; height: 36px; font-size: 12px; }
+.detail-grid { grid-template-columns: minmax(0, 1fr); gap: 0; border: 1px solid var(--line); border-radius: 9px; overflow: hidden; }.detail { border: 0; border-radius: 0; background: transparent; padding: 10px 12px; }.detail + .detail { border-top: 1px solid var(--line); }.detail strong { font-size: 12px; }.detail span { font-size: 10px; }
+.phone-form { margin: 0; padding: 12px 14px; border: 1px solid var(--line); border-radius: 9px; background: var(--surface-soft); align-self: start; }.phone-form h3 { font-size: 14px; margin: 0 0 5px; }.phone-form p { font-size: 11px; }.phone-actions { display: flex; flex-direction: column; flex-wrap: nowrap; align-items: stretch; gap: 8px; }.phone-actions input { box-sizing: border-box; width: 100%; max-width: 100%; flex: none; background: var(--surface); }.phone-actions button { align-self: flex-start; }.phone-actions button { width: auto; padding: 9px 14px; }
+.password-form { margin-top: 14px; }.theme-card { padding: 12px; border-radius: 10px; }
+@media(max-width:1000px) { .settings-card.account-section { grid-template-columns: minmax(0, 1fr); }.account-section > .card-heading { grid-column: 1; } }
+@media(max-width:800px) { .staff-settings-page { padding: 20px 16px 28px; } }
+@media(max-width:480px) { .settings-nav { width: 100%; }.settings-nav a { padding: 8px; flex: 1; font-size: 11px; gap: 5px; }.settings-card { padding: 14px; }.page-heading h1 { font-size: 24px; }.page-heading { align-items: flex-start; } }
 </style>

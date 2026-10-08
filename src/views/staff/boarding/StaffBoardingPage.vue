@@ -15,11 +15,11 @@
         >
           <BrandMark />
           <StaffNavigation role="boarding" @navigate="menuOpen = false" />
-          <StaffLogoutButton :disabled="busy" />
+
         </aside>
 
         <div class="main-column">
-          <StaffWorkspaceHeader role="boarding" :title="pageTitle" navigation :menu-open="menuOpen" @toggle-menu="menuOpen = !menuOpen" />
+          <StaffWorkspaceHeader role="boarding" navigation :menu-open="menuOpen" @toggle-menu="menuOpen = !menuOpen" />
 
           <main id="overview" class="content">
             <div class="page-heading">
@@ -53,7 +53,7 @@
                   :disabled="!selectedSailingCode || loading || busy"
                   @click="pageMode === 'dashboard' ? router.push(operationPath('check-in')) : openScanner()"
                 >
-                  <ion-icon :icon="scanOutline" />Find ticket
+                  <ion-icon :icon="scanOutline" />{{ pageMode === 'boarding' ? 'Find boarding ticket' : 'Find ticket' }}
                 </button>
               </div>
             </div>
@@ -123,13 +123,12 @@
                   >{{ selectedSailing.status }}</span
                 >
               </div>
+              <BoardingProgress
+                v-if="selectedSailing"
+                :boarded="boardedCount"
+                :total="passengers.length"
+              />
             </section>
-
-            <BoardingProgress
-              v-if="selectedSailing"
-              :boarded="boardedCount"
-              :total="passengers.length"
-            />
 
             <div
               v-if="selectedSailing && selectedSailing.status !== 'BOARDING'"
@@ -140,6 +139,12 @@
                 this sailing to BOARDING.</span
               >
             </div>
+
+            <section v-if="pageMode === 'check-in' || pageMode === 'boarding'" class="gate-stage" :aria-label="pageMode === 'check-in' ? 'Arrival check-in' : 'Vessel boarding'">
+              <span class="stage-icon"><ion-icon :icon="pageMode === 'check-in' ? scanOutline : boatOutline" aria-hidden="true" /></span>
+              <div><p class="eyebrow">{{ pageMode === 'check-in' ? 'STEP 1 / PASSENGER ARRIVAL' : 'STEP 2 / VESSEL BOARDING' }}</p><h2>{{ pageMode === 'check-in' ? 'Record arrival at the gate' : 'Confirm passengers are on board' }}</h2><p>{{ pageMode === 'check-in' ? `${issuedCount} awaiting check-in. Verify each ticket and passenger ID before recording arrival.` : `${checkedInCount} ready to board · ${boardedCount} boarded. Only checked-in passengers can be marked as boarded.` }}</p></div>
+              <router-link :to="operationPath(pageMode === 'check-in' ? 'boarding' : 'check-in')">{{ pageMode === 'check-in' ? 'Go to boarding' : 'Go to check-in' }} <ion-icon :icon="arrowForwardOutline" aria-hidden="true" /></router-link>
+            </section>
 
             <section v-if="pageMode === 'dashboard' || pageMode === 'manifest'" class="stats" aria-label="Boarding totals">
               <article>
@@ -182,17 +187,22 @@
               </article>
             </section>
 
-            <section v-if="pageMode === 'dashboard'" class="boarding-shortcuts" aria-label="Gate operations">
-              <router-link :to="operationPath('check-in')"><ion-icon :icon="scanOutline" /><strong>Check-in</strong><span>{{ issuedCount }} tickets awaiting arrival</span></router-link>
-              <router-link :to="operationPath('boarding')"><ion-icon :icon="boatOutline" /><strong>Boarding</strong><span>{{ checkedInCount }} checked-in passengers</span></router-link>
-              <router-link :to="operationPath('manifest')"><ion-icon :icon="peopleOutline" /><strong>Passenger manifest</strong><span>View all {{ passengers.length }} paid tickets</span></router-link>
-              <router-link to="/staff/boarding/trips"><ion-icon :icon="boatOutline" /><strong>Active trips</strong><span>Browse sailings and available seats</span></router-link>
+            <section v-if="pageMode === 'dashboard'" class="panel gate-actions-panel" aria-labelledby="gate-actions-title">
+              <div class="panel-heading">
+                <div><p class="eyebrow">GATE OPERATIONS</p><h2 id="gate-actions-title">Manage passengers</h2></div>
+              </div>
+              <div class="boarding-shortcuts">
+                <router-link :to="operationPath('check-in')"><ion-icon :icon="scanOutline" aria-hidden="true" /><strong>Check-in</strong><span>{{ issuedCount }} awaiting arrival</span><ion-icon class="shortcut-arrow" :icon="arrowForwardOutline" aria-hidden="true" /></router-link>
+                <router-link :to="operationPath('boarding')"><ion-icon :icon="boatOutline" aria-hidden="true" /><strong>Boarding</strong><span>{{ checkedInCount }} ready to board</span><ion-icon class="shortcut-arrow" :icon="arrowForwardOutline" aria-hidden="true" /></router-link>
+                <router-link :to="operationPath('manifest')"><ion-icon :icon="peopleOutline" aria-hidden="true" /><strong>Passenger manifest</strong><span>{{ passengers.length }} paid passenger tickets</span><ion-icon class="shortcut-arrow" :icon="arrowForwardOutline" aria-hidden="true" /></router-link>
+                <router-link to="/staff/boarding/trips"><ion-icon :icon="boatOutline" aria-hidden="true" /><strong>Active trips</strong><span>Sailings and available seats</span><ion-icon class="shortcut-arrow" :icon="arrowForwardOutline" aria-hidden="true" /></router-link>
+              </div>
             </section>
             <div v-else class="workspace-grid">
               <section id="manifest" class="panel manifest-panel">
                 <div class="panel-heading">
                   <div>
-                    <p class="eyebrow">PASSENGER MANIFEST</p>
+                    <p class="eyebrow">{{ pageMode === 'check-in' ? 'ARRIVAL QUEUE' : pageMode === 'boarding' ? 'BOARDING QUEUE' : 'PASSENGER MANIFEST' }}</p>
                     <h2>{{ pageMode === 'check-in' ? 'Passengers awaiting check-in' : pageMode === 'boarding' ? 'Passengers ready to board' : 'Paid passenger tickets' }}</h2>
                     <p>{{ pageMode === 'manifest' ? 'Ticket and attendance records for all paid passengers.' : 'Select a passenger to verify their ticket and record attendance.' }}</p>
                   </div>
@@ -221,7 +231,8 @@
                       :aria-pressed="statusFilter === tab.value"
                       @click="statusFilter = tab.value"
                     >
-                      {{ tab.label }}
+                      {{ pageMode === 'check-in' && tab.value === 'ISSUED' ? 'Awaiting check-in' : pageMode === 'boarding' && tab.value === 'CHECKED_IN' ? 'Ready to board' : tab.label }}
+                      <span class="tab-count">{{ tab.value === 'ALL' ? passengers.length : passengers.filter(person => person.status === tab.value).length }}</span>
                     </button>
                   </div>
                 </div>
@@ -248,6 +259,9 @@
                     Clear filters
                   </button>
                 </div>
+                <div v-else-if="pageMode === 'manifest'" class="manifest-table-scroll" tabindex="0" role="region" aria-label="Passenger manifest records">
+                  <table class="manifest-table"><caption class="sr-only">Paid passenger tickets and attendance for the selected sailing</caption><thead><tr><th scope="col">Passenger</th><th scope="col">Booking / Ticket</th><th scope="col">Accommodation</th><th scope="col">Status</th><th scope="col">Attendance</th></tr></thead><tbody><tr v-for="person in filteredPassengers" :key="person.id"><td data-label="Passenger"><strong>{{ person.name }}</strong><small>{{ person.type }}</small></td><td data-label="Booking / Ticket"><strong>{{ person.reference }}</strong><small class="manifest-ticket-code">{{ person.ticketCode }}</small></td><td data-label="Accommodation">{{ person.accommodationName || 'Standard' }}</td><td data-label="Status"><span class="ticket-status" :class="person.status.toLowerCase().replace('_', '-')">{{ statusLabel(person.status) }}</span></td><td data-label="Attendance"><span v-if="person.boardedAt">Boarded <time :datetime="person.boardedAt">{{ formatDate(person.boardedAt) }}</time></span><span v-else-if="person.checkedInAt">Checked in <time :datetime="person.checkedInAt">{{ formatDate(person.checkedInAt) }}</time></span><span v-else class="attendance-pending">Awaiting arrival</span></td></tr></tbody></table>
+                </div>
                 <div v-else class="passenger-list">
                   <button
                     v-for="person in filteredPassengers"
@@ -269,7 +283,7 @@
                       class="ticket-status"
                       :class="person.status.toLowerCase().replace('_', '-')"
                       >{{ statusLabel(person.status) }}</span
-                    ><ion-icon :icon="ticketOutline" />
+                    ><ion-icon :icon="pageMode === 'manifest' ? ticketOutline : arrowForwardOutline" aria-hidden="true" />
                   </button>
                 </div>
               </section>
@@ -365,18 +379,18 @@
                           : "Mark as boarded"
                     }}
                   </button>
+                  <router-link v-else-if="pageMode === 'boarding' && selectedPassenger.status === 'ISSUED'" class="secondary-button review-action" :to="operationPath('check-in')"><ion-icon :icon="scanOutline" /> Check in this passenger first</router-link>
                   <div v-else class="complete-note">
-                    <ion-icon :icon="checkmarkCircleOutline" /> {{ pageMode === 'check-in' ? 'Arrival already recorded' : 'Boarding already recorded' }}
+                    <ion-icon :icon="informationCircleOutline" /> {{ selectedPassenger.status === 'BOARDED' ? 'Boarding already recorded' : selectedPassenger.status === 'CHECKED_IN' ? 'Arrival already recorded' : 'This ticket is unavailable for gate processing' }}
                   </div></template
                 >
                 <template v-else
                   ><div class="review-placeholder">
                     <span><ion-icon :icon="ticketOutline" /></span>
-                    <h2>Review a ticket</h2>
+                    <p class="eyebrow">TICKET REVIEW</p>
+                    <h2>{{ pageMode === 'boarding' ? 'Review before boarding' : 'Select a passenger' }}</h2>
                     <p>
-                      Choose a passenger from the manifest or scan their QR
-                      code. The ticket status changes only after you confirm the
-                      action here.
+                      {{ pageMode === 'boarding' ? 'Choose a checked-in passenger. Confirm they are boarding the selected vessel before marking them as boarded.' : 'Choose a passenger from the list to review their ticket, or find it using a QR or ticket code.' }}
                     </p>
                     <button
                       class="secondary-button"
@@ -394,17 +408,18 @@
             <section v-if="pageMode === 'dashboard'" id="activity" class="panel activity-panel">
               <div class="panel-heading">
                 <div>
-                  <p class="eyebrow">AUDIT TRAIL</p>
+                  <p class="eyebrow">ACTIVITY LOG</p>
                   <h2>Recent gate activity</h2>
                 </div>
                 <span class="count-pill">{{ events.length }} records</span>
               </div>
-              <div v-if="!events.length" class="empty-state">
+              <div v-if="loading" class="empty-state" role="status">Loading gate activity…</div>
+              <div v-else-if="!events.length" class="empty-state">
                 No check-ins or boarding events recorded for this sailing.
               </div>
-              <div v-else class="activity-list">
+              <div v-else class="activity-list" tabindex="0" role="region" aria-label="Recent check-in and boarding events">
                 <article v-for="event in events" :key="event.id">
-                  <span class="activity-icon"
+                  <span class="activity-icon" :class="{ boarded: event.eventType === 'BOARDED' }"
                     ><ion-icon
                       :icon="
                         event.eventType === 'BOARDED'
@@ -413,13 +428,8 @@
                       "
                   /></span>
                   <div>
-                    <strong
-                      >{{ event.passenger.fullName }}
-                      {{
-                        event.eventType === "BOARDED" ? "boarded" : "checked in"
-                      }}</strong
-                    >
-                    <p>{{ event.passenger.booking.reference }}</p>
+                    <strong>{{ event.passenger.fullName }}</strong>
+                    <p><span class="activity-event" :class="{ boarded: event.eventType === 'BOARDED' }">{{ event.eventType === 'BOARDED' ? 'Boarded' : 'Checked in' }}</span><span>{{ event.passenger.booking.reference }}</span></p>
                   </div>
                   <time :datetime="event.createdAt">{{
                     formatDate(event.createdAt)
@@ -431,7 +441,7 @@
         </div>
       </div>
 
-      <ion-modal :is-open="scannerOpen" @didDismiss="closeScanner"
+      <ion-modal class="ticket-lookup-modal" :is-open="scannerOpen" aria-labelledby="ticket-lookup-title" @didDismiss="closeScanner"
         ><div class="scanner-modal">
           <button
             class="modal-close"
@@ -442,7 +452,7 @@
             <ion-icon :icon="closeOutline" /></button
           ><span class="scanner-icon"><ion-icon :icon="scanOutline" /></span>
           <p class="eyebrow">GATE TICKET LOOKUP</p>
-          <h2>Find a passenger ticket</h2>
+          <h2 id="ticket-lookup-title">Find a passenger ticket</h2>
           <p>
             Scan the QR code or enter the ticket code. You can review the record
             before changing its status.
@@ -462,6 +472,7 @@
           >
             <ion-icon :icon="cameraOutline" /> Scan QR with camera
           </button>
+          <div class="lookup-divider"><span>or enter ticket code</span></div>
           <p v-if="scanError" class="scan-error" role="alert">
             {{ scanError }}
           </p>
@@ -471,6 +482,7 @@
               id="ticket-code"
               v-model.trim="ticketLookup"
               autocomplete="off"
+              :disabled="scanBusy"
               placeholder="Enter or paste ticket code"
             /><button
               class="primary-button"
@@ -488,7 +500,6 @@
 
 <script setup lang="ts">
 import StaffWorkspaceHeader from "../../../components/staff/StaffWorkspaceHeader.vue";
-import StaffLogoutButton from "../../../components/staff/StaffLogoutButton.vue";
 import StaffNavigation from "../../../components/staff/StaffNavigation.vue";
 import { confirmAction } from "../../../composables/confirmation";
 import BoardingProgress from "../../../components/staff/boarding/BoardingProgress.vue";
@@ -555,7 +566,6 @@ const router = useRouter();
 const pageMode = computed(() => String(route.params.section || 'dashboard'));
 const pageDescription = computed(() => ({dashboard: 'Monitor arrival, boarding progress and recent gate activity.', 'check-in': 'Verify issued tickets and record passenger arrival.', boarding: 'Board checked-in passengers when the sailing is ready.', manifest: 'Review the paid passenger list and attendance for this sailing.'})[pageMode.value] || 'Manage gate operations.');
 function operationPath(section: string) { return {path: `/staff/boarding/${section}`, query: selectedSailingCode.value ? {sailing: selectedSailingCode.value} : {}}; }
-const pageTitle = computed(() => ({ 'check-in': 'Check-in', manifest: 'Passenger manifest', boarding: 'Boarding' })[String(route.params.section)] || 'Dashboard');
 const contentRef = ref<InstanceType<typeof IonContent> | null>(null);
 
 const sailings = ref<Sailing[]>([]);
@@ -624,7 +634,7 @@ const filteredPassengers = computed(() =>
 const actionHint = computed(() => {
   if (!selectedPassenger.value) return "";
   if (selectedPassenger.value.status === "ISSUED")
-    return "Confirm the passenger and ticket before checking in. This records their arrival at the gate.";
+    return pageMode.value === 'boarding' ? 'This passenger has not checked in. Record their arrival on the Check-in page before boarding.' : "Confirm the passenger and ticket before checking in. This records their arrival at the gate.";
   if (selectedPassenger.value.status === "CHECKED_IN")
     return selectedSailing.value?.status === "BOARDING"
       ? "Confirm the passenger is boarding this vessel before recording it."
@@ -2374,13 +2384,185 @@ input:focus-visible {
 @media (max-width: 800px) { .boarding-shortcuts { grid-template-columns: minmax(0, 1fr); gap: 10px; } }
 
 
-/* Align overview totals and shortcuts on the same four-column grid. */
-.boarding-dashboard .stats, .boarding-dashboard .boarding-shortcuts { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
-.boarding-dashboard .stats article, .boarding-dashboard .boarding-shortcuts a { box-sizing: border-box; height: 112px; min-height: 112px; padding: 14px; border-radius: 12px; }
-.boarding-dashboard .boarding-shortcuts a { grid-template-columns: 28px minmax(0, 1fr); align-content: center; gap: 5px 9px; }
-.boarding-dashboard .boarding-shortcuts ion-icon { font-size: 22px; align-self: center; }
-.boarding-dashboard .boarding-shortcuts strong { font-size: 13px; line-height: 1.4; }
-.boarding-dashboard .boarding-shortcuts span { font-size: 11px; line-height: 1.5; }
-@media (max-width: 1050px) { .boarding-dashboard .stats, .boarding-dashboard .boarding-shortcuts { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; } }
+.gate-stage { display: flex; align-items: center; gap: 16px; padding: 20px; margin: 20px 0; border: 1px solid var(--line); border-left: 3px solid var(--ocean); border-radius: 12px; background: var(--surface); }
+.stage-icon { display: grid; place-items: center; width: 42px; height: 42px; border-radius: 11px; background: var(--light-blue); color: var(--ocean); font-size: 24px; flex: none; }
+.gate-stage > div { flex: 1; min-width: 0; }
+.gate-stage h2 { font-size: 18px; line-height: 1.4; margin: 5px 0 7px; }
+.gate-stage > div > p:last-child { font-size: 12px; line-height: 1.7; margin: 0; color: var(--muted); }
+.gate-stage a { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; font-size: 12px; color: var(--ocean); text-decoration: none; white-space: nowrap; }
+.boarding-boarding .gate-stage { border-left-color: #a78bfa; }
+.boarding-boarding .stage-icon { color: #7c3aed; background: #f3edff; }
+:global(:root[data-theme="dark"]) .boarding-boarding .stage-icon { color: #c4b5fd; background: #30234e; }
+.boarding-boarding .workspace-grid { grid-template-columns: minmax(0, 1.45fr) minmax(300px, 1fr); gap: 20px; align-items: start; }
+.boarding-boarding .panel, .boarding-manifest .panel { padding: 20px; border-radius: 14px; }
+.boarding-boarding .manifest-tools { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; margin: 20px 0 16px; }
+.boarding-boarding .status-tabs { width: 100%; max-width: none; }
+.boarding-boarding .status-tabs button, .boarding-manifest .status-tabs button { display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 42px; font-size: 12px; }
+.boarding-boarding .search-field input, .boarding-manifest .search-field input { height: 46px; font-size: 13px; }
+.boarding-boarding .passenger-row { min-height: 78px; padding: 14px; gap: 12px; border: 1px solid var(--line); background: var(--surface-soft); }
+.boarding-boarding .passenger-row.selected, .boarding-boarding .passenger-row:hover { border-color: var(--ocean); background: var(--light-blue); }
+.boarding-boarding .passenger-main strong { font-size: 14px; }
+.boarding-boarding .passenger-main small { font-size: 11px; margin-top: 4px; }
+.boarding-boarding .review-panel { position: sticky; top: 20px; }
+.boarding-boarding .review-placeholder { min-height: 280px; padding: 24px 8px; }
+.boarding-boarding .review-placeholder .eyebrow { color: var(--ocean); margin: 18px 0 8px; font-size: 10px; }
+.boarding-boarding .review-placeholder p:not(.eyebrow), .boarding-boarding .review-help { font-size: 13px; line-height: 1.7; }
+.boarding-boarding .details dd { font-size: 13px; line-height: 1.6; overflow-wrap: anywhere; }
+.review-action { text-decoration: none; }
+.boarding-shell .ticket-status.issued { color: #1d4ed8; background: #eff6ff; }
+.boarding-shell .ticket-status.checked-in { color: #6d28d9; background: #f5f3ff; }
+.boarding-shell .ticket-status.boarded { color: #166534; background: #f0fdf4; }
+:global(:root[data-theme="dark"]) .boarding-shell .ticket-status.issued { color: #93c5fd; background: #172e4d; }
+:global(:root[data-theme="dark"]) .boarding-shell .ticket-status.checked-in { color: #c4b5fd; background: #30234e; }
+:global(:root[data-theme="dark"]) .boarding-shell .ticket-status.boarded { color: #86efac; background: #18382b; }
+.manifest-table-scroll { max-height: 540px; overflow: auto; margin-top: 18px; border: 1px solid var(--line); border-radius: 10px; scrollbar-width: thin; }
+.manifest-table { width: 100%; border-collapse: separate; border-spacing: 0; text-align: left; font-size: 12px; }
+.manifest-table th { position: sticky; top: 0; background: var(--surface-soft); border-bottom: 1px solid var(--line); padding: 12px 14px; font-size: 10px; color: var(--muted); letter-spacing: .5px; text-transform: uppercase; white-space: nowrap; }
+.manifest-table td { padding: 16px 14px; border-bottom: 1px solid var(--line); line-height: 1.6; vertical-align: middle; }
+.manifest-table tr:last-child td { border-bottom: 0; }
+.manifest-table tbody tr:hover { background: var(--surface-soft); }
+.manifest-table td > strong { font-size: 13px; }
+.manifest-table small, .manifest-table time { display: block; font-size: 11px; color: var(--muted); margin-top: 4px; }
+.manifest-ticket-code { overflow-wrap: anywhere; max-width: 180px; }
+.attendance-pending { color: var(--muted); }
+.manifest-table .ticket-status { font-size: 11px; white-space: nowrap; }
+.manifest-table-scroll:focus-visible, .gate-stage a:focus-visible { outline: 2px solid var(--ocean); outline-offset: 3px; }
+@media (max-width: 1100px) { .boarding-boarding .workspace-grid { grid-template-columns: minmax(0, 1fr); }.boarding-boarding .review-panel { position: static; } }
+@media (max-width: 700px) {
+  .gate-stage { flex-wrap: wrap; padding: 16px; gap: 12px; }.gate-stage a { margin-left: 54px; }
+  .manifest-table-scroll { max-height: none; }
+  .manifest-table, .manifest-table tbody { display: block; }
+  .manifest-table thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+  .manifest-table tr { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; padding: 16px; border-bottom: 1px solid var(--line); }
+  .manifest-table td { display: block; border: 0; padding: 0; min-width: 0; overflow-wrap: anywhere; }
+  .manifest-table td::before { content: attr(data-label); display: block; color: var(--muted); font-size: 10px; margin-bottom: 4px; }
+  .manifest-table td:first-child { grid-column: 1 / -1; }
+  .boarding-manifest .status-tabs { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+/* Check-in keeps ticket selection and review together. */
+.boarding-check-in .sailing-card { display: grid; grid-template-columns: minmax(0, 1fr) minmax(280px, .85fr); gap: 20px 24px; padding: 22px; }
+.boarding-check-in .sailing-copy h2 { font-size: 20px; flex-wrap: wrap; line-height: 1.4; }
+.boarding-check-in .sailing-copy p:last-child { font-size: 12px; line-height: 1.6; }
+.boarding-check-in .sailing-control { min-width: 0; max-width: none; width: 100%; grid-template-columns: minmax(0, 1fr) auto; }
+.boarding-check-in .sailing-control select { min-height: 44px; font-size: 12px; }
+.boarding-shell .sailing-card > .boarding-progress { flex-basis: 100%; grid-column: 1 / -1; margin: 0; padding-top: 16px; border-top: 1px solid var(--line); font-size: 12px; }
+.boarding-boarding .sailing-card, .boarding-manifest .sailing-card { flex-wrap: wrap; }
+.boarding-check-in .workspace-grid { grid-template-columns: minmax(0, 1.45fr) minmax(300px, 1fr); gap: 20px; margin-top: 20px; align-items: start; }
+.boarding-check-in .panel { padding: 20px; border-radius: 14px; }
+.boarding-check-in .panel-heading h2 { font-size: 19px; line-height: 1.4; }
+.boarding-check-in .panel-heading p:last-child { font-size: 12px; }
+.boarding-check-in .manifest-tools { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; margin: 20px 0 16px; }
+.boarding-check-in .search-field input { height: 46px; font-size: 13px; }
+.boarding-check-in .status-tabs { max-width: none; width: 100%; }
+.boarding-check-in .status-tabs button { display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 42px; font-size: 12px; }
+.tab-count { display: inline-grid; place-items: center; min-width: 22px; min-height: 22px; padding: 0 5px; border-radius: 6px; background: var(--surface); color: var(--muted); font-size: 11px; font-variant-numeric: tabular-nums; }
+.boarding-check-in .status-tabs button.active .tab-count { color: var(--ocean); }
+.boarding-check-in .passenger-list { gap: 10px; }
+.boarding-check-in .passenger-row { grid-template-columns: 38px minmax(0, 1fr) auto 18px; min-height: 78px; padding: 14px; gap: 12px; border: 1px solid var(--line); background: var(--surface-soft); }
+.boarding-check-in .passenger-row.selected, .boarding-check-in .passenger-row:hover { border-color: var(--ocean); background: var(--light-blue); }
+.boarding-check-in .passenger-row .avatar { width: 38px; height: 38px; font-size: 12px; }
+.boarding-check-in .passenger-main strong { font-size: 14px; line-height: 1.5; }
+.boarding-check-in .passenger-main small { font-size: 11px; margin-top: 4px; }
+.boarding-check-in .ticket-status { font-size: 11px; padding: 5px 8px; }
+.boarding-check-in .ticket-status.issued { background: var(--light-blue); color: var(--ocean); }
+.boarding-check-in .review-panel { position: sticky; top: 20px; }
+.boarding-check-in .review-placeholder { min-height: 280px; padding: 24px 8px; }
+.boarding-check-in .review-placeholder .eyebrow { color: var(--ocean); margin: 18px 0 8px; font-size: 10px; }
+.boarding-check-in .review-placeholder h2 { font-size: 20px; margin: 0 0 10px; }
+.boarding-check-in .review-placeholder p:not(.eyebrow) { max-width: 290px; font-size: 13px; line-height: 1.7; }
+.boarding-check-in .review-identity strong { font-size: 16px; line-height: 1.5; }
+.boarding-check-in .details { margin: 20px 0; }
+.boarding-check-in .details dt { font-size: 11px; }
+.boarding-check-in .details dd { font-size: 13px; line-height: 1.6; overflow-wrap: anywhere; }
+.boarding-check-in .review-help { font-size: 12px; line-height: 1.7; }
+.ticket-lookup-modal { --width: 480px; --height: auto; --max-height: calc(100dvh - 40px); --border-radius: 16px; --background: var(--surface); --backdrop-opacity: .55; }
+.ticket-lookup-modal .scanner-modal { width: 100%; max-height: calc(100dvh - 40px); box-sizing: border-box; margin: 0; padding: 28px; border-radius: 0; box-shadow: none; }
+.ticket-lookup-modal .modal-close { display: grid; place-items: center; width: 36px; height: 36px; border-radius: 8px; }
+.ticket-lookup-modal .modal-close:hover { background: var(--surface-soft); color: var(--ink); }
+.ticket-lookup-modal .scanner-modal h2 { font-size: 22px; line-height: 1.4; margin: 8px 0 10px; }
+.ticket-lookup-modal .scanner-modal > p:not(.eyebrow):not(.scan-error) { font-size: 13px; line-height: 1.7; margin-bottom: 20px; }
+.ticket-lookup-modal .camera-button, .ticket-lookup-modal .scanner-modal form button { min-height: 46px; font-size: 13px; }
+.lookup-divider { display: flex; align-items: center; gap: 12px; margin: 20px 0; color: var(--muted); font-size: 11px; }
+.lookup-divider::before, .lookup-divider::after { content: ''; flex: 1; height: 1px; background: var(--line); }
+.ticket-lookup-modal .scanner-modal form { margin: 0; gap: 10px; }
+.ticket-lookup-modal .scanner-modal form label { font-size: 12px; }
+.ticket-lookup-modal .scanner-modal form input { min-height: 46px; font-family: inherit; font-size: 14px; font-weight: 400; }
+.ticket-lookup-modal .scan-error { padding: 12px; border: 1px solid var(--line); border-radius: 8px; color: var(--ink); background: var(--surface-soft); font-size: 12px; line-height: 1.6; }
+@media (max-width: 1100px) {
+  .boarding-check-in .sailing-card { grid-template-columns: minmax(0, 1fr); }
+  .boarding-check-in .workspace-grid { grid-template-columns: minmax(0, 1fr); }
+  .boarding-check-in .review-panel { position: static; }
+}
+@media (max-width: 580px) {
+  .boarding-check-in .panel, .boarding-check-in .sailing-card { padding: 16px; }
+  .boarding-check-in .sailing-copy h2 { font-size: 17px; }
+  .boarding-check-in .passenger-row { grid-template-columns: 32px minmax(0, 1fr) 18px; gap: 5px 10px; }
+  .boarding-check-in .passenger-row .avatar { width: 32px; height: 32px; grid-row: 1 / 3; }
+  .boarding-check-in .passenger-row .ticket-status { grid-column: 2; justify-self: start; }
+  .boarding-check-in .passenger-row > ion-icon { grid-column: 3; grid-row: 1 / 3; }
+  .boarding-check-in .status-tabs button { font-size: 11px; gap: 5px; }
+  .ticket-lookup-modal { --width: calc(100vw - 24px); --max-height: calc(100dvh - 24px); }
+  .ticket-lookup-modal .scanner-modal { padding: 24px 20px; max-height: calc(100dvh - 24px); }
+}
+
+/* Keep the sailing summary above actions and the activity log. */
+.boarding-dashboard .content { display: grid; grid-template-columns: minmax(280px, .8fr) minmax(0, 1.2fr); gap: 20px; align-items: start; }
+.boarding-dashboard .content > * { grid-column: 1 / -1; min-width: 0; margin: 0; }
+.boarding-dashboard .page-heading { align-items: center; }
+.boarding-dashboard .page-heading > div > p:last-child { font-size: 13px; }
+.boarding-dashboard .sailing-card { display: grid; grid-template-columns: minmax(0, 1fr) minmax(280px, .85fr); gap: 20px 24px; padding: 22px; border-radius: 14px; }
+.boarding-dashboard .sailing-icon { width: 44px; height: 44px; font-size: 24px; }
+.boarding-dashboard .sailing-copy h2 { font-size: 20px; line-height: 1.4; flex-wrap: wrap; }
+.boarding-dashboard .sailing-copy p:last-child { font-size: 12px; line-height: 1.6; }
+.boarding-dashboard .sailing-control { width: 100%; min-width: 0; max-width: none; grid-template-columns: minmax(0, 1fr) auto; }
+.boarding-dashboard .sailing-control label { font-size: 12px; }
+.boarding-dashboard .sailing-control select { min-height: 44px; font-family: inherit; font-size: 12px; }
+.boarding-dashboard .sailing-card > .boarding-progress { grid-column: 1 / -1; margin: 0; padding-top: 18px; border-top: 1px solid var(--line); font-size: 12px; }
+.boarding-dashboard .stats { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+.boarding-dashboard .stats article { min-height: 106px; padding: 18px 16px; align-items: center; gap: 12px; }
+.boarding-dashboard .stats strong { font-size: 30px; line-height: 1.2; margin: 5px 0; }
+.boarding-dashboard .stats small { font-size: 10px; letter-spacing: .6px; line-height: 1.5; }
+.boarding-dashboard .stats p { display: block; font-size: 11px; line-height: 1.5; }
+.boarding-dashboard .stat-icon { width: 38px; height: 38px; font-size: 21px; }
+.boarding-dashboard .gate-actions-panel { grid-column: 1; padding: 20px; }
+.boarding-dashboard .activity-panel { grid-column: 2; padding: 20px; }
+.boarding-dashboard .panel-heading h2 { font-size: 19px; line-height: 1.4; }
+.boarding-dashboard .boarding-shortcuts { grid-template-columns: minmax(0, 1fr); gap: 10px; margin: 18px 0 0; }
+.boarding-dashboard .boarding-shortcuts a { grid-template-columns: 36px minmax(0, 1fr) 18px; gap: 4px 12px; align-items: center; padding: 14px; background: var(--surface-soft); transition: border-color .15s, background .15s; }
+.boarding-dashboard .boarding-shortcuts a:hover { border-color: var(--ocean); background: var(--light-blue); }
+.boarding-dashboard .boarding-shortcuts a:focus-visible, .boarding-dashboard .activity-list:focus-visible { outline: 2px solid var(--ocean); outline-offset: 3px; }
+.boarding-dashboard .boarding-shortcuts ion-icon { font-size: 23px; grid-column: 1; grid-row: 1 / 3; }
+.boarding-dashboard .boarding-shortcuts strong { grid-column: 2; font-size: 14px; line-height: 1.4; }
+.boarding-dashboard .boarding-shortcuts span { grid-column: 2; font-size: 12px; line-height: 1.5; }
+.boarding-dashboard .boarding-shortcuts .shortcut-arrow { grid-column: 3; grid-row: 1 / 3; font-size: 17px; color: var(--muted); }
+.boarding-dashboard .activity-list { max-height: 350px; overflow-y: auto; margin-top: 18px; scrollbar-width: thin; scrollbar-color: var(--line) transparent; }
+.boarding-dashboard .activity-list article { display: grid; grid-template-columns: 36px minmax(0, 1fr) auto; gap: 12px; padding: 14px 0; }
+.boarding-dashboard .activity-list article:first-child { margin-top: 0; }
+.boarding-dashboard .activity-list strong { font-size: 13px; line-height: 1.5; overflow-wrap: anywhere; }
+.boarding-dashboard .activity-list p { display: flex; flex-wrap: wrap; align-items: center; gap: 7px; font-size: 11px; line-height: 1.5; margin-top: 5px; }
+.boarding-dashboard .activity-list time { font-size: 11px; line-height: 1.5; text-align: right; }
+.boarding-dashboard .activity-event { color: var(--ocean); background: var(--light-blue); border-radius: 5px; padding: 2px 6px; font-weight: 600; }
+.boarding-dashboard .activity-icon.boarded, .boarding-dashboard .activity-event.boarded { color: #146f53; background: #e8f6ef; }
+:global(:root[data-theme="dark"]) .boarding-dashboard .activity-icon.boarded,
+:global(:root[data-theme="dark"]) .boarding-dashboard .activity-event.boarded { color: #75dcc0; background: #173b35; }
+@media (max-width: 1100px) {
+  .boarding-dashboard .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .boarding-dashboard .sailing-card { grid-template-columns: minmax(0, 1fr); }
+  .boarding-dashboard .content { grid-template-columns: minmax(0, 1fr); }
+  .boarding-dashboard .gate-actions-panel, .boarding-dashboard .activity-panel { grid-column: 1; }
+  .boarding-dashboard .boarding-shortcuts { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 580px) {
+  .boarding-dashboard .content { gap: 16px; }
+  .boarding-dashboard .sailing-card, .boarding-dashboard .gate-actions-panel, .boarding-dashboard .activity-panel { padding: 16px; }
+  .boarding-dashboard .sailing-copy h2 { font-size: 17px; }
+  .boarding-dashboard .stats { gap: 10px; }
+  .boarding-dashboard .stats article { padding: 14px; flex-direction: column; align-items: flex-start; gap: 10px; }
+  .boarding-dashboard .boarding-shortcuts { grid-template-columns: minmax(0, 1fr); }
+  .boarding-dashboard .activity-list article { grid-template-columns: 32px minmax(0, 1fr); gap: 4px 10px; }
+  .boarding-dashboard .activity-icon { grid-row: 1 / 3; width: 32px; height: 32px; }
+  .boarding-dashboard .activity-list time { grid-column: 2; text-align: left; white-space: normal; }
+}
 
 </style>

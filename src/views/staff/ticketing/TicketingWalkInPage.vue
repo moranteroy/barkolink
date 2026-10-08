@@ -1,8 +1,16 @@
 <template>
   <ion-page>
     <ion-content :fullscreen="true">
-      <main class="walk-in-page">
-        <StaffWorkspaceHeader title="Walk-in booking" />
+      <div class="staff-shell design-workspace walk-in-workspace">
+        <button v-if="menuOpen" class="staff-scrim" aria-label="Close navigation" @click="menuOpen = false"></button>
+        <aside id="staff-sidebar" class="staff-sidebar" :class="{ 'mobile-open': menuOpen }" @keydown.esc="menuOpen = false">
+          <BrandMark />
+          <StaffNavigation role="ticketing" @navigate="menuOpen = false" />
+
+        </aside>
+        <section class="staff-main">
+          <StaffWorkspaceHeader navigation :menu-open="menuOpen" @toggle-menu="menuOpen = !menuOpen" />
+          <main class="walk-in-page">
         <router-link class="back-to-ticketing" to="/staff/ticketing">
           <ion-icon :icon="gridOutline" aria-hidden="true" />
           Back to ticketing
@@ -358,11 +366,15 @@
           </DialogOverlay>
         </DialogRoot>
       </main>
+        </section>
+      </div>
     </ion-content>
   </ion-page>
 </template>
 
 <script setup lang="ts">
+import BrandMark from "../../../components/shared/BrandMark.vue";
+import StaffNavigation from "../../../components/staff/StaffNavigation.vue";
 import StaffWorkspaceHeader from "../../../components/staff/StaffWorkspaceHeader.vue";
 import {
   passengerFare,
@@ -447,6 +459,7 @@ const loadingSailings = ref(false);
 const errorMessage = ref("");
 const issued = ref<Receipt | null>(null);
 type SaleIntent = { ownerUid: string; args: TicketingCreateGuestWalkInVariables; receipt: Receipt };
+const menuOpen = ref(false);
 const saleKey = "barkolink-pending-walk-in";
 const pendingSale = ref<SaleIntent | null>(null);
 try {
@@ -1482,4 +1495,44 @@ function printReceipt() {
 }
 @media print { .walk-in-page > :deep(.staff-workspace-header), .back-to-ticketing, .mobile-fare { display: none; } }
 
+</style>
+
+<style scoped>
+.staff-shell { min-height: 100dvh; background: var(--cloud); color: var(--ink); }
+.staff-sidebar { position: fixed; inset: 0 auto 0 0; width: 235px; box-sizing: border-box; display: flex; flex-direction: column; padding: 26px 16px; z-index: 20; }
+.staff-sidebar :deep(.brand-copy strong) { color: white; }
+.staff-sidebar :deep(.brand-copy small) { color: #8eb8cc; }
+.staff-sidebar :deep(.staff-navigation) { flex: 1; min-height: 0; overflow-y: auto; margin-top: 22px; }
+.staff-main { margin-left: 235px; min-width: 0; }
+.staff-scrim { display: none; }
+.walk-in-page { max-width: 1240px; padding: 20px 28px 40px; }
+.back-to-ticketing { display: none; }
+.page-intro { margin-top: 0; }
+.walk-in-layout { grid-template-columns: minmax(0, 1fr) 280px; gap: 16px; }
+.form-section { padding: 16px 18px; }
+.form-grid { gap: 12px; }
+.field input, .field select { height: auto; min-height: 44px; }
+.fare-summary { top: 16px; }
+@supports (appearance: base-select) { .field select { display: flex; align-items: center; } }
+@media (max-width: 1100px) {
+ .walk-in-layout { grid-template-columns: minmax(0, 1fr); }
+ .fare-summary { position: static; }
+}
+@media (max-width: 800px) {
+ .staff-main { margin-left: 0; }
+ .staff-sidebar { display: none; }
+ .staff-sidebar.mobile-open { display: flex; width: min(84vw, 300px); z-index: 31; box-shadow: 12px 0 36px #020b1880; }
+ .staff-scrim { display: block; position: fixed; inset: 0; width: 100%; height: 100%; z-index: 30; border: 0; background: #061222a8; }
+ .walk-in-page { padding: 18px 16px 32px; }
+}
+@media (max-width: 480px) {
+ .form-grid { grid-template-columns: minmax(0, 1fr); }
+ .page-intro h1 { font-size: 25px; }
+ .form-section { padding: 16px; }
+}
+@media print {
+ .staff-sidebar, .staff-scrim, .staff-main > :deep(.staff-workspace-header) { display: none !important; }
+ .staff-main { margin-left: 0; }
+ .walk-in-page { max-width: none; padding: 0; }
+}
 </style>

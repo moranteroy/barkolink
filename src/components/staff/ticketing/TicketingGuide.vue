@@ -2,9 +2,11 @@
   <aside class="panel shift-panel ticketing-guide">
     <p class="kicker">AT THE COUNTER</p>
     <h2>Ticketing steps</h2>
+    <p class="guide-intro">A quick guide for every passenger transaction.</p>
     <ol>
       <li><strong>Check the reservation</strong><span>Confirm the sailing, passengers and discount eligibility.</span></li>
       <li><strong>Record cash payment</strong><span>Receive cash, then confirm payment to issue the tickets.</span></li>
+      <li><strong>Verify online payments</strong><span>Review received online payments before issuing the e-ticket. Do not collect cash again.</span></li>
       <li>
         <strong>Assist walk-in passengers</strong><span>Create a walk-in ticket and print the receipt for passengers without an account.</span>
       </li>
@@ -36,6 +38,11 @@ import { ticketOutline } from "ionicons/icons";
 h2 {
   margin-bottom: 12px;
 }
+.ticketing-guide { border-radius: 18px; padding: 22px; }
+h2 { margin: 8px 0; font-size: 21px; line-height: 1.5; }
+.guide-intro { margin: 0 0 20px; font-size: 12px; color: var(--muted); line-height: 1.7; }
+.walk-in-link { min-height: 46px; font-size: 12px; font-weight: 600; background: var(--action); }
+.walk-in-link:focus-visible { outline: 2px solid var(--ocean); outline-offset: 3px; }
 ol {
   display: grid;
   gap: 14px;
