@@ -1,18 +1,18 @@
 <template>
-  <section class="manifest-export" :class="{ 'workspace-export': sailingCode }" aria-labelledby="manifest-export-title">
+  <section class="manifest-export" :class="{ 'workspace-export': sailingCode || externalSelection }" aria-labelledby="manifest-export-title">
     <div class="export-heading">
       <span class="export-symbol"><FileText aria-hidden="true" /></span>
       <div>
       <p class="eyebrow">CSV DOWNLOAD</p>
       <h2 id="manifest-export-title">Passenger manifest export</h2>
       <p>
-        {{ sailingCode ? `Sailing ${sailingCode}.` : 'Choose a sailing below.' }} CSV includes all
+        {{ sailingCode ? `Sailing ${sailingCode}.` : externalSelection ? 'Choose a sailing in the filters below.' : 'Choose a sailing below.' }} CSV includes all
         passengers on paid, confirmed reservations.
       </p>
       </div>
     </div>
     <div class="export-controls">
-      <label v-if="!sailingCode" for="export-manifest-sailing"
+      <label v-if="!sailingCode && !externalSelection" for="export-manifest-sailing"
         >Sailing<select
           id="export-manifest-sailing"
           v-model="selected"
@@ -48,6 +48,7 @@ import { ticketRequestError } from "../../data/ticketActions";
 const props = defineProps<{
   sailings: Pick<ReportSailing, "code" | "origin" | "destination" | "vessel">[];
   sailingCode?: string;
+  externalSelection?: boolean;
 }>();
 const selected = ref(""),
   exporting = ref(false),
@@ -153,10 +154,10 @@ async function exportManifest() {
 </script>
 <style scoped>
 .manifest-export {
-  padding: 22px;
+  padding: 14px 16px;
   background: var(--surface);
   border: 1px solid var(--line);
-  border-radius: 16px;
+  border-radius: 14px;
   color: var(--ink);
 }
 .workspace-export { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 14px; padding: 16px 18px; border-radius: 12px; }
@@ -165,7 +166,7 @@ async function exportManifest() {
 .workspace-export > p { grid-column: 1 / -1; margin: 0; }
 .workspace-export button { font-size: 12px; min-height: 40px; padding: 10px 14px; }
 h2 {
-  font-size: 18px;
+  font-size: 17px;
   margin: 0 0 10px;
 }
 p {
@@ -176,7 +177,7 @@ p {
 }
 .export-controls {
   display: flex;
-  gap: 16px;
+  gap: 12px;
   align-items: flex-end;
 }
 label {
@@ -189,12 +190,12 @@ label {
 }
 select {
   width: 100%;
-  padding: 10px;
+  padding: 8px 12px;
   border: 1px solid var(--line);
   border-radius: 8px;
   background: var(--surface);
   color: var(--ink);
-  min-height: 44px;
+  min-height: 40px;
   font: inherit;
   font-size: 12px;
   background: var(--surface-soft);
@@ -204,12 +205,12 @@ button {
   align-items: center;
   justify-content: center;
   gap: 8px;
-  min-height: 44px;
+  min-height: 40px;
   background: #246fba;
   color: white;
   border: 0;
   border-radius: 8px;
-  padding: 12px 18px;
+  padding: 9px 14px;
   white-space: nowrap;
   cursor: pointer;
   font-weight: 600;
@@ -224,9 +225,9 @@ button:disabled {
 .manifest-export > p {
   margin: 14px 0 0;
 }
-.export-heading { display: flex; align-items: flex-start; gap: 14px; margin-bottom: 18px; }
+.export-heading { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 12px; }
 .export-heading p:last-child { margin-bottom: 0; }
-.export-symbol { display: grid; place-items: center; width: 44px; height: 44px; flex: none; border-radius: 12px; background: var(--light-blue); color: var(--ocean); }
+.export-symbol { display: grid; place-items: center; width: 36px; height: 36px; flex: none; border-radius: 10px; background: var(--light-blue); color: var(--ocean); }
 .export-symbol svg { width: 23px; height: 23px; }
 .export-heading .eyebrow { margin: 0 0 6px; color: var(--ocean); font-size: 10px; font-weight: 800; letter-spacing: .1em; }
 .export-heading h2 { margin-bottom: 6px; }
@@ -241,5 +242,7 @@ button:focus-visible, select:focus-visible { outline: 2px solid var(--ocean); ou
   .manifest-export {
     padding: 16px;
   }
+  select { min-height: 44px; font-size: 16px; }
+  button { min-height: 44px; }
 }
 </style>

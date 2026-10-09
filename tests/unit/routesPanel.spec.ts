@@ -8,6 +8,10 @@ vi.mock('../../src/services/database/workspaces', () => ({ routes: mocks.routes,
 vi.mock('../../src/services/database/staff', () => ({ adminPorts: mocks.ports }));
 vi.mock('../../src/composables/unsavedChanges', () => ({ useUnsavedChanges: vi.fn() }));
 vi.mock('../../src/composables/confirmation', () => ({ confirmAction: mocks.confirm }));
+vi.mock('../../src/components/shared/RecordsGrid.vue', () => ({ default: {
+  props: ['rows', 'columns', 'density', 'maxGridHeight', 'actionWidth'],
+  template: '<div class="records-grid"><div v-for="row in rows" :key="row.key" class="test-grid-row"><slot name="cell" v-for="(value, index) in row.cells" :row="row" :value="value" :index="index" /><slot name="actions" :row="row" /></div></div>',
+} }));
 vi.mock('@ionic/vue', () => ({
   IonIcon: { template: '<span />' },
   IonModal: { props: ['isOpen', 'canDismiss'], template: '<div v-if="isOpen" role="dialog"><slot /></div>' },
@@ -79,10 +83,10 @@ describe('route directory and modal', () => {
     const wrapper = mount(RoutesPanel, { global: { stubs: { RouterLink: true } } });
     await flushPromises();
     await wrapper.find('#route-filter-status').setValue('INACTIVE');
-    expect(wrapper.findAll('tbody tr')).toHaveLength(1);
-    expect(wrapper.find('tbody').text()).toContain('CAL-BTG');
+    expect(wrapper.findAll('.test-grid-row')).toHaveLength(1);
+    expect(wrapper.find('.records-grid').text()).toContain('CAL-BTG');
     await wrapper.findAll('button').find(button => button.text() === 'Reset filters')!.trigger('click');
-    expect(wrapper.findAll('tbody tr')).toHaveLength(2);
+    expect(wrapper.findAll('.test-grid-row')).toHaveLength(2);
     wrapper.unmount();
   });
 });

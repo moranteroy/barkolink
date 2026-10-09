@@ -33,7 +33,7 @@
     </div>
     <p v-if="error" role="alert" class="catalog-error">{{ error }}</p>
     <p v-if="notice" role="status" class="no-show-notice">{{ notice }}</p>
-    <div class="catalog-tools no-show-search">
+    <div v-if="code" class="catalog-tools no-show-search">
       <label class="no-show-search-label" for="no-show-search">Search passengers<div class="no-show-search-input"><IonIcon :icon="searchOutline" aria-hidden="true" /><input
         id="no-show-search"
         v-model.trim="search"
@@ -46,60 +46,20 @@
         marked</span
       >
     </div>
-    <div class="no-show-counts" aria-label="Attendance totals"><div><span class="count-icon"><IonIcon :icon="peopleOutline" aria-hidden="true" /></span><div><span>Passengers not boarded</span><strong>{{ rows.length }}</strong></div></div><div class="pending-count"><span class="count-icon"><IonIcon :icon="timeOutline" aria-hidden="true" /></span><div><span>Not yet recorded</span><strong>{{ eligibleCount }}</strong></div></div><div class="recorded-count"><span class="count-icon"><IonIcon :icon="checkmarkCircleOutline" aria-hidden="true" /></span><div><span>No-shows recorded</span><strong>{{ rows.filter(p => p.noShow).length }}</strong></div></div></div>
+    <div v-if="code && !loading" class="no-show-counts" aria-label="Attendance totals"><div><span class="count-icon"><IonIcon :icon="peopleOutline" aria-hidden="true" /></span><div><span>Not boarded</span><strong>{{ rows.length }}</strong></div></div><div class="pending-count"><span class="count-icon"><IonIcon :icon="timeOutline" aria-hidden="true" /></span><div><span>Not yet recorded</span><strong>{{ eligibleCount }}</strong></div></div><div class="recorded-count"><span class="count-icon"><IonIcon :icon="checkmarkCircleOutline" aria-hidden="true" /></span><div><span>No-shows recorded</span><strong>{{ rows.filter(p => p.noShow).length }}</strong></div></div></div>
     <div v-if="loading" class="no-show-empty" role="status">Loading passenger attendance…</div>
     <div v-else-if="!visible.length && !error" class="no-show-empty" role="status"><span class="no-show-empty-symbol"><IonIcon :icon="code && !search ? checkmarkCircleOutline : personRemoveOutline" aria-hidden="true" /></span><strong>{{ search ? 'No matching passengers' : code ? 'No passengers to record' : 'Choose a completed trip' }}</strong><p>{{ search ? 'Try another passenger name or booking reference.' : code ? 'No non-boarded paid passengers were found for this completed sailing.' : 'Select a completed sailing to review attendance.' }}</p></div>
     <div v-else-if="visible.length" class="catalog-table">
       <div class="no-show-table-heading"><p class="eyebrow">PASSENGER ATTENDANCE</p><h2>Passengers who did not board</h2></div>
-      <div class="no-show-table-scroll" tabindex="0" role="region" aria-label="Passenger no-show records"><table>
-        <caption class="sr-only">Attendance review for paid passengers who did not board the selected completed sailing</caption>
-        <thead>
-          <tr>
-            <th scope="col">Passenger</th>
-            <th scope="col">Booking</th>
-            <th scope="col">Accommodation</th>
-            <th scope="col">Ticket</th>
-            <th scope="col">Attendance</th>
-            <th scope="col">Action</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="p in visible" :key="p.id">
-            <td data-label="Passenger"><strong>{{ p.fullName }}</strong></td>
-            <td data-label="Booking">{{ p.booking.reference }}</td>
-            <td data-label="Accommodation">
-              {{ p.booking.accommodationName || "Standard" }}
-            </td>
-            <td data-label="Ticket"><Badge :variant="p.ticketStatus === 'CHECKED_IN' ? 'success' : 'default'">{{ humanize(p.ticketStatus) }}</Badge></td>
-            <td data-label="Attendance">
-              <Badge :variant="p.noShow ? 'destructive' : 'warning'">{{
-                p.noShow ? "No-show recorded" : "Did not board"
-              }}</Badge>
-            </td>
-            <td data-label="Action">
-              <button
-                v-if="!p.noShow"
-                :disabled="busy || loading || sailing?.status !== 'COMPLETED'"
-                :aria-label="`Mark ${p.fullName} as no-show`"
-                @click="mark(p.id)"
-              >
-                Mark no-show</button
-              ><span v-else class="attendance-recorded"><IonIcon :icon="checkmarkCircleOutline" aria-hidden="true" /> Recorded</span>
-            </td>
-          </tr>
-          <tr v-if="!visible.length">
-            <td colspan="6">
-              {{
-                loading
-                  ? "Loading passengers…"
-                  : code
-                    ? "No matching non-boarded passengers."
-                    : "Choose a completed trip."
-              }}
-            </td>
-          </tr>
-        </tbody>
-      </table></div>
+      <RecordsGrid title="Passenger no-show records" :columns="['Passenger', 'Booking', 'Accommodation', 'Ticket', 'Attendance']" :rows="gridRows" density="compact" :column-min-widths="[150, 145, 130, 105, 145]" :action-width="135" :max-grid-height="360">
+        <template #cell="{ row, index, value }">
+          <strong v-if="index === 0">{{ value }}</strong>
+          <Badge v-else-if="index === 3" :variant="row.source.ticketStatus === 'CHECKED_IN' ? 'success' : row.source.ticketStatus === 'ISSUED' ? 'default' : 'warning'">{{ value }}</Badge>
+          <Badge v-else-if="index === 4" :variant="row.source.noShow ? 'destructive' : 'warning'">{{ value }}</Badge>
+          <span v-else>{{ value }}</span>
+        </template>
+        <template #actions="{ row }"><button v-if="!row.source.noShow" class="mark-no-show" :disabled="busy || loading || sailing?.status !== 'COMPLETED'" :aria-label="`Mark ${row.source.fullName} as no-show`" @click="mark(row.source.id)">Mark no-show</button><span v-else class="attendance-recorded"><IonIcon :icon="checkmarkCircleOutline" aria-hidden="true" />Recorded</span></template>
+      </RecordsGrid>
     </div>
   </section>
 </template>
@@ -109,6 +69,7 @@ import { IonIcon } from "@ionic/vue";
 import { personRemoveOutline, searchOutline, checkmarkCircleOutline, peopleOutline, timeOutline } from "ionicons/icons";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import RecordsGrid from "../shared/RecordsGrid.vue";
 import { computed, onMounted, ref } from "vue";
 import { useRoute } from "vue-router";
 import { staffDatabase } from "../../services/session";
@@ -148,9 +109,15 @@ const visible = computed(() =>
         .includes(search.value.toLowerCase()),
   ),
 );
+const gridRows = computed(() => visible.value.map(passenger => ({
+  key: passenger.id,
+  cells: [passenger.fullName, passenger.booking.reference, passenger.booking.accommodationName || 'Standard', humanize(passenger.ticketStatus), passenger.noShow ? 'No-show recorded' : 'Did not board'],
+  source: passenger,
+  statusIndex: 3,
+})));
 async function load() {
   if (!staffDatabase) return;
-  if (!code.value) { rows.value = []; sailing.value = null; notice.value = ''; return; }
+  if (!code.value) { rows.value = []; sailing.value = null; search.value = ''; notice.value = ''; return; }
   loading.value = true;
   error.value = "";
   try {
@@ -217,104 +184,56 @@ onMounted(async () => {
 </script>
 
 <style scoped>
-.no-shows-panel { display: grid; gap: 20px; min-width: 0; }
-.no-show-picker-card { padding: 22px; border: 1px solid var(--line); border-radius: 14px; background: var(--surface); }
-.no-show-intro { display: flex; align-items: flex-start; gap: 14px; }
-.no-show-symbol, .no-show-empty-symbol { display: grid; place-items: center; flex: none; border-radius: 12px; background: var(--light-blue); color: var(--ocean); }
-.no-show-symbol { width: 44px; height: 44px; font-size: 24px; }
-.no-show-empty-symbol { width: 56px; height: 56px; font-size: 28px; margin: 0 auto 16px; }
-.no-shows-panel h2 { font-size: 18px; margin: 0 0 7px; color: var(--ink); }
-.no-shows-panel .eyebrow { font-size: 10px; color: var(--ocean); font-weight: 800; letter-spacing: .1em; margin: 0 0 6px; }
-.no-shows-panel .no-show-heading { margin-bottom: 20px; align-items: flex-start; }
-.no-show-heading > button { flex: none; }
-.no-show-picker-card > button { margin-top: 12px; }
-.no-shows-panel .no-show-search { padding: 18px 20px; border: 1px solid var(--line); border-radius: 14px; background: var(--surface); align-items: end; }
-.no-show-search-label { display: grid; flex: 1; gap: 8px; min-width: 0; font-size: 11px; color: var(--muted); font-weight: 600; }
+.no-shows-panel { display: grid; gap: 16px; min-width: 0; font-family: var(--ion-font-family); color: var(--ink); }
+.no-show-picker-card { padding: 14px 16px; border: 1px solid var(--line); border-radius: 14px; background: var(--surface); }
+.no-show-intro { display: flex; align-items: flex-start; gap: 12px; min-width: 0; }
+.no-show-symbol, .no-show-empty-symbol { display: grid; place-items: center; flex: none; border-radius: 10px; background: var(--light-blue); color: var(--ocean); }
+.no-show-symbol { width: 36px; height: 36px; font-size: 22px; }
+.no-show-empty-symbol { width: 40px; height: 40px; font-size: 24px; margin: 0 auto 12px; }
+.no-shows-panel h2 { font-size: 17px; margin: 0; color: var(--ink); line-height: 1.4; }
+.eyebrow { font-size: 10px; color: var(--ocean); font-weight: 800; letter-spacing: .1em; margin: 0 0 5px; }
+.no-show-heading { display: flex; justify-content: space-between; align-items: center; gap: 16px; margin-bottom: 14px; }
+.no-show-intro > div > p:last-child { margin: 6px 0 0; color: var(--muted); font-size: 12px; line-height: 1.5; }
+.no-show-heading > button { flex: none; background: var(--light-blue); color: var(--ocean); font-weight: 600; }
+.no-show-picker-card > button { margin-top: 10px; }
+.catalog-picker, .no-show-search-label { display: grid; gap: 7px; min-width: 0; font-size: 12px; font-weight: 600; color: var(--muted); }
+.no-shows-panel select, .no-shows-panel input { box-sizing: border-box; width: 100%; min-width: 0; min-height: 40px; padding: 8px 12px; border: 1px solid var(--line); border-radius: 9px; background: var(--surface-soft); color: var(--ink); font: inherit; font-size: 12px; }
+.no-shows-panel button { min-height: 40px; padding: 8px 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); color: var(--ocean); font-family: inherit; font-size: 12px; cursor: pointer; }
+.no-shows-panel button:disabled, .no-shows-panel select:disabled { opacity: .6; cursor: default; }
+.no-shows-panel button:focus-visible, .no-shows-panel select:focus-visible { outline: 2px solid var(--ocean); outline-offset: 2px; }
+.no-show-search { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: end; gap: 8px 12px; padding: 12px 16px; border: 1px solid var(--line); border-radius: 14px; background: var(--surface); }
+.no-show-search > span { grid-column: 1 / -1; color: var(--muted); font-size: 11px; line-height: 1.5; }
 .no-show-search-input { display: flex; align-items: center; gap: 8px; padding-left: 12px; border: 1px solid var(--line); border-radius: 9px; background: var(--surface-soft); }
-.no-show-search-input ion-icon { font-size: 17px; flex: none; }
+.no-show-search-input ion-icon { font-size: 17px; flex: none; color: var(--muted); }
 .no-shows-panel .no-show-search-input input { border: 0; background: transparent; outline: none; }
 .no-show-search-input:focus-within { outline: 2px solid var(--ocean); outline-offset: 2px; }
-.no-show-search > span { padding-bottom: 12px; }
-.no-show-table-heading { padding: 20px; border-bottom: 1px solid var(--line); }
-.no-shows-panel .catalog-table { border: 1px solid var(--line); border-radius: 14px; background: var(--surface); overflow-x: auto; }
-.no-shows-panel .catalog-table button, .no-show-picker-card > button { background: var(--light-blue); color: var(--ocean); cursor: pointer; }
-.no-shows-panel button:disabled, .no-shows-panel select:disabled { opacity: .6; cursor: not-allowed; }
-.no-shows-panel button:focus-visible, .no-shows-panel select:focus-visible { outline: 2px solid var(--ocean); outline-offset: 2px; }
-.no-shows-panel .catalog-tools { display: flex; justify-content: space-between; align-items: center; gap: 14px; margin: 0; }
-.no-shows-panel .catalog-tools p { margin: 0; max-width: 620px; color: var(--muted); font-size: 12px; line-height: 1.7; }
-.no-shows-panel button { min-height: 42px; padding: 9px 12px; border: 1px solid var(--line); border-radius: 8px; font-size: 12px; }
-.no-shows-panel .catalog-picker { display: grid; gap: 7px; font-size: 12px; font-weight: 500; }
-.no-shows-panel select, .no-shows-panel input { box-sizing: border-box; width: 100%; min-width: 0; height: 44px; padding: 0 12px; border: 1px solid var(--line); border-radius: 9px; background: var(--surface-soft); color: var(--ink); font-size: 12px; }
-.no-show-search input { flex: 1; }
-.no-show-search > span { color: var(--muted); font-size: 11px; line-height: 1.6; }
-.no-show-counts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
-.no-show-counts > div { display: grid; gap: 10px; padding: 18px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); }
-.no-show-counts span { font-size: 11px; color: var(--muted); }
-.no-show-counts strong { font-size: 27px; color: var(--ink); font-variant-numeric: tabular-nums; }
-.no-show-empty { padding: 28px 18px; text-align: center; border: 1px dashed var(--line); border-radius: 10px; background: var(--surface-soft); }
-.no-show-empty strong { font-size: 15px; }
-.no-show-empty p { font-size: 12px; color: var(--muted); line-height: 1.7; margin-bottom: 0; }
-.no-shows-panel table { width: 100%; border-collapse: collapse; font-size: 12px; }
-.no-shows-panel th { text-align: left; font-size: 10px; color: var(--muted); padding: 15px; background: var(--surface-soft); text-transform: uppercase; letter-spacing: .04em; }
-.no-shows-panel td { padding: 12px; border-top: 1px solid var(--line); overflow-wrap: anywhere; }
-.no-shows-panel .no-show-intro .eyebrow { margin: 0 0 6px; color: var(--ocean); font-size: 10px; line-height: 1.5; }
-.no-shows-panel .catalog-tools.no-show-heading { margin-bottom: 20px; align-items: flex-start; }
-.no-shows-panel .catalog-tools.no-show-search { align-items: end; }
+.no-show-counts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); border: 1px solid var(--line); border-radius: 12px; background: var(--surface); overflow: hidden; }
+.no-show-counts > div { display: flex; align-items: center; gap: 10px; padding: 12px 16px; min-width: 0; }
+.no-show-counts > div + div { border-left: 1px solid var(--line); }
+.no-show-counts > div > div { display: grid; gap: 3px; min-width: 0; }
+.no-show-counts span { color: var(--muted); font-size: 11px; line-height: 1.5; }
+.no-show-counts strong { font-size: 21px; line-height: 1.2; font-variant-numeric: tabular-nums; }
+.no-show-counts .count-icon { display: grid; place-items: center; width: 30px; height: 30px; flex: none; border-radius: 8px; background: var(--light-blue); color: var(--ocean); font-size: 18px; }
+.pending-count .count-icon { color: var(--muted); }
+.no-show-empty { padding: 22px 16px; text-align: center; border: 1px dashed var(--line); border-radius: 12px; background: var(--surface-soft); }
+.no-show-empty strong { font-size: 14px; }
+.no-show-empty p { margin: 6px 0 0; font-size: 12px; color: var(--muted); line-height: 1.5; }
+.catalog-table { border: 1px solid var(--line); border-radius: 14px; background: var(--surface); overflow: hidden; min-width: 0; }
+.no-show-table-heading { padding: 14px 16px; border-bottom: 1px solid var(--line); }
+.catalog-table :deep(.grid-tools) { padding: 8px 16px; border-bottom: 1px solid var(--line); }
+.catalog-table :deep(.grid-tools button) { min-height: 34px; padding: 6px 8px; }
+.catalog-table :deep(.desktop-grid) { padding: 8px; }
+.catalog-table :deep(.grid-cell-content) { padding: 7px 0; font-size: 12px; line-height: 1.5; }
+.catalog-table :deep(.grid-row-actions) { display: flex; align-items: center; min-height: 44px; padding: 7px 0; }
+.no-shows-panel .mark-no-show { min-height: 32px; padding: 5px 9px; font-size: 11px; background: var(--light-blue); }
+.attendance-recorded { display: inline-flex; align-items: center; gap: 6px; color: var(--muted); font-size: 12px; white-space: nowrap; }
+.attendance-recorded ion-icon { color: var(--ocean); font-size: 16px; }
+.no-show-notice { padding: 10px 16px; margin: 0; border: 1px solid var(--line); border-radius: 10px; background: var(--light-blue); color: var(--ocean); font-size: 12px; }
 @media (max-width: 700px) {
- .no-show-picker-card { padding: 16px; }
- .no-shows-panel .no-show-search { padding: 16px; }
- .no-shows-panel .catalog-tools { flex-direction: column; align-items: stretch; }
- .no-shows-panel .catalog-tools.no-show-search, .no-shows-panel .catalog-tools.no-show-heading { align-items: stretch; }
- .no-show-counts { gap: 8px; }
- .no-show-counts > div { padding: 10px; }
- .no-show-counts strong { font-size: 21px; }
- .no-shows-panel thead { display: none; }
- .no-shows-panel tbody, .no-shows-panel tr { display: block; }
- .no-shows-panel tr { margin-bottom: 12px; padding: 8px; border: 1px solid var(--line); border-radius: 9px; }
- .no-shows-panel td { display: grid; grid-template-columns: 90px minmax(0, 1fr); gap: 8px; padding: 9px 4px; }
- .no-shows-panel td::before { content: attr(data-label); color: var(--muted); font-size: 11px; }
-}
-.no-shows-panel { gap: 18px; }
-.no-shows-panel .no-show-picker-card { padding: 20px; }
-.no-shows-panel .no-show-intro h2 { font-size: 20px; line-height: 1.4; }
-.no-shows-panel .catalog-tools p { font-size: 13px; }
-.no-shows-panel .catalog-tools.no-show-heading { align-items: center; gap: 20px; }
-.no-shows-panel .no-show-heading > button { max-width: 230px; min-height: 44px; background: var(--light-blue); color: var(--ocean); font-weight: 650; }
-.no-shows-panel .catalog-picker { font-size: 12px; font-weight: 600; }
-.no-shows-panel select, .no-shows-panel input { min-height: 46px; font-family: inherit; font-size: 13px; }
-.no-shows-panel .no-show-search { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px 14px; padding: 16px 20px; }
-.no-shows-panel .no-show-search > span { grid-column: 1 / -1; padding: 0; font-size: 12px; }
-.no-shows-panel .no-show-search-label { font-size: 12px; }
-.no-shows-panel .no-show-counts > div { display: flex; align-items: center; gap: 14px; padding: 18px; }
-.no-show-counts > div > div { display: grid; gap: 8px; min-width: 0; }
-.no-show-counts .count-icon { display: grid; place-items: center; width: 40px; height: 40px; flex: none; border-radius: 10px; background: var(--light-blue); color: var(--ocean); font-size: 22px; }
-.no-show-counts .pending-count .count-icon { background: #fffbeb; color: #92400e; }
-.no-show-counts .recorded-count .count-icon { background: #f0fdf4; color: #166534; }
-:global(:root[data-theme="dark"]) .no-show-counts .pending-count .count-icon { background: #3c2d17; color: #fcd34d; }
-:global(:root[data-theme="dark"]) .no-show-counts .recorded-count .count-icon { background: #18382b; color: #86efac; }
-.no-show-counts strong { font-size: 30px; line-height: 1.2; }
-.no-show-counts > div > div > span { font-size: 12px; line-height: 1.5; }
-.no-show-table-scroll { max-height: 480px; overflow: auto; scrollbar-width: thin; }
-.no-show-table-scroll:focus-visible { outline: 2px solid var(--ocean); outline-offset: -2px; }
-.no-shows-panel table { border-collapse: separate; border-spacing: 0; font-size: 13px; }
-.no-shows-panel th { position: sticky; top: 0; padding: 12px 16px; font-size: 10px; white-space: nowrap; }
-.no-shows-panel td { padding: 16px; line-height: 1.6; }
-.no-shows-panel tbody tr:hover { background: var(--surface-soft); }
-.no-shows-panel [data-slot="badge"] { font-size: 11px; white-space: nowrap; }
-.attendance-recorded { display: inline-flex; align-items: center; gap: 6px; color: var(--muted); font-size: 12px; }
-.attendance-recorded ion-icon { color: var(--ocean); font-size: 17px; }
-.no-show-notice { padding: 12px 16px; margin: 0; border: 1px solid var(--line); border-radius: 10px; background: var(--light-blue); color: var(--ocean); font-size: 13px; }
-@media (max-width: 1000px) { .no-shows-panel .no-show-counts > div { flex-direction: column; align-items: flex-start; gap: 10px; padding: 16px; } }
-@media (max-width: 700px) {
-  .no-shows-panel .catalog-tools.no-show-heading { align-items: stretch; }
-  .no-shows-panel .no-show-heading > button { max-width: none; }
-  .no-shows-panel .no-show-picker-card { padding: 16px; }
-  .no-shows-panel .no-show-search { padding: 16px; }
-  .no-shows-panel .no-show-counts { grid-template-columns: minmax(0, 1fr); gap: 10px; }
-  .no-shows-panel .no-show-counts > div { flex-direction: row; align-items: center; }
-  .no-show-table-scroll { max-height: none; padding: 12px; }
-  .no-shows-panel table { display: block; }
-  .no-shows-panel td { padding: 9px 4px; font-size: 12px; }
-  .no-shows-panel tr:last-child { margin-bottom: 0; }
+  .no-show-heading { flex-direction: column; align-items: stretch; gap: 12px; }
+  .no-show-counts > div { flex-direction: column; align-items: flex-start; gap: 6px; padding: 10px; }
+  .catalog-table :deep(.grid-tools) { flex-wrap: wrap; }
+  .no-shows-panel select, .no-shows-panel input { min-height: 44px; font-size: 16px; }
+  .no-shows-panel button, .no-shows-panel .mark-no-show { min-height: 44px; }
 }
 </style>

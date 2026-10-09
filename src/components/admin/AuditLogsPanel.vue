@@ -1,6 +1,6 @@
 <template>
   <section class="audit-panel" aria-label="Audit records">
-    <form class="audit-filters" @submit.prevent="applyFilters"><div class="filter-heading"><div><p class="eyebrow">ACTIVITY SEARCH</p><h2>Filter audit history</h2></div><span>Dates use Philippine time</span></div>
+    <form class="audit-filters" @submit.prevent="applyFilters"><div class="filter-heading"><div><p class="eyebrow">ACTIVITY SEARCH</p><h2>Filter audit history</h2></div><span class="filter-time-note">Dates use Philippine time</span><div class="filter-actions"><Button type="submit" :disabled="loading">Apply filters</Button><Button variant="outline" type="button" :disabled="loading" @click="reset">Reset</Button></div></div>
       <label class="audit-search"
         >Search activity<div class="search-field"><IonIcon :icon="searchOutline" aria-hidden="true" /><input
           v-model.trim="search"
@@ -21,13 +21,13 @@
         </select></label
       ><label>From date<input v-model="fromDate" type="date" /></label
       ><label>To date<input v-model="toDate" type="date" /></label
-      ><div class="filter-actions"><Button type="submit" :disabled="loading">Apply filters</Button><Button variant="outline" type="button" :disabled="loading" @click="reset">Reset</Button></div>
+      >
     </form>
     <div v-if="error" class="audit-error" role="alert"><IonIcon :icon="alertCircleOutline" aria-hidden="true" /><p>{{ error }}</p><Button variant="outline" :disabled="loading" @click="load">Retry loading</Button></div><div class="audit-directory">
     <div class="audit-summary">
       <div>
         <p class="eyebrow">ACCOUNTABILITY</p>
-        <h2>System activity</h2><p class="directory-note">{{ records.length }} records on this page. Open an entry to review its changes.</p>
+        <h2>System activity</h2>
       </div>
       <Badge>{{ total.toLocaleString() }} matching records</Badge>
     </div>
@@ -37,6 +37,10 @@
       title="Audit records table"
       :columns="['When', 'Who', 'Action', 'Record', 'Details']"
       :display-only-columns="[4]"
+      density="compact"
+      :column-min-widths="[155, 170, 155, 170, 145]"
+      :column-flex="[1, 1.1, 1, 1.1, .9]"
+      :max-grid-height="360"
       :rows="gridRows"
     >
       <template #cell="{ row, index }">
@@ -59,9 +63,9 @@
         <Badge v-else-if="index === 2" :variant="actionVariant(row.source.action)">{{ auditAction(row.source.action) }}</Badge>
         <span v-else-if="index === 3" class="audit-record"
           ><strong>{{ humanize(row.source.entityType) }}</strong
-          ><small>{{ row.source.entityId }}</small></span
+          ><small :title="row.source.entityId">{{ shortRecordId(row.source.entityId) }}</small></span
         >
-        <template v-else><Button v-if="Object.keys(row.source.details || {}).length" variant="outline" size="sm" @click="selectedRecord = row.source"><IonIcon :icon="documentTextOutline" aria-hidden="true" />View changes</Button><span v-else class="muted">No additional details</span></template>
+        <template v-else><Button v-if="Object.keys(row.source.details || {}).length" variant="outline" size="sm" class="view-changes" :aria-label="`View changes: ${auditAction(row.source.action)}, ${row.source.actorName}, ${date(row.source.createdAt)}`" @click="selectedRecord = row.source"><IonIcon :icon="documentTextOutline" aria-hidden="true" />View changes</Button><span v-else class="muted">No additional details</span></template>
       </template>
     </RecordsGrid>
     <div v-else-if="!error" class="audit-empty"><IonIcon :icon="listOutline" aria-hidden="true" />
@@ -97,6 +101,7 @@ import {
   type AuditFilters,
 } from "../../services/database/operations";
 import { databaseRequestError } from "../../data/databaseErrors";
+const shortRecordId = (value: string) => value.length > 20 ? `${value.slice(0, 8)}…${value.slice(-4)}` : value;
 const selectedRecord = ref<ActivityRecord | null>(null);
 const actionVariant = (value: string): 'default' | 'warning' | 'destructive' | 'success' => /DELETE|CANCEL/.test(value) ? 'destructive' : /EXPIRE|REFUND/.test(value) ? 'warning' : /CREATE|INSERT|SAVED|PAYMENT_RECEIVED/.test(value) ? 'success' : 'default';
 const route = useRoute();
@@ -211,52 +216,66 @@ watch(
 onMounted(load);
 </script>
 <style scoped>
-.audit-panel { display:grid; gap:20px; min-width:0; }
-.audit-filters,.audit-directory { border:1px solid var(--line); border-radius:16px; background:var(--surface); min-width:0; }
+.audit-panel { display:grid; gap:14px; min-width:0; font-family:var(--ion-font-family); }
+.audit-filters,.audit-directory { border:1px solid var(--line); border-radius:14px; background:var(--surface); min-width:0; }
 .audit-directory { overflow:hidden; }
-.audit-filters { display:grid; grid-template-columns:minmax(200px,2fr) repeat(4,minmax(120px,1fr)); gap:16px; padding:22px; }
-.filter-heading { grid-column:1/-1; display:flex; justify-content:space-between; align-items:center; gap:14px; padding-bottom:16px; border-bottom:1px solid var(--line); }
+.audit-filters { display:grid; grid-template-columns:minmax(200px,2fr) repeat(4,minmax(120px,1fr)); gap:10px 12px; padding:14px 16px; }
+.filter-heading { grid-column:1/-1; display:flex; justify-content:space-between; align-items:center; gap:14px; padding-bottom:10px; border-bottom:1px solid var(--line); }
 .filter-heading > span { font-size:11px; color:var(--muted); }
 label { display:grid; align-content:start; gap:8px; font-size:12px; font-weight:600; min-width:0; color:var(--muted); }
-input,select { width:100%; min-width:0; height:42px; padding:0 12px; border:1px solid var(--line); border-radius:9px; background:var(--surface-soft); color:var(--ink); font:inherit; font-size:12px; }
+input,select { width:100%; min-width:0; height:40px; padding:0 12px; border:1px solid var(--line); border-radius:9px; background:var(--surface-soft); color:var(--ink); font:inherit; font-size:12px; }
 .search-field { position:relative; }
 .search-field input { padding-left:36px; }
 .search-field ion-icon { position:absolute; left:12px; top:13px; font-size:16px; pointer-events:none; color:var(--muted); }
-.filter-actions { grid-column:1/-1; display:flex; gap:10px; justify-content:flex-end; }
-.audit-summary { display:flex; justify-content:space-between; align-items:center; gap:16px; padding:22px; border-bottom:1px solid var(--line); }
+.filter-actions { display:flex; gap:8px; justify-content:flex-end; margin-left:auto; }
+.audit-summary { display:flex; justify-content:space-between; align-items:center; gap:10px 12px; padding:14px 16px; border-bottom:1px solid var(--line); }
 .eyebrow { font-size:10px; letter-spacing:.1em; font-weight:800; color:var(--ocean); margin:0 0 7px; }
-h2 { margin:0; font-size:19px; color:var(--ink); }
+h2 { margin:0; font-size:17px; color:var(--ink); }
 .directory-note { font-size:12px; line-height:1.6; color:var(--muted); margin:7px 0 0; }
 .muted { font-size:11px; color:var(--muted); }
 .actor { display:flex; align-items:center; gap:10px; }
-.actor-info { display:grid; gap:4px; min-width:0; }
+.actor-info { display:grid; gap:2px; min-width:0; }
 .actor-info strong { font-weight:600; color:var(--ink); }
 .actor-role { margin:0; font-size:10px; color:var(--muted); }
-.actor-avatar { display:grid; place-items:center; width:32px; height:32px; flex:none; border-radius:50%; background:var(--light-blue); color:var(--ocean); font-weight:700; }
-.audit-record { display:grid; gap:5px; }
+.actor-avatar { display:grid; place-items:center; width:28px; height:28px; flex:none; border-radius:50%; background:var(--light-blue); color:var(--ocean); font-weight:700; }
+.audit-record { display:grid; gap:2px; min-width:0; }
 .audit-record small { color:var(--muted); font-size:10px; overflow-wrap:anywhere; }
 time { font-size:11px; }
-.audit-empty { text-align:center; padding:40px 20px; color:var(--muted); font-size:12px; }
+.audit-empty { text-align:center; padding:24px 16px; color:var(--muted); font-size:12px; }
 .audit-empty > ion-icon { font-size:30px; color:var(--ocean); }
 .audit-empty h3 { color:var(--ink); margin:12px 0 8px; }
 .audit-error { display:flex; align-items:center; gap:12px; padding:16px 20px; color:#bd3b45; border:1px solid #bd3b4533; background:var(--surface); border-radius:12px; font-size:12px; }
 .audit-error p { flex:1; margin:0; }
 .audit-error ion-icon { font-size:22px; flex:none; }
-.legacy-role-help { margin:14px 20px; padding:14px; border:1px solid var(--line); border-radius:10px; background:var(--surface-soft); }
+.legacy-role-help { margin:10px 16px; padding:10px 12px; border:1px solid var(--line); border-radius:10px; background:var(--surface-soft); }
 .legacy-role-help summary { cursor:pointer; font-size:11px; color:var(--muted); }
 .legacy-role-help p,.legacy-note { max-width:650px; font-size:12px; line-height:1.6; color:var(--muted); margin:10px 0 0; }
-.audit-details-modal { --width:620px; --height:auto; --max-height:calc(100dvh - 32px); --border-radius:18px; --background:var(--surface); }
+.audit-details-modal { --width:min(600px, calc(100vw - 32px)); --height:auto; --max-height:calc(100dvh - 32px); --border-radius:16px; --background:var(--surface); }
 .audit-dialog { display:flex; flex-direction:column; max-height:calc(100dvh - 32px); overflow:hidden; background:var(--surface); color:var(--ink); }
-.audit-dialog header { display:flex; align-items:center; justify-content:space-between; gap:16px; padding:22px; border-bottom:1px solid var(--line); flex:none; }
-.audit-dialog-scroll { padding:22px; overflow-y:auto; min-height:0; flex:1; overscroll-behavior:contain; }
-.entry-context { display:grid; grid-template-columns:1fr 1fr; gap:18px; padding:18px; margin:0 0 20px; border:1px solid var(--line); border-radius:12px; background:var(--surface-soft); }
+.audit-dialog header { display:flex; align-items:center; justify-content:space-between; gap:10px 12px; padding:14px 16px; border-bottom:1px solid var(--line); flex:none; }
+.audit-dialog-scroll { padding:14px 20px; scrollbar-width:thin; overflow-y:auto; min-height:0; flex:1; overscroll-behavior:contain; }
+.entry-context { display:grid; grid-template-columns:1fr 1fr; gap:12px; padding:12px 14px; margin:0 0 14px; border:1px solid var(--line); border-radius:12px; background:var(--surface-soft); }
 .entry-context > div:last-child { grid-column:1/-1; }
 .entry-context dt { color:var(--muted); font-size:11px; margin-bottom:6px; }
 .entry-context dd { margin:0; font-size:12px; overflow-wrap:anywhere; }
 .entry-context small { display:block; color:var(--muted); font-size:11px; margin-top:5px; }
-.audit-dialog h3 { font-size:14px; margin:20px 0 0; }
+.audit-dialog h3 { font-size:14px; margin:14px 0 0; }
 .audit-dialog :deep(.readable-changes) { max-width:none; }
-.audit-dialog footer { display:flex; justify-content:flex-end; padding:16px 22px; border-top:1px solid var(--line); flex:none; }
-@media(max-width:1100px) { .audit-filters { grid-template-columns:repeat(3,minmax(0,1fr)); } .audit-search { grid-column:span 2; } }
-@media(max-width:600px) { .audit-filters { padding:16px; grid-template-columns:repeat(2,minmax(0,1fr)); gap:14px; } .audit-search { grid-column:1/-1; } .filter-heading,.audit-summary { align-items:start; flex-direction:column; } .filter-actions > button { flex:1; } .audit-summary { padding:18px; } .audit-details-modal { --width:calc(100vw - 24px); } .audit-dialog header,.audit-dialog-scroll { padding:18px; } .entry-context { grid-template-columns:1fr; } .audit-error { flex-wrap:wrap; } }
+.audit-dialog footer { display:flex; justify-content:flex-end; padding:12px 20px; background:var(--surface-soft); border-top:1px solid var(--line); flex:none; }
+@media(max-width:1000px) { .audit-filters { grid-template-columns:repeat(3,minmax(0,1fr)); } .audit-search { grid-column:span 2; } }
+@media(max-width:600px) { .filter-heading { flex-wrap:wrap; } .filter-actions { width:100%; margin:0; } .audit-filters input,.audit-filters select { height:44px; font-size:16px; } .audit-directory :deep(.grid-tools) { flex-wrap:wrap; } .audit-dialog footer button { min-height:44px; width:100%; }  .audit-filters { padding:16px; grid-template-columns:repeat(2,minmax(0,1fr)); gap:14px; } .audit-search { grid-column:1/-1; } .filter-heading,.audit-summary { align-items:start; flex-direction:column; } .filter-actions > button { flex:1; } .audit-summary { padding:18px; } .audit-details-modal { --width:calc(100vw - 24px); } .audit-dialog header,.audit-dialog-scroll { padding:16px; } .entry-context { grid-template-columns:1fr; } .audit-error { flex-wrap:wrap; } }
+.audit-directory :deep(.grid-tools) { padding:8px 16px; border-bottom:1px solid var(--line); }
+.audit-directory :deep(.grid-tools button) { min-height:34px; padding:6px 8px; }
+.audit-directory :deep(.desktop-grid) { padding:8px; }
+.audit-directory :deep(.grid-cell-content) { font-size:12px; line-height:1.5; padding:7px 0; }
+.audit-directory :deep(.workspace-pagination) { padding:12px 16px; }
+.audit-directory :deep(.workspace-pagination button) { min-height:34px; }
+.audit-directory .view-changes { min-height:32px; padding:5px 8px; font-size:11px; }
+.audit-dialog { font-family:var(--ion-font-family); }
+.audit-dialog header > button { width:44px; height:44px; padding:0; flex:none; }
+.audit-dialog header > button ion-icon { font-size:20px; }
+.audit-dialog :deep(.readable-changes) { gap:10px; }
+.filter-time-note { white-space:nowrap; }
+input:focus-visible, select:focus-visible { outline:2px solid var(--ocean); outline-offset:2px; }
+@media(max-width:700px) { .filter-heading { flex-wrap:wrap; } .filter-time-note { white-space:normal; } .audit-directory .view-changes { min-height:44px; } }
 </style>

@@ -12,38 +12,17 @@
     </div>
     <p v-if="!loading && !error && ports.length < 2" class="route-note">Add at least two active ports to create a route. <router-link to="/admin/ports">Manage ports</router-link></p>
     <div class="route-directory" v-if="!loading && !error">
-      <div class="directory-heading"><div><p class="eyebrow">ROUTE RECORDS</p><h2>Route directory</h2><p class="directory-hint">{{ table.records.value.length }} of {{ rows.length }} routes</p></div><Button :disabled="busy || ports.length < 2" @click="start()">Add route</Button></div>
-      <div class="route-table">
-      <table>
-        <thead>
-          <tr>
-            <th>Code</th>
-            <th>Origin</th>
-            <th>Destination</th>
-            <th>Duration</th>
-            <th>Status</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="r in table.records.value" :key="r.id">
-            <td data-label="Code"><strong class="route-code">{{ r.code }}</strong></td>
-            <td data-label="Origin">{{ r.origin.name }}</td>
-            <td data-label="Destination">{{ r.destination.name }}</td>
-            <td data-label="Duration"><span class="route-duration"><IonIcon :icon="timeOutline" aria-hidden="true" />{{ r.durationMinutes }} min</span></td>
-            <td data-label="Status">
-              <Badge :variant="r.isActive ? 'success' : 'destructive'">{{ r.isActive ? "Active" : "Inactive" }}</Badge>
-            </td>
-            <td data-label="Actions">
-              <Button variant="outline" :disabled="busy" :aria-label="`Edit route ${r.code}`" @click="start(r)">Edit</Button>
-            </td>
-          </tr>
-          <tr v-if="!table.records.value.length">
-            <td colspan="6">No matching routes.</td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
+      <div class="directory-heading"><div><p class="eyebrow">FERRY NETWORK</p><h2>Route directory</h2><p class="directory-hint">{{ table.records.value.length }} of {{ rows.length }} routes · {{ rows.filter(r => r.isActive).length }} active</p></div><Button :disabled="busy || ports.length < 2" @click="start()"><IonIcon :icon="addOutline" aria-hidden="true" />Add route</Button></div>
+      <RecordsGrid title="Route directory" :columns="['Code', 'Origin', 'Destination', 'Duration', 'Status']" :rows="gridRows" density="compact" :column-min-widths="[110, 170, 170, 110, 100]" :action-width="110" :max-grid-height="360">
+        <template #cell="{ row, index, value }">
+          <strong v-if="index === 0" class="route-code">{{ value }}</strong>
+          <strong v-else-if="index === 1 || index === 2" class="route-port-name">{{ value }}</strong>
+          <span v-else-if="index === 3" class="route-duration"><IonIcon :icon="timeOutline" aria-hidden="true" />{{ value }}</span>
+          <Badge v-else :variant="row.source.isActive ? 'success' : 'destructive'">{{ value }}</Badge>
+        </template>
+        <template #actions="{ row }"><button type="button" class="route-edit" :disabled="busy" :aria-label="`Edit route ${row.source.code}`" @click="start(row.source)">Edit</button></template>
+      </RecordsGrid>
+      <p class="directory-footer">{{ table.records.value.length }} of {{ rows.length }} routes · Sailing durations are shown in minutes.</p>
     </div>
     <IonModal :is-open="editing" :can-dismiss="canDismiss" class="route-modal" @didDismiss="editing = false">
       <div class="route-dialog">
@@ -51,7 +30,8 @@
         <p v-if="formError" class="route-form-error" role="alert">{{ formError }}</p>
         <form class="route-form" @submit.prevent="save">
           <fieldset class="route-fields" :disabled="busy">
-            <p class="route-note">All route details are required.</p>
+            <div class="route-preview" aria-label="Route connection preview"><div><span>DEPARTURE</span><strong>{{ ports.find(p => p.id === form.originPortId)?.name || 'Origin port' }}</strong></div><IonIcon :icon="arrowForwardOutline" aria-hidden="true" /><div><span>ARRIVAL</span><strong>{{ ports.find(p => p.id === form.destinationPortId)?.name || 'Destination port' }}</strong></div></div>
+            <p class="route-note">Complete all fields to {{ form.id ? 'update' : 'create' }} this route.</p>
             <div class="route-field-grid">
               <label for="new-route-code">Route code<input id="new-route-code" v-model.trim="form.code" required maxlength="30" placeholder="e.g. BTG-CAL" /></label>
               <label for="new-route-duration">Estimated duration (minutes)<input id="new-route-duration" v-model.number="form.durationMinutes" type="number" min="1" max="10080" required /><small>Used when planning departure and arrival times.</small></label>
@@ -70,7 +50,8 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, reactive } from "vue";
 import { IonIcon, IonModal } from "@ionic/vue";
-import { closeOutline, navigateOutline, searchOutline, timeOutline } from "ionicons/icons";
+import { addOutline, arrowForwardOutline, closeOutline, navigateOutline, searchOutline, timeOutline } from "ionicons/icons";
+import RecordsGrid from "../shared/RecordsGrid.vue";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { confirmAction } from "../../composables/confirmation";
@@ -102,6 +83,13 @@ const form = reactive({
 });
 const filteredRows = computed(() => rows.value.filter(row => status.value === 'ALL' || row.isActive === (status.value === 'ACTIVE')));
 const table = useTableRecords(filteredRows);
+const gridRows = computed(() => table.records.value.map(route => ({
+  key: route.id,
+  cells: [route.code, route.origin.name, route.destination.name, `${route.durationMinutes} min`, route.isActive ? 'Active' : 'Inactive'],
+  sortValues: [route.code, route.origin.name, route.destination.name, route.durationMinutes, route.isActive ? 'Active' : 'Inactive'],
+  source: route,
+  statusIndex: 4,
+})));
 function resetFilters() { table.query.value = ''; table.sort.value = ''; status.value = 'ALL'; }
 let initialForm = JSON.stringify(form);
 const hasUnsavedChanges = () => editing.value && JSON.stringify(form) !== initialForm;
@@ -168,60 +156,73 @@ async function save() {
 onMounted(load);
 </script>
 <style scoped>
-.routes-workspace { display: grid; gap: 20px; min-width: 0; }
-.route-filters { display: flex; align-items: end; gap: 14px; padding: 18px 20px; border: 1px solid var(--line); border-radius: 14px; background: var(--surface); }
-label { display: grid; gap: 8px; min-width: 0; font-size: 11px; font-weight: 600; color: var(--muted); }
-input:not([type="checkbox"]), select { width: 100%; min-width: 0; min-height: 44px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 9px; background: var(--surface-soft); color: var(--ink); font: inherit; font-size: 12px; }
+.routes-workspace { display: grid; gap: 16px; min-width: 0; font-family: var(--ion-font-family); }
+.route-filters { display: grid; grid-template-columns: minmax(220px, 1fr) 150px 180px auto; align-items: end; gap: 12px; padding: 12px 16px; border: 1px solid var(--line); border-radius: 14px; background: var(--surface); }
+label { display: grid; gap: 8px; min-width: 0; font-size: 12px; font-weight: 600; color: var(--muted); }
+input:not([type="checkbox"]), select { box-sizing: border-box; width: 100%; min-width: 0; min-height: 40px; padding: 8px 12px; border: 1px solid var(--line); border-radius: 9px; background: var(--surface-soft); color: var(--ink); font: inherit; font-size: 12px; }
 .route-search { flex: 1; }
 .search-input { display: flex; align-items: center; gap: 8px; padding-left: 12px; border: 1px solid var(--line); border-radius: 9px; background: var(--surface-soft); }
 .search-input input { border: 0; background: transparent; outline: none; }
 .search-input ion-icon { flex: none; font-size: 17px; }
 .search-input:focus-within { outline: 2px solid var(--ocean); outline-offset: 2px; }
-.route-filters > button { flex: none; min-height: 44px; }
+.route-filters > button { flex: none; min-height: 40px; }
 .route-directory { border: 1px solid var(--line); border-radius: 14px; overflow: hidden; background: var(--surface); min-width: 0; }
-.directory-heading { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 20px 22px; border-bottom: 1px solid var(--line); }
+.directory-heading { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 14px 16px; border-bottom: 1px solid var(--line); }
 .eyebrow { margin: 0 0 6px; font-size: 10px; font-weight: 800; letter-spacing: .1em; color: var(--ocean); }
-h2 { margin: 0; font-size: 19px; color: var(--ink); }
-.directory-hint { margin: 8px 0 0; color: var(--muted); font-size: 11px; }
-.route-table { overflow-x: auto; scrollbar-width: thin; }
-table { width: 100%; border-collapse: collapse; }
-th, td { padding: 15px 18px; border-bottom: 1px solid var(--line); text-align: left; font-size: 12px; color: var(--ink); }
-th { background: var(--surface-soft); font-size: 10px; letter-spacing: .05em; text-transform: uppercase; color: var(--muted); }
-tbody tr:last-child td { border-bottom: 0; }
-tbody tr:hover { background: var(--surface-soft); }
+h2 { margin: 0; font-size: 17px; color: var(--ink); }
+.directory-hint { margin: 5px 0 0; color: var(--muted); font-size: 11px; line-height: 1.5; }
+.route-directory :deep(.grid-tools) { padding: 8px 16px; border-bottom: 1px solid var(--line); background: var(--surface); }
+.route-directory :deep(.grid-tools button) { min-height: 34px; padding: 6px 8px; }
+.route-directory :deep(.desktop-grid) { padding: 8px; }
+.route-directory :deep(.grid-cell-content) { padding: 7px 0; font-size: 12px; line-height: 1.5; }
+.route-directory :deep(.grid-row-actions) { display: flex; align-items: center; min-height: 44px; padding: 7px 0; }
+.route-port-name { font-size: 12px; font-weight: 650; }
+.directory-footer { margin: 0; padding: 10px 16px; border-top: 1px solid var(--line); color: var(--muted); font-size: 11px; line-height: 1.5; }
+.routes-workspace button, .route-dialog button { display: inline-flex; align-items: center; justify-content: center; gap: 7px; font-family: inherit; font-size: 12px; min-height: 40px; }
+.routes-workspace .route-edit { min-height: 32px; padding: 5px 10px; border: 1px solid var(--line); border-radius: 7px; background: var(--surface); color: var(--ocean); font-size: 11px; cursor: pointer; }
+.routes-workspace button ion-icon { font-size: 17px; }
 .route-code { color: var(--ocean); font-weight: 650; }
 .route-duration { display: inline-flex; align-items: center; gap: 7px; white-space: nowrap; font-variant-numeric: tabular-nums; }
 .route-duration ion-icon { color: var(--muted); font-size: 16px; }
-.route-note { margin: 0; font-size: 11px; color: var(--muted); line-height: 1.6; }
+.route-note { margin: 0; font-size: 12px; color: var(--muted); line-height: 1.6; }
 .route-note a { color: var(--ocean); }
-.route-modal { --width: min(680px, calc(100vw - 32px)); --height: auto; --max-height: calc(100dvh - 40px); --border-radius: 16px; --background: var(--surface); }
-.route-dialog { display: flex; flex-direction: column; max-height: calc(100dvh - 40px); background: var(--surface); color: var(--ink); }
-.route-modal-header { display: flex; align-items: center; gap: 14px; padding: 22px 24px; border-bottom: 1px solid var(--line); flex: none; }
+.route-modal { --width: min(640px, calc(100vw - 32px)); --height: auto; --max-height: calc(100dvh - 40px); --border-radius: 16px; --background: var(--surface); }
+.route-dialog { display: flex; flex-direction: column; min-height: 0; max-height: calc(100dvh - 40px); overflow: hidden; background: var(--surface); color: var(--ink); font-family: var(--ion-font-family); }
+.route-modal-header { display: flex; align-items: center; gap: 12px; padding: 18px 20px; border-bottom: 1px solid var(--line); flex: none; }
 .route-symbol { display: grid; place-items: center; width: 44px; height: 44px; flex: none; border-radius: 12px; background: var(--light-blue); color: var(--ocean); font-size: 24px; }
 .route-subtitle { margin: 6px 0 0; color: var(--muted); font-size: 12px; line-height: 1.5; }
-.route-close { display: grid; place-items: center; width: 36px; height: 36px; flex: none; margin-left: auto; border: 0; border-radius: 9px; background: var(--surface-soft); color: var(--muted); font-size: 22px; cursor: pointer; }
-.route-form { display: flex; flex-direction: column; min-height: 0; overflow: hidden; }
-.route-fields { border: 0; margin: 0; min-width: 0; padding: 22px 24px; overflow-y: auto; scrollbar-width: thin; }
-.route-field-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; gap: 20px 18px; margin-top: 18px; }
-.route-fields label small { font-size: 10px; line-height: 1.5; font-weight: 400; }
-.route-availability { display: flex; align-items: center; gap: 12px; margin-top: 20px; padding: 14px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface-soft); }
+.route-dialog .route-close { display: grid; place-items: center; width: 44px; height: 44px; flex: none; margin-left: auto; border: 1px solid var(--line); border-radius: 10px; background: var(--surface-soft); color: var(--muted); font-size: 22px; cursor: pointer; }
+.route-form { display: flex; flex: 1 1 auto; flex-direction: column; min-height: 0; overflow: hidden; }
+.route-fields { flex: 1 1 auto; border: 0; margin: 0; min-width: 0; min-height: 0; padding: 16px 20px; overflow-y: auto; scrollbar-width: thin; }
+.route-preview { display: grid; grid-template-columns: minmax(0, 1fr) 20px minmax(0, 1fr); align-items: center; gap: 12px; padding: 12px; margin-bottom: 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface-soft); }
+.route-preview div { display: grid; gap: 8px; min-width: 0; }
+.route-preview div:last-child { text-align: right; }
+.route-preview span { font-size: 10px; font-weight: 700; letter-spacing: .08em; color: var(--muted); }
+.route-preview strong { font-size: 12px; overflow-wrap: anywhere; }
+.route-preview > ion-icon { color: var(--ocean); font-size: 22px; }
+.route-field-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; gap: 16px; margin-top: 12px; }
+.route-fields label small { font-size: 12px; line-height: 1.5; font-weight: 400; }
+.route-availability { display: flex; align-items: center; gap: 10px; margin-top: 16px; padding: 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface-soft); }
 .route-availability input { width: 17px; height: 17px; flex: none; accent-color: var(--ocean); }
 .route-availability span { display: grid; gap: 4px; }
 .route-availability strong { color: var(--ink); font-size: 12px; }
-.route-modal-footer { display: flex; justify-content: flex-end; gap: 10px; flex: none; padding: 16px 24px; border-top: 1px solid var(--line); background: var(--surface-soft); }
-.route-modal-footer button { min-height: 44px; }
+.route-modal-footer { display: flex; justify-content: flex-end; gap: 10px; flex: none; padding: 14px 20px; border-top: 1px solid var(--line); background: var(--surface-soft); }
+.route-modal-footer button { min-height: 40px; }
 .route-form-error { margin: 16px 24px 0; padding: 12px; border-radius: 9px; background: var(--danger-soft); color: var(--danger); font-size: 12px; line-height: 1.5; }
 .route-fields .route-form-error { margin: 16px 0 0; }
 input:focus-visible, select:focus-visible, button:focus-visible { outline: 2px solid var(--ocean); outline-offset: 2px; }
 button:disabled { opacity: .6; }
 @media (max-width: 1100px) {
-  .route-filters { flex-wrap: wrap; gap: 12px; }
-  .route-search { flex-basis: 100%; }
-  .route-filters > label:not(.route-search) { flex: 1; }
+  .route-filters { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto; gap: 12px; }
+  .route-search { grid-column: 1 / -1; }
 }
 @media (max-width: 600px) {
+  .route-filters { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .route-filters, .directory-heading { padding: 16px; }
-  .route-filters > button { width: 100%; }
+  .route-filters > button { width: 100%; grid-column: 1 / -1; }
+  .directory-heading { align-items: flex-start; }
+  .directory-hint { max-width: 190px; }
+  .directory-heading > button { padding: 10px 12px; }
   .route-modal { --width: calc(100vw - 24px); --max-height: calc(100dvh - 24px); }
   .route-dialog { max-height: calc(100dvh - 24px); }
   .route-modal-header, .route-fields { padding: 18px; }
@@ -229,12 +230,8 @@ button:disabled { opacity: .6; }
   .route-field-grid { grid-template-columns: 1fr; gap: 16px; }
   .route-modal-footer { padding: 14px 18px; }
   .route-modal-footer button { flex: 1; }
-  table, tbody, tr, td { display: block; }
-  thead { display: none; }
-  tr { padding: 12px 16px; border-bottom: 1px solid var(--line); }
-  tbody tr:last-child { border-bottom: 0; }
-  td { display: flex; justify-content: space-between; align-items: center; gap: 14px; padding: 8px 0; border: 0; overflow-wrap: anywhere; }
-  td:before { content: attr(data-label); color: var(--muted); font-size: 10px; min-width: 80px; }
-  td[colspan]:before { display: none; }
+  .routes-workspace .route-edit { min-height: 44px; }
+  .route-directory :deep(.grid-tools) { flex-wrap: wrap; }
+  input:not([type="checkbox"]), select { min-height: 44px; font-size: 16px; }
 }
 </style>

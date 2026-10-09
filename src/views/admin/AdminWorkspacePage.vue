@@ -1,7 +1,7 @@
 <template>
   <ion-page
     ><ion-content :fullscreen="true">
-      <div class="shell design-workspace" :class="{ 'admin-booking-directory': section === 'bookings', 'admin-passenger-directory': section === 'passengers', 'admin-trips-directory': section === 'trips', 'admin-port-directory': section === 'ports' }">
+      <div class="shell design-workspace" :class="{ 'admin-booking-directory': section === 'bookings', 'admin-passenger-directory': section === 'passengers', 'admin-trips-directory': section === 'trips', 'admin-port-directory': section === 'ports', 'admin-vessel-directory': section === 'vessels', 'admin-checkin-directory': section === 'check-in', 'admin-boarding-directory': section === 'boarding', 'admin-manifest-directory': section === 'manifest', 'admin-noshows-directory': section === 'no-shows', 'admin-advisory-directory': section === 'advisories', 'admin-broadcast-directory': section === 'notifications', 'admin-reports-directory': section === 'reports', 'admin-audit-directory': section === 'audit-logs', 'admin-settings-directory': section === 'operations', 'admin-inbox-directory': section === 'inbox', 'admin-user-directory': section === 'users', 'admin-route-directory': section === 'routes', 'admin-accommodation-directory': section === 'accommodation' }">
         <button
           v-if="menuOpen"
           class="scrim"
@@ -80,6 +80,7 @@
             <div class="admin-header-actions">
             <router-link
               to="/admin/inbox"
+              :aria-current="section === 'inbox' ? 'page' : undefined"
               class="admin-bell"
               :aria-label="notificationUnreadCount ? `Notifications, ${notificationUnreadCount} unread` : 'Notifications'"
               title="Notifications"
@@ -466,7 +467,7 @@
                   >.</span
                 >
               </p>
-              <AdminManifestExport v-if="section === 'manifest'" class="manifest-download-card" :sailings="sailingOptions.map(s => ({ code: s.code, origin: s.origin.name, destination: s.destination.name, vessel: s.vessel.name }))" />
+              <AdminManifestExport v-if="section === 'manifest'" class="manifest-download-card" :external-selection="true" :sailing-code="sailingFilter === 'ALL' ? '' : sailingFilter" :sailings="sailingOptions.map(s => ({ code: s.code, origin: s.origin.name, destination: s.destination.name, vessel: s.vessel.name }))" />
               <div v-if="['check-in', 'boarding', 'manifest'].includes(section)" class="booking-filters check-in-filters">
                 <label class="booking-search-field" for="check-in-search"><span>Search passengers</span><div class="booking-search-input"><ion-icon :icon="searchOutline" aria-hidden="true" /><input id="check-in-search" v-model.trim="search" type="search" placeholder="Passenger name or booking reference" /></div></label>
                 <label v-if="section !== 'manifest'" for="check-in-status"><span>Ticket status</span><select id="check-in-status" v-model="statusFilter" aria-label="Filter by status"><option value="ALL">All statuses</option><option v-for="value in filterOptions" :key="value" :value="value">{{ value.replaceAll('_', ' ') }}</option></select></label>
@@ -553,10 +554,11 @@
                   :columns="columns"
                   :rows="rows"
                   :loading="loading"
-                  :column-min-widths="section === 'bookings' ? [180, 210, 85, 100, 165] : section === 'passengers' ? [160, 95, 155, 155, 125, 125] : section === 'trips' ? [220, 120, 155, 95, 135] : section === 'ports' ? [110, 190, 210, 100] : []"
-                  :density="['bookings', 'passengers', 'trips', 'ports'].includes(section) ? 'compact' : 'comfortable'"
-                  :max-grid-height="section === 'ports' ? 360 : ['bookings', 'passengers', 'trips'].includes(section) ? 480 : 560"
-                  :action-width="section === 'trips' ? 150 : ['check-in', 'boarding'].includes(section) ? 140 : ['bookings', 'ports', 'vessels'].includes(section) ? 110 : 170"
+                  :column-min-widths="section === 'bookings' ? [180, 210, 85, 100, 165] : section === 'passengers' ? [160, 95, 155, 155, 125, 125] : section === 'trips' ? [220, 120, 155, 95, 135] : section === 'ports' ? [110, 190, 210, 100] : section === 'vessels' ? [110, 210, 120, 100] : section === 'check-in' ? [170, 160, 155, 175, 115] : section === 'boarding' ? [155, 140, 145, 165, 115, 130] : section === 'manifest' ? [145, 65, 85, 145, 145, 105, 145] : section === 'users' ? [190, 250, 145, 165] : []"
+                  :column-flex="section === 'manifest' ? [1.2, .45, .65, 1.15, 1.15, .85, 1.15] : section === 'users' ? [1.1, 1.6, .8, 1] : []"
+                  :density="['bookings', 'passengers', 'trips', 'ports', 'vessels', 'check-in', 'boarding', 'manifest', 'users'].includes(section) ? 'compact' : 'comfortable'"
+                  :max-grid-height="['ports', 'vessels', 'users'].includes(section) ? 360 : ['check-in', 'boarding', 'manifest'].includes(section) ? 440 : ['bookings', 'passengers', 'trips'].includes(section) ? 480 : 560"
+                  :action-width="['check-in', 'boarding'].includes(section) ? 130 : section === 'trips' ? 150 : ['check-in', 'boarding'].includes(section) ? 140 : ['bookings', 'ports', 'vessels'].includes(section) ? 110 : 170"
                   ><template v-if="section === 'bookings'" #cell="{ row, index, value }">
                     <div v-if="index === 0" class="booking-identity"><strong>{{ row.source.reference }}</strong><small>{{ row.source.owner.fullName }}</small></div>
                     <div v-else-if="index === 1" class="booking-sailing"><strong>{{ row.source.sailing.origin.name }} → {{ row.source.sailing.destination.name }}</strong><small>{{ dateTime(row.source.sailing.departureAt) }}</small></div>
@@ -571,7 +573,7 @@
                     <span v-else :class="{ 'passenger-reference': index === 2 || index === 3 }">{{ value }}</span>
                   </template>
                   <template v-else-if="section === 'users'" #cell="{ index, value, row }">
-                    <div v-if="index === 0" class="user-name-cell"><span class="user-initials" aria-hidden="true">{{ userInitials(String(value)) }}</span><div><strong>{{ value || 'Unnamed user' }}</strong><small>{{ row.source.uid === auth?.currentUser?.uid ? 'Your account' : 'BarkoLink account' }}</small></div></div>
+                    <div v-if="index === 0" class="user-name-cell"><span class="user-initials" aria-hidden="true">{{ userInitials(String(value)) }}</span><div><strong>{{ value || 'Unnamed user' }}</strong><small v-if="row.source.uid === auth?.currentUser?.uid">Your account</small></div></div>
                     <span v-else-if="index === 1" class="user-email">{{ value }}</span>
                     <Badge v-else-if="index === 2" :variant="value === 'ADMIN' ? 'warning' : value === 'PASSENGER' ? 'default' : 'success'">{{ userRoleLabel(String(value)) }}</Badge>
                     <span v-else class="user-created-date">{{ value }}</span>
@@ -591,7 +593,7 @@
                   </template>
                   <template v-else-if="['check-in', 'boarding'].includes(section)" #cell="{ row, index, value }">
                     <strong v-if="index === 0" class="passenger-name">{{ value }}</strong>
-                    <Badge v-else-if="index === row.statusIndex" :variant="value === 'ISSUED' ? 'default' : 'success'">{{ String(value).replaceAll('_', ' ') }}</Badge>
+                    <Badge v-else-if="index === row.statusIndex" :variant="value === 'ISSUED' ? 'default' : ['CHECKED_IN', 'BOARDED'].includes(String(value)) ? 'success' : ['PENDING', 'PAYMENT_PENDING'].includes(String(value)) ? 'warning' : 'destructive'">{{ String(value).replaceAll('_', ' ') }}</Badge>
                     <Badge v-else-if="section === 'boarding' && index === 5" :variant="value === 'CANCELLED' ? 'destructive' : ['BOARDING', 'DELAYED'].includes(String(value)) ? 'warning' : value === 'COMPLETED' ? 'success' : 'default'">{{ String(value).replaceAll('_', ' ') }}</Badge>
                     <span v-else :class="{ 'passenger-reference': index === 1 || index === 2 }">{{ value }}</span>
                   </template>
@@ -599,7 +601,7 @@
                     <strong v-if="index === 0" class="passenger-name">{{ value }}</strong>
                     <span v-else-if="index === 1" class="manifest-sex">{{ String(value).toLowerCase() }}</span>
                     <span v-else-if="index === 2" class="passenger-type">{{ value === 'PWD' ? 'PWD' : String(value).toLowerCase().replaceAll('_', ' ') }}</span>
-                    <Badge v-else-if="index === row.statusIndex" :variant="value === 'ISSUED' ? 'default' : 'success'">{{ String(value).replaceAll('_', ' ') }}</Badge>
+                    <Badge v-else-if="index === row.statusIndex" :variant="value === 'ISSUED' ? 'default' : ['CHECKED_IN', 'BOARDED'].includes(String(value)) ? 'success' : ['PENDING', 'PAYMENT_PENDING'].includes(String(value)) ? 'warning' : 'destructive'">{{ String(value).replaceAll('_', ' ') }}</Badge>
                     <span v-else-if="index === 6 && !row.source.boardedAt" class="manifest-not-boarded">Not boarded</span>
                     <span v-else :class="{ 'passenger-reference': index === 3 || index === 4 }">{{ value }}</span>
                   </template>
@@ -655,7 +657,7 @@
                     ><template v-else-if="section === 'check-in'"
                       ><button
                         class="text-action check-in-action"
-                        :aria-label="`Check in ${row.source.fullName}`"
+                        :aria-label="row.source.ticketStatus === 'ISSUED' ? `Check in ${row.source.fullName}` : `${row.source.fullName}: ${row.source.ticketStatus.replaceAll('_', ' ').toLowerCase()}`"
                         :disabled="
                           !!ticketActionBlockReason(row.source, 'check-in') ||
                           !!busy
@@ -666,11 +668,11 @@
                         "
                         @click="processTicket(row.source, 'check-in')"
                       >
-                        <ion-icon :icon="row.source.ticketStatus === 'ISSUED' ? scanOutline : checkmarkCircleOutline" aria-hidden="true" />
+                        <ion-icon :icon="row.source.ticketStatus === 'ISSUED' ? scanOutline : ['CHECKED_IN', 'BOARDED'].includes(row.source.ticketStatus) ? checkmarkCircleOutline : informationCircleOutline" aria-hidden="true" />
                         {{
                           busy === row.key ? 'Checking in…' : row.source.ticketStatus === "ISSUED"
                             ? "Check in"
-                            : "Done"
+                            : row.source.ticketStatus === 'CHECKED_IN' ? 'Checked in' : row.source.ticketStatus === 'BOARDED' ? 'Boarded' : 'Unavailable'
                         }}
                       </button></template
                     ><template v-else-if="section === 'boarding'"
@@ -694,7 +696,7 @@
                               ? "Boarding…"
                               : row.source.ticketStatus === "BOARDED"
                                 ? "Boarded"
-                                : "Board"
+                                : row.source.ticketStatus === 'ISSUED' ? 'Check in first' : row.source.ticketStatus !== 'CHECKED_IN' ? 'Unavailable' : row.source.booking.sailing.status !== 'BOARDING' ? 'Not open' : 'Board'
                           }}
                         </button>
                       </div></template
@@ -729,6 +731,7 @@
           'user-modal': modal === 'user',
           'port-modal': modal === 'port' || modal === 'vessel',
           'port-editor-modal': modal === 'port',
+          'vessel-editor-modal': modal === 'vessel',
         }"
         @didDismiss="resetModal"
         ><div
@@ -738,6 +741,7 @@
             'user-dialog': modal === 'user',
             'port-dialog': modal === 'port' || modal === 'vessel',
             'port-editor-dialog': modal === 'port',
+            'vessel-editor-dialog': modal === 'vessel',
           }"
         >
           <div class="modal-head">
@@ -1229,18 +1233,6 @@
                     <option value="BOARDING">Boarding staff</option>
                   </select></label
                 >
-                <p class="account-role-note">
-                  <ion-icon
-                    :icon="shieldCheckmarkOutline"
-                    aria-hidden="true"
-                  /><span>{{
-                    userForm.role === "TICKETING"
-                      ? "Manage reservations, collect payments, and issue walk-in tickets."
-                      : userForm.role === "BOARDING"
-                        ? "Check in passengers and manage boarding and trip attendance."
-                        : "Book ferry trips and manage personal reservations and tickets."
-                  }}</span>
-                </p>
                 <label for="new-user-password"
                   >Temporary password
                   <div class="account-password-field">
@@ -1270,6 +1262,18 @@
                       />
                     </button></div
                 ></label>
+                <p class="account-role-note">
+                  <ion-icon
+                    :icon="shieldCheckmarkOutline"
+                    aria-hidden="true"
+                  /><span>{{
+                    userForm.role === "TICKETING"
+                      ? "Manage reservations, collect payments, and issue walk-in tickets."
+                      : userForm.role === "BOARDING"
+                        ? "Check in passengers and manage boarding and trip attendance."
+                        : "Book ferry trips and manage personal reservations and tickets."
+                  }}</span>
+                </p>
                 <div class="account-generate">
                   <p>Generate a password or enter one above.</p>
                   <button
@@ -1628,7 +1632,7 @@ const pages: Record<
     description: "Send updates to passenger and staff inboxes.",
     table: "",
   },
-  inbox: { group: "COMMUNICATION", title: "My inbox", description: "Read notifications addressed to your account.", table: "" },
+  inbox: { group: "COMMUNICATION", title: "Notifications", description: "Read notifications addressed to your account.", table: "" },
   analytics: {
     group: "MANAGEMENT",
     title: "Analytics",
@@ -3004,6 +3008,7 @@ const rows = computed<Row[]>(() => {
     output = users.value.map((u) => ({
       key: u.uid,
       source: u,
+      sortValues: [u.fullName, u.email, u.role, Date.parse(u.createdAt)],
       cells: [u.fullName, u.email, u.role, dateTime(u.createdAt)],
     }));
   output = output.map((row) => {
@@ -3056,41 +3061,46 @@ const rows = computed<Row[]>(() => {
 </script>
 
 <style scoped>
-.admin-port-directory .content { padding: 24px 28px; }
-.admin-port-directory .heading { margin-bottom: 16px; }
-.admin-port-directory .booking-filters { display: grid; grid-template-columns: minmax(0, 1fr) 170px auto; gap: 12px; padding: 12px 16px; margin-bottom: 16px; }
-.admin-port-directory .booking-filters input, .admin-port-directory .booking-filters select { min-height: 40px; font: inherit; font-size: 12px; }
-.admin-port-directory .booking-filters select { width: 100%; min-width: 0; }
-.admin-port-directory .booking-records-panel { border-radius: 14px; overflow: hidden; }
-.admin-port-directory .booking-records-panel .panel-head { padding: 14px 16px; }
-.admin-port-directory .panel-head h2 { font-size: 17px; margin: 4px 0 0; }
-.admin-port-directory :deep(.grid-tools) { padding: 8px 16px; border-bottom: 1px solid var(--line); background: var(--surface); }
-.admin-port-directory :deep(.grid-tools button) { min-height: 34px; padding: 6px 8px; }
-.admin-port-directory :deep(.desktop-grid) { padding: 8px; }
-.admin-port-directory :deep(.grid-cell-content) { padding: 7px 0; font-size: 12px; line-height: 1.5; }
-.admin-port-directory :deep(.grid-row-actions) { display: flex; align-items: center; min-height: 44px; padding: 7px 0; }
-.admin-port-directory .port-code, .admin-port-directory .port-name { font-size: 12px; }
-.admin-port-directory .text-action { min-height: 32px; padding: 5px 10px; font-size: 11px; }
-.admin-port-directory .table-foot { margin: 0; padding: 10px 16px; border-top: 1px solid var(--line); font-size: 11px; line-height: 1.5; }
-.admin-port-directory .admin-port-map { margin-top: 18px; }
-.port-modal.port-editor-modal { --width: min(640px, calc(100vw - 32px)); }
-.port-dialog.port-editor-dialog .modal-head { padding: 18px 20px; }
-.port-dialog.port-editor-dialog .port-fields { padding: 16px 20px 20px; }
-.port-dialog.port-editor-dialog .port-field-heading { margin: 0 0 12px; font-size: 12px; color: var(--ink); font-weight: 650; }
-.port-dialog.port-editor-dialog .port-field-grid + .port-field-heading { margin-top: 22px; padding-top: 16px; border-top: 1px solid var(--line); }
-.port-dialog.port-editor-dialog .port-field-grid { gap: 16px; }
-.port-dialog.port-editor-dialog input:not([type="checkbox"]) { min-height: 40px; font-family: inherit; font-size: 12px; }
-.port-dialog.port-editor-dialog .port-form-footer { padding: 14px 20px; }
-.port-dialog.port-editor-dialog .port-form-footer button { min-height: 40px; }
+.admin-route-directory .content, .admin-accommodation-directory .content, .admin-noshows-directory .content, .admin-advisory-directory .content, .admin-broadcast-directory .content, .admin-reports-directory .content, .admin-audit-directory .content, .admin-settings-directory .content, .admin-inbox-directory .content { padding: 24px 28px; }
+.admin-route-directory .heading, .admin-accommodation-directory .heading, .admin-noshows-directory .heading, .admin-advisory-directory .heading, .admin-broadcast-directory .heading, .admin-reports-directory .heading, .admin-audit-directory .heading, .admin-settings-directory .heading, .admin-inbox-directory .heading { margin-bottom: 16px; }
+@media (max-width: 600px) {
+  .admin-route-directory .content, .admin-accommodation-directory .content, .admin-noshows-directory .content, .admin-advisory-directory .content, .admin-broadcast-directory .content, .admin-reports-directory .content, .admin-audit-directory .content, .admin-settings-directory .content, .admin-inbox-directory .content { padding: 20px 16px; }
+}
+:is(.admin-port-directory, .admin-vessel-directory, .admin-checkin-directory, .admin-boarding-directory, .admin-manifest-directory, .admin-user-directory) .content { padding: 24px 28px; }
+:is(.admin-port-directory, .admin-vessel-directory, .admin-checkin-directory, .admin-boarding-directory, .admin-manifest-directory, .admin-user-directory) .heading { margin-bottom: 16px; }
+:is(.admin-port-directory, .admin-vessel-directory, .admin-checkin-directory, .admin-boarding-directory, .admin-manifest-directory, .admin-user-directory) .booking-filters { display: grid; grid-template-columns: minmax(0, 1fr) 170px auto; gap: 12px; padding: 12px 16px; margin-bottom: 16px; }
+:is(.admin-port-directory, .admin-vessel-directory, .admin-checkin-directory, .admin-boarding-directory, .admin-manifest-directory, .admin-user-directory) .booking-filters input, :is(.admin-port-directory, .admin-vessel-directory, .admin-checkin-directory, .admin-boarding-directory, .admin-manifest-directory, .admin-user-directory) .booking-filters select { min-height: 40px; font: inherit; font-size: 12px; }
+:is(.admin-port-directory, .admin-vessel-directory, .admin-checkin-directory, .admin-boarding-directory, .admin-manifest-directory, .admin-user-directory) .booking-filters select { width: 100%; min-width: 0; }
+:is(.admin-port-directory, .admin-vessel-directory, .admin-checkin-directory, .admin-boarding-directory, .admin-manifest-directory, .admin-user-directory) .booking-records-panel { border-radius: 14px; overflow: hidden; }
+:is(.admin-port-directory, .admin-vessel-directory, .admin-checkin-directory, .admin-boarding-directory, .admin-manifest-directory, .admin-user-directory) .booking-records-panel .panel-head { padding: 14px 16px; }
+:is(.admin-port-directory, .admin-vessel-directory, .admin-checkin-directory, .admin-boarding-directory, .admin-manifest-directory, .admin-user-directory) .panel-head h2 { font-size: 17px; margin: 4px 0 0; }
+:is(.admin-port-directory, .admin-vessel-directory, .admin-checkin-directory, .admin-boarding-directory, .admin-manifest-directory, .admin-user-directory) :deep(.grid-tools) { padding: 8px 16px; border-bottom: 1px solid var(--line); background: var(--surface); }
+:is(.admin-port-directory, .admin-vessel-directory, .admin-checkin-directory, .admin-boarding-directory, .admin-manifest-directory, .admin-user-directory) :deep(.grid-tools button) { min-height: 34px; padding: 6px 8px; }
+:is(.admin-port-directory, .admin-vessel-directory, .admin-checkin-directory, .admin-boarding-directory, .admin-manifest-directory, .admin-user-directory) :deep(.desktop-grid) { padding: 8px; }
+:is(.admin-port-directory, .admin-vessel-directory, .admin-checkin-directory, .admin-boarding-directory, .admin-manifest-directory, .admin-user-directory) :deep(.grid-cell-content) { padding: 7px 0; font-size: 12px; line-height: 1.5; }
+:is(.admin-port-directory, .admin-vessel-directory, .admin-checkin-directory, .admin-boarding-directory, .admin-manifest-directory, .admin-user-directory) :deep(.grid-row-actions) { display: flex; align-items: center; min-height: 44px; padding: 7px 0; }
+:is(.admin-port-directory, .admin-vessel-directory, .admin-checkin-directory, .admin-boarding-directory, .admin-manifest-directory, .admin-user-directory) .port-code, :is(.admin-port-directory, .admin-vessel-directory, .admin-checkin-directory, .admin-boarding-directory, .admin-manifest-directory, .admin-user-directory) .port-name { font-size: 12px; }
+:is(.admin-port-directory, .admin-vessel-directory, .admin-checkin-directory, .admin-boarding-directory, .admin-manifest-directory, .admin-user-directory) .text-action { min-height: 32px; padding: 5px 10px; font-size: 11px; }
+:is(.admin-port-directory, .admin-vessel-directory, .admin-checkin-directory, .admin-boarding-directory, .admin-manifest-directory, .admin-user-directory) .table-foot { margin: 0; padding: 10px 16px; border-top: 1px solid var(--line); font-size: 11px; line-height: 1.5; }
+:is(.admin-port-directory, .admin-vessel-directory, .admin-checkin-directory, .admin-boarding-directory, .admin-manifest-directory, .admin-user-directory) .admin-port-map { margin-top: 18px; }
+.port-modal:is(.port-editor-modal, .vessel-editor-modal) { --width: min(640px, calc(100vw - 32px)); }
+.port-dialog:is(.port-editor-dialog, .vessel-editor-dialog) .modal-head { padding: 18px 20px; }
+.port-dialog:is(.port-editor-dialog, .vessel-editor-dialog) .port-fields { padding: 16px 20px 20px; }
+.port-dialog:is(.port-editor-dialog, .vessel-editor-dialog) .port-field-heading { margin: 0 0 12px; font-size: 12px; color: var(--ink); font-weight: 650; }
+.port-dialog:is(.port-editor-dialog, .vessel-editor-dialog) .port-field-grid + .port-field-heading { margin-top: 22px; padding-top: 16px; border-top: 1px solid var(--line); }
+.port-dialog:is(.port-editor-dialog, .vessel-editor-dialog) .port-field-grid { gap: 16px; }
+.port-dialog:is(.port-editor-dialog, .vessel-editor-dialog) input:not([type="checkbox"]) { min-height: 40px; font-family: inherit; font-size: 12px; }
+.port-dialog:is(.port-editor-dialog, .vessel-editor-dialog) .port-form-footer { padding: 14px 20px; }
+.port-dialog:is(.port-editor-dialog, .vessel-editor-dialog) .port-form-footer button { min-height: 40px; }
 @media (max-width: 1000px) {
-  .admin-port-directory .booking-filters { grid-template-columns: minmax(0, 1fr) 170px; }
-  .admin-port-directory .booking-filters > button { grid-column: 1 / -1; justify-self: start; }
+  :is(.admin-port-directory, .admin-vessel-directory, .admin-checkin-directory, .admin-boarding-directory, .admin-manifest-directory, .admin-user-directory) .booking-filters { grid-template-columns: minmax(0, 1fr) 170px; }
+  :is(.admin-port-directory, .admin-vessel-directory, .admin-checkin-directory, .admin-boarding-directory, .admin-manifest-directory, .admin-user-directory) .booking-filters > button { grid-column: 1 / -1; justify-self: start; }
 }
 @media (max-width: 600px) {
-  .admin-port-directory .content { padding: 20px 16px; }
-  .admin-port-directory .booking-filters { grid-template-columns: minmax(0, 1fr); }
-  .admin-port-directory :deep(.grid-tools) { flex-wrap: wrap; }
-  .port-dialog.port-editor-dialog .modal-head, .port-dialog.port-editor-dialog .port-fields, .port-dialog.port-editor-dialog .port-form-footer { padding-inline: 16px; }
+  :is(.admin-port-directory, .admin-vessel-directory, .admin-checkin-directory, .admin-boarding-directory, .admin-manifest-directory, .admin-user-directory) .content { padding: 20px 16px; }
+  :is(.admin-port-directory, .admin-vessel-directory, .admin-checkin-directory, .admin-boarding-directory, .admin-manifest-directory, .admin-user-directory) .booking-filters { grid-template-columns: minmax(0, 1fr); }
+  :is(.admin-port-directory, .admin-vessel-directory, .admin-checkin-directory, .admin-boarding-directory, .admin-manifest-directory, .admin-user-directory) :deep(.grid-tools) { flex-wrap: wrap; }
+  .port-dialog:is(.port-editor-dialog, .vessel-editor-dialog) .modal-head, .port-dialog:is(.port-editor-dialog, .vessel-editor-dialog) .port-fields, .port-dialog:is(.port-editor-dialog, .vessel-editor-dialog) .port-form-footer { padding-inline: 16px; }
 }
 .admin-trips-directory .content { padding: 24px 28px; }
 .admin-trips-directory .heading { margin-bottom: 16px; }
@@ -3356,31 +3366,32 @@ const rows = computed<Row[]>(() => {
 }
 .topbar .admin-bell {
   position: relative;
-  width: 42px;
+  width: 44px;
   height: 44px;
   margin-left: 0;
   border: 1px solid var(--line);
-  border-radius: 10px;
+  border-radius: 12px;
   background: var(--surface-soft);
-  color: var(--ocean);
+  color: var(--ink);
   text-decoration: none;
 }
 .admin-unread-badge {
   position: absolute;
   top: -5px;
   right: -5px;
-  min-width: 18px;
-  height: 18px;
-  padding: 0 4px;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 5px;
   display: grid;
   place-items: center;
   border: 2px solid var(--surface);
   border-radius: 20px;
-  background: #d3374d;
+  background: #c73646;
   color: white;
   font-size: 10px;
   font-weight: 700;
 }
+.topbar .admin-bell[aria-current="page"] { color:var(--ocean); border-color:var(--ocean); }
 .admin-header-actions a:focus-visible,
 .nav-group-toggle:focus-visible {
   outline: 2px solid #50a9eb;
@@ -3975,9 +3986,46 @@ input[readonly] {
 .check-in-action { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 36px; background: var(--light-blue); border-color: var(--line); white-space: nowrap; }
 .check-in-action ion-icon { font-size: 15px; }
 .check-in-action:focus-visible { outline: 2px solid var(--ocean); outline-offset: 2px; }
+:is(.admin-checkin-directory, .admin-boarding-directory, .admin-manifest-directory) .booking-filters { grid-template-columns: minmax(180px, 1fr) 150px minmax(220px, 1fr) auto; }
+:is(.admin-checkin-directory, .admin-boarding-directory, .admin-manifest-directory) .check-in-guidance { margin: -4px 0 14px; font-size: 12px; }
+:is(.admin-checkin-directory, .admin-boarding-directory, .admin-manifest-directory) .passenger-name { font-size: 12px; }
+:is(.admin-checkin-directory, .admin-boarding-directory, .admin-manifest-directory) .passenger-reference { font-variant-numeric: tabular-nums; font-size: 12px; }
+:is(.admin-checkin-directory, .admin-boarding-directory, .admin-manifest-directory) .check-in-action { min-height: 32px; padding: 5px 9px; font-size: 11px; }
+:is(.admin-checkin-directory, .admin-boarding-directory, .admin-manifest-directory) .check-in-action:disabled { opacity: .75; color: var(--muted); background: var(--surface-soft); }
+:is(.admin-checkin-directory, .admin-boarding-directory, .admin-manifest-directory) :deep(.workspace-pagination) { padding: 10px 16px; gap: 10px; }
+:is(.admin-checkin-directory, .admin-boarding-directory, .admin-manifest-directory) :deep(.workspace-pagination button) { min-height: 34px; padding: 6px 12px; font-size: 11px; border-radius: 8px; }
+@media (max-width: 1100px) {
+  :is(.admin-checkin-directory, .admin-boarding-directory, .admin-manifest-directory) .booking-filters { grid-template-columns: 150px minmax(0, 1fr) auto; }
+  :is(.admin-checkin-directory, .admin-boarding-directory, .admin-manifest-directory) .booking-search-field { grid-column: 1 / -1; }
+  :is(.admin-checkin-directory, .admin-boarding-directory, .admin-manifest-directory) .booking-filters > button { grid-column: auto; }
+}
+@media (max-width: 600px) {
+  :is(.admin-checkin-directory, .admin-boarding-directory, .admin-manifest-directory) .booking-filters { grid-template-columns: minmax(0, 1fr); }
+  :is(.admin-checkin-directory, .admin-boarding-directory, .admin-manifest-directory) .booking-filters > button { grid-column: 1 / -1; justify-self: stretch; }
+  :is(.admin-checkin-directory, .admin-boarding-directory, .admin-manifest-directory) .booking-filters input, :is(.admin-checkin-directory, .admin-boarding-directory, .admin-manifest-directory) .booking-filters select { min-height: 44px; font-size: 16px; }
+  :is(.admin-checkin-directory, .admin-boarding-directory, .admin-manifest-directory) .check-in-action, :is(.admin-checkin-directory, .admin-boarding-directory, .admin-manifest-directory) :deep(.workspace-pagination button) { min-height: 44px; }
+}
+
 .boarding-records-panel :deep([data-slot="badge"]) { white-space: normal; line-height: 1.5; }
 .boarding-records-panel :deep(.ag-cell[col-id="cell-5"]) { font-weight: 400; }
 .manifest-download-card { margin-bottom: 20px; }
+.admin-manifest-directory .manifest-download-card { margin-bottom: 16px; }
+.admin-manifest-directory .booking-filters { grid-template-columns: minmax(180px, 1fr) minmax(240px, 1fr) auto; }
+.admin-manifest-directory .manifest-not-boarded { font-size: 12px; white-space: nowrap; }
+.admin-manifest-directory :deep(.manifest-export) { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 14px; }
+.admin-manifest-directory :deep(.export-heading) { margin: 0; }
+.admin-manifest-directory :deep(.manifest-export > p) { grid-column: 1 / -1; margin: 0; }
+.admin-manifest-directory .booking-filters { grid-template-columns: minmax(180px, .7fr) minmax(280px, 1.3fr) auto; }
+.admin-manifest-directory :deep(#check-in-sailing) { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+@media (min-width: 601px) and (max-width: 1100px) {
+  .admin-manifest-directory .booking-filters { grid-template-columns: minmax(0, 1fr) auto; }
+}
+@media (max-width: 700px) {
+  .admin-manifest-directory :deep(.manifest-export) { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 600px) {
+  .admin-manifest-directory .booking-filters { grid-template-columns: minmax(0, 1fr); }
+}
 .manifest-sex { text-transform: capitalize; }
 .manifest-not-boarded { color: var(--muted); font-size: 11px; }
 .manifest-records-panel :deep([data-slot="badge"]) { white-space: normal; line-height: 1.5; }
@@ -4178,6 +4226,16 @@ td strong {
 .catalog-modal-scroll { flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; scrollbar-gutter: stable; scrollbar-color: var(--muted) var(--surface); }
 .port-dialog .catalog-modal-scroll .port-fields { overflow: visible; }
 .vessel-capacity { font-weight: 650; font-variant-numeric: tabular-nums; }
+.vessel-editor-dialog .port-fields { border: 0; margin: 0; min-width: 0; }
+.vessel-editor-dialog .port-form-note { margin-bottom: 12px; line-height: 1.5; }
+.port-dialog.vessel-editor-dialog .port-availability { margin-top: 16px; padding: 12px; }
+.port-dialog.vessel-editor-dialog .modal-head > button { width: 44px; height: 44px; }
+@media (max-width: 600px) {
+  .port-dialog.vessel-editor-dialog input:not([type="checkbox"]) { min-height: 44px; font-size: 16px; }
+  .port-dialog.vessel-editor-dialog .port-form-footer button { min-height: 44px; }
+  .admin-vessel-directory .text-action { min-height: 44px; }
+}
+
 .port-dialog .port-fields { display: block; min-height: 0; padding: 22px 24px; overflow-y: auto; scrollbar-width: thin; }
 .port-form-note { margin: 0 0 18px; color: var(--muted); font-size: 11px; }
 .port-field-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 20px 18px; align-items: start; }
@@ -4856,6 +4914,14 @@ td strong {
   color: var(--ocean);
 }
 .boarding-help strong { color: var(--ink); font-weight: 650; }
+.admin-boarding-directory .boarding-help { margin: 0 0 14px; padding: 10px 14px; border-radius: 10px; font-size: 12px; line-height: 1.5; }
+.admin-boarding-directory .boarding-row-action { min-width: 0; }
+.admin-boarding-directory .boarding-row-action .text-action { width: auto; min-height: 32px; padding: 5px 9px; font-size: 11px; }
+.admin-boarding-directory :deep(.ag-cell[col-id="cell-5"] [data-slot="badge"]) { white-space: nowrap; }
+@media (max-width: 600px) {
+  .admin-boarding-directory .boarding-row-action .text-action { min-height: 44px; }
+}
+
 .boarding-row-action {
   display: flex;
   align-items: center;
@@ -4921,10 +4987,10 @@ td strong {
   }
 }
 .user-modal {
-  --width: min(600px, calc(100vw - 32px));
+  --width: min(620px, calc(100vw - 32px));
   --height: auto;
-  --max-height: calc(100dvh - 48px);
-  --border-radius: 20px;
+  --max-height: calc(100dvh - 32px);
+  --border-radius: 16px;
   --background: var(--surface);
   --box-shadow: 0 24px 80px #0004;
 }
@@ -4933,7 +4999,7 @@ td strong {
   flex-direction: column;
   overflow: hidden;
   width: 100%;
-  max-height: calc(100dvh - 48px);
+  max-height: calc(100dvh - 32px);
   margin: 0;
   padding: 0;
   border: 0;
@@ -4944,7 +5010,7 @@ td strong {
 .user-dialog .modal-head {
   flex: none;
   margin: 0;
-  padding: 24px;
+  padding: 14px 20px;
   border-bottom: 1px solid var(--line);
   align-items: start;
 }
@@ -4956,7 +5022,7 @@ td strong {
   color: var(--ocean);
   display: grid;
   place-items: center;
-  font-size: 26px;
+  font-size: 22px;
   flex: none;
 }
 .user-dialog .eyebrow {
@@ -4965,7 +5031,7 @@ td strong {
   color: var(--ocean);
 }
 .user-dialog .modal-head h2 {
-  font-size: 22px;
+  font-size: 17px;
   letter-spacing: -0.03em;
 }
 .account-subtitle {
@@ -4992,12 +5058,12 @@ td strong {
 }
 .account-content { display: flex; flex-direction: column; flex: 1; min-height: 0; overflow: hidden; padding: 0; }
 .user-dialog .account-form { display: flex; flex-direction: column; flex: 1; min-height: 0; gap: 0; overflow: hidden; }
-.account-scroll { flex: 1; min-height: 0; overflow-y: auto; padding: 24px; overscroll-behavior: contain; }
-.account-scroll fieldset { display: grid; gap: 16px; min-width: 0; margin: 0; padding: 0; border: 0; }
-.account-content .account-success { padding: 24px; overflow-y: auto; }
+.account-scroll { flex: 1; min-height: 0; overflow-y: auto; padding: 14px 20px; overscroll-behavior: contain; }
+.account-scroll fieldset { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px 14px; min-width: 0; margin: 0; padding: 0; border: 0; }
+.account-content .account-success { padding: 14px 20px; overflow-y: auto; }
 .user-dialog > .alert { flex: none; }
-.user-name-cell { display: flex; align-items: center; gap: 12px; min-width: 0; }
-.user-initials { display: grid; place-items: center; width: 36px; height: 36px; border-radius: 50%; background: var(--light-blue); color: var(--ocean); font-size: 12px; font-weight: 700; flex: none; }
+.user-name-cell { display: flex; align-items: center; gap: 9px; min-width: 0; }
+.user-initials { display: grid; place-items: center; width: 28px; height: 28px; border-radius: 50%; background: var(--light-blue); color: var(--ocean); font-size: 12px; font-weight: 700; flex: none; }
 .user-name-cell > div { min-width: 0; display: grid; gap: 4px; }
 .user-name-cell strong { color: var(--ink); font-size: 12px; }
 .user-name-cell small { color: var(--muted); font-size: 10px; }
@@ -5023,7 +5089,7 @@ td strong {
 }
 .user-dialog input,
 .user-dialog select {
-  min-height: 44px;
+  min-height: 40px;
   background: var(--surface-soft);
   color: var(--ink);
   border: 1px solid var(--line);
@@ -5041,8 +5107,8 @@ td strong {
   display: flex;
   align-items: start;
   gap: 9px;
-  margin: -5px 0 2px;
-  padding: 12px;
+  margin: 0;
+  padding: 10px 12px;
   background: var(--surface-soft);
   border: 1px solid var(--line);
   border-radius: 9px;
@@ -5079,7 +5145,7 @@ td strong {
   justify-content: space-between;
   align-items: center;
   gap: 16px;
-  margin-top: -8px;
+  margin-top: 0;
 }
 .account-generate p {
   font-size: 11px;
@@ -5103,17 +5169,17 @@ td strong {
   justify-content: flex-end;
   gap: 10px;
   border-top: 1px solid var(--line);
-  padding: 16px 24px;
+  padding: 12px 20px;
   margin: 0;
   flex: none;
   background: var(--surface);
 }
 .user-dialog .account-footer .primary {
   margin: 0;
-  background: #167bd0;
-  border-color: #167bd0;
+  background: var(--action);
+  border-color: var(--action);
   color: white;
-  min-height: 42px;
+  min-height: 40px;
   font-size: 12px;
 }
 .user-dialog .account-footer .secondary {
@@ -5197,7 +5263,7 @@ td strong {
   opacity: 0.5;
   cursor: default;
 }
-@media (max-width: 480px) {
+@media (max-width: 600px) {
   .user-modal {
     --width: calc(100vw - 20px);
     --max-height: calc(100dvh - 24px);
@@ -5207,10 +5273,10 @@ td strong {
     max-height: calc(100dvh - 24px);
   }
   .user-dialog .modal-head {
-    padding: 20px;
+    padding: 16px;
   }
   .account-scroll, .account-content .account-success {
-    padding: 20px;
+    padding: 16px;
   }
   .account-title-icon {
     width: 36px;
@@ -5218,7 +5284,7 @@ td strong {
     font-size: 23px;
   }
   .user-dialog .modal-head h2 {
-    font-size: 20px;
+    font-size: 17px;
   }
   .account-subtitle {
     font-size: 11px;
@@ -5238,6 +5304,12 @@ td strong {
     margin-inline: 20px;
   }
 }
+
+.account-section-heading, .account-role-note, .account-generate { grid-column: 1 / -1; }
+.user-dialog { font-family: var(--ion-font-family); }
+.user-dialog .modal-head > button { padding: 0; }
+.user-dialog .account-scroll { scrollbar-width: thin; }
+@media(max-width:600px) { .account-scroll fieldset { grid-template-columns: minmax(0, 1fr); } .user-dialog input, .user-dialog select { min-height:44px; font-size:16px; } .user-dialog .account-footer { padding:12px 16px; } .user-dialog .account-footer button { min-height:44px; } .account-section-heading { flex-direction:row; align-items:center; } }
 .account-password-block {
   display: grid;
   gap: 8px;

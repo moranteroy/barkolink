@@ -14,7 +14,7 @@
     <p v-if="notice" role="status">{{ notice }}</p>
     <div class="communication-heading"><div><p class="eyebrow">PASSENGER UPDATES</p><h3>Advisory directory</h3><p>Manage drafts and updates for upcoming travel.</p></div><Button :disabled="busy || loading" @click="start">Create advisory</Button></div>
     <div class="communication-filters"><label>Search advisories<input v-model="query" type="search" placeholder="Title, message, or sailing" /></label><label>Status<select v-model="statusFilter"><option value="ALL">All statuses</option><option value="ACTIVE">Active</option><option value="SCHEDULED">Scheduled</option><option value="DRAFT">Draft</option><option value="ENDED">Ended</option></select></label><Button variant="ghost" @click="query = ''; statusFilter = 'ALL'" :disabled="!query && statusFilter === 'ALL'">Reset filters</Button></div>
-    <IonModal :is-open="editing" :can-dismiss="canDismiss" class="communication-modal" @didDismiss="editing = false"><section class="communication-dialog"><header class="communication-dialog-heading"><div><p class="eyebrow">TRAVEL ADVISORY</p><h2>{{ form.id ? 'Edit advisory' : 'Create advisory' }}</h2><p>Set the audience and publishing period.</p></div><button type="button" aria-label="Close advisory" :disabled="busy" @click="close"><ion-icon :icon="closeOutline" /></button></header>    <form class="communication-form" @submit.prevent="save"><div class="communication-scroll"><fieldset :disabled="busy">
+    <IonModal :is-open="editing" :can-dismiss="canDismiss" class="communication-modal advisory-modal" @didDismiss="editing = false"><section class="communication-dialog advisory-dialog"><header class="communication-dialog-heading"><div><p class="eyebrow">TRAVEL ADVISORY</p><h2>{{ form.id ? 'Edit advisory' : 'Create advisory' }}</h2><p>Set the audience and publishing period.</p></div><button type="button" aria-label="Close advisory" :disabled="busy" @click="close"><ion-icon :icon="closeOutline" /></button></header>    <form class="communication-form" @submit.prevent="save"><div class="communication-scroll"><fieldset :disabled="busy">
 <p v-if="formError" class="error" role="alert">{{ formError }}</p>
       <label
         >Title<input
@@ -28,10 +28,10 @@
           required
           minlength="3"
           maxlength="2000"
-          rows="4"
+          rows="3"
         />
       </label>
-      <div class="fields">
+      <div class="fields advisory-settings">
         <label
           >Type<select v-model="form.category">
             <option
@@ -57,15 +57,14 @@
             </option>
           </select></label
         >
-      </div>
       <label
         >Audience<select v-model="form.sailingCode">
           <option value="">All passengers</option>
           <option v-for="s in sailings" :key="s.code" :value="s.code">
             {{ s.code }} · {{ s.origin.name }} → {{ s.destination.name }}
           </option>
-        </select></label
-      ><button
+        </select></label>
+      </div><button
         v-if="sailings.length < sailingTotal"
         type="button"
         :disabled="moreLoading || busy"
@@ -94,7 +93,7 @@
     <p v-if="loading">Loading advisories…</p>
     <p v-else-if="!items.length">No advisories created yet.</p>
     <p v-if="!loading && items.length" class="communication-count">{{ filteredItems.length }} of {{ items.length }} advisories</p><p v-if="!loading && items.length && !filteredItems.length" class="communication-empty">No advisories match these filters.</p>
-    <div class="advisory-list">
+    <div v-if="filteredItems.length" class="advisory-list">
       <article v-for="item in filteredItems" :key="item.id">
         <ion-icon
           :icon="item.priority === 'HIGH' ? warningOutline : megaphoneOutline"
@@ -105,10 +104,10 @@
           <p>{{ item.message }}</p>
           <small
             >{{ item.sailingCode || "All passengers" }} ·
-            {{ date(item.startsAt) }} to {{ date(item.endsAt) }}</small
+            {{ date(item.startsAt) }} – {{ date(item.endsAt) }} (PH)</small
           >
         </div>
-        <button :disabled="busy" @click="edit(item)">Edit</button>
+        <button :disabled="busy" :aria-label="`Edit advisory ${item.title}`" @click="edit(item)">Edit</button>
       </article>
     </div>
   </section>
@@ -192,7 +191,7 @@ const hasUnsavedChanges = () => editing.value && JSON.stringify(form) !== savedF
 useUnsavedChanges(hasUnsavedChanges);
 defineExpose({ hasUnsavedChanges });
 const date = (value: string) =>
-  new Date(value).toLocaleString("en-PH", { timeZone: "Asia/Manila" });
+  new Date(value).toLocaleString("en-PH", { timeZone: "Asia/Manila", dateStyle: 'medium', timeStyle: 'short' });
 const status = (item: Advisory) =>
   !item.published
     ? "DRAFT"
@@ -281,138 +280,57 @@ async function save() {
 onMounted(load);
 </script>
 <style scoped>
-.advisory-panel {
-  display: grid;
-  gap: 20px;
-}
-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 15px;
-}
-h2,
-h3 {
-  margin: 0;
-}
-header p {
-  margin: 8px 0;
-  color: var(--muted);
-  font-size: 12px;
-}
-.eyebrow {
-  font-weight: 800;
-  letter-spacing: 0.1em;
-  color: var(--ocean) !important;
-  font-size: 10px !important;
-}
-form.communication-form {
-  display: flex;
-  flex-direction: column;
-  min-height: 0;
-  flex: 1;
-  gap: 0;
-  padding: 0;
-  border: 0;
-  border-radius: 0;
-  background: var(--surface);
-}
-label {
-  display: grid;
-  gap: 6px;
-  font-size: 12px;
-  font-weight: 700;
-}
-input,
-select,
-textarea {
-  width: 100%;
-  padding: 11px;
-  border: 1px solid var(--line);
-  border-radius: 9px;
-  background: var(--surface-soft);
-  color: var(--ink);
-  font: inherit;
-}
-textarea {
-  resize: vertical;
-}
-.fields {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 14px;
-}
-.check {
-  display: flex;
-  align-items: center;
-}
-.check input {
-  width: auto;
-}
-.actions {
-  display: flex;
-  gap: 10px;
-}
-button:not([data-slot="button"]) {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  padding: 10px 14px;
-  border: 1px solid var(--line);
-  border-radius: 9px;
-  background: var(--light-blue);
-  color: var(--ocean);
-  font-weight: 700;
-  cursor: pointer;
-}
-button:disabled {
-  opacity: 0.5;
-}
-.advisory-list {
-  display: grid;
-  gap: 12px;
-}
-.advisory-list article {
-  display: flex;
-  align-items: flex-start;
-  gap: 14px;
-  padding: 20px;
-  border: 1px solid var(--line);
-  border-radius: 14px;
-  background: var(--surface);
-}
-.advisory-list article > div {
-  flex: 1;
-  min-width: 0;
-}
-.advisory-list ion-icon {
-  color: var(--ocean);
-  font-size: 25px;
-  flex: none;
-}
-.advisory-list h3 {
-  margin: 8px 0;
-  font-size: 16px;
-}
-.advisory-list p {
-  white-space: pre-wrap;
-  line-height: 1.6;
-  font-size: 13px;
-}
-.advisory-list small {
-  color: var(--muted);
-  font-size: 10px;
-}
-.error {
-  color: var(--danger);
-}
+.advisory-panel { display: grid; gap: 14px; min-width: 0; color: var(--ink); font-family: var(--ion-font-family); }
+.advisory-panel > header { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.communication-heading { padding: 14px 16px; border: 1px solid var(--line); border-radius: 14px; background: var(--surface); gap: 14px; }
+.communication-heading h3 { font-size: 17px; }
+.communication-heading p { margin-top: 5px; font-size: 12px; }
+.eyebrow { color: var(--ocean); font-size: 10px; font-weight: 800; letter-spacing: .1em; }
+.communication-filters { display: grid; grid-template-columns: minmax(0, 1fr) 160px auto; gap: 12px; padding: 12px 16px; border-radius: 14px; }
+.communication-filters select { min-width: 0; }
+.communication-count { font-size: 11px; }
+.communication-empty { padding: 24px 16px; font-size: 12px; }
+.advisory-panel > p { margin: 0; color: var(--muted); font-size: 12px; }
+.advisory-panel > p.error, .error { color: var(--danger, #d85563); }
+.advisory-list { display: grid; border: 1px solid var(--line); border-radius: 14px; background: var(--surface); overflow: hidden; }
+.advisory-list article { display: grid; grid-template-columns: 32px minmax(0, 1fr) auto; align-items: start; gap: 12px; padding: 14px 16px; }
+.advisory-list article + article { border-top: 1px solid var(--line); }
+.advisory-list article > ion-icon { color: var(--ocean); font-size: 21px; margin-top: 3px; }
+.advisory-list article > div { min-width: 0; }
+.advisory-badges { gap: 8px; }
+.advisory-list h3 { font-size: 14px; line-height: 1.5; margin: 7px 0 4px; overflow-wrap: anywhere; }
+.advisory-list p { white-space: pre-wrap; overflow-wrap: anywhere; font-size: 12px; line-height: 1.6; margin: 0 0 7px; }
+.advisory-list small { color: var(--muted); font-size: 11px; line-height: 1.6; overflow-wrap: anywhere; }
+.advisory-panel button, .advisory-dialog button { min-height: 40px; font-family: inherit; font-size: 12px; }
+button:not([data-slot="button"]) { display: inline-flex; align-items: center; justify-content: center; gap: 7px; padding: 8px 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface-soft); color: var(--ocean); font-weight: 600; cursor: pointer; }
+.advisory-list button { min-height: 32px; padding: 5px 10px; font-size: 11px; }
+button:disabled { opacity: .6; }
+label { display: grid; gap: 7px; min-width: 0; color: var(--muted); font-size: 12px; font-weight: 600; }
+input:not([type="checkbox"]), select, textarea { width: 100%; min-width: 0; min-height: 40px; padding: 8px 12px; border: 1px solid var(--line); border-radius: 9px; background: var(--surface-soft); color: var(--ink); font: inherit; font-size: 12px; }
+textarea { resize: vertical; line-height: 1.5; }
+.fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+.advisory-settings { grid-template-columns: .8fr .8fr 1.4fr; }
+.advisory-modal { --width: min(640px, calc(100vw - 32px)); --border-radius: 16px; }
+.advisory-dialog { min-height: 0; font-family: var(--ion-font-family); }
+.advisory-dialog .communication-dialog-heading { padding: 12px 20px; gap: 12px; }
+.advisory-dialog .communication-dialog-heading h2 { font-size: 17px; }
+.advisory-dialog .communication-dialog-heading > button { width: 44px; height: 44px; padding: 0; flex: none; font-size: 20px; }
+.advisory-dialog .communication-scroll { padding: 12px 20px; scrollbar-width: thin; }
+.advisory-dialog fieldset { gap: 10px; }
+.advisory-dialog .check { display: flex; align-items: center; gap: 10px; padding: 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface-soft); color: var(--ink); }
+.check input { width: 17px; height: 17px; flex: none; margin: 0; accent-color: var(--ocean); }
+.advisory-dialog .communication-footer { padding: 12px 20px; background: var(--surface-soft); }
+input:focus-visible, select:focus-visible, textarea:focus-visible, button:focus-visible { outline: 2px solid var(--ocean); outline-offset: 2px; }
 @media (max-width: 600px) {
-  .fields {
-    grid-template-columns: 1fr;
-  }
-  .advisory-list article {
-    flex-wrap: wrap;
-  }
-
+  .communication-heading { align-items: flex-start; }
+  .communication-filters { grid-template-columns: minmax(0, 1fr); padding: 16px; }
+  .advisory-list article { grid-template-columns: 24px minmax(0, 1fr); gap: 10px; }
+  .advisory-list article > button { grid-column: 2; justify-self: start; min-height: 44px; }
+  .advisory-modal { --width: calc(100vw - 24px); }
+  .advisory-dialog .communication-dialog-heading, .advisory-dialog .communication-scroll { padding: 16px; }
+  .fields { grid-template-columns: minmax(0, 1fr); }
+  input:not([type="checkbox"]), select, textarea { min-height: 44px; font-size: 16px; }
+  .advisory-dialog .communication-footer { padding: 12px 16px; }
+  .advisory-dialog .communication-footer button { min-height: 44px; flex: 1; }
 }
 </style>

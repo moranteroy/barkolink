@@ -3,7 +3,7 @@
     <button v-if="navigation" class="menu-button" aria-label="Toggle navigation" :aria-expanded="menuOpen" @click="$emit('toggleMenu')"><IonIcon :icon="menuOpen ? closeOutline : menuOutline" aria-hidden="true" /></button>
     <RouterLink :to="`/staff/${role}`" class="workspace-heading" :aria-label="`Back to ${role} dashboard`"><span class="workspace-icon"><IonIcon :icon="role === 'boarding' ? boatOutline : ticketOutline" aria-hidden="true" /></span><strong>{{ role === 'boarding' ? 'Boarding desk' : 'Ticketing desk' }}</strong></RouterLink>
     <div class="header-actions">
-    <RouterLink :to="`/staff/${role}/notifications`" class="notification-link" :aria-label="notificationUnreadCount ? `Notifications, ${notificationUnreadCount} unread` : 'Notifications'" title="Notifications"><IonIcon :icon="notificationsOutline" aria-hidden="true" /><span v-if="notificationUnreadCount" class="unread-badge" aria-hidden="true">{{ notificationUnreadCount > 99 ? '99+' : notificationUnreadCount }}</span></RouterLink>
+    <RouterLink :to="`/staff/${role}/notifications`" class="notification-link" :aria-current="router.currentRoute.value.path === `/staff/${role}/notifications` ? 'page' : undefined" :aria-label="notificationUnreadCount ? `Notifications, ${notificationUnreadCount} unread` : 'Notifications'" title="Notifications"><IonIcon :icon="notificationsOutline" aria-hidden="true" /><span v-if="notificationUnreadCount" class="unread-badge" aria-hidden="true">{{ notificationUnreadCount > 99 ? '99+' : notificationUnreadCount }}</span></RouterLink>
     <DropdownMenu :open="accountOpen" @update:open="accountOpen = $event">
       <DropdownMenuTrigger as-child><button class="account-link" aria-label="My staff account" :title="name"><IonIcon :icon="personCircleOutline" aria-hidden="true" /><span class="account-copy"><strong>{{ name }}</strong><small>{{ roleLabel }}</small></span><IonIcon class="account-chevron" :icon="chevronDownOutline" aria-hidden="true" /></button></DropdownMenuTrigger>
       <DropdownMenuContent align="end" class="staff-account-menu" :collision-padding="12">
@@ -62,8 +62,9 @@ a:focus-visible, button:focus-visible { outline: 2px solid var(--ocean); outline
 @media (max-width: 800px) { .menu-button { display: inline-flex; } .staff-workspace-header { padding: 12px 16px; } }
 @media (max-width: 480px) { .staff-workspace-header { gap: 8px; } .account-link { width: 40px; padding: 8px; justify-content: center; } .account-link span { display: none; } .workspace-icon { display: none; } .workspace-heading strong { font-size: 13px; } }
 .header-actions { display: flex; align-items: center; gap: 10px; margin-left: auto; flex: none; }
-.notification-link { position: relative; display: grid; place-items: center; width: 42px; height: 44px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface-soft); color: var(--ocean); font-size: 21px; text-decoration: none; }
-.unread-badge { position: absolute; top: -5px; right: -5px; min-width: 18px; height: 18px; padding: 0 4px; display: grid; place-items: center; border-radius: 20px; background: #d3374d; color: white; font-size: 10px; font-weight: 700; border: 2px solid var(--surface); }
+.notification-link { position: relative; display: grid; place-items: center; width: 44px; height: 44px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface-soft); color: var(--ink); font-size: 21px; text-decoration: none; }
+.notification-link[aria-current="page"] { color:var(--ocean); border-color:var(--ocean); }
+.unread-badge { position: absolute; top: -5px; right: -5px; min-width: 20px; height: 20px; padding: 0 5px; display: grid; place-items: center; border-radius: 20px; background: #c73646; color: white; font-size: 10px; font-weight: 700; border: 2px solid var(--surface); }
 @media (max-width: 480px) { .header-actions { gap: 7px; } }
 </style>
 

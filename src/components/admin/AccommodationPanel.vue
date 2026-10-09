@@ -12,8 +12,8 @@
       <fieldset class="accommodation-fields" :disabled="busy">
         <p class="form-note">Vessel, class name, capacity, and extra fare are required.</p>
         <div class="accommodation-field-grid">
-      <label
-        >Vessel<select
+      <label for="accommodation-form-vessel"
+        >Vessel<select id="accommodation-form-vessel"
           v-model="form.vesselId"
           required
           :disabled="!!form.id || busy"
@@ -23,12 +23,11 @@
             {{ v.name }} · {{ v.passengerCapacity }} seats
           </option>
         </select></label
-      ><label
-        >Class name<input
-          v-model.trim="form.name"
-          required
-          maxlength="60"
-          placeholder="Economy, Tourist, Business…" /></label
+      ><label for="accommodation-class-name"
+        >Class name<select id="accommodation-class-name" v-model="form.name" required>
+          <option value="" disabled>Select class</option>
+          <option v-for="name in classNames" :key="name" :value="name">{{ name }}</option>
+        </select></label
       ><label class="description-field"
         >Description (optional)<textarea
           v-model.trim="form.description"
@@ -72,61 +71,26 @@
     </div>
     <p v-if="!loading && !error && !vessels.length" class="form-note">Add an active vessel before creating accommodation. <router-link to="/admin/vessels">Manage vessels</router-link></p>
     <div class="accommodation-directory">
-      <div class="directory-heading"><div><p class="eyebrow">SEATING CLASSES</p><h2>Accommodation directory</h2><p class="directory-hint">{{ table.records.value.length }} of {{ rows.length }} classes · Existing bookings keep their selected class and price.</p></div><Button :disabled="busy || loading || !vessels.length" @click="start()">Add accommodation</Button></div>
-      <div class="directory-table">
-      <table>
-        <thead>
-          <tr>
-            <th>Class</th>
-            <th>Vessel</th>
-            <th>Description</th>
-            <th>Capacity</th>
-            <th>Extra fare</th>
-            <th>Status</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="a in table.records.value" :key="a.id">
-            <td data-label="Class">
-              <strong class="class-name">{{ a.name }}</strong>
-            </td>
-            <td data-label="Vessel">{{ a.vesselName }}</td>
-            <td data-label="Description">
-              {{ a.description || "Standard seating" }}
-            </td>
-            <td data-label="Capacity"><span class="class-capacity">{{ a.capacity }} seats</span></td>
-            <td data-label="Extra fare">
-              PHP {{ a.surcharge.toLocaleString() }}
-            </td>
-            <td data-label="Status">
-              <Badge :variant="a.isActive ? 'success' : 'destructive'">{{
-                a.isActive ? "Active" : "Inactive"
-              }}</Badge>
-            </td>
-            <td data-label="Actions">
-              <Button variant="outline" :disabled="busy || loading" :aria-label="`Edit ${a.name} on ${a.vesselName}`" @click="start(a)">Edit</Button>
-            </td>
-          </tr>
-          <tr v-if="!table.records.value.length && !error">
-            <td colspan="7">
-              {{
-                loading
-                  ? "Loading accommodations…"
-                  : rows.length ? "No matching accommodation classes." : "No classes yet. Add the seating classes your operator offers."
-              }}
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
+      <div class="directory-heading"><div><p class="eyebrow">SEATING CLASSES</p><h2>Accommodation directory</h2><p class="directory-hint">{{ table.records.value.length }} of {{ rows.length }} classes</p></div><Button :disabled="busy || loading || !vessels.length" @click="start()"><IonIcon :icon="addOutline" aria-hidden="true" />Add accommodation</Button></div>
+      <RecordsGrid title="Accommodation directory" :columns="['Class', 'Vessel', 'Description', 'Capacity', 'Extra fare', 'Status']" :rows="gridRows" :loading="loading" density="compact" :column-min-widths="[110, 160, 220, 100, 110, 100]" :action-width="110" :max-grid-height="360">
+        <template #cell="{ row, index, value }">
+          <strong v-if="index === 0" class="class-name">{{ value }}</strong>
+          <strong v-else-if="index === 1" class="vessel-name">{{ value }}</strong>
+          <span v-else-if="index === 3 || index === 4" class="class-number">{{ value }}</span>
+          <Badge v-else-if="index === 5" :variant="row.source.isActive ? 'success' : 'destructive'">{{ value }}</Badge>
+          <span v-else class="class-description" :title="String(value)">{{ value }}</span>
+        </template>
+        <template #actions="{ row }"><button type="button" class="class-edit" :disabled="busy || loading" :aria-label="`Edit ${row.source.name} on ${row.source.vesselName}`" @click="start(row.source)">Edit</button></template>
+      </RecordsGrid>
+      <p class="directory-footer">Existing bookings keep their selected class and price.</p>
     </div>
   </section>
 </template>
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from "vue";
 import { IonIcon, IonModal } from "@ionic/vue";
-import { bedOutline, closeOutline, peopleOutline, searchOutline } from "ionicons/icons";
+import { addOutline, bedOutline, closeOutline, peopleOutline, searchOutline } from "ionicons/icons";
+import RecordsGrid from "../shared/RecordsGrid.vue";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { confirmAction } from "../../composables/confirmation";
@@ -163,6 +127,14 @@ const filteredRows = computed(() => rows.value.filter(row =>
   (status.value === 'ALL' || row.isActive === (status.value === 'ACTIVE')) &&
   (vesselFilter.value === 'ALL' || row.vesselId === vesselFilter.value)));
 const table = useTableRecords(filteredRows);
+const classNames = computed(() => [...new Set(['Economy', 'Tourist', 'Premium', 'Business', ...rows.value.map(row => row.name), ...(form.name ? [form.name] : [])])]);
+const gridRows = computed(() => table.records.value.map(accommodation => ({
+  key: accommodation.id,
+  cells: [accommodation.name, accommodation.vesselName || vessels.value.find(vessel => vessel.id === accommodation.vesselId)?.name || 'Unavailable vessel', accommodation.description || 'Standard seating', `${accommodation.capacity} seats`, `PHP ${accommodation.surcharge.toLocaleString()}`, accommodation.isActive ? 'Active' : 'Inactive'],
+  sortValues: [accommodation.name, accommodation.vesselName, accommodation.description || 'Standard seating', accommodation.capacity, accommodation.surcharge, accommodation.isActive ? 'Active' : 'Inactive'],
+  source: accommodation,
+  statusIndex: 5,
+})));
 function resetFilters() { table.query.value = ''; table.sort.value = ''; status.value = 'ALL'; vesselFilter.value = 'ALL'; }
 let initialForm = JSON.stringify(form);
 const hasUnsavedChanges = () => editing.value && JSON.stringify(form) !== initialForm;
@@ -235,76 +207,81 @@ async function save() {
 onMounted(load);
 </script>
 <style scoped>
-.accommodation-workspace { display: grid; gap: 20px; min-width: 0; }
-.directory-filters { display: flex; align-items: end; flex-wrap: wrap; gap: 14px; padding: 18px 20px; border: 1px solid var(--line); border-radius: 14px; background: var(--surface); }
-label { display: grid; gap: 8px; min-width: 0; font-size: 11px; font-weight: 600; color: var(--muted); }
-input:not([type="checkbox"]), select, textarea { width: 100%; min-width: 0; min-height: 44px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 9px; background: var(--surface-soft); color: var(--ink); font: inherit; font-size: 12px; }
-textarea { resize: vertical; line-height: 1.6; }
-.directory-search { flex: 1 1 100%; }
-.directory-filters > label:not(.directory-search) { flex: 1; }
+.accommodation-workspace { display: grid; gap: 16px; min-width: 0; font-family: var(--ion-font-family); }
+.directory-filters { display: grid; grid-template-columns: minmax(0, 1fr) 130px 190px auto; align-items: end; gap: 12px; padding: 12px 16px; border: 1px solid var(--line); border-radius: 14px; background: var(--surface); }
+label { display: grid; gap: 8px; min-width: 0; font-size: 12px; font-weight: 600; color: var(--muted); }
+input:not([type="checkbox"]), select, textarea { width: 100%; min-width: 0; min-height: 40px; padding: 8px 12px; border: 1px solid var(--line); border-radius: 9px; background: var(--surface-soft); color: var(--ink); font: inherit; font-size: 12px; }
+textarea { resize: vertical; line-height: 1.5; }
+.directory-search { grid-column: 1 / -1; }
 .search-input { display: flex; align-items: center; gap: 8px; padding-left: 12px; border: 1px solid var(--line); border-radius: 9px; background: var(--surface-soft); }
 .search-input input { border: 0; background: transparent; outline: none; }
 .search-input ion-icon { flex: none; font-size: 17px; }
 .search-input:focus-within { outline: 2px solid var(--ocean); outline-offset: 2px; }
-.directory-filters > button { min-height: 44px; flex: none; }
+.accommodation-workspace button, .accommodation-dialog button { display: inline-flex; align-items: center; justify-content: center; gap: 7px; min-height: 40px; font-family: inherit; font-size: 12px; }
 .accommodation-directory { border: 1px solid var(--line); border-radius: 14px; overflow: hidden; background: var(--surface); min-width: 0; }
-.directory-heading { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 20px 22px; border-bottom: 1px solid var(--line); }
+.directory-heading { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 14px 16px; border-bottom: 1px solid var(--line); }
 .directory-heading > button { flex: none; }
+.directory-heading > button ion-icon { font-size: 17px; }
 .eyebrow { margin: 0 0 6px; font-size: 10px; font-weight: 800; letter-spacing: .1em; color: var(--ocean); }
-h2 { margin: 0; font-size: 19px; color: var(--ink); }
-.directory-hint { margin: 8px 0 0; color: var(--muted); font-size: 11px; line-height: 1.5; }
-.directory-table { overflow-x: auto; scrollbar-width: thin; }
-table { width: 100%; border-collapse: collapse; }
-th, td { padding: 15px 18px; border-bottom: 1px solid var(--line); text-align: left; font-size: 12px; color: var(--ink); }
-th { background: var(--surface-soft); font-size: 10px; letter-spacing: .05em; text-transform: uppercase; color: var(--muted); }
-tbody tr:last-child td { border-bottom: 0; }
-tbody tr:hover { background: var(--surface-soft); }
-.class-name { font-size: 13px; font-weight: 650; }
-.class-capacity { white-space: nowrap; font-variant-numeric: tabular-nums; }
+h2 { margin: 0; font-size: 17px; color: var(--ink); }
+.directory-hint { margin: 5px 0 0; color: var(--muted); font-size: 11px; line-height: 1.5; }
+.accommodation-directory :deep(.grid-tools) { padding: 8px 16px; border-bottom: 1px solid var(--line); background: var(--surface); }
+.accommodation-directory :deep(.grid-tools button) { min-height: 34px; padding: 6px 8px; }
+.accommodation-directory :deep(.desktop-grid) { padding: 8px; }
+.accommodation-directory :deep(.grid-cell-content) { padding: 7px 0; font-size: 12px; line-height: 1.5; }
+.accommodation-directory :deep(.grid-row-actions) { display: flex; align-items: center; min-height: 44px; padding: 7px 0; }
+.accommodation-workspace .class-edit { min-height: 32px; padding: 5px 10px; border: 1px solid var(--line); border-radius: 7px; background: var(--surface); color: var(--ocean); font-size: 11px; cursor: pointer; }
+.class-name, .vessel-name { font-size: 12px; font-weight: 650; }
+.class-number { white-space: nowrap; font-variant-numeric: tabular-nums; }
+.class-description { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.directory-footer { margin: 0; padding: 10px 16px; border-top: 1px solid var(--line); color: var(--muted); font-size: 11px; line-height: 1.5; }
 .form-note { margin: 0; font-size: 11px; color: var(--muted); line-height: 1.6; }
 .form-note a { color: var(--ocean); }
-.accommodation-modal { --width: min(680px, calc(100vw - 32px)); --height: auto; --max-height: calc(100dvh - 40px); --border-radius: 16px; --background: var(--surface); }
-.accommodation-dialog { display: flex; flex-direction: column; max-height: calc(100dvh - 40px); overflow: hidden; background: var(--surface); color: var(--ink); }
-.dialog-heading { display: flex; align-items: center; gap: 14px; padding: 22px 24px; border-bottom: 1px solid var(--line); flex: none; }
-.dialog-symbol { display: grid; place-items: center; width: 44px; height: 44px; flex: none; border-radius: 12px; background: var(--light-blue); color: var(--ocean); font-size: 24px; }
+.accommodation-modal { --width: min(640px, calc(100vw - 32px)); --height: auto; --max-height: calc(100dvh - 40px); --border-radius: 16px; --background: var(--surface); }
+.accommodation-dialog { display: flex; flex-direction: column; min-height: 0; max-height: calc(100dvh - 40px); overflow: hidden; background: var(--surface); color: var(--ink); font-family: var(--ion-font-family); }
+.dialog-heading { display: flex; align-items: center; gap: 12px; padding: 18px 20px; border-bottom: 1px solid var(--line); flex: none; }
+.dialog-symbol { display: grid; place-items: center; width: 40px; height: 40px; flex: none; border-radius: 10px; background: var(--light-blue); color: var(--ocean); font-size: 22px; }
 .dialog-subtitle { margin: 6px 0 0; color: var(--muted); font-size: 12px; line-height: 1.5; }
-.dialog-close { display: grid; place-items: center; width: 36px; height: 36px; flex: none; margin-left: auto; border: 0; border-radius: 9px; background: var(--surface-soft); color: var(--muted); font-size: 22px; cursor: pointer; }
+.accommodation-dialog .dialog-close { display: grid; place-items: center; width: 44px; height: 44px; flex: none; margin-left: auto; border: 1px solid var(--line); border-radius: 10px; background: var(--surface-soft); color: var(--muted); font-size: 22px; cursor: pointer; }
 .accommodation-form { display: flex; flex: 1 1 auto; flex-direction: column; min-height: 0; overflow: hidden; }
-.accommodation-scroll { flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; scrollbar-gutter: stable; scrollbar-color: var(--muted) var(--surface); }
-.accommodation-fields { border: 0; margin: 0; min-width: 0; padding: 22px 24px; }
-.accommodation-field-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; gap: 20px 18px; margin-top: 18px; }
+.accommodation-scroll { flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; scrollbar-color: var(--muted) var(--surface); }
+.accommodation-fields { border: 0; margin: 0; min-width: 0; padding: 16px 20px; }
+.accommodation-field-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; gap: 16px; margin-top: 12px; }
 .description-field { grid-column: 1 / -1; }
-.accommodation-fields label small { font-size: 10px; line-height: 1.5; font-weight: 400; }
-.capacity-note { display: flex; align-items: center; gap: 12px; padding: 14px; border-radius: 10px; background: var(--light-blue); color: var(--ocean); margin: 18px 0 0; }
-.capacity-note ion-icon { font-size: 23px; flex: none; }
-.capacity-note span { display: grid; gap: 5px; }
+.accommodation-fields label small { font-size: 11px; line-height: 1.5; font-weight: 400; }
+.capacity-note { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 10px; background: var(--light-blue); color: var(--ocean); margin: 14px 0 0; }
+.capacity-note ion-icon { font-size: 20px; flex: none; }
+.capacity-note span { display: grid; gap: 4px; }
 .capacity-note strong { font-size: 12px; font-weight: 650; }
-.capacity-note small { font-size: 10px; line-height: 1.5; color: var(--muted); }
-.accommodation-availability { display: flex; align-items: center; gap: 12px; margin-top: 18px; padding: 14px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface-soft); color: var(--ink); }
+.capacity-note small { font-size: 11px; line-height: 1.5; color: var(--muted); }
+.accommodation-availability { display: flex; align-items: center; gap: 10px; margin-top: 14px; padding: 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface-soft); color: var(--ink); }
 .accommodation-availability input { width: 17px; height: 17px; flex: none; accent-color: var(--ocean); }
-.dialog-footer { display: flex; justify-content: flex-end; gap: 10px; flex: none; padding: 16px 24px; border-top: 1px solid var(--line); background: var(--surface-soft); }
-.dialog-footer button { min-height: 44px; }
-.form-error { margin: 16px 24px 0; padding: 12px; border-radius: 9px; background: var(--danger-soft); color: var(--danger); font-size: 12px; line-height: 1.5; }
+.dialog-footer { display: flex; justify-content: flex-end; gap: 10px; flex: none; padding: 14px 20px; border-top: 1px solid var(--line); background: var(--surface-soft); }
+.form-error { margin: 12px 20px 0; padding: 12px; border-radius: 9px; background: var(--danger-soft); color: var(--danger); font-size: 12px; line-height: 1.5; flex: none; }
 input:focus-visible, select:focus-visible, textarea:focus-visible, button:focus-visible { outline: 2px solid var(--ocean); outline-offset: 2px; }
 button:disabled, input:disabled, select:disabled { opacity: .6; }
+@media (max-width: 1000px) {
+  .directory-filters { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .directory-filters > button { grid-column: 1 / -1; justify-self: start; }
+}
+@media (max-width: 699px) {
+  .class-description { white-space: normal; overflow-wrap: anywhere; }
+}
 @media (max-width: 600px) {
+  .directory-filters { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .directory-filters, .directory-heading { padding: 16px; }
-  .directory-filters > label:not(.directory-search) { flex-basis: calc(50% - 14px); }
+  .directory-filters > label[for="accommodation-sort"] { grid-column: 1 / -1; }
   .directory-filters > button { width: 100%; }
-  .directory-heading { align-items: flex-start; flex-direction: column; }
+  .directory-heading { align-items: flex-start; flex-wrap: wrap; gap: 12px; }
+  .accommodation-directory :deep(.grid-tools) { flex-wrap: wrap; }
+  .accommodation-workspace .class-edit { min-height: 44px; }
   .accommodation-modal { --width: calc(100vw - 24px); --max-height: calc(100dvh - 24px); }
   .accommodation-dialog { max-height: calc(100dvh - 24px); }
-  .dialog-heading, .accommodation-fields { padding: 18px; }
+  .dialog-heading, .accommodation-fields { padding: 16px; }
   .dialog-heading { align-items: flex-start; gap: 10px; }
-  .accommodation-field-grid { grid-template-columns: 1fr; gap: 16px; }
-  .dialog-footer { padding: 14px 18px; }
-  .dialog-footer button { flex: 1; }
-  table, tbody, tr, td { display: block; }
-  thead { display: none; }
-  tr { padding: 12px 16px; border-bottom: 1px solid var(--line); }
-  tbody tr:last-child { border-bottom: 0; }
-  td { display: flex; justify-content: space-between; align-items: center; gap: 14px; padding: 8px 0; border: 0; overflow-wrap: anywhere; }
-  td:before { content: attr(data-label); color: var(--muted); font-size: 10px; min-width: 80px; }
-  td[colspan]:before { display: none; }
+  .accommodation-field-grid { grid-template-columns: 1fr; gap: 14px; }
+  input:not([type="checkbox"]), select, textarea { min-height: 44px; font-size: 16px; }
+  .dialog-footer { padding: 12px 16px; }
+  .dialog-footer button { flex: 1; min-height: 44px; }
 }
 </style>

@@ -11,6 +11,10 @@ vi.mock('../../src/services/database/workspaces', () => ({ campaigns: mocks.camp
 vi.mock('../../src/composables/unsavedChanges', () => ({ useUnsavedChanges: vi.fn() }));
 vi.mock('../../src/composables/confirmation', () => ({ confirmAction: mocks.confirm }));
 vi.mock('@ionic/vue', () => ({ IonIcon: { template: '<span />' }, IonModal: { props: ['isOpen', 'canDismiss'], template: '<div v-if="isOpen" role="dialog"><slot /></div>' } }));
+vi.mock('../../src/components/shared/RecordsGrid.vue', () => ({ default: {
+  props: ['rows', 'columns'],
+  template: '<div class="records-grid"><div v-for="row in rows" :key="row.key"><slot name="cell" v-for="(value, index) in row.cells" :row="row" :value="value" :index="index" /></div></div>',
+} }));
 beforeEach(() => {
   vi.clearAllMocks();
   mocks.advisories.mockResolvedValue({ data: { advisories: [] } });

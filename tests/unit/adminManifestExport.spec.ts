@@ -16,6 +16,19 @@ beforeEach(() => {
 })
 afterEach(() => { vi.restoreAllMocks(); vi.unstubAllGlobals() })
 describe('manifest export in reports', () => {
+  it('uses the page sailing filter without displaying a second selector', async () => {
+    mocks.query.mockResolvedValue({ data: { bookingPassengers: [] } })
+    const wrapper = mount(AdminManifestExport, { props: { sailings: [sailing], sailingCode: '', externalSelection: true } })
+    expect(wrapper.find('select').exists()).toBe(false)
+    expect(wrapper.find('button').attributes('disabled')).toBeDefined()
+    await wrapper.setProps({ sailingCode: 'TRP1' })
+    await wrapper.find('button').trigger('click'); await flushPromises()
+    expect(mocks.query).toHaveBeenCalledWith({}, { sailingCode: 'TRP1', offset: 0 }, { fetchPolicy: 'SERVER_ONLY' })
+    await wrapper.setProps({ sailingCode: '' })
+    expect(wrapper.find('button').attributes('disabled')).toBeDefined()
+    expect(wrapper.find('select').exists()).toBe(false)
+    wrapper.unmount()
+  })
   it('exports the workspace sailing without a second selector and updates when the sailing changes', async () => {
     mocks.query.mockResolvedValue({ data: { bookingPassengers: [] } })
     const wrapper = mount(AdminManifestExport, { props: { sailings: [sailing], sailingCode: 'TRP1' } })

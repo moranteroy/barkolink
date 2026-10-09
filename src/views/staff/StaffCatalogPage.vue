@@ -32,8 +32,9 @@
             </div>
             <p v-if="error" role="alert" class="catalog-error">{{ error }}</p>
             <WeatherTripPicker v-if="section === 'trips'" :trips="trips" />
+            <InboxPanel v-if="section === 'notifications'" :key="refresh" :show-broadcast="false" />
             <NoShowsPanel
-              v-if="section === 'no-shows'"
+              v-else-if="section === 'no-shows'"
               :key="refresh"
             /><template v-else
               ><form
@@ -152,6 +153,7 @@
   >
 </template>
 <script setup lang="ts">
+import InboxPanel from '../../components/admin/InboxPanel.vue';
 import WeatherTripPicker from '../../components/shared/WeatherTripPicker.vue';
 import WorkspacePagination from "../../components/shared/WorkspacePagination.vue";
 import { setUnreadNotifications, clearNotificationUnread } from "../../composables/notificationUnread";
@@ -319,7 +321,7 @@ async function load() {
   loading.value = true;
   error.value = "";
   try {
-    if (section.value === "no-shows") {
+    if (["no-shows", "notifications"].includes(section.value)) {
       refresh.value++;
       return;
     }

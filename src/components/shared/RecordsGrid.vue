@@ -131,6 +131,7 @@ const props = withDefaults(
     density?: "comfortable" | "compact";
     actionWidth?: number;
     columnMinWidths?: number[];
+    columnFlex?: number[];
     maxGridHeight?: number;
     displayOnlyColumns?: number[];
   }>(),
@@ -265,6 +266,7 @@ const columnDefs = computed<ColDef<RecordGridRow>[]>(() => [
       tooltip: ({ value }) => String(value ?? ""),
       cellRenderer: renderer(index),
       minWidth: props.columnMinWidths[index] ?? (index === 0 ? 170 : 150),
+      flex: props.columnFlex?.[index] ?? 1,
       comparator: (a, b, nodeA, nodeB) => {
         const left = nodeA.data?.sortValues?.[index] ?? a,
           right = nodeB.data?.sortValues?.[index] ?? b;

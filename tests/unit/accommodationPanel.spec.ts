@@ -8,6 +8,10 @@ vi.mock('../../src/services/database/workspaces', () => ({ accommodations: mocks
 vi.mock('../../src/services/database/staff', () => ({ adminVessels: mocks.vessels }));
 vi.mock('../../src/composables/unsavedChanges', () => ({ useUnsavedChanges: vi.fn() }));
 vi.mock('../../src/composables/confirmation', () => ({ confirmAction: mocks.confirm }));
+vi.mock('../../src/components/shared/RecordsGrid.vue', () => ({ default: {
+  props: ['rows', 'columns', 'density', 'maxGridHeight', 'actionWidth'],
+  template: '<div class="records-grid"><div v-for="row in rows" :key="row.key" class="test-grid-row"><slot name="cell" v-for="(value, index) in row.cells" :row="row" :value="value" :index="index" /><slot name="actions" :row="row" /></div></div>',
+} }));
 vi.mock('@ionic/vue', () => ({
   IonIcon: { template: '<span />' },
   IonModal: { props: ['isOpen', 'canDismiss'], template: '<div v-if="isOpen" role="dialog"><slot /></div>' },
@@ -27,7 +31,7 @@ async function openForm() {
   await flushPromises();
   await wrapper.find('.directory-heading button').trigger('click');
   await wrapper.find('.accommodation-field-grid select').setValue('v1');
-  await wrapper.find('input[placeholder="Economy, Tourist, Business…"]').setValue('Premium');
+  await wrapper.find('#accommodation-class-name').setValue('Premium');
   return wrapper;
 }
 describe('accommodation modal and capacity', () => {
@@ -62,17 +66,32 @@ describe('accommodation modal and capacity', () => {
     await wrapper.find('.accommodation-form').trigger('submit');
     await flushPromises();
     expect(wrapper.find('[role="dialog"] [role="alert"]').exists()).toBe(true);
-    expect((wrapper.find('input[placeholder="Economy, Tourist, Business…"]').element as HTMLInputElement).value).toBe('Premium');
+    expect((wrapper.find('#accommodation-class-name').element as HTMLSelectElement).value).toBe('Premium');
     wrapper.unmount();
   });
   it('filters inactive classes and resets the directory', async () => {
     const wrapper = mount(AccommodationPanel, { global: { stubs: { RouterLink: true } } });
     await flushPromises();
     await wrapper.find('#accommodation-status').setValue('INACTIVE');
-    expect(wrapper.findAll('tbody tr')).toHaveLength(1);
-    expect(wrapper.find('tbody').text()).toContain('Business');
+    expect(wrapper.findAll('.test-grid-row')).toHaveLength(1);
+    expect(wrapper.find('.records-grid').text()).toContain('Business');
     await wrapper.findAll('button').find(button => button.text() === 'Reset filters')!.trigger('click');
-    expect(wrapper.findAll('tbody tr')).toHaveLength(2);
+    expect(wrapper.findAll('.test-grid-row')).toHaveLength(2);
+    wrapper.unmount();
+  });
+  it('preserves an existing custom class in the dropdown when editing', async () => {
+    mocks.list.mockResolvedValue({ data: { accommodations: [
+      { id: 'a3', vesselId: 'v1', vesselName: 'Ferry One', name: 'Private cabin', description: '', capacity: 10, surcharge: 300, isActive: true },
+    ] } });
+    const wrapper = mount(AccommodationPanel, { global: { stubs: { RouterLink: true } } });
+    await flushPromises();
+    await wrapper.find('.class-edit').trigger('click');
+    const select = wrapper.find('#accommodation-class-name');
+    expect(select.findAll('option').map(option => option.text())).toEqual(expect.arrayContaining(['Economy', 'Tourist', 'Premium', 'Business', 'Private cabin']));
+    expect((select.element as HTMLSelectElement).value).toBe('Private cabin');
+    await wrapper.find('.accommodation-form').trigger('submit');
+    await flushPromises();
+    expect(mocks.save).toHaveBeenCalledWith({}, expect.objectContaining({ id: 'a3', name: 'Private cabin' }));
     wrapper.unmount();
   });
 });
