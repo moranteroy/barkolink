@@ -47,14 +47,14 @@ try {
       assert.equal(await page.locator('#fleet-heading').evaluate(el => el === document.activeElement), true)
     }
     await page.getByRole('button', { name: 'Find Batangas to Calapan sailings' }).click()
-    await page.waitForURL(url => url.pathname === '/search')
+    await page.waitForURL(url => url.pathname === '/trips')
     await page.locator('.trip-card').first().waitFor()
     assert.equal(await page.evaluate(() => JSON.parse(localStorage.getItem('barkolink-search-route'))?.from), 'Batangas')
     await page.goto(baseUrl)
     await page.locator('.search-button:not(:disabled)').waitFor()
     await page.locator('.search-frame input[type=date]').fill(new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Manila', year: 'numeric', month: '2-digit', day: '2-digit' }).format(date))
     await page.locator('.search-button').click()
-    await page.waitForURL(url => url.pathname === '/search')
+    await page.waitForURL(url => url.pathname === '/trips')
     await page.locator('.trip-card').first().waitFor()
     if (theme === 'light' && width === 390) {
       state = 'empty'; await page.goto(baseUrl)

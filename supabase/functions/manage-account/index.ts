@@ -79,6 +79,7 @@ Deno.serve(async (request) => {
       return reply(400, {
         error: createError?.message || "Could not create account.",
       });
+    // Port assignment is a separate administrator action after account creation.
     if (phone) {
       const { error: profileError } = await admin
         .from("app_user")

@@ -192,6 +192,8 @@ export interface MyProfileData {
     fullName: string;
     phone?: string | null;
     role: string;
+    assignedPortId?: UUIDString | null;
+    assignedPort?: { id: UUIDString; name: string; isActive: boolean } | null;
   } & User_Key;
 }
 

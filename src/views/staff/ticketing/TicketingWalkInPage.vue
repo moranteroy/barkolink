@@ -31,6 +31,8 @@
           <router-link class="return-to-queue" to="/staff/ticketing/bookings"><ion-icon :icon="ticketOutline" aria-hidden="true" /> Booking queue</router-link>
         </section>
 
+        <StaffPortRequired v-if="portBlocked" />
+        <template v-else>
         <div v-if="issued" class="receipt" aria-live="polite">
           <div class="receipt-top">
             <span class="success-icon"
@@ -365,6 +367,7 @@
           </DialogContent>
           </DialogOverlay>
         </DialogRoot>
+        </template>
       </main>
         </section>
       </div>
@@ -373,6 +376,9 @@
 </template>
 
 <script setup lang="ts">
+import StaffPortRequired from '../../../components/staff/StaffPortRequired.vue';
+import { useStaffPortGate } from '../../../composables/staffPortGate';
+const { portBlocked } = useStaffPortGate(loadSailings);
 import BrandMark from "../../../components/shared/BrandMark.vue";
 import StaffNavigation from "../../../components/staff/StaffNavigation.vue";
 import StaffWorkspaceHeader from "../../../components/staff/StaffWorkspaceHeader.vue";

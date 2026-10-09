@@ -4,7 +4,7 @@ import AuthPage from '../../src/views/auth/AuthPage.vue'
 
 const mocks = vi.hoisted(() => ({
   route: { path: '/login', fullPath: '/login', query: {} },
-  replace: vi.fn(), signIn: vi.fn(), register: vi.fn(), reset: vi.fn(), profile: vi.fn(), createProfile: vi.fn(),
+  replace: vi.fn(), signIn: vi.fn(), register: vi.fn(), reset: vi.fn(), resend: vi.fn(), profile: vi.fn(), createProfile: vi.fn(),
 }))
 vi.mock('vue-router', () => ({
   useRoute: () => mocks.route, useRouter: () => ({ replace: mocks.replace }),
@@ -18,13 +18,15 @@ vi.mock('../../src/services/session', () => ({ database: {}, requireAuth: () => 
 vi.mock('../../src/services/auth', () => ({
   registerAccount: mocks.register, signInWithPassword: mocks.signIn, sendPasswordResetEmail: mocks.reset,
   updateAccountProfile: vi.fn(),
+  resendEmailCode: mocks.resend,
 }))
 vi.mock('../../src/services/database/passenger', () => ({ myProfile: mocks.profile, createMyProfile: mocks.createProfile }))
 
 describe('Account forms', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    mocks.route.path = '/login'; mocks.route.fullPath = '/login'
+    sessionStorage.clear()
+    mocks.route.path = '/login'; mocks.route.fullPath = '/login'; mocks.route.query = {}
     mocks.replace.mockResolvedValue(undefined)
   })
   it('prevents repeated sign-in submissions and preserves staff destinations', async () => {
@@ -42,6 +44,25 @@ describe('Account forms', () => {
     expect(mocks.replace).toHaveBeenCalledWith('/staff/ticketing')
     expect(mocks.profile).not.toHaveBeenCalled()
     expect(wrapper.get('.submit-button').attributes('disabled')).toBeUndefined()
+    wrapper.unmount()
+  })
+  it('requests a signup code and opens verification for an unconfirmed sign-in', async () => {
+    mocks.signIn.mockRejectedValue({ code: 'email_not_confirmed' })
+    mocks.resend.mockResolvedValue(undefined)
+    const wrapper = mount(AuthPage)
+    await wrapper.get('#email').setValue('test@example.invalid')
+    await wrapper.get('form').trigger('submit'); await flushPromises()
+    expect(mocks.resend).toHaveBeenCalledWith('test@example.invalid', 'signup')
+    expect(mocks.replace).toHaveBeenCalledWith({ path: '/verify-email', query: { purpose: 'signup' } })
+    wrapper.unmount()
+  })
+  it('ignores a stale OTP redirect after successful sign-in', async () => {
+    mocks.route.query = { redirect: '/verify-email?purpose=signup' }
+    mocks.signIn.mockResolvedValue({ user: { getRoleSession: async () => ({ claims: { role: 'PASSENGER' } }) } })
+    mocks.profile.mockResolvedValue({ data: { user: { role: 'PASSENGER' } } })
+    const wrapper = mount(AuthPage)
+    await wrapper.get('form').trigger('submit'); await flushPromises()
+    expect(mocks.replace).toHaveBeenCalledWith('/home')
     wrapper.unmount()
   })
   it('restores the submit button after invalid credentials', async () => {
@@ -63,18 +84,30 @@ describe('Account forms', () => {
     expect(wrapper.get('[role="alert"]').text()).toContain('privacy notice')
     wrapper.unmount()
   })
-  it('shows email confirmation instructions and allows a subsequent submission', async () => {
+  it('opens OTP verification without creating a profile before email verification', async () => {
     mocks.route.path = '/register'
     mocks.register.mockResolvedValue({ user: { email: 'test@example.invalid' }, session: null })
     const wrapper = mount(AuthPage)
+    await wrapper.get('#email').setValue('test@example.invalid')
     await wrapper.get('#password').setValue('Password123!')
     await wrapper.get('#confirm-password').setValue('Password123!')
     await wrapper.get('#terms').setValue(true)
     await wrapper.get('form').trigger('submit')
     await flushPromises()
-    expect(wrapper.get('[role="status"]').text()).toContain('confirm your account')
+    expect(mocks.replace).toHaveBeenCalledWith({ path: '/verify-email', query: { purpose: 'signup' } })
+    expect(JSON.parse(sessionStorage.getItem('barkolink-pending-email')!)).toEqual({ email: 'test@example.invalid', purpose: 'signup' })
     expect(wrapper.get('.submit-button').attributes('disabled')).toBeUndefined()
     expect(mocks.createProfile).not.toHaveBeenCalled()
+    wrapper.unmount()
+  })
+  it('opens recovery OTP verification after requesting password reset', async () => {
+    mocks.reset.mockResolvedValue(undefined)
+    const wrapper = mount(AuthPage)
+    await wrapper.get('#email').setValue('test@example.invalid')
+    await wrapper.get('.text-button').trigger('click')
+    await flushPromises()
+    expect(mocks.reset).toHaveBeenCalledOnce()
+    expect(mocks.replace).toHaveBeenCalledWith({ path: '/verify-email', query: { purpose: 'recovery' } })
     wrapper.unmount()
   })
 })

@@ -56,6 +56,7 @@ it('supports verification, cash payment, check-in, boarding, refund and cancella
   await db.exec('begin')
   try {
     const booking = (await db.query("select id from public.booking where reference='TEST-DISCOUNT-PENDING'")).rows[0]
+    await db.exec("update public.app_user set assigned_port_id=(select origin_port_id from public.sailing where code='TEST-BOARDING') where role in ('TICKETING','BOARDING')");
     const passengers = (await db.query('select id from public.booking_passenger where booking_id=$1', [booking.id])).rows
     for (const p of passengers) await rpc('TICKETING', 'VerifyPassengerDiscount', { passengerId: p.id, note: 'TEST fictional document reviewed' })
     await rpc('TICKETING', 'CollectBookingPayment', { bookingId: booking.id, method: 'CASH' })

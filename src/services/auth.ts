@@ -34,6 +34,9 @@ const initialized = supabase
   : Promise.resolve();
 supabase?.auth.onAuthStateChange((_event, session) => {
   current.value = session ? accountUser(session.user) : null;
+  if (_event === 'PASSWORD_RECOVERY' && session) {
+    sessionStorage.setItem('barkolink-password-recovery', JSON.stringify({ uid: session.user.id, verifiedAt: Date.now() }));
+  }
 });
 export const auth = supabase
   ? {
@@ -73,6 +76,9 @@ export async function registerAccount(
   });
   if (error) throw error;
   if (!data.user) throw new Error("Could not register the account.");
+  if (!data.session && data.user.identities?.length === 0) {
+    throw Object.assign(new Error('An account already uses this email. Sign in or use Forgot password.'), { code: 'user_already_exists' });
+  }
   current.value = data.session ? accountUser(data.user) : null;
   return { user: accountUser(data.user), session: data.session };
 }
@@ -102,6 +108,25 @@ export async function sendPasswordResetEmail(
     redirectTo: `${location.origin}/reset-password`,
   });
   if (error) throw error;
+}
+
+export async function resendEmailCode(email: string, purpose: 'signup' | 'recovery') {
+  if (purpose === 'recovery') return sendPasswordResetEmail(requireAuth(), email);
+  const { error } = await requireSupabase().auth.resend({ type: 'signup', email: email.trim() });
+  if (error) throw error;
+}
+
+export async function verifyEmailCode(email: string, token: string, purpose: 'signup' | 'recovery') {
+  const { data, error } = await requireSupabase().auth.verifyOtp({
+    email: email.trim(), token: token.trim(), type: purpose === 'signup' ? 'email' : 'recovery',
+  });
+  if (error) throw error;
+  if (!data.user || !data.session) throw new Error('Could not verify the code. Please request a new one.');
+  current.value = accountUser(data.user);
+  if (purpose === 'recovery') {
+    sessionStorage.setItem('barkolink-password-recovery', JSON.stringify({ uid: data.user.id, verifiedAt: Date.now() }));
+  }
+  return { user: accountUser(data.user), session: data.session };
 }
 export async function updateAccountProfile(
   _user: AccountUser,

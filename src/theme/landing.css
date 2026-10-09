@@ -1,6 +1,6 @@
-.landing-page { color: var(--ink); background: var(--surface); min-height: 100%; }
+.landing-page { color: var(--ink); background: var(--surface); min-height: 100%; font-size: 16px; line-height: 1.6; --card-shadow: 0 8px 28px #102b4c08; }
 .landing-page *, .landing-page *::before, .landing-page *::after { box-sizing: border-box; }
-.landing-page .landing-container { width: min(100%, 1200px); margin-inline: auto; padding-inline: 28px; }
+.landing-page .landing-container { width: min(100%, 1184px); margin-inline: auto; padding-inline: 32px; }
 .landing-page a { text-decoration: none; }
 .landing-page ion-icon { flex-shrink: 0; vertical-align: middle; }
 .landing-page button { font: inherit; cursor: pointer; }
@@ -11,10 +11,11 @@
 .landing-page .landing-skip:focus { top: 12px; }
 .landing-page .landing-nav { position: sticky; top: 0; z-index: 20; color: #fff; background: #083b5d; transition: background-color .2s; padding-top: env(safe-area-inset-top); }
 .landing-page .landing-nav.solid { background: var(--surface); color: var(--ink); box-shadow: 0 1px 0 var(--line), 0 6px 20px #00000008; }
-.landing-page .nav-row { min-height: 80px; display: flex; align-items: center; justify-content: space-between; gap: 20px; }
+.landing-page .nav-row { min-height: 76px; display: flex; align-items: center; justify-content: space-between; gap: 20px; }
 .landing-page .desktop-links, .landing-page .desktop-actions { display: flex; align-items: center; gap: 26px; }
 .landing-page .landing-nav a { color: inherit; font-size: 14px; font-weight: 650; }
-.landing-page .desktop-links a { padding-block: 14px; }
+.landing-page .desktop-links a { padding-block: 14px; opacity: .85; transition: opacity .15s; }
+.landing-page .desktop-links a:hover { opacity: 1; text-decoration: underline; text-underline-offset: 7px; }
 .landing-page .landing-nav:not(.solid) .brand-mark, .landing-page .landing-nav:not(.solid) .brand-copy b { color: #fff; }
 .landing-page .landing-nav:not(.solid) .brand-copy small { color: #d0e6f2; }
 .landing-page .landing-button { display: inline-flex; align-items: center; justify-content: center; gap: 9px; min-height: 48px; padding: 12px 22px; border: 1px solid transparent; border-radius: 10px; background: #096fa4; color: #fff; font-size: 14px; font-weight: 750; transition: background-color .15s, transform .15s; }
@@ -28,16 +29,16 @@
 .landing-page .menu-toggle { display: none; width: 44px; min-height: 44px; border: 0; border-radius: 8px; background: transparent; color: inherit; font-size: 26px; }
 .landing-page .mobile-links { display: none; }
 .landing-page .landing-hero { position: relative; overflow: hidden; background: radial-gradient(ellipse at 90% 20%, #1384a866, transparent 60%), linear-gradient(125deg, #083b5d 12%, #0b6382 72%, #147f91); color: #fff; }
-.landing-page .hero-grid { display: grid; grid-template-columns: 1fr 1fr; align-items: center; gap: 60px; padding-top: 70px; padding-bottom: 130px; position: relative; z-index: 1; }
+.landing-page .hero-grid { display: grid; grid-template-columns: 1fr 1fr; align-items: start; gap: 56px; padding-top: 56px; padding-bottom: 96px; position: relative; z-index: 1; }
 .landing-page .hero-pill { display: inline-flex; align-items: center; gap: 8px; border: 1px solid #ffffff26; border-radius: 30px; padding: 8px 12px; background: #ffffff0d; color: #e4f5fc; font-size: 12px; font-weight: 600; }
 .landing-page h1 { margin: 24px 0 18px; font-size: clamp(42px, 4.9vw, 66px); line-height: 1.08; letter-spacing: -.045em; font-weight: 850; }
 .landing-page h1 span { color: #b7eef5; }
 .landing-page .hero-copy > p { max-width: 450px; color: #deedf4; font-size: 16px; line-height: 1.8; margin: 0; }
 .landing-page .hero-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 28px; }
-.landing-page .hero-stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 18px; margin-top: 36px; padding-top: 26px; border-top: 1px solid #ffffff26; }
+.landing-page .hero-stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 18px; margin-top: 28px; padding-top: 20px; border-top: 1px solid #ffffff26; }
 .landing-page .hero-stats strong { display: block; font-size: 24px; line-height: 1.3; }
 .landing-page .hero-stats span { display: block; color: #d4e9f0; font-size: 12px; margin-top: 5px; line-height: 1.5; }
-.landing-page .hero-search { min-width: 0; container: landing-search / inline-size; }
+.landing-page .hero-search { min-width: 0; margin-top: 36px; container: landing-search / inline-size; }
 .landing-page .search-frame { padding: 8px; border: 1px solid #ffffff30; border-radius: 26px; background: #ffffff18; box-shadow: 0 20px 60px #031e3530; }
 .landing-page .search-frame .search-card { margin: 0; color: var(--ink); border-color: var(--line); }
 .landing-page .search-frame .detail-fields { grid-template-columns: 1fr 1fr; }
@@ -49,16 +50,16 @@
 .landing-page .search-benefits { display: flex; justify-content: center; flex-wrap: wrap; gap: 16px; margin-top: 16px; color: #e0f0f6; font-size: 12px; }
 .landing-page .search-benefits span { display: flex; align-items: center; gap: 6px; }
 .landing-page .hero-waves { position: absolute; bottom: -1px; left: 0; width: 100%; height: 80px; color: var(--surface); }
-.landing-page .landing-section { padding-block: 72px; }
+.landing-page .landing-section { padding-block: 56px; }
 .landing-page .landing-muted { background: var(--surface-soft); }
-.landing-page .landing-heading { text-align: center; margin-bottom: 36px; }
+.landing-page .landing-heading { text-align: center; margin-bottom: 28px; }
 .landing-page .section-eyebrow { color: var(--ocean); font-size: 11px; letter-spacing: .13em; font-weight: 800; }
 .landing-page .landing-heading h2 { margin: 12px 0 10px; font-size: clamp(27px, 3vw, 36px); line-height: 1.2; letter-spacing: -.03em; }
 .landing-page .landing-heading p { max-width: 600px; margin: 0 auto; font-size: 15px; line-height: 1.7; color: var(--muted); }
 .landing-page .landing-grid { display: grid; gap: 22px; }
 .landing-page .three-columns { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .landing-page .routes-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; }
-.landing-page .landing-card { min-width: 0; padding: 26px; border: 1px solid var(--line); border-radius: 16px; background: var(--surface); box-shadow: 0 6px 24px #102b4c06; }
+.landing-page .landing-card { min-width: 0; padding: 24px; border: 1px solid var(--line); border-radius: 18px; background: var(--surface); box-shadow: var(--card-shadow); }
 .landing-page .landing-card h3 { font-size: 18px; line-height: 1.4; margin: 18px 0 8px; letter-spacing: -.02em; }
 .landing-page .landing-card p { color: var(--muted); font-size: 14px; line-height: 1.75; margin: 0; }
 .landing-page .landing-icon { display: inline-grid; place-items: center; width: 46px; height: 46px; border-radius: 12px; background: var(--light-blue); color: var(--ocean); font-size: 23px; }
@@ -79,7 +80,7 @@
 .landing-page .text-action { min-height: 44px; border: 0; padding: 8px; background: transparent; }
 .landing-page .landing-steps { list-style: none; margin: 0; padding: 0; }
 .landing-page .landing-steps li { position: relative; }
-.landing-page .step-number { position: absolute; top: 20px; right: 24px; color: var(--muted); opacity: .3; font-size: 40px; font-weight: 800; }
+.landing-page .step-number { position: absolute; top: 20px; right: 24px; color: var(--ocean); opacity: .55; font-size: 32px; font-weight: 800; }
 .landing-page .fleet-card { overflow: hidden; padding: 0; }
 .landing-page .fleet-visual { display: grid; place-items: center; height: 155px; position: relative; background: linear-gradient(135deg, #0a426a, #14839b); color: #fff; }
 .landing-page .fleet-visual > ion-icon { font-size: 55px; }
@@ -92,7 +93,7 @@
 .landing-page .fleet-tag { display: inline-block; padding: 5px 10px; border-radius: 20px; background: var(--surface-soft); color: var(--muted); font-size: 12px; margin-top: 12px; }
 .landing-page .travel-tip > ion-icon { font-size: 24px; color: var(--success); }
 .landing-page .port-guide { max-width: 980px; }
-.landing-page .cta-section { padding-block: 72px; }
+.landing-page .cta-section { padding-block: 48px; }
 .landing-page .landing-cta { position: relative; overflow: hidden; border-radius: 24px; background: radial-gradient(ellipse at right bottom, #2ac5c744, transparent 70%), linear-gradient(120deg, #083b5d, #0b738b); color: #fff; text-align: center; padding: 56px 24px; }
 .landing-page .cta-icon { display: inline-grid; place-items: center; width: 58px; height: 58px; border-radius: 16px; background: #ffffff1a; border: 1px solid #ffffff26; font-size: 30px; }
 .landing-page .landing-cta h2 { margin: 20px 0 12px; font-size: clamp(28px, 3vw, 38px); letter-spacing: -.03em; }
@@ -101,6 +102,32 @@
 .landing-page .landing-footer p { color: var(--muted); font-size: 13px; }
 .landing-page .landing-footer nav { display: flex; gap: 20px; flex-wrap: wrap; }
 .landing-page .landing-footer nav a { min-height: 44px; display: inline-flex; align-items: center; color: var(--muted); font-size: 13px; }
+.landing-page .search-frame .search-card { padding: 28px; box-shadow: none; }
+.landing-page .search-frame .card-subtitle { font-size: 13px; }
+.landing-page .search-frame .field-caption { font-size: 12px; }
+.landing-page .search-frame .search-button { height: 52px; font-size: 14px; color: #fff; }
+.landing-page .search-frame .search-hint { font-size: 11px; }
+.landing-page .landing-guides { padding-top: 24px; padding-bottom: 8px; }
+.landing-page .guides-card { gap: 32px; padding: 28px; }
+.landing-page .guide-profile { padding-top: 16px; }
+.landing-page .guide-portrait { height: 156px; }
+.landing-page .guide-captain { width: 100px; }
+.landing-page .guide-language, .landing-page .role-description, .landing-page .role-action { font-size: 12px; }
+.landing-page .guide-role p { font-size: 12px; min-height: 0; }
+.landing-page .guide-role h3 { font-size: 16px; }
+.landing-page .landing-empty { display: flex; align-items: center; gap: 18px; padding: 24px 28px; text-align: left; background: var(--surface-soft); }
+.landing-page .landing-empty > div { flex: 1; min-width: 0; }
+.landing-page .landing-empty h3 { margin: 0 0 4px; color: var(--ink); font-size: 17px; }
+.landing-page .landing-empty p { margin: 0; font-size: 14px; }
+.landing-page .landing-empty .landing-button { text-decoration: none; color: var(--ocean); }
+.landing-page #features .landing-card { display: grid; grid-template-columns: 46px 1fr; column-gap: 16px; align-content: start; }
+.landing-page #features .landing-icon { grid-row: span 2; }
+.landing-page #features h3 { margin: 0 0 8px; font-size: 17px; }
+.landing-page #features .landing-card p { grid-column: 2; }
+:root[data-theme="dark"] .landing-page { --surface: #132439; --surface-soft: #0e1c2e; --line: #2b4056; --muted: #b2c3d3; --light-blue: #183752; --card-shadow: 0 8px 28px #030e1b18; }
+:root[data-theme="dark"] .landing-page .landing-nav.solid { background: #132439f5; }
+:root[data-theme="dark"] .landing-page .landing-empty { background: #162b40; }
+:root[data-theme="dark"] .landing-page .guides-card { background: linear-gradient(120deg, #16364b, #132439); }
 @container landing-search (max-width: 390px) {
   .landing-page .search-frame .route-fields { grid-template-columns: 1fr; }
   .landing-page .search-frame .detail-fields { grid-template-columns: 1fr; }
@@ -123,9 +150,12 @@
   .landing-page .hero-copy > p { max-width: 550px; }
   .landing-page .hero-stats { grid-template-columns: repeat(4, minmax(0, 1fr)); }
   .landing-page .hero-search { max-width: 600px; width: 100%; margin-inline: auto; }
+  .landing-page .hero-search { margin-top: 0; }
   .landing-page .three-columns { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .landing-page .landing-steps { grid-template-columns: 1fr; }
   .landing-page .landing-section, .landing-page .cta-section { padding-block: 52px; }
+  .landing-page .landing-empty { flex-wrap: wrap; }
+  .landing-page .landing-empty > .landing-button { margin-left: 64px; }
 }
 @media (max-width: 520px) {
   .landing-page .landing-container { padding-inline: 20px; }
@@ -135,6 +165,17 @@
   .landing-page .hero-pill { font-size: 11px; }
   .landing-page .hero-copy > p { font-size: 15px; }
   .landing-page .search-benefits { font-size: 11px; gap: 12px; }
+  .landing-page .landing-section { padding-block: 40px; }
+  .landing-page .hero-grid { gap: 28px; padding-top: 28px; padding-bottom: 80px; }
+  .landing-page .guides-card { padding: 22px 14px 14px; gap: 24px; }
+  .landing-page .guide-portrait { height: 140px; }
+  .landing-page .guide-captain { width: 90px; }
+  .landing-page .role-description { font-size: 12px; }
+  .landing-page .guide-role h3 { font-size: 14px; }
+  .landing-page .landing-empty { padding: 20px; gap: 14px; }
+  .landing-page .landing-empty > .landing-button { margin-left: 0; width: 100%; }
+  .landing-page .landing-empty > div { flex-basis: calc(100% - 60px); }
+  .landing-page .landing-card { padding: 22px; }
   .landing-page .landing-footer { flex-direction: column; align-items: flex-start; gap: 12px; }
   .landing-page .landing-footer p { margin: 0; }
 }

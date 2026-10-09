@@ -47,7 +47,7 @@
                 >
                   <ion-icon :icon="refreshOutline" />Refresh</button
                 ><button
-                  v-if="pageMode !== 'manifest'"
+                  v-if="!portBlocked && pageMode !== 'manifest'"
                   class="primary-button"
                   type="button"
                   :disabled="!selectedSailingCode || loading || busy"
@@ -58,6 +58,8 @@
               </div>
             </div>
 
+            <StaffPortRequired v-if="portBlocked" />
+            <template v-else>
             <div v-if="error" class="notice error" role="alert">
               <ion-icon :icon="alertCircleOutline" /><span>{{ error }}</span
               ><button
@@ -437,6 +439,7 @@
                 </article>
               </div>
             </section>
+            </template>
           </main>
         </div>
       </div>
@@ -499,6 +502,9 @@
 </template>
 
 <script setup lang="ts">
+import StaffPortRequired from '../../../components/staff/StaffPortRequired.vue';
+import { useStaffPortGate } from '../../../composables/staffPortGate';
+const { portBlocked } = useStaffPortGate(loadData);
 import StaffWorkspaceHeader from "../../../components/staff/StaffWorkspaceHeader.vue";
 import StaffNavigation from "../../../components/staff/StaffNavigation.vue";
 import { confirmAction } from "../../../composables/confirmation";

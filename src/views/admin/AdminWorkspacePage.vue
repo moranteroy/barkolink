@@ -90,7 +90,7 @@
             <AdminAccountMenu />
             </div>
           </header>
-          <main class="content">
+          <main class="content" :class="{ 'staff-port-content': section === 'staff-ports' }">
             <div class="heading">
               <div>
                 <p class="eyebrow">{{ page.group }}</p>
@@ -131,6 +131,7 @@
               v-else-if="section === 'routes'"
               :key="`routes-${reportsRefresh}`"
             />
+            <StaffPortAssignmentsPanel v-else-if="section === 'staff-ports'" :key="`staff-ports-${reportsRefresh}`" />
             <NoShowsPanel
               v-else-if="section === 'no-shows'"
               :key="`no-shows-${reportsRefresh}`"
@@ -1185,6 +1186,7 @@
               <p class="account-hint">
                 Share these sign-in details privately with the account holder.
               </p>
+              <p v-if="['TICKETING', 'BOARDING'].includes(createdAccount.role)" class="account-hint">Assign their departure port in Staff port assignments before they start terminal operations.</p>
               <p
                 v-if="accountPasswordCopied"
                 class="account-copy-notice"
@@ -1268,9 +1270,9 @@
                     aria-hidden="true"
                   /><span>{{
                     userForm.role === "TICKETING"
-                      ? "Manage reservations, collect payments, and issue walk-in tickets."
+                      ? "Manage reservations, collect payments, and issue walk-in tickets. Assign their port in Staff port assignments after creating the account."
                       : userForm.role === "BOARDING"
-                        ? "Check in passengers and manage boarding and trip attendance."
+                        ? "Check in passengers and manage boarding and trip attendance. Assign their port in Staff port assignments after creating the account."
                         : "Book ferry trips and manage personal reservations and tickets."
                   }}</span>
                 </p>
@@ -1305,6 +1307,7 @@
 </template>
 
 <script setup lang="ts">
+import StaffPortAssignmentsPanel from '../../components/admin/StaffPortAssignmentsPanel.vue';
 import { paymentMethodLabel } from '../../data/paymentMethod';
 import WeatherTripPicker from '../../components/shared/WeatherTripPicker.vue';
 import { awaitingPaymentVerification } from '../../data/paymentVerification';
@@ -1373,6 +1376,8 @@ import {
   calendarOutline,
   closeOutline,
   gridOutline,
+  giftOutline,
+  idCardOutline,
   informationCircleOutline,
   locationOutline,
   lockClosedOutline,
@@ -1550,7 +1555,7 @@ const navigation = [
     icon: constructOutline,
     items: [
       { key: "fares", label: "Fares & discounts", icon: pricetagsOutline },
-      { key: "vouchers", label: "Vouchers", icon: pricetagsOutline },
+      { key: "vouchers", label: "Vouchers", icon: giftOutline },
       { key: "ports", label: "Ports", icon: locationOutline },
       { key: "routes", label: "Routes", icon: navigateOutline },
       { key: "accommodation", label: "Accommodation", icon: bedOutline },
@@ -1585,6 +1590,7 @@ const navigation = [
     items: [
       { key: "reports", label: "Reports", icon: documentTextOutline },
       { key: "users", label: "Users", icon: peopleCircleOutline },
+      { key: "staff-ports", label: "Staff port assignments", icon: idCardOutline },
       { key: "audit-logs", label: "Audit logs", icon: receiptOutline },
       {
         key: "operations",
@@ -1741,6 +1747,7 @@ const pages: Record<
     description: "Create passenger and staff accounts.",
     table: "System users",
   },
+  'staff-ports': { group: 'MANAGEMENT', title: 'Staff port assignments', description: 'Assign departure ports to ticketing and boarding staff.', table: '' },
 };
 const page = computed(() => pages[section.value] || pages.dashboard);
 const primaryAction = computed(
@@ -1820,6 +1827,7 @@ async function loadData() {
       "advisories",
       "trip-operations",
       "vouchers",
+      "staff-ports",
     ].includes(section.value)
   ) {
     error.value = "";
@@ -3061,6 +3069,9 @@ const rows = computed<Row[]>(() => {
 </script>
 
 <style scoped>
+.content.staff-port-content { padding: 24px 28px; }
+.staff-port-content .heading { margin-bottom: 18px; }
+@media(max-width:600px) { .content.staff-port-content { padding: 20px 16px; } }
 .admin-route-directory .content, .admin-accommodation-directory .content, .admin-noshows-directory .content, .admin-advisory-directory .content, .admin-broadcast-directory .content, .admin-reports-directory .content, .admin-audit-directory .content, .admin-settings-directory .content, .admin-inbox-directory .content { padding: 24px 28px; }
 .admin-route-directory .heading, .admin-accommodation-directory .heading, .admin-noshows-directory .heading, .admin-advisory-directory .heading, .admin-broadcast-directory .heading, .admin-reports-directory .heading, .admin-audit-directory .heading, .admin-settings-directory .heading, .admin-inbox-directory .heading { margin-bottom: 16px; }
 @media (max-width: 600px) {

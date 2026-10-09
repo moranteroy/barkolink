@@ -39,7 +39,7 @@
           </tbody>
         </table>
       </div>
-      <div v-else class="empty-state"><IonIcon :icon="search || statusFilter !== 'ALL' ? searchOutline : ticketOutline" aria-hidden="true" /><h3>{{ vouchers.length ? 'No matching vouchers' : 'No vouchers yet' }}</h3><p>{{ vouchers.length ? 'Try another code or reset your filters.' : 'Create an offer to add your first promo code.' }}</p><button v-if="search || statusFilter !== 'ALL'" @click="resetFilters">Clear filters</button></div>
+      <div v-else class="empty-state"><IonIcon :icon="search || statusFilter !== 'ALL' ? searchOutline : giftOutline" aria-hidden="true" /><h3>{{ vouchers.length ? 'No matching vouchers' : 'No vouchers yet' }}</h3><p>{{ vouchers.length ? 'Try another code or reset your filters.' : 'Create an offer to add your first promo code.' }}</p><button v-if="search || statusFilter !== 'ALL'" @click="resetFilters">Clear filters</button></div>
       <p class="directory-note">Each account can use a code once. Issued reservations count toward the usage limit, including cancelled reservations.</p>
     </section>
 
@@ -67,7 +67,7 @@
 
     <IonModal class="admin-vouchers voucher-modal" :is-open="showCreate" :backdrop-dismiss="!busy" @didDismiss="showCreate = false">
       <form class="voucher-dialog" @submit.prevent="create">
-        <header class="modal-heading"><span class="modal-icon"><IonIcon :icon="ticketOutline" aria-hidden="true" /></span><div><p class="eyebrow">NEW OFFER</p><h2>Create a voucher</h2><p>Set the discount, usage limit and availability.</p></div><button type="button" class="close-button" :disabled="busy" aria-label="Close voucher form" @click="showCreate = false"><IonIcon :icon="closeOutline" aria-hidden="true" /></button></header>
+        <header class="modal-heading"><span class="modal-icon"><IonIcon :icon="giftOutline" aria-hidden="true" /></span><div><p class="eyebrow">NEW OFFER</p><h2>Create a voucher</h2><p>Set the discount, usage limit and availability.</p></div><button type="button" class="close-button" :disabled="busy" aria-label="Close voucher form" @click="showCreate = false"><IonIcon :icon="closeOutline" aria-hidden="true" /></button></header>
         <div class="form-scroll">
           <p v-if="formError" class="message error" role="alert">{{ formError }}</p>
           <fieldset :disabled="busy" class="voucher-form">
@@ -94,7 +94,7 @@
 import '../../theme/admin-vouchers.css';
 import { computed, onBeforeUnmount, onMounted, reactive, ref } from 'vue';
 import { IonIcon, IonModal } from '@ionic/vue';
-import { addOutline, searchOutline, ticketOutline, ribbonOutline, pauseOutline, playOutline, closeOutline, informationCircleOutline, checkmarkCircleOutline, timeOutline } from 'ionicons/icons';
+import { addOutline, searchOutline, giftOutline, ribbonOutline, pauseOutline, playOutline, closeOutline, informationCircleOutline, checkmarkCircleOutline, timeOutline } from 'ionicons/icons';
 import { requireSupabase } from '../../services/supabase';
 import { listVouchers, saveVoucher, adminLoyaltySettings, saveLoyaltySettings, type LoyaltySettings, type Voucher } from '../../services/vouchers';
 import { databaseRequestError } from '../../data/databaseErrors';
@@ -140,7 +140,7 @@ function voucherStatus(voucher: Voucher) {
 const statusLabel = (status: string) => ({ ACTIVE: 'Active', SCHEDULED: 'Scheduled', PAUSED: 'Paused', EXPIRED: 'Expired', EXHAUSTED: 'Fully used' }[status] || status);
 const filteredVouchers = computed(() => vouchers.value.filter(v => v.code.toLowerCase().includes(search.value.trim().toLowerCase()) && (statusFilter.value === 'ALL' || voucherStatus(v) === statusFilter.value)));
 const metrics = computed(() => [
-  { label: 'Total vouchers', value: vouchers.value.length, icon: ticketOutline, tone: 'blue' },
+  { label: 'Total vouchers', value: vouchers.value.length, icon: giftOutline, tone: 'blue' },
   { label: 'Active offers', value: vouchers.value.filter(v => voucherStatus(v) === 'ACTIVE').length, icon: checkmarkCircleOutline, tone: 'green' },
   { label: 'Scheduled', value: vouchers.value.filter(v => voucherStatus(v) === 'SCHEDULED').length, icon: timeOutline, tone: 'purple' },
   { label: 'Recorded uses', value: vouchers.value.reduce((sum, v) => sum + v.used, 0), icon: ribbonOutline, tone: 'blue' },

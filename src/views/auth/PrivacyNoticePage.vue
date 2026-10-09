@@ -1,25 +1,31 @@
-﻿<template>
+<template>
   <IonPage>
     <IonContent :fullscreen="true" class="privacy-content">
       <div class="privacy-page" :class="{ 'profile-privacy': fromProfile, 'registration-privacy': fromRegistration }">
         <PassengerHeader v-if="fromProfile" />
         <header v-else class="privacy-header">
-          <RouterLink to="/" class="brand-link" aria-label="BarkoLink home"><BrandMark /></RouterLink>
+          <RouterLink v-if="fromRegistration" :to="backLocation" replace class="back-link"><IonIcon :icon="arrowBackOutline" aria-hidden="true" /> Back to create account</RouterLink>
+          <RouterLink v-else to="/" class="brand-link" aria-label="BarkoLink home"><BrandMark /></RouterLink>
           <RouterLink to="/help" class="help-link">Help <IonIcon :icon="helpCircleOutline" aria-hidden="true" /></RouterLink>
         </header>
         <main>
           <a v-if="fromProfile" href="/profile" class="back-link" @click="returnToProfile"><IonIcon :icon="personOutline" aria-hidden="true" /> Back to profile</a>
-          <RouterLink v-else :to="backLocation" :replace="fromRegistration" class="back-link"><IonIcon :icon="fromRegistration ? personAddOutline : homeOutline" aria-hidden="true" /> {{ fromRegistration ? 'Back to create account' : 'Back to BarkoLink' }}</RouterLink>
+          <RouterLink v-else-if="!fromRegistration" :to="backLocation" class="back-link"><IonIcon :icon="homeOutline" aria-hidden="true" /> Back to BarkoLink</RouterLink>
           <div class="privacy-intro">
             <span class="privacy-icon"><IonIcon :icon="shieldCheckmarkOutline" aria-hidden="true" /></span>
-            <p class="eyebrow">YOUR INFORMATION</p>
+            <p v-if="!fromRegistration" class="eyebrow">YOUR INFORMATION</p>
             <h1>Privacy notice</h1>
             <p class="intro-copy">How BarkoLink uses your information, who can access it, and where to get help with your records.</p>
-            <p v-if="fromRegistration" class="registration-guide"><IonIcon :icon="personAddOutline" aria-hidden="true" /><span>Read this notice before creating your account. Then return to registration to confirm that you have read it.</span></p>
           </div>
           <div class="privacy-layout">
-            <aside class="privacy-sidebar">
-              <component :is="fromRegistration ? 'details' : 'div'" class="section-index">
+            <details v-if="fromRegistration" class="registration-index">
+              <summary>Jump to a section <IonIcon :icon="chevronDownOutline" aria-hidden="true" /></summary>
+              <nav class="registration-topics" aria-label="On this page">
+              <a v-for="(section, index) in sections" :key="section.id" :href="`#${section.id}`" @click.prevent="jumpTo(section.id)"><span>{{ String(index + 1).padStart(2, '0') }}</span>{{ section.title }}</a>
+              </nav>
+            </details>
+            <aside v-else class="privacy-sidebar">
+              <component :is="fromRegistration ? 'details' : 'div'" class="section-index" :open="fromRegistration ? true : undefined">
               <summary v-if="fromRegistration"><IonIcon :icon="documentTextOutline" aria-hidden="true" /> On this page <IonIcon :icon="chevronDownOutline" class="index-chevron" aria-hidden="true" /></summary>
               <nav class="section-nav" aria-label="On this page">
                 <h2>On this page</h2>
@@ -38,7 +44,7 @@
                 <p>{{ section.content }}</p>
                 <div v-if="section.id === 'records'" class="contact-panel"><OperatorContact /></div>
               </section>
-              <footer class="notice-footer">
+              <footer v-if="!fromRegistration" class="notice-footer">
                 <a v-if="fromProfile" href="/profile" class="return-link" @click="returnToProfile"><IonIcon :icon="personOutline" aria-hidden="true" /> Back to profile</a>
                 <template v-else>
                   <RouterLink :to="registrationLocation" :replace="fromRegistration" class="return-link">{{ fromRegistration ? 'Return to registration' : 'Create account' }} <IonIcon :icon="personAddOutline" aria-hidden="true" /></RouterLink>
@@ -52,13 +58,19 @@
         <footer class="privacy-footer">BarkoLink <span aria-hidden="true">·</span> Travel smarter. Sail easier.</footer>
       </div>
     </IonContent>
+    <IonFooter v-if="fromRegistration" class="registration-actions ion-no-border">
+      <div class="registration-actions-inner">
+        <div><p>Return to your form to confirm that you have read this notice.</p></div>
+        <RouterLink :to="registrationLocation" replace class="return-link">Return to registration <IonIcon :icon="arrowForwardOutline" aria-hidden="true" /></RouterLink>
+      </div>
+    </IonFooter>
   </IonPage>
 </template>
 <script setup lang="ts">
-import { IonPage, IonContent, IonIcon, useIonRouter } from "@ionic/vue";
+import { IonPage, IonContent, IonFooter, IonIcon, useIonRouter } from "@ionic/vue";
 import { computed } from "vue";
 import { RouterLink, useRoute } from "vue-router";
-import { personOutline, homeOutline, documentTextOutline, helpCircleOutline, lockClosedOutline, shieldCheckmarkOutline, personAddOutline, chevronDownOutline } from "ionicons/icons";
+import { personOutline, homeOutline, documentTextOutline, helpCircleOutline, lockClosedOutline, shieldCheckmarkOutline, personAddOutline, chevronDownOutline, arrowForwardOutline, arrowBackOutline } from "ionicons/icons";
 import BrandMark from "../../components/shared/BrandMark.vue";
 import OperatorContact from "../../components/shared/OperatorContact.vue";
 import PassengerHeader from "../../components/passenger/PassengerHeader.vue";
@@ -187,7 +199,7 @@ h1 { margin: 0; font-size: clamp(34px, 4vw, 48px); line-height: 1.15; letter-spa
   .sign-in-link { justify-content: center; }
   .privacy-footer { font-size: 10px; }
 }
-.registration-privacy { max-width: 820px; }
+.registration-privacy { max-width: 1120px; }
 .registration-privacy .privacy-header { padding-bottom: 16px; }
 .registration-privacy .privacy-intro { max-width: none; padding: 24px 0; }
 .registration-privacy .privacy-icon { width: 46px; height: 46px; border-radius: 13px; font-size: 24px; }
@@ -196,8 +208,8 @@ h1 { margin: 0; font-size: clamp(34px, 4vw, 48px); line-height: 1.15; letter-spa
 .registration-privacy .intro-copy { max-width: none; font-size: 14px; line-height: 1.8; }
 .registration-guide { display: flex; align-items: flex-start; gap: 10px; margin: 18px 0 0; padding: 14px 16px; border: 1px solid var(--line); border-radius: 12px; background: var(--light-blue); color: var(--ink); font-size: 12px; line-height: 1.8; }
 .registration-guide > ion-icon { flex: none; margin-top: 3px; color: var(--ocean); font-size: 19px; }
-.registration-privacy .privacy-layout { grid-template-columns: minmax(0, 1fr); gap: 16px; }
-.registration-privacy .privacy-sidebar { position: static; }
+.registration-privacy .privacy-layout { grid-template-columns: 240px minmax(0, 1fr); gap: 24px; }
+.registration-privacy .privacy-sidebar { position: sticky; top: 24px; }
 .registration-privacy .sidebar-note { display: none; }
 .registration-privacy .section-index { border: 1px solid var(--line); border-radius: 12px; background: var(--surface); overflow: hidden; }
 .registration-privacy .section-index summary { display: flex; align-items: center; gap: 8px; min-height: 48px; padding: 12px 16px; color: var(--ink); font-size: 13px; font-weight: 600; cursor: pointer; list-style: none; }
@@ -205,16 +217,85 @@ h1 { margin: 0; font-size: clamp(34px, 4vw, 48px); line-height: 1.15; letter-spa
 .registration-privacy .section-index summary > ion-icon { flex: none; color: var(--ocean); font-size: 18px; }
 .registration-privacy .section-index summary .index-chevron { margin-left: auto; transition: transform .15s; }
 .registration-privacy .section-index[open] summary .index-chevron { transform: rotate(180deg); }
-.registration-privacy .section-nav { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); padding: 4px 12px 12px; border: 0; border-top: 1px solid var(--line); border-radius: 0; }
+.registration-privacy .section-nav { display: grid; grid-template-columns: minmax(0, 1fr); padding: 8px; border: 0; border-top: 1px solid var(--line); border-radius: 0; }
 .registration-privacy .section-nav h2 { display: none; }
 .registration-privacy .section-nav a { min-height: 44px; }
 .registration-privacy .privacy-article { padding: 28px; border-radius: 16px; box-shadow: none; }
 .registration-privacy .privacy-article h2 { font-size: 18px; }
 .registration-privacy .notice-footer { flex-direction: column; align-items: stretch; gap: 12px; }
 .registration-return-note { margin: 0; color: var(--muted); font-size: 12px; line-height: 1.8; }
+.privacy-page { line-height: 1.6; }
+.privacy-page .privacy-intro { display: grid; grid-template-columns: 54px minmax(0, 1fr); column-gap: 18px; max-width: 780px; padding-block: 24px; }
+.privacy-page .privacy-icon { grid-row: span 2; }
+.privacy-page .eyebrow { margin: 0 0 5px; }
+.privacy-page h1 { font-size: clamp(30px, 3.5vw, 40px); }
+.privacy-page .intro-copy, .privacy-page .registration-guide { grid-column: 1 / -1; }
+.privacy-page .intro-copy { max-width: 720px; margin-top: 14px; font-size: 15px; }
+.privacy-page .registration-guide { font-size: 13px; padding: 14px 18px; }
+.privacy-page .section-nav a { font-size: 13px; }
+.privacy-page .privacy-article { padding: 28px; border-radius: 18px; }
+.privacy-page .notice-summary { padding: 16px 18px; border-left: 3px solid var(--ocean); border-radius: 0 10px 10px 0; background: var(--surface-soft); }
+.privacy-page .privacy-article section { padding-top: 22px; margin-top: 22px; }
+.privacy-page .privacy-article h2 { margin-bottom: 12px; }
+.privacy-page .privacy-article section > p { font-size: 15px; line-height: 1.8; }
+.privacy-page .return-link { min-height: 50px; font-size: 14px; }
+.privacy-page .registration-return-note { font-size: 13px; }
+:global(:root[data-theme="dark"]) .privacy-page { --surface: #132439; --surface-soft: #0e1c2e; --line: #2b4056; --muted: #b2c3d3; --light-blue: #183752; }
+@media (max-width: 800px) {
+  .registration-privacy .privacy-layout { grid-template-columns: 1fr; gap: 18px; }
+  .registration-privacy .privacy-sidebar { position: static; }
+  .registration-privacy .section-nav { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
 @media (max-width: 480px) {
+  .privacy-page .privacy-intro { column-gap: 12px; grid-template-columns: 46px minmax(0, 1fr); }
+  .privacy-page .privacy-article { padding: 20px 18px; }
+  .privacy-page .notice-summary { padding: 12px 14px; }
+  .privacy-page .registration-guide { padding: 12px 14px; }
   .registration-privacy .privacy-article { padding: 22px 18px; }
   .registration-privacy .section-nav { grid-template-columns: minmax(0, 1fr); }
   .registration-privacy .privacy-article h2 { font-size: 17px; }
+}
+
+/* Compact reading layout for the registration privacy step. */
+.privacy-page.registration-privacy { max-width: 900px; padding: 12px 28px 24px; }
+.registration-privacy .privacy-header { min-height: 48px; padding: 0 0 8px; }
+.registration-privacy .back-link { margin: 0; padding: 8px 0; border: 0; background: transparent; color: var(--muted); font-size: 14px; }
+.privacy-page.registration-privacy .privacy-intro { display: grid; grid-template-columns: 36px minmax(0, 1fr); align-items: center; column-gap: 12px; max-width: none; padding: 22px 0 16px; margin: 0; border: 0; border-radius: 0; background: transparent; }
+.registration-privacy .privacy-icon { grid-row: auto; width: 36px; height: 36px; border-radius: 10px; background: var(--light-blue); font-size: 21px; }
+.privacy-page.registration-privacy h1 { font-size: 30px; line-height: 1.2; }
+.privacy-page.registration-privacy .intro-copy { max-width: none; margin-top: 10px; font-size: 14px; line-height: 1.6; }
+.registration-privacy .privacy-layout { display: block; }
+.registration-index { margin-bottom: 16px; }
+.registration-index summary { display: flex; align-items: center; justify-content: space-between; min-height: 44px; padding: 8px 0; border-bottom: 1px solid var(--line); color: var(--ocean); font-size: 13px; font-weight: 600; list-style: none; cursor: pointer; }
+.registration-index summary::-webkit-details-marker { display: none; }
+.registration-index summary ion-icon { font-size: 18px; }
+.registration-index[open] summary ion-icon { transform: rotate(180deg); }
+.registration-index summary:focus-visible { outline: 2px solid var(--ocean); outline-offset: 3px; }
+.registration-topics { display: flex; flex-wrap: wrap; gap: 4px 16px; padding-block: 8px; }
+.registration-topics a { display: inline-flex; align-items: center; gap: 7px; min-height: 44px; color: var(--muted); font-size: 13px; }
+.registration-topics a span { color: var(--ocean); font-size: 11px; }
+.registration-topics a:hover { color: var(--ocean); text-decoration: underline; text-underline-offset: 4px; }
+.privacy-page.registration-privacy .privacy-article { padding: 0; border: 0; border-radius: 0; background: transparent; box-shadow: none; }
+.privacy-page.registration-privacy .notice-summary { margin: 0; padding: 0 0 18px; border: 0; border-radius: 0; background: transparent; color: var(--ink); font-size: 15px; line-height: 1.65; }
+.privacy-page.registration-privacy .privacy-article section { padding: 18px 0; margin: 0; border: 0; border-top: 1px solid var(--line); border-radius: 0; background: transparent; scroll-margin-top: 16px; }
+.privacy-page.registration-privacy .privacy-article h2 { gap: 10px; margin-bottom: 10px; font-size: 18px; line-height: 1.4; }
+.registration-privacy .section-number { width: 28px; height: 28px; border-radius: 8px; }
+.privacy-page.registration-privacy .privacy-article section > p { padding-left: 0; color: var(--muted); font-size: 16px; line-height: 1.7; }
+.registration-privacy .contact-panel { margin: 14px 0 0; padding: 12px 16px; }
+.registration-privacy .privacy-footer { margin-top: 12px; }
+.registration-actions { background: var(--surface); border-top: 1px solid var(--line); }
+.registration-actions-inner { display: flex; align-items: center; justify-content: space-between; gap: 20px; max-width: 900px; margin-inline: auto; padding: 10px 28px max(10px, env(safe-area-inset-bottom)); }
+.registration-actions p { margin: 0; color: var(--muted); font-size: 13px; line-height: 1.5; }
+.registration-actions .return-link { flex-shrink: 0; min-height: 44px; padding: 10px 16px; font-size: 14px; }
+:global(:root[data-theme="dark"]) .registration-actions { --surface: #132439; --line: #2b4056; --muted: #b2c3d3; }
+@media (max-width: 600px) {
+  .privacy-page.registration-privacy { padding: max(10px, env(safe-area-inset-top)) 18px 20px; }
+  .privacy-page.registration-privacy .privacy-intro { padding-top: 18px; }
+  .privacy-page.registration-privacy h1 { font-size: 28px; }
+  .registration-topics { flex-direction: column; gap: 0; }
+  .privacy-page.registration-privacy .privacy-article section { padding-block: 16px; }
+  .registration-actions-inner { padding: 10px 18px max(12px, env(safe-area-inset-bottom)); }
+  .registration-actions-inner > div { display: none; }
+  .registration-actions .return-link { width: 100%; }
 }
 </style>

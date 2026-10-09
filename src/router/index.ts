@@ -7,6 +7,7 @@ import { resolveAccountRole, roleDestination } from "../data/sessionRole";
 import { databaseRequestError } from "../data/databaseErrors";
 
 const routes: Array<RouteRecordRaw> = [
+  { path: '/verify-email', component: () => import('../views/auth/VerifyEmailPage.vue') },
   {
     path: "/travelers",
     component: () => import("../views/passenger/TravelersPage.vue"),
@@ -217,6 +218,7 @@ router.beforeEach(async (to) => {
       "manifest",
       "reports",
       "users",
+      "staff-ports",
       "operations",
       "audit-logs",
       "advisories",
@@ -281,6 +283,7 @@ router.beforeEach(async (to) => {
     path === "/register" ||
     path === "/" ||
     path === "/reset-password" ||
+    path === "/verify-email" ||
     path === "/privacy" || path === "/trips" || path === "/help"
   )
     return true;

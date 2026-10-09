@@ -24,9 +24,9 @@ try {
     await context.addInitScript(({ key, session }) => { if (!localStorage.getItem('barkolink-theme')) localStorage.setItem('barkolink-theme', 'light'); localStorage.setItem(key, JSON.stringify(session)) }, { key: `sb-${projectRef}-auth-token`, session })
     let fareConfig = {code:'vessel',regularFare:600,studentDiscount:20,seniorDiscount:20,childDiscount:50,pwdDiscount:20,pregnantDiscount:0,customDiscounts:[]}, fareSaves=0
     let readAt = null, markAllCalls = 0, lastBookingArgs = null, lastAuditArgs = null
-    let managedAccountCalls = 0, lastManagedInput = null
+    let managedAccountCalls = 0, lastManagedInput = null, lastPortAssignment = null
     await context.addInitScript(() => Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText: async text => { sessionStorage.setItem('ui-copied-password', text) } } }))
-    let profile = { fullName: 'UI User', email: user.email, role, phone: '09123456789' }
+    let profile = { uid: id, fullName: 'UI User', email: user.email, role, phone: '09123456789', assignedPortId: sailing.origin.id, assignedPort: { ...sailing.origin, isActive: true } }
     await context.route(`${projectUrl}/**`, async route => {
       const url = route.request().url()
       if (url.includes('/auth/v1/')) return route.fulfill({ json: user })
@@ -40,6 +40,11 @@ try {
       if (!url.includes('/rpc/barkolink_execute')) return route.fulfill({ status: 403, json: { message: 'Direct access is blocked in this test.' } })
       const { operation, args } = route.request().postDataJSON()
       let result
+      if (operation === 'AdminAssignStaffPort') { lastPortAssignment = args; return route.fulfill({ json: { uid: args.uid, assignedPortId: args.portId } }) }
+      if (operation === 'AdminStaffPortAssignments') {
+        const staff = [{uid:'user-a',fullName:'Anna User',email:'anna@example.invalid',role:'TICKETING',assignedPortId:null,assignedPort:null},{uid:'user-m',fullName:'Marco User',email:'marco@example.invalid',role:'BOARDING',assignedPortId:null,assignedPort:null}].filter(u => (!args.role || args.role === 'ALL' || args.role === u.role) && (!args.search || `${u.fullName} ${u.email}`.toLowerCase().includes(args.search.toLowerCase())))
+        return route.fulfill({ json: { staff, totalCount: staff.length, ports: [sailing.origin, sailing.destination].map(p => ({ ...p, isActive: true })) } })
+      }
       if (operation === 'TicketingCreateGuestWalkIn') return route.fulfill({ json: {} })
       if (operation === 'AdminSaveFareSettings') { fareConfig={...fareConfig,...args};fareSaves++;result={} }
       else if (operation === 'MyMarkAllNotificationsRead') { markAllCalls++; readAt = new Date().toISOString(); result = { marked: 1 } }
@@ -61,7 +66,7 @@ try {
         ActiveAdvisories: { advisories: [advisory] }, AdminAdvisories: { advisories: [advisory] },
         AdminSailingOptions: { sailings: [sailing] }, AdminReports: { sailings: [] }, TicketingSailings: { sailings: [sailing] }, AdminSailings: { sailings: [sailing], totalCount: 1 }, BrowseSailings: { sailings: [sailing] },
         BrowseActivePorts: { ports: [sailing.origin, sailing.destination] },
-        AdminPorts: { ports: [sailing.origin, sailing.destination] }, AdminVessels: { vessels: [sailing.vessel] },
+        AdminPorts: { ports: [sailing.origin, sailing.destination].map(p => ({ ...p, isActive: true })) }, AdminVessels: { vessels: [sailing.vessel] },
         AdminSailingBookings:{bookings:[]}, AdminUsers: { users: [{uid:'user-z',fullName:'Zelda User',email:'zelda@example.invalid',role:'PASSENGER',createdAt:'2026-10-05T01:00:00Z'},{uid:'user-a',fullName:'Anna User',email:'anna@example.invalid',role:'TICKETING',createdAt:'2026-10-05T01:00:00Z'},{uid:'user-m',fullName:'Marco User',email:'marco@example.invalid',role:'BOARDING',createdAt:'2026-10-05T01:00:00Z'}],totalCount:3 }, AdminPassengerRecords: { bookingPassengers: [], totalCount: 0 },
         AdminOperationsSettings: { reservationMinutes: 1440 },
         AdminActivityLog: { records: [{ id, actorName: 'UI Administrator', action: 'UPDATE', entityType: 'operation_settings', entityId: 'DEFAULT', createdAt: '2026-10-05T01:00:00Z', details: { reservationMinutes: { before: 1440, after: 720 } } }], totalCount: 1 },
@@ -79,7 +84,7 @@ try {
     page.on('pageerror', error => errors.push(error.message))
     page.on('console', message => { if(['error','warning'].includes(message.type()) && message.text().includes('AG Grid')) errors.push(message.text()) })
     const paths = role === 'ADMIN' ? ['/admin', '/admin/accommodation', '/admin/routes', '/admin/no-shows', '/admin/notifications', '/admin/analytics', '/admin/audit-logs', '/admin/advisories', '/admin/trip-operations?sailing=UI-TRIP', '/admin/trips', '/admin/bookings', '/admin/settings/profile', '/admin/settings/password', '/admin/settings/appearance'] : role === 'TICKETING' || role === 'BOARDING' ? [`/staff/${role.toLowerCase()}`, ...((role === 'TICKETING' ? ['bookings','passengers','trips','fares','notifications'] : ['trips','check-in','boarding','manifest','no-shows','notifications']).map(section=>`/staff/${role.toLowerCase()}/${section}`)), ...['account','security','appearance'].map(section => `/staff/${role.toLowerCase()}/settings/${section}`)] : ['/home', '/profile', '/settings/profile', '/settings/password', '/settings/appearance', '/notifications', '/bookings', '/ticket?reference=UI-BOOKING', '/travelers', '/help', '/search?all=1']
-    if (role === 'ADMIN') paths.push('/admin/users', '/admin/operations', '/admin/fares')
+    if (role === 'ADMIN') paths.push('/admin/users', '/admin/staff-ports', '/admin/operations', '/admin/fares')
     if (role === 'ADMIN') paths.push('/admin/manifest', '/admin/inbox')
     if (role === 'TICKETING') paths.push('/staff/ticketing/walk-in')
     if (role === 'PASSENGER') {
@@ -166,6 +171,7 @@ try {
         assert.equal(await page.getByRole('button', { name: 'Export manifest', exact: true }).count(), 0, 'Boarding staff have no manifest export action')
       }
       if (path === '/admin/users') {
+        assert.equal(await page.getByLabel('Assigned port for Anna User', { exact: true }).count(),0)
         if(width>=700){
           const grid=page.locator('.records-grid')
           await grid.locator('.ag-cell[col-id="cell-0"]').first().hover()
@@ -174,7 +180,7 @@ try {
           const nameHeader=grid.locator('.ag-header-cell[col-id="cell-0"]')
           await nameHeader.locator('.ag-header-cell-label').click()
           assert.equal(await nameHeader.getAttribute('aria-sort'),'ascending')
-          const names=grid.locator('.ag-cell[col-id="cell-0"] .grid-cell-content')
+          const names=grid.locator('.ag-cell[col-id="cell-0"] .user-name-cell strong')
           assert.deepEqual(await names.allTextContents(),['Anna User','Marco User','Zelda User'])
           await nameHeader.locator('.ag-header-cell-filter-button').click()
           const filter=page.locator('.ag-filter-body input').first()
@@ -208,6 +214,7 @@ try {
         await dialog.getByLabel('Full name', { exact: true }).fill('UI Ticketing Staff')
         await dialog.getByLabel('Email address', { exact: true }).fill('new-staff@example.invalid')
         await dialog.getByLabel('Account role', { exact: true }).selectOption('TICKETING')
+        assert.equal(await dialog.locator('#new-user-port').count(),0)
         await dialog.getByRole('button', { name: 'Generate', exact: true }).click()
         await page.waitForTimeout(250)
         assert.equal(await dialog.locator('#new-user-password').inputValue(), 'Ui-generated-password123')
@@ -228,6 +235,30 @@ try {
         await dialog.getByRole('button', { name: 'Done', exact: true }).click()
         await dialog.waitFor({ state: 'detached' })
         await page.locator('ion-modal.show-modal').waitFor({ state: 'hidden' })
+      }
+      if (path === '/admin/staff-ports') {
+        const panel = page.locator('.staff-port-assignments')
+        const navIcons = await Promise.all(['staff-ports', 'ports', 'vouchers', 'fares'].map(key => page.locator(`.sidebar a[href="/admin/${key}"] ion-icon`).evaluate(el => el.icon)))
+        assert.equal(new Set(navIcons).size, 4, 'Assignment, port, voucher and fare icons must be distinct')
+        await panel.getByLabel('Assigned port for Anna User', { exact: true }).waitFor()
+        assert.equal(await panel.getByText('zelda@example.invalid', { exact: true }).count(),0)
+        await panel.getByLabel('Assigned port for Anna User', { exact: true }).selectOption('origin')
+        await panel.getByRole('button', { name: 'Save', exact: true }).first().click()
+        await panel.getByRole('status').waitFor()
+        assert.deepEqual(lastPortAssignment, { uid: 'user-a', portId: 'origin' })
+        assert.match(await panel.getByRole('status').innerText(), /Calapan Port/)
+        assert.equal(await panel.locator('.assignment-state.assigned').count(),1)
+        assert.equal(await panel.getByRole('button', { name: 'Save', exact: true }).first().isDisabled(),true)
+        await panel.getByLabel('Staff role', { exact: true }).selectOption('BOARDING')
+        await panel.getByLabel('Assigned port for Marco User', { exact: true }).waitFor()
+        assert.equal(await panel.getByLabel('Assigned port for Anna User', { exact: true }).count(),0)
+        await panel.getByLabel('Assigned port for Marco User', { exact: true }).selectOption('destination')
+        await panel.getByRole('button', { name: 'Save', exact: true }).click()
+        await page.waitForTimeout(100)
+        assert.deepEqual(lastPortAssignment, { uid: 'user-m', portId: 'destination' })
+        assert.equal(await panel.locator('.assignment-state.assigned').count(),1)
+        await panel.getByLabel('Staff role', { exact: true }).selectOption('ALL')
+        await panel.getByLabel('Assigned port for Anna User', { exact: true }).waitFor()
       }
       if (path === '/admin/operations') {
         const visible=page.locator('.ion-page:not(.ion-page-hidden)').last()
@@ -316,17 +347,24 @@ try {
         assert.equal(await page.getByLabel('Current password', { exact: true }).getAttribute('type'), 'text')
       }
       if (path === '/staff/boarding') {
+        await page.getByRole('link').filter({ hasText: 'Passenger manifest' }).waitFor()
+        await page.locator('button[aria-label="My staff account"]:visible').last().click()
+        assert.equal(await page.locator('.staff-account-menu a').getAttribute('href'), '/staff/boarding/settings/account')
+        await page.keyboard.press('Escape')
+      }
+      if (path === '/staff/boarding/manifest') {
         await page.getByLabel('Search manifest').fill('no-such-ticket')
         await page.getByRole('button', { name: 'Clear filters', exact: true }).click()
-        await page.getByRole('button').filter({ hasText: 'UI Traveler' }).waitFor()
-        assert.equal(await page.getByRole('link', { name: 'My staff account' }).first().getAttribute('href'), '/staff/boarding/settings/account')
+        await page.getByText('UI Traveler', { exact: true }).waitFor()
       }
       if (path === '/staff/ticketing') {
         if (width < 900) await page.getByRole('button', { name: 'Toggle navigation', exact: true }).click()
         await page.getByRole('link', { name: 'Bookings', exact: true }).click()
         await page.waitForURL('**/staff/ticketing/bookings'); await page.waitForTimeout(250)
         assert.match(await page.locator('#staff-sidebar a[href="/staff/ticketing/bookings"]').first().getAttribute('class'), /active/)
-        assert.equal(await page.getByRole('link', { name: 'My staff account' }).first().getAttribute('href'), '/staff/ticketing/settings/account')
+        await page.locator('button[aria-label="My staff account"]:visible').last().click()
+        assert.equal(await page.locator('.staff-account-menu a').getAttribute('href'), '/staff/ticketing/settings/account')
+        await page.keyboard.press('Escape')
       }
       if (path === '/admin/settings/profile') {
         await page.locator('input[autocomplete=name]').fill('UI Administrator')
@@ -513,7 +551,8 @@ try {
         await page.emulateMedia({ colorScheme: 'light' })
       }
       fs.mkdirSync('docs/screenshots/experience', { recursive: true })
-      if (['/home','/search','/bookings','/admin/users'].includes(path.split('?')[0])) {
+      if (path === '/admin/staff-ports') await page.locator('ion-content').first().evaluate(el => el.scrollToTop(0))
+      if (['/home','/search','/bookings','/admin/users','/admin/staff-ports'].includes(path.split('?')[0])) {
         await page.evaluate(() => window.dispatchEvent(new StorageEvent('storage', { key: 'barkolink-theme', newValue: 'dark' })))
         await page.waitForFunction(() => document.documentElement.dataset.theme === 'dark')
         await page.locator('[data-slot="button"]').evaluateAll(nodes => Promise.all(nodes.flatMap(el => el.getAnimations()).map(animation => animation.finished.catch(() => {}))))

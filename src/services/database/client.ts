@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { checkStaffPortAccess, markStaffPortBlocked, StaffPortRequiredError } from '../staffPortAccess';
 
 export type DatabaseClient = SupabaseClient;
 export type QueryOptions = {
@@ -17,10 +18,18 @@ export async function executeDatabase<T>(
   operation: string,
   variables: object,
 ): Promise<{ data: T }> {
+  const terminalOperation = /^(Staff|Ticketing|Boarding)/.test(operation) || ['CollectBookingPayment', 'VerifyPassengerDiscount', 'RefundBooking', 'VerifyTicketQr', 'CheckInTicket', 'BoardTicket'].includes(operation);
+  if (terminalOperation && !(await checkStaffPortAccess(client))) throw new StaffPortRequiredError();
   const { data, error } = await client.rpc("barkolink_execute", {
     operation,
     args: variables,
   });
-  if (error) throw error;
+  if (error) {
+    if (error.code === '42501' && /no active port|assign your staff port|administrator to assign your port/i.test(error.message)) {
+      markStaffPortBlocked();
+      throw new StaffPortRequiredError();
+    }
+    throw error;
+  }
   return { data: data as T };
 }

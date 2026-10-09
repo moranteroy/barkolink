@@ -44,8 +44,10 @@ export function resetTransaction(snapshot, seed, checks = fixtureChecks) {
       if ${usersExpression} is distinct from ${literal(snapshot.users)} then raise exception 'Users changed since the backup; reset aborted'; end if;
       if ${dataExpression} is distinct from ${literal(snapshot.data)} then raise exception 'Operational data changed since the backup; reset aborted'; end if;
     end $$;
-    truncate table ${dataTables.map(t => `public.${t}`).join(',')};
-    ${seed}
+    truncate table ${dataTables.filter(t => t !== 'port').map(t => `public.${t}`).join(',')};
+    -- Keep any ports referenced by preserved staff accounts.
+    delete from public.port p where not exists(select 1 from public.app_user u where u.assigned_port_id=p.id);
+    ${seed.replace(/(insert into public\.port\b[\s\S]*?);/i, '$1 on conflict (id) do nothing;')}
     ${checks}
     do $$ begin
       if ${usersExpression} is distinct from ${literal(snapshot.users)} then raise exception 'Users were changed; entire reset rolled back'; end if;

@@ -3,6 +3,7 @@
     <button v-if="navigation" class="menu-button" aria-label="Toggle navigation" :aria-expanded="menuOpen" @click="$emit('toggleMenu')"><IonIcon :icon="menuOpen ? closeOutline : menuOutline" aria-hidden="true" /></button>
     <RouterLink :to="`/staff/${role}`" class="workspace-heading" :aria-label="`Back to ${role} dashboard`"><span class="workspace-icon"><IonIcon :icon="role === 'boarding' ? boatOutline : ticketOutline" aria-hidden="true" /></span><strong>{{ role === 'boarding' ? 'Boarding desk' : 'Ticketing desk' }}</strong></RouterLink>
     <div class="header-actions">
+    <span class="assigned-port" :title="assignedPortLabel">{{ assignedPortLabel }}</span>
     <RouterLink :to="`/staff/${role}/notifications`" class="notification-link" :aria-current="router.currentRoute.value.path === `/staff/${role}/notifications` ? 'page' : undefined" :aria-label="notificationUnreadCount ? `Notifications, ${notificationUnreadCount} unread` : 'Notifications'" title="Notifications"><IonIcon :icon="notificationsOutline" aria-hidden="true" /><span v-if="notificationUnreadCount" class="unread-badge" aria-hidden="true">{{ notificationUnreadCount > 99 ? '99+' : notificationUnreadCount }}</span></RouterLink>
     <DropdownMenu :open="accountOpen" @update:open="accountOpen = $event">
       <DropdownMenuTrigger as-child><button class="account-link" aria-label="My staff account" :title="name"><IonIcon :icon="personCircleOutline" aria-hidden="true" /><span class="account-copy"><strong>{{ name }}</strong><small>{{ roleLabel }}</small></span><IonIcon class="account-chevron" :icon="chevronDownOutline" aria-hidden="true" /></button></DropdownMenuTrigger>
@@ -19,12 +20,13 @@
   </header>
 </template>
 <script setup lang="ts">
-import { computed, ref } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { RouterLink, useRouter } from 'vue-router';
 import { IonIcon } from '@ionic/vue';
 import { notificationsOutline, boatOutline, ticketOutline, personCircleOutline, chevronDownOutline, settingsOutline, logOutOutline, menuOutline, closeOutline } from 'ionicons/icons';
 import { notificationUnreadCount } from '../../composables/notificationUnread';
-import { auth } from '../../services/session';
+import { auth, staffDatabase } from '../../services/session';
+import { checkStaffPortAccess, resetStaffPortAccess, staffPortAccess } from '../../services/staffPortAccess';
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel } from '@/components/ui/dropdown-menu';
 import { DropdownMenuSeparator } from 'reka-ui';
 import { signOut } from '../../services/auth';
@@ -35,6 +37,14 @@ defineEmits<{ toggleMenu: [] }>();
 const accountOpen = ref(false), signingOut = ref(false), logoutError = ref('');
 const router = useRouter();
 const roleLabel = computed(() => props.role === 'boarding' ? 'Boarding staff' : 'Ticketing staff');
+const assignedPortLabel = computed(() => staffPortAccess.uid === auth?.currentUser?.uid ? staffPortAccess.portName || (staffPortAccess.status === 'blocked' ? 'Awaiting port assignment' : '') : '');
+watch(() => auth?.currentUser?.uid, async uid => {
+  resetStaffPortAccess(uid || '');
+  if (!uid || !staffDatabase) return;
+  try {
+    await checkStaffPortAccess(staffDatabase);
+  } catch { /* Workspace requests display authorization errors. */ }
+}, { immediate: true });
 async function logout() {
   if (signingOut.value) return;
   signingOut.value = true; logoutError.value = '';
@@ -62,6 +72,8 @@ a:focus-visible, button:focus-visible { outline: 2px solid var(--ocean); outline
 @media (max-width: 800px) { .menu-button { display: inline-flex; } .staff-workspace-header { padding: 12px 16px; } }
 @media (max-width: 480px) { .staff-workspace-header { gap: 8px; } .account-link { width: 40px; padding: 8px; justify-content: center; } .account-link span { display: none; } .workspace-icon { display: none; } .workspace-heading strong { font-size: 13px; } }
 .header-actions { display: flex; align-items: center; gap: 10px; margin-left: auto; flex: none; }
+.assigned-port { max-width: 180px; overflow: hidden; text-overflow: ellipsis; font-size: 11px; color: var(--muted); }
+@media(max-width:600px) { .assigned-port { max-width: 105px; font-size: 10px; } }
 .notification-link { position: relative; display: grid; place-items: center; width: 44px; height: 44px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface-soft); color: var(--ink); font-size: 21px; text-decoration: none; }
 .notification-link[aria-current="page"] { color:var(--ocean); border-color:var(--ocean); }
 .unread-badge { position: absolute; top: -5px; right: -5px; min-width: 20px; height: 20px; padding: 0 5px; display: grid; place-items: center; border-radius: 20px; background: #c73646; color: white; font-size: 10px; font-weight: 700; border: 2px solid var(--surface); }

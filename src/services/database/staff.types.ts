@@ -413,6 +413,7 @@ export interface AdminUsersData {
     fullName: string;
     phone?: string | null;
     role: string;
+    assignedPortId?: UUIDString | null;
     createdAt: TimestampString;
   } & User_Key)[];
 }

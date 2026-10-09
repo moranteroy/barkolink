@@ -30,6 +30,8 @@
               </div>
               <Button variant="outline" :disabled="loading" @click="load"><IonIcon :icon="refreshOutline" aria-hidden="true" />{{ loading ? "Refreshing..." : "Refresh" }}</Button>
             </div>
+            <StaffPortRequired v-if="portBlocked && section !== 'notifications'" />
+            <template v-else>
             <p v-if="error" role="alert" class="catalog-error">{{ error }}</p>
             <WeatherTripPicker v-if="section === 'trips'" :trips="trips" />
             <InboxPanel v-if="section === 'notifications'" :key="refresh" :show-broadcast="false" />
@@ -146,6 +148,7 @@
               </div>
 <WorkspacePagination v-if="['passengers', 'trips'].includes(section) ? total > 0 : total > 30" :page="page" :total="total" :disabled="loading" @change="page = $event; load()"><span v-if="['passengers', 'trips'].includes(section)">{{ recordCount ? page * 30 + 1 : 0 }} &ndash; {{ recordCount ? page * 30 + recordCount : 0 }} of {{ total.toLocaleString() }} {{ section === 'trips' ? 'sailings' : 'passengers' }}</span></WorkspacePagination></template
             >
+            </template>
           </main>
         </div>
       </div></ion-content
@@ -153,6 +156,9 @@
   >
 </template>
 <script setup lang="ts">
+import StaffPortRequired from '../../components/staff/StaffPortRequired.vue';
+import { useStaffPortGate } from '../../composables/staffPortGate';
+const { portBlocked } = useStaffPortGate(load);
 import InboxPanel from '../../components/admin/InboxPanel.vue';
 import WeatherTripPicker from '../../components/shared/WeatherTripPicker.vue';
 import WorkspacePagination from "../../components/shared/WorkspacePagination.vue";

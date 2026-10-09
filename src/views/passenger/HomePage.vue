@@ -71,7 +71,7 @@
 </template>
 <script setup lang="ts">
 import { databaseRequestError } from "../../data/databaseErrors";
-import { computed, ref } from "vue";
+import { computed, ref, watch } from "vue";
 import { useSectionNavigation } from '../../composables/useSectionNavigation';
 import {
   IonButton,
@@ -109,6 +109,7 @@ import { readRecentSearches, recordRecentSearch, type RecentSearch } from "../..
 import { philippineDateKey } from "../../data/travelDate";
 const ionRouter = useIonRouter();
 const recentSearches = ref(readRecentSearches());
+watch(() => auth?.currentUser?.uid, () => { recentSearches.value = readRecentSearches(); });
 const bookingHistory = ref<MyBookingsData['bookings']>([]);
 const routeSailings = ref<BrowseSailingsData['sailings']>([]);
 const faresLoading = ref(false), faresError = ref(false);

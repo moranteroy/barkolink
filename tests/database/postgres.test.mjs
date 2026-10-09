@@ -490,7 +490,7 @@ describe("Supabase PostgreSQL migrations and business rules", () => {
       vesselId: otherVessel,
       customDiscounts: [],
     });
-    const fares = (await call("ticketing", "StaffFares")).fares.filter(
+    const fares = (await call("admin", "StaffFares")).fares.filter(
       (f) => f.vesselId === vessel || f.vesselId === otherVessel,
     );
     assert.equal(fares.length, 2);
@@ -716,12 +716,89 @@ describe("Supabase PostgreSQL migrations and business rules", () => {
       );
     }
     await db.exec(fs.readFileSync("supabase/seed.sql", "utf8"));
+    await db.query("update public.app_user set assigned_port_id=$1 where role in ('TICKETING','BOARDING')", [origin]);
     await db.query(
       `insert into public.sailing(code,origin_port_id,destination_port_id,vessel_id,departure_at,arrival_at,duration_minutes,
       regular_fare,student_fare,senior_fare,child_fare,pwd_fare,pregnant_fare,available_seats)
       values ('TEST-TRIP',$1,$2,$3,'2099-01-01T08:00:00Z','2099-01-01T10:00:00Z',120,600,480,480,300,480,600,2)`,
       [origin, destination, vessel],
     );
+  });
+
+  it('isolates staff listings and totals by departure port in both directions', async () => {
+    await db.query(`insert into public.sailing select (jsonb_populate_record(null::public.sailing,to_jsonb(s)||jsonb_build_object('code','OTHER-PORT','origin_port_id',$1::text,'destination_port_id',$2::text,'departure_at',s.departure_at+interval '1 day','arrival_at',s.arrival_at+interval '1 day'))).* from public.sailing s where code='TEST-TRIP'`, [destination,origin]);
+    await reserve('LOCAL');
+    await call('other','ReserveSailing1',{...reserveArgs('REMOTE'),sailingCode:'OTHER-PORT'});
+    for (const [role, operation] of [['ticketing','TicketingSailings'],['boarding','BoardingSailings'],['ticketing','StaffSailings'],['boarding','StaffSailings']]) {
+      const result = await call(role,operation);
+      assert.ok(result.sailings.length);
+      assert.ok(result.sailings.every(s => s.origin.id === origin));
+    }
+    assert.equal((await call('ticketing','StaffBookings')).totalCount,1);
+    assert.equal((await call('ticketing','StaffBookings',{search:'REMOTE'})).totalCount,0);
+    assert.equal((await call('ticketing','StaffPassengers')).totalCount,1);
+    assert.equal((await call('ticketing','StaffDashboard')).bookings,1);
+    assert.deepEqual((await call('ticketing','TicketingPassengerAccounts')).users.map(u=>u.uid),[ids.passenger]);
+    await call('admin','AdminAssignStaffPort',{uid:ids.ticketing,portId:destination});
+    assert.deepEqual((await call('ticketing','StaffBookings')).bookings.map(b=>b.reference),['REMOTE']);
+    assert.equal((await call('ticketing','MyProfile')).user.assignedPort.id,destination);
+    assert.equal((await call('admin','StaffBookings')).totalCount,2);
+  });
+
+  it('denies guessed booking, passenger and QR identifiers at another port', async () => {
+    const booking=await reserve();
+    const person=booking.bookingPassengers_on_booking[0];
+    await call('admin','AdminAssignStaffPort',{uid:ids.ticketing,portId:destination});
+    await call('admin','AdminAssignStaffPort',{uid:ids.boarding,portId:destination});
+    const blocked = [
+      ['ticketing','CollectBookingPayment',{bookingId:booking.id}],
+      ['ticketing','RefundBooking',{bookingId:booking.id,note:'Receipt123'}],
+      ['ticketing','VerifyPassengerDiscount',{passengerId:person.id,note:'Verified'}],
+      ['ticketing','TicketingCreateGuestWalkIn',{sailingCode:'TEST-TRIP'}],
+      ['boarding','BoardingManifest',{sailingCode:'TEST-TRIP'}],
+      ['boarding','BoardingActivity',{sailingCode:'TEST-TRIP'}],
+      ['boarding','StaffNoShows',{sailingCode:'TEST-TRIP'}],
+      ['boarding','StaffMarkNoShow',{sailingCode:'TEST-TRIP',passengerId:person.id}],
+      ['boarding','CheckInTicket',{passengerId:person.id}],
+      ['boarding','BoardTicket',{passengerId:person.id}],
+      ['boarding','VerifyTicketQr',{sailingCode:'TEST-TRIP',payload:person.ticketCode}],
+    ];
+    for (const [role,op,args] of blocked) await assert.rejects(call(role,op,args),/outside your assigned port/);
+    await db.query("select set_config('request.jwt.claim.sub',$1,false)",[ids.ticketing]);
+    await db.exec('set role authenticated');
+    try {
+      await assert.rejects(db.query('select public.verify_online_payment($1)',[booking.id]),/outside your assigned port/);
+      await assert.rejects(db.query('select public.verify_online_payment_unscoped($1)',[booking.id]),/permission denied/);
+    } finally { await db.exec('reset role'); }
+    assert.equal((await call('passenger','MyBookings')).bookings[0].paymentStatus,'UNPAID');
+  });
+
+  it('requires an active assigned port and prevents self assignment', async () => {
+    await assert.rejects(call('ticketing','AdminAssignStaffPort',{uid:ids.ticketing,portId:destination}),/Administrator/);
+    await assert.rejects(call('passenger','AdminAssignStaffPort',{uid:ids.ticketing,portId:destination}),/Administrator/);
+    await assert.rejects(call('admin','AdminAssignStaffPort',{uid:ids.passenger,portId:destination}),/staff account/);
+    await db.query('update public.app_user set assigned_port_id=null where uid=$1',[ids.ticketing]);
+    await assert.rejects(call('ticketing','StaffBookings'),/No active port/);
+    await call('admin','AdminAssignStaffPort',{uid:ids.ticketing,portId:origin});
+    await db.query('update public.port set is_active=false where id=$1',[origin]);
+    await assert.rejects(call('ticketing','TicketingSailings'),/No active port/);
+    await assert.rejects(call('admin','AdminAssignStaffPort',{uid:ids.ticketing,portId:origin}),/active staff port/);
+    assert.ok((await call('admin','StaffSailings')).sailings.length);
+  });
+
+  it('lists only staff in the separate assignment directory and keeps passengers able to book all ports', async () => {
+    await assert.rejects(call('passenger','AdminStaffPortAssignments'),/Administrator/);
+    await assert.rejects(call('ticketing','AdminStaffPortAssignments'),/Administrator/);
+    const result=await call('admin','AdminStaffPortAssignments',{pageSize:1});
+    assert.equal(result.totalCount,2); assert.equal(result.staff.length,1);
+    assert.ok(['TICKETING','BOARDING'].includes(result.staff[0].role));
+    assert.equal(result.staff[0].assignedPort.id,origin);
+    assert.equal((await call('admin','AdminStaffPortAssignments',{role:'BOARDING'})).staff[0].uid,ids.boarding);
+    assert.equal((await call('admin','AdminStaffPortAssignments',{search:'passenger'})).totalCount,0);
+    await db.query(`insert into public.sailing select (jsonb_populate_record(null::public.sailing,to_jsonb(s)||jsonb_build_object('code','CALAPAN-BOOKING','origin_port_id',$1::text,'destination_port_id',$2::text,'departure_at',s.departure_at+interval '1 day','arrival_at',s.arrival_at+interval '1 day'))).* from public.sailing s where code='TEST-TRIP'`,[destination,origin]);
+    await reserve('PASSENGER-BATANGAS');
+    await call('passenger','ReserveSailing1',{...reserveArgs('PASSENGER-CALAPAN'),sailingCode:'CALAPAN-BOOKING'});
+    assert.equal((await call('passenger','MyBookings')).bookings.length,2);
   });
 
   it('shows today’s departures and overnight arrivals with operator statuses and no passenger records', async () => {
@@ -852,7 +929,7 @@ describe("Supabase PostgreSQL migrations and business rules", () => {
     await assert.rejects(call('passenger','VerifyTicketQr',{payload:ticket.ticketQrPayload,sailingCode:'TEST-TRIP'}),/Staff/);
     await assert.rejects(call(null,'VerifyTicketQr',{payload:ticket.ticketQrPayload,sailingCode:'TEST-TRIP'},'anon'),/Staff/);
     assert.equal((await call('boarding','VerifyTicketQr',{payload:ticket.ticketCode,sailingCode:'TEST-TRIP'})).legacyCode,true);
-    await assert.rejects(call('boarding','VerifyTicketQr',{payload:ticket.ticketQrPayload,sailingCode:'WRONG-TRIP'}),/different sailing/);
+    await assert.rejects(call('boarding','VerifyTicketQr',{payload:ticket.ticketQrPayload,sailingCode:'WRONG-TRIP'}),/outside your assigned port/);
     for(const key of ['Name','Date','Vessel','Verification']){
       await assert.rejects(call('boarding','VerifyTicketQr',{payload:JSON.stringify({...payload,[key]:'FAKE'}),sailingCode:'TEST-TRIP'}),/verification failed/);
     }

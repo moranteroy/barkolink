@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import ts from "typescript";
 
-let handler, verifiedUser, lastCreate, creates;
+let handler, verifiedUser, lastCreate, creates, lastProfile, portExists, profileFails, deletes;
 const previousDeno = globalThis.Deno;
 const previousFactory = globalThis.__barkolinkCreateClient;
 describe("Supabase account Edge Function", () => {
@@ -21,12 +21,24 @@ describe("Supabase account Edge Function", () => {
           error: null,
         }),
         admin: {
+          deleteUser: async () => { deletes++; return { error: null }; },
           createUser: async (input) => {
             creates++;
             lastCreate = input;
             return { data: { user: { id: "new-user" } }, error: null };
           },
         },
+      },
+      from: (table) => {
+        const query = {
+          select: () => query,
+          eq: () => query,
+          maybeSingle: async () => ({ data: portExists ? { id: '76a29980-5c27-4c4b-9ead-cae943202001' } : null, error: null }),
+          update: values => { lastProfile = values; return query; },
+          delete: () => query,
+          then: (resolve, reject) => Promise.resolve({ error: table === 'app_user' && profileFails ? { message: 'failed' } : null }).then(resolve, reject),
+        };
+        return query;
       },
     });
     const source = fs
@@ -53,6 +65,7 @@ describe("Supabase account Edge Function", () => {
     verifiedUser = { id: "admin-user", app_metadata: { role: "ADMIN" } };
     lastCreate = null;
     creates = 0;
+    lastProfile = null; portExists = true; profileFails = false; deletes = 0;
   });
   const request = (body, token = "valid-token") =>
     new Request("https://example.com/manage-account", {
@@ -106,6 +119,19 @@ describe("Supabase account Edge Function", () => {
     assert.deepEqual(lastCreate.app_metadata, { role: "TICKETING" });
     assert.deepEqual(lastCreate.user_metadata, { fullName: "Ticketing Staff" });
     assert.equal((await result.json()).uid, "new-user");
+    assert.equal(lastProfile, null);
+  });
+  it('creates staff without a port and leaves assignment to the separate admin action', async () => {
+    const input = { fullName: 'Boarding Staff', email: 'boarding@example.com', password: 'Test-password123', role: 'BOARDING' };
+    assert.equal((await handler(request({ action: 'createManagedUser', input }))).status,200);
+    assert.equal(creates,1);
+    assert.equal(lastProfile,null);
+    input.assignedPortId='76a29980-5c27-4c4b-9ead-cae943202001';
+    assert.equal((await handler(request({ action: 'createManagedUser', input }))).status,200);
+    assert.equal(lastProfile,null);
+    profileFails=true; input.phone='09123456789';
+    assert.equal((await handler(request({ action: 'createManagedUser', input }))).status,500);
+    assert.equal(deletes,1);
   });
   it("generates strong temporary passwords and rejects unknown operations", async () => {
     const result = await handler(

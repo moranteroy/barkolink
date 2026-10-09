@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <ion-page>
     <ion-content :fullscreen="true">
       <main class="auth-page">
@@ -6,7 +6,7 @@
           <RouterLink class="brand-link" to="/"><BrandMark /></RouterLink>
           <div class="art-copy">
             <span class="auth-brand-tag">YOUR FERRY TRAVEL COMPANION</span>
-            <h1>Travel smarter.<br /><em>Sail easier.</em></h1>
+            <h2>Travel smarter.<br /><em>Sail easier.</em></h2>
             <p>
               Book your crossing, manage your tickets, and stay updated from
               departure to arrival.
@@ -120,11 +120,11 @@
                 <button
                   class="text-button"
                   type="button"
-                  title="Send a password reset link to your email"
+                  title="Send a password reset code to your email"
                   :disabled="resetting || submitting"
                   @click="resetPassword"
                 >
-                  {{ resetting ? "Sending reset link..." : "Forgot your password?" }}
+                  {{ resetting ? "Sending reset code..." : "Forgot your password?" }}
                 </button>
               </div>
               <p v-if="recoveryMessage" class="recovery-note" role="status">
@@ -203,6 +203,7 @@ import {
 import {
   registerAccount,
   sendPasswordResetEmail,
+  resendEmailCode,
   signInWithPassword,
   updateAccountProfile,
 } from "../../services/auth";
@@ -233,6 +234,7 @@ const resetting = ref(false);
 const showPassword = ref(false);
 const errorMessage = ref(String(route.query.sessionError || ""));
 const recoveryMessage = ref("");
+if (route.query.verified === '1') recoveryMessage.value = 'Email verified. Sign in to continue.';
 
 watch(
   () => route.fullPath,
@@ -247,7 +249,7 @@ watch(
       return;
     }
     errorMessage.value = String(route.query.sessionError || "");
-    recoveryMessage.value = "";
+    recoveryMessage.value = nextPath === '/login' && route.query.verified === '1' ? 'Email verified. Sign in to continue.' : '';
     password.value = "";
     confirmPassword.value = "";
     showPassword.value = false;
@@ -258,15 +260,16 @@ async function resetPassword() {
   if (resetting.value || submitting.value) return;
   errorMessage.value = "";
   recoveryMessage.value = "";
-  if (!email.value.trim()) {
-    errorMessage.value = "Enter your email address first.";
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.value.trim())) {
+    errorMessage.value = "Enter a valid email address first.";
     return;
   }
   resetting.value = true;
   try {
+    sessionStorage.removeItem('barkolink-password-recovery');
     await sendPasswordResetEmail(requireAuth(), email.value.trim());
-    recoveryMessage.value =
-      "Password reset instructions were sent to your email.";
+    sessionStorage.setItem('barkolink-pending-email', JSON.stringify({ email: email.value.trim(), purpose: 'recovery' }));
+    await router.replace({ path: '/verify-email', query: { purpose: 'recovery' } });
   } catch (error) {
     errorMessage.value =
       (error as { message?: string }).message ||
@@ -303,8 +306,9 @@ async function submit() {
       );
       createdAuthAccount = true;
       if (!credential.session) {
-        recoveryMessage.value =
-          "Account created. Check your email to confirm your account, then sign in.";
+        sessionStorage.setItem('barkolink-pending-email', JSON.stringify({ email: email.value.trim(), purpose: 'signup' }));
+        password.value = ''; confirmPassword.value = '';
+        await router.replace({ path: '/verify-email', query: { ...authLocation('/register').query, purpose: 'signup' } });
         return;
       }
       stage = "profile";
@@ -347,10 +351,21 @@ async function submit() {
     stage = "navigation";
     // A completed sign-in starts a new navigation stack. Ionic treats replace as
     // a root transition, so the passenger frame can resize before /home renders.
-    await router.replace(String(route.query.redirect || defaultDestination));
+    const requestedDestination = String(route.query.redirect || defaultDestination);
+    await router.replace(requestedDestination.split('?')[0] === '/verify-email' ? defaultDestination : requestedDestination);
   } catch (error) {
     const code = (error as { code?: string }).code;
     const message = (error as { message?: string }).message;
+    if (code === 'email_not_confirmed' && !isRegister.value) {
+      try {
+        await resendEmailCode(email.value.trim(), 'signup');
+        sessionStorage.setItem('barkolink-pending-email', JSON.stringify({ email: email.value.trim(), purpose: 'signup' }));
+        await router.replace({ path: '/verify-email', query: { ...authLocation('/register').query, purpose: 'signup' } });
+      } catch {
+        errorMessage.value = 'Your email still needs verification, but a new code could not be sent. Wait a minute and try signing in again.';
+      }
+      return;
+    }
     const errors: Record<string, string> = {
       "auth/email-already-in-use":
         "An account already uses this email. Sign in instead.",
@@ -388,512 +403,65 @@ async function submit() {
 </script>
 
 <style scoped>
-.auth-page {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  min-height: 100vh;
-  color: var(--ink);
-  background: var(--page-background);
-}
-.auth-art {
-  position: relative;
-  overflow: hidden;
-  padding: 42px clamp(28px, 5vw, 82px);
-  background: linear-gradient(150deg, #0b2543, #124d69 65%, #147b86);
-  color: white;
-  display: flex;
-  flex-direction: column;
-}
-.brand-link {
-  display: inline-flex;
-  text-decoration: none;
-  align-self: flex-start;
-}
-.auth-art :deep(.brand-copy strong),
-.auth-art :deep(.brand-copy b) {
-  color: #fff;
-}
-.auth-art :deep(.brand-copy small) {
-  color: #c5dfe9;
-}
-.art-copy {
-  position: relative;
-  z-index: 1;
-  margin-top: clamp(50px, 10vh, 110px);
-  max-width: 440px;
-}
-.kicker {
-  margin: 0;
-  color: var(--ocean);
-  font-size: 10px;
-  font-weight: 900;
-  letter-spacing: 0.15em;
-}
-.art-copy .kicker {
-  color: #a2e3e4;
-}
-.art-copy h1 {
-  margin: 20px 0;
-  font-size: clamp(42px, 4.5vw, 64px);
-  line-height: 1.06;
-  letter-spacing: -0.055em;
-}
-.art-copy em {
-  color: #a4e5e5;
-  font-style: normal;
-}
-.art-copy > p:last-child {
-  max-width: 350px;
-  color: #d0e4ee;
-  font-size: 15px;
-  line-height: 1.75;
-}
-.auth-benefits {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 15px;
-  margin-top: 20px;
-  color: #e2f1f6;
-  font-size: 12px;
-}
-.auth-benefits span {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-}
-.auth-benefits ion-icon {
-  color: #a4e5e5;
-  font-size: 18px;
-}
-.auth-ferry {
-  width: min(100%, 510px);
-  margin: auto auto 0;
-  min-height: 160px;
-  max-height: 300px;
-  opacity: 0.93;
-}
-.auth-form {
-  display: grid;
-  place-items: center;
-  padding: 40px clamp(20px, 4vw, 64px);
-}
-.form-inner {
-  width: min(100%, 460px);
-  padding: 34px;
-  border-radius: 26px;
-}
-.mobile-back {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  margin-bottom: 28px;
-  color: var(--muted);
-  font-size: 12px;
-  text-decoration: none;
-}
-.mobile-back ion-icon {
-  font-size: 18px;
-}
-.form-heading {
-  margin-bottom: 26px;
-}
-.form-heading h1 {
-  margin: 12px 0 9px;
-  font-size: 34px;
-  letter-spacing: -0.045em;
-  line-height: 1.1;
-}
-.form-heading > p:last-child {
-  margin: 0;
-  color: var(--muted);
-  font-size: 14px;
-  line-height: 1.6;
-}
-form {
-  display: grid;
-  gap: 18px;
-}
-form > label:not(.check) {
-  display: grid;
-  gap: 9px;
-  font-size: 12px;
-  font-weight: 800;
-}
-input:not([type="checkbox"]) {
-  width: 100%;
-  height: 50px;
-  padding: 0 14px;
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  outline: none;
-  background: var(--surface);
-  color: var(--ink);
-  font: inherit;
-  font-size: 14px;
-}
-input::placeholder {
-  color: var(--muted);
-}
-input:focus {
-  border-color: var(--ocean);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--ocean) 14%, transparent);
-}
-.password-field {
-  position: relative;
-}
-.password-field input {
-  padding-right: 48px;
-}
-.visibility-button {
-  position: absolute;
-  top: 0;
-  right: 3px;
-  display: grid;
-  place-items: center;
-  width: 44px;
-  height: 50px;
-  border: 0;
-  background: transparent;
-  color: var(--muted);
-  font-size: 20px;
-  cursor: pointer;
-}
-.form-options {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  margin-top: -8px;
-  margin-bottom: -4px;
-}
-.check {
-  display: flex !important;
-  align-items: flex-start;
-  gap: 10px;
-  color: var(--muted);
-  font-size: 12px;
-  line-height: 1.6;
-}
-.check input {
-  flex: none;
-  width: 17px;
-  height: 17px;
-  margin: 2px 0 0;
-  accent-color: var(--action);
-}
-.check a {
-  color: var(--ocean);
-  font-weight: 700;
-}
-.text-button {
-  min-height: 32px;
-  padding: 6px 0;
-  border: 0;
-  border-radius: 4px;
-  background: transparent;
-  color: var(--ocean);
-  font: inherit;
-  font-size: 12px;
-  font-weight: 600;
-  cursor: pointer;
-}
-.text-button:hover:not(:disabled) {
-  text-decoration: underline;
-  text-underline-offset: 3px;
-}
-.text-button:focus-visible {
-  outline: 2px solid var(--ocean);
-  outline-offset: 4px;
-}
-.text-button:disabled {
-  opacity: 0.6;
-  cursor: default;
-}
-.submit-button {
-  --background: var(--action);
-  --color: #fff;
-  --box-shadow: none;
-  --border-radius: 12px;
-  height: 50px;
-  margin: 2px 0;
-  text-transform: none;
-  font-weight: 800;
-}
-.form-message {
-  margin: 0;
-  color: #c43c47;
-  font-size: 12px;
-  line-height: 1.6;
-}
-.recovery-note {
-  margin: 0;
-  padding: 12px;
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  background: var(--surface);
-  color: var(--ink);
-  font-size: 12px;
-  line-height: 1.6;
-}
-.switch-copy {
-  margin: 24px 0;
-  text-align: center;
-  color: var(--muted);
-  font-size: 12px;
-  line-height: 1.6;
-}
-.switch-copy a {
-  color: var(--ocean);
-  font-weight: 800;
-  text-decoration: none;
-}
-.prototype-box {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 14px;
-  border-top: 1px solid var(--line);
-}
-.prototype-icon {
-  display: grid;
-  place-items: center;
-  flex: none;
-  width: 36px;
-  height: 36px;
-  border-radius: 12px;
-  background: var(--light-blue);
-  color: var(--ocean);
-  font-size: 19px;
-}
-.prototype-box strong {
-  font-size: 12px;
-}
-.prototype-box p {
-  margin: 5px 0 0;
-  color: var(--muted);
-  font-size: 11px;
-  line-height: 1.6;
-}
-@media (max-width: 800px) {
-  .auth-page {
-    grid-template-columns: 1fr;
-  }
-  .auth-art {
-    padding: 24px 28px;
-  }
-  .art-copy {
-    margin-top: 24px;
-    max-width: 100%;
-  }
-  .art-copy h1 {
-    font-size: 33px;
-    margin: 12px 0;
-  }
-  .art-copy h1 br {
-    display: none;
-  }
-  .art-copy > p:last-child {
-    max-width: 480px;
-    font-size: 13px;
-  }
-  .auth-benefits,
-  .auth-ferry {
-    display: none;
-  }
-  .auth-form {
-    padding: 24px 18px 40px;
-  }
-  .form-inner {
-    padding: 28px 24px;
-  }
-  .mobile-back {
-    margin-bottom: 22px;
-  }
-  .form-heading h1 {
-    font-size: 30px;
-  }
-}
-@media (max-width: 380px) {
-  .form-inner {
-    padding: 24px 18px;
-  }
-  .form-heading h1 {
-    font-size: 27px;
-  }
-}
-
-.auth-page {
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  background: var(--surface, #fff);
-}
-.auth-art {
-  padding: 48px clamp(32px, 5vw, 80px);
-  background: linear-gradient(155deg, #0d2748 0%, #1262a0 60%, #249ace 100%);
-  min-height: 100vh;
-}
-.auth-art::after {
-  content: "";
-  position: absolute;
-  width: 650px;
-  height: 650px;
-  bottom: -420px;
-  left: -100px;
-  border: 1px solid #ffffff24;
-  border-radius: 50%;
-  box-shadow:
-    0 0 0 80px #ffffff08,
-    0 0 0 160px #ffffff05;
-  pointer-events: none;
-}
-.auth-brand-tag {
-  display: inline-block;
-  padding: 8px 12px;
-  border: 1px solid #ffffff38;
-  border-radius: 30px;
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  color: #daefff;
-}
-.art-copy {
-  margin-top: auto;
-  padding-top: 80px;
-}
-.art-copy h1 {
-  font-size: clamp(40px, 4vw, 60px);
-  letter-spacing: -0.045em;
-  line-height: 1.15;
-  margin: 22px 0;
-}
-.art-copy em {
-  color: #a7deff;
-}
-.art-copy > p:last-child {
-  max-width: 360px;
-  font-size: 15px;
-}
-.auth-benefits {
-  position: relative;
-  z-index: 1;
-  gap: 22px;
-  margin: 30px 0 0;
-}
-.auth-ferry {
-  max-height: 230px;
-  margin: 24px auto 0;
-}
-.auth-form {
-  padding: 40px 30px;
-  background: var(--surface, #fff);
-}
-.form-inner {
-  padding: 0;
-  width: min(100%, 400px);
-  border: 0;
-  background: none;
-  box-shadow: none;
-  border-radius: 0;
-}
-.mobile-back {
-  margin-bottom: 24px;
-}
-.auth-mobile-brand {
-  display: none;
-}
-.auth-mode-tabs {
-  display: flex;
-  padding: 4px;
-  gap: 4px;
-  background: var(--page-background);
-  border: 1px solid var(--line);
-  border-radius: 11px;
-  margin-bottom: 30px;
-}
-.auth-mode-tabs a {
-  flex: 1;
-  text-align: center;
-  padding: 10px;
-  border-radius: 8px;
-  color: var(--muted);
-  font-size: 13px;
-  font-weight: 700;
-  text-decoration: none;
-}
-.auth-mode-tabs a.selected {
-  color: #1676c9;
-  background: var(--surface);
-  box-shadow: 0 1px 4px #122a4412;
-}
-.form-heading {
-  margin-bottom: 25px;
-}
-.form-heading h1 {
-  margin: 0 0 10px;
-  font-size: 28px;
-  letter-spacing: -0.035em;
-}
-.form-heading > p:last-child {
-  font-size: 13px;
-}
-.form-inner form {
-  gap: 16px;
-}
-.form-inner input:not([type="checkbox"]) {
-  border-radius: 9px;
-  height: 47px;
-  font-size: 13px;
-  background: var(--surface);
-}
-.visibility-button {
-  height: 47px;
-}
-.submit-button {
-  --background: #157bce;
-  --border-radius: 9px;
-  height: 47px;
-  letter-spacing: 0;
-  font-size: 13px;
-}
-.prototype-box {
-  padding: 18px 0 0;
-  gap: 10px;
-}
-.prototype-icon {
-  background: #eaf5ff;
-  color: #157bce;
-  border-radius: 9px;
-}
-.switch-copy {
-  font-size: 13px;
-  margin: 23px 0;
-}
-@media (max-width: 800px) {
-  .auth-page {
-    display: block;
-    min-height: 100vh;
-  }
-  .auth-art {
-    display: none;
-  }
-  .auth-form {
-    min-height: 100vh;
-    padding: 26px 22px 40px;
-    align-items: center;
-  }
-  .form-inner {
-    width: min(100%, 420px);
-  }
-  .auth-mobile-brand {
-    display: block;
-    margin: 0 0 24px;
-  }
-  .auth-mode-tabs {
-    margin-bottom: 27px;
-  }
-  .mobile-back {
-    margin-bottom: 24px;
-  }
-  .form-heading h1 {
-    font-size: 27px;
-  }
-}
+.auth-page { display: grid; grid-template-columns: minmax(0, .95fr) minmax(0, 1.05fr); min-height: 100vh; min-height: 100dvh; color: var(--ink); background: var(--surface-soft); line-height: 1.6; }
+.auth-art { position: sticky; top: 0; display: flex; flex-direction: column; height: 100vh; height: 100dvh; min-height: 600px; overflow: hidden; padding: 36px clamp(28px, 4.5vw, 72px); background: radial-gradient(ellipse at bottom right, #229ab055, transparent 65%), linear-gradient(150deg, #0b2948, #0d6584); color: #fff; }
+.auth-art::after { content: ''; position: absolute; width: 650px; height: 650px; bottom: -460px; left: -180px; border: 1px solid #ffffff24; border-radius: 50%; box-shadow: 0 0 0 80px #ffffff08, 0 0 0 160px #ffffff05; pointer-events: none; }
+.brand-link { display: inline-flex; align-self: flex-start; text-decoration: none; }
+.auth-art :deep(.brand-copy strong), .auth-art :deep(.brand-copy b) { color: #fff; }
+.auth-art :deep(.brand-copy small) { color: #d0e6f2; }
+.art-copy { position: relative; z-index: 1; margin-top: auto; padding-top: 36px; max-width: 440px; }
+.auth-brand-tag { display: inline-block; padding: 7px 12px; border: 1px solid #ffffff38; border-radius: 30px; color: #daefff; font-size: 10px; font-weight: 700; letter-spacing: .08em; }
+.art-copy h2 { margin: 22px 0 18px; font-size: clamp(40px, 4.2vw, 60px); font-weight: 800; letter-spacing: -.045em; line-height: 1.1; }
+.art-copy em { color: #b7eef5; font-style: normal; }
+.art-copy p { max-width: 370px; margin: 0; color: #deedf4; font-size: 16px; line-height: 1.8; }
+.auth-benefits { position: relative; z-index: 1; display: flex; flex-wrap: wrap; gap: 16px; margin-top: 24px; color: #e2f1f6; font-size: 13px; }
+.auth-benefits span { display: inline-flex; align-items: center; gap: 7px; }
+.auth-benefits ion-icon { color: #b7eef5; font-size: 18px; }
+.auth-ferry { position: relative; z-index: 1; width: min(100%, 390px); min-height: 120px; max-height: 200px; margin: 24px auto auto; }
+.auth-form { min-width: 0; display: grid; place-items: center; padding: 28px clamp(24px, 4vw, 64px); }
+.form-inner { width: min(100%, 460px); padding: 28px 32px; border: 1px solid var(--line); border-radius: 24px; background: var(--surface); box-shadow: 0 16px 48px #0a29480a; }
+.mobile-back { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; margin: -8px 0 12px; color: var(--muted); font-size: 13px; text-decoration: none; }
+.mobile-back:hover { color: var(--ocean); }
+.mobile-back ion-icon { font-size: 18px; }
+.auth-mobile-brand { display: none; }
+.auth-mode-tabs { display: flex; gap: 4px; padding: 4px; margin-bottom: 24px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface-soft); }
+.auth-mode-tabs a { display: flex; align-items: center; justify-content: center; flex: 1; min-height: 44px; padding: 8px; border-radius: 8px; color: var(--muted); font-size: 13px; font-weight: 650; text-decoration: none; }
+.auth-mode-tabs a.selected { color: var(--ocean); background: var(--light-blue); box-shadow: 0 1px 4px #122a4410; }
+.form-heading { margin-bottom: 24px; }
+.form-heading h1 { margin: 0 0 8px; font-size: clamp(26px, 2.6vw, 32px); font-weight: 750; letter-spacing: -.035em; line-height: 1.2; }
+.form-heading p { margin: 0; color: var(--muted); font-size: 14px; line-height: 1.7; }
+form { display: grid; gap: 16px; }
+form > label:not(.check) { display: grid; gap: 7px; font-size: 13px; font-weight: 650; }
+input:not([type='checkbox']) { width: 100%; min-width: 0; height: 50px; padding: 0 14px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface-soft); color: var(--ink); font: inherit; font-size: 16px; font-weight: 400; }
+input::placeholder { color: var(--muted); opacity: .85; font-weight: 400; }
+input:focus { outline: none; border-color: var(--ocean); box-shadow: 0 0 0 3px color-mix(in srgb, var(--ocean) 14%, transparent); }
+.password-field { position: relative; }
+.password-field input { padding-right: 50px; }
+.visibility-button { position: absolute; top: 3px; right: 3px; display: grid; place-items: center; width: 44px; height: 44px; padding: 0; border: 0; border-radius: 8px; background: transparent; color: var(--muted); font-size: 20px; cursor: pointer; }
+.visibility-button:hover { color: var(--ocean); background: var(--light-blue); }
+.form-options { display: flex; justify-content: flex-end; margin-top: -8px; margin-bottom: -8px; }
+.text-button { min-height: 44px; padding: 8px 0; border: 0; border-radius: 4px; background: transparent; color: var(--ocean); font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; }
+.text-button:hover:not(:disabled) { text-decoration: underline; text-underline-offset: 3px; }
+.text-button:disabled { opacity: .6; cursor: default; }
+.check { display: flex; align-items: flex-start; gap: 10px; color: var(--muted); font-size: 13px; line-height: 1.7; }
+.check input { flex: none; width: 20px; height: 20px; margin: 1px 0 0; accent-color: var(--action); }
+.check a { color: var(--ocean); font-weight: 600; text-underline-offset: 3px; }
+.submit-button { --background: var(--action); --color: #fff; --box-shadow: none; --border-radius: 10px; height: 50px; margin: 0; font-size: 14px; font-weight: 700; letter-spacing: 0; text-transform: none; }
+.form-message { margin: 0; padding: 10px 12px; border: 1px solid #c43c4740; border-radius: 10px; background: #c43c470a; color: #ae2637; font-size: 13px; line-height: 1.6; }
+.recovery-note { margin: 0; padding: 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--light-blue); color: var(--ink); font-size: 13px; line-height: 1.6; }
+.switch-copy { margin: 20px 0; text-align: center; color: var(--muted); font-size: 13px; line-height: 1.7; }
+.switch-copy a { display: inline-block; padding-block: 4px; color: var(--ocean); font-weight: 700; text-decoration: none; }
+.switch-copy a:hover { text-decoration: underline; text-underline-offset: 3px; }
+.prototype-box { display: flex; align-items: center; gap: 12px; padding-top: 18px; border-top: 1px solid var(--line); }
+.prototype-icon { display: grid; place-items: center; flex: none; width: 38px; height: 38px; border-radius: 10px; background: var(--light-blue); color: var(--ocean); font-size: 21px; }
+.prototype-box strong { font-size: 13px; font-weight: 650; }
+.prototype-box p { margin: 3px 0 0; color: var(--muted); font-size: 12px; line-height: 1.7; }
+.auth-page :is(a, button):focus-visible { outline: 3px solid var(--ocean); outline-offset: 3px; }
+.auth-art a:focus-visible { outline-color: #b7eef5; }
+:global(:root[data-theme='dark']) .auth-page { --surface: #132439; --surface-soft: #0e1c2e; --line: #2b4056; --muted: #b2c3d3; --light-blue: #183752; }
+:global(:root[data-theme='dark']) .form-message { color: #ffadb6; }
+@media (max-width: 1050px) { .auth-art { padding-inline: 28px; } .auth-form { padding-inline: 24px; } .form-inner { padding: 24px; } }
+@media (max-height: 740px) and (min-width: 801px) { .auth-art { min-height: 540px; padding-block: 24px; } .art-copy { padding-top: 24px; } .art-copy h2 { font-size: 44px; } .auth-ferry { max-height: 150px; margin-top: 16px; } .auth-benefits { margin-top: 16px; } }
+@media (max-width: 800px) { .auth-page { grid-template-columns: 1fr; } .auth-art { display: none; } .auth-form { min-height: 100vh; min-height: 100dvh; padding: max(20px, env(safe-area-inset-top)) 20px max(24px, env(safe-area-inset-bottom)); } .form-inner { width: min(100%, 460px); padding: 24px; } .auth-mobile-brand { display: block; margin-bottom: 22px; } .mobile-back { margin-bottom: 16px; } }
+@media (max-width: 480px) { .auth-form { align-items: start; padding-inline: 20px; background: var(--surface); } .form-inner { padding: 0; border: 0; border-radius: 0; box-shadow: none; } .auth-mode-tabs { margin-bottom: 22px; } .form-heading { margin-bottom: 22px; } }
 </style>

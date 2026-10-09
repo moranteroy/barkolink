@@ -2,6 +2,9 @@ export function databaseRequestError(error: unknown, fallback: string): string {
   if (!error || typeof error !== "object") return fallback;
   const { code, message } = error as { code?: string; message?: string };
   const detail = `${code || ""} ${message || ""}`;
+  if (/STAFF_PORT_REQUIRED|no active port.*assigned|administrator to assign your (?:staff )?port/i.test(detail)) {
+    return 'Your staff account has no active port assignment. Ask your administrator to assign your departure port.';
+  }
   if (
     /unauthenticated|requires a signed-in user|jwt expired|invalid jwt|PGRST301/i.test(
       detail,

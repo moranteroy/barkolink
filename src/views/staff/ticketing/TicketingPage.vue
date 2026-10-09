@@ -28,14 +28,14 @@
                 <p>{{ staff.description }}</p>
               </div>
               <ion-button
-                v-if="isBoarding"
+                v-if="isBoarding && !portBlocked"
                 class="primary"
                 :disabled="busy"
                 @click="showScanner = true"
                 ><ion-icon slot="start" :icon="staff.actionIcon" />{{
                   staff.action
                 }}</ion-button
-              ><router-link v-if="!isBoarding && !isBookingsPage" class="dashboard-walk-in" to="/staff/ticketing/walk-in"><ion-icon :icon="ticketOutline" aria-hidden="true" /> New walk-in ticket</router-link><button
+              ><router-link v-if="!portBlocked && !isBoarding && !isBookingsPage" class="dashboard-walk-in" to="/staff/ticketing/walk-in"><ion-icon :icon="ticketOutline" aria-hidden="true" /> New walk-in ticket</router-link><button
                 class="staff-refresh"
                 type="button"
                 :disabled="busy || loading"
@@ -45,6 +45,8 @@
                 {{ loading ? "Refreshing..." : "Refresh" }}
               </button>
             </div>
+            <StaffPortRequired v-if="portBlocked" />
+            <template v-else>
             <p v-if="loadError" class="staff-note error" role="alert">
               {{ loadError }}
             </p>
@@ -223,6 +225,7 @@
                 passengers their printed reference and ticket code.</span
               >
             </div>
+            </template>
           </main>
         </section>
         <ion-modal
@@ -467,6 +470,9 @@
   </ion-page>
 </template>
 <script setup lang="ts">
+import StaffPortRequired from '../../../components/staff/StaffPortRequired.vue';
+import { useStaffPortGate } from '../../../composables/staffPortGate';
+const { portBlocked } = useStaffPortGate(refreshQueues);
 import { paymentMethodLabel } from '../../../data/paymentMethod';
 import { awaitingPaymentVerification, bookingTicketReady } from '../../../data/paymentVerification';
 import { verifyOnlinePayment } from '../../../services/payments';
