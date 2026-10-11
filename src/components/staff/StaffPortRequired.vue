@@ -1,10 +1,10 @@
 <template>
   <section ref="noticeElement" class="port-required" aria-labelledby="port-required-title">
-    <span class="port-required-icon"><IonIcon :icon="idCardOutline" aria-hidden="true" /></span>
+    <span class="port-required-icon"><AppIcon :icon="idCardOutline" aria-hidden="true" /></span>
     <h2 id="port-required-title">Port assignment needed</h2>
     <p>Ask your administrator to assign your departure port before you start terminal operations.</p>
     <p class="port-required-help">Once assigned, check again to open your workspace.</p>
-    <Button variant="outline" :disabled="checking" @click="check"><IonIcon :icon="refreshOutline" aria-hidden="true" />{{ checking ? 'Checking…' : 'Check assignment' }}</Button>
+    <Button variant="outline" :disabled="checking" @click="check"><AppIcon :icon="refreshOutline" aria-hidden="true" />{{ checking ? 'Checking…' : 'Check assignment' }}</Button>
     <p v-if="error" role="alert">{{ error }}</p>
   </section>
   <IonToast
@@ -22,7 +22,8 @@
 </template>
 <script setup lang="ts">
 import { nextTick, ref, watch } from 'vue';
-import { IonIcon, IonToast } from '@ionic/vue';
+import { IonToast } from '@ionic/vue';
+import AppIcon from "@/components/ui/icon/AppIcon.vue";
 import { closeOutline, idCardOutline, informationCircleOutline, refreshOutline } from 'ionicons/icons';
 import { Button } from '@/components/ui/button';
 import { staffDatabase } from '../../services/session';

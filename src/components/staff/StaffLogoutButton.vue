@@ -1,13 +1,13 @@
 <template>
   <div class="staff-signout">
-    <button type="button" :disabled="busy || disabled" @click="logout"><IonIcon :icon="logOutOutline" aria-hidden="true" /><span>{{ busy ? 'Signing out?' : 'Log out' }}</span></button>
+    <button type="button" :disabled="busy || disabled" @click="logout"><AppIcon :icon="logOutOutline" aria-hidden="true" /><span>{{ busy ? 'Signing out…' : 'Log out' }}</span></button>
     <p v-if="error" role="alert">{{ error }}</p>
   </div>
 </template>
 <script setup lang="ts">
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
-import { IonIcon } from '@ionic/vue';
+import AppIcon from "@/components/ui/icon/AppIcon.vue";
 import { logOutOutline } from 'ionicons/icons';
 import { auth } from '../../services/session';
 import { signOut } from '../../services/auth';
@@ -37,6 +37,6 @@ async function logout() {
 .staff-signout button:hover { background: #dc55551f; }
 .staff-signout button:focus-visible { outline: 2px solid #ffb0b0; outline-offset: 3px; }
 .staff-signout button:disabled { opacity: .65; cursor: wait; }
-.staff-signout ion-icon { font-size: 18px; }
+.staff-signout .app-icon { font-size: 18px; }
 .staff-signout p { font-size: 11px; line-height: 1.6; color: #ffb0b0; }
 </style>

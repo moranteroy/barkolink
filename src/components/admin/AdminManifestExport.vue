@@ -23,7 +23,7 @@
             {{ s.code }} · {{ s.origin }} → {{ s.destination }} · {{ s.vessel }}
           </option>
         </select></label
-      ><button :disabled="!selected || exporting" @click="exportManifest">
+      ><button data-slot="button" data-variant="default" data-size="default" :disabled="!selected || exporting" @click="exportManifest">
         <Download aria-hidden="true" />
         {{ exporting ? "Exporting…" : "Export manifest" }}
       </button>

@@ -47,7 +47,9 @@ try {
     const sailing={code:'UI-TRIP',departureAt:'2099-01-01T08:00:00Z',arrivalAt:'2099-01-01T10:00:00Z',origin:{name:'Calapan'},destination:{name:'Batangas'},vessel:{name:'UI Ferry'}}
     await passengerContext.route(`${projectUrl}/**`,async route=>{
       if(route.request().url().includes('/auth/v1/'))return route.fulfill({json:user})
+      if (route.request().url().includes('/functions/v1/weather')) return route.fulfill({ json: { configured: false, ports: [] } })
       const {operation}=route.request().postDataJSON()
+      if (operation === 'MyNotifications') return route.fulfill({ json: { notifications: [] } })
       let result
       if(operation==='CancelMyBooking'){cancelCalls++;cancelled=true;result={booking_update:{id}}}
       else result={ActiveAdvisories:{advisories:[]},MySavedTravelers:{travelers:[]},MyProfile:{user:{fullName:'UI Traveler',role:'PASSENGER'}},MyBookings:{bookings:[{id,reference:'UI-UNPAID',passengerCount:1,total:600,status:cancelled?'CANCELLED':'PENDING',paymentStatus:'UNPAID',paymentDeadline:new Date(Date.now()+3600000).toISOString(),createdAt:new Date().toISOString(),sailing,bookingPassengers_on_booking:[{id,fullName:'UI Traveler',passengerType:'REGULAR',ticketStatus:'PENDING'}]}]}}[operation]
@@ -69,7 +71,7 @@ try {
     assert.equal(cancelCalls,0)
     await passengerPage.getByRole('button',{name:'Cancel reservation',exact:true}).click()
     await passengerPage.locator('ion-alert').getByRole('button',{name:'Cancel reservation',exact:true}).click()
-    await passengerPage.getByRole('tab',{name:'Cancelled',exact:true}).waitFor()
+    await passengerPage.locator('.tabs button.selected').filter({ hasText: 'Cancelled' }).waitFor()
     await passengerPage.waitForTimeout(350)
     assert.equal(cancelCalls,1)
     assert.equal(nativeDialogs,0)

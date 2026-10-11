@@ -17,7 +17,7 @@
           :checked="modelValue === item.id"
           :disabled="(item.availableSeats ?? item.capacity) < passengerCount"
           @change="$emit('update:modelValue', item.id)"
-        /><span class="seat-icon"><ion-icon :icon="modelValue === item.id ? checkmarkCircleOutline : bedOutline" aria-hidden="true" /></span><span
+        /><span class="seat-icon"><AppIcon :icon="modelValue === item.id ? checkmarkCircleOutline : bedOutline" aria-hidden="true" /></span><span
           ><strong>{{ item.name }}</strong
           ><small>{{ item.description }}</small
           ><small
@@ -34,7 +34,7 @@
 </template>
 <script setup lang="ts">
 import type { Accommodation } from "../../services/database/workspaces";
-import { IonIcon } from '@ionic/vue';
+import AppIcon from "@/components/ui/icon/AppIcon.vue";
 import { bedOutline, checkmarkCircleOutline } from 'ionicons/icons';
 defineProps<{
   options: Accommodation[];

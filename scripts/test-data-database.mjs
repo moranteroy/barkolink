@@ -6,9 +6,11 @@ import { fileURLToPath } from 'node:url'
 export const projectRef = 'utobfkfmuepuoseszxks'
 export const dataTables = ['port', 'vessel', 'fare_settings', 'sailing', 'booking', 'booking_passenger', 'online_payment', 'port_weather_cache', 'voucher',
   'notification', 'boarding_event', 'operation_settings', 'activity_log', 'travel_advisory',
-  'saved_traveler', 'passenger_no_show', 'accommodation', 'ferry_route', 'notification_campaign']
+  'saved_traveler', 'passenger_no_show', 'accommodation', 'ferry_route', 'vessel_route', 'notification_campaign']
 const tableRows = table => `(select coalesce(jsonb_agg(to_jsonb(t) order by to_jsonb(t)::text),'[]'::jsonb) from public.${table} t)`
-export const dataExpression = `jsonb_build_object(${dataTables.map(table => `'${table}',${tableRows(table)}`).join(',')})`
+const positionRows = `(select coalesce(jsonb_agg(to_jsonb(t) order by id),'[]'::jsonb) from barkolink_private.vessel_port_observation t)`
+const dailyRows = `(select coalesce(jsonb_agg(to_jsonb(t) order by id),'[]'::jsonb) from barkolink_private.daily_schedule t)`
+export const dataExpression = `jsonb_build_object(${dataTables.map(table => `'${table}',${tableRows(table)}`).join(',')},'private.daily_schedule',${dailyRows},'private.vessel_port_observation',${positionRows})`
 export const usersExpression = `jsonb_build_object('app',
   (select md5(coalesce(jsonb_agg(to_jsonb(u) order by uid),'[]'::jsonb)::text) from public.app_user u),
   'auth',(select md5(coalesce(jsonb_agg(to_jsonb(u) order by id),'[]'::jsonb)::text) from auth.users u))`
@@ -33,21 +35,24 @@ end $$;`
 
 export function resetTransaction(snapshot, seed, checks = fixtureChecks) {
   if (snapshot.projectRef !== projectRef) throw new Error('Backup belongs to a different project.')
-  if (JSON.stringify(Object.keys(snapshot.data).sort()) !== JSON.stringify([...dataTables].sort())) throw new Error('Backup table inventory is incomplete.')
+  if (JSON.stringify(Object.keys(snapshot.data).sort()) !== JSON.stringify([...dataTables,'private.daily_schedule','private.vessel_port_observation'].sort())) throw new Error('Backup table inventory is incomplete.')
   return `begin;
     set local lock_timeout='10s';
     set local statement_timeout='45s';
     select pg_advisory_xact_lock(hashtext('barkolink-test-data-reset'));
     lock table public.app_user,auth.users in share mode;
-    lock table ${dataTables.map(t => `public.${t}`).join(',')} in access exclusive mode;
+    lock table ${dataTables.map(t => `public.${t}`).join(',')},barkolink_private.daily_schedule,barkolink_private.vessel_port_observation in access exclusive mode;
     do $$ begin
       if ${usersExpression} is distinct from ${literal(snapshot.users)} then raise exception 'Users changed since the backup; reset aborted'; end if;
       if ${dataExpression} is distinct from ${literal(snapshot.data)} then raise exception 'Operational data changed since the backup; reset aborted'; end if;
     end $$;
-    truncate table ${dataTables.filter(t => t !== 'port').map(t => `public.${t}`).join(',')};
+    truncate table ${dataTables.filter(t => t !== 'port').map(t => `public.${t}`).join(',')},barkolink_private.daily_schedule,barkolink_private.vessel_port_observation;
     -- Keep any ports referenced by preserved staff accounts.
     delete from public.port p where not exists(select 1 from public.app_user u where u.assigned_port_id=p.id);
+    -- Importing historical snapshots is separate from accepting a new reservation.
+    alter table public.booking disable trigger booking_vessel_port;
     ${seed.replace(/(insert into public\.port\b[\s\S]*?);/i, '$1 on conflict (id) do nothing;')}
+    alter table public.booking enable trigger booking_vessel_port;
     ${checks}
     do $$ begin
       if ${usersExpression} is distinct from ${literal(snapshot.users)} then raise exception 'Users were changed; entire reset rolled back'; end if;
@@ -78,7 +83,7 @@ export async function inspectLive() {
   if (JSON.stringify(tables.map(row => row.tablename)) !== JSON.stringify(expected)) throw new Error('Unexpected public tables; reset requires a complete reviewed inventory.')
   const constraints = await queryLive(`select conrelid::regclass::text as child,confrelid::regclass::text as parent
     from pg_constraint where contype='f' and confrelid in (${dataTables.map(t => `'public.${t}'::regclass`).join(',')})`)
-  if (constraints.some(row => !dataTables.includes(row.child.replace(/^public\./, '')))) throw new Error('An unreviewed table references reset data.')
+  if (constraints.some(row => !dataTables.includes(row.child.replace(/^public\./, '')) && !['barkolink_private.daily_schedule','barkolink_private.vessel_port_observation'].includes(row.child))) throw new Error('An unreviewed table references reset data.')
   const counts = await queryLive(`select ${dataTables.map(t => `(select count(*) from public.${t}) as ${t}`).join(',')}`)
   const roles = await queryLive('select role,count(*) as count from public.app_user group by role order by role')
   const auth = await queryLive('select count(*) as count from auth.users')

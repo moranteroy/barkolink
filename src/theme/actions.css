@@ -1,0 +1,101 @@
+/* Shared action styles. Higher specificity protects variants from page-local
+   button rules; text links, counters, tabs and navigation keep their own layout. */
+:root body [data-slot="button"][data-variant][data-size],
+:root body :is(button.primary, button.primary-button, button.secondary,
+  .manifest-export button, .pay-button, .state-primary, .issue-button,
+  .print-button, .duplicate-booking-action) {
+  min-height: var(--button-height);
+  border: 1px solid transparent;
+  border-radius: var(--button-radius);
+  padding: 10px 14px;
+  background: var(--action);
+  color: #fff;
+  font-size: var(--button-font-size);
+  font-weight: var(--button-font-weight);
+  line-height: 1.5;
+  letter-spacing: normal;
+  text-transform: none;
+  cursor: pointer;
+  transition: filter 150ms, background-color 150ms, border-color 150ms;
+}
+:root body [data-slot="button"][data-variant][data-size][data-variant="outline"],
+:root body button.secondary,
+:root body .print-button {
+  border-color: var(--line);
+  background: var(--surface);
+  color: var(--ink);
+}
+:root body [data-slot="button"][data-variant][data-size][data-variant="ghost"] {
+  background: transparent;
+  border-color: transparent;
+  color: var(--muted);
+}
+:root body [data-slot="button"][data-variant][data-size][data-variant="outline"][aria-pressed="true"] {
+  border-color: var(--ocean);
+  background: var(--light-blue);
+  color: var(--ocean);
+}
+:root body [data-slot="button"][data-variant][data-size][data-size="sm"] {
+  padding: 7px 10px;
+  font-size: 11px;
+}
+:root body [data-slot="button"][data-variant][data-size][data-size="icon"] {
+  width: var(--button-height);
+  height: var(--button-height);
+  padding: 0;
+  flex-shrink: 0;
+}
+:root body [data-slot="button"][data-variant][data-size]:is(:hover, :active):not(:disabled) { filter: brightness(.95); }
+:root body [data-slot="button"][data-variant][data-size][data-variant="ghost"]:hover:not(:disabled) { background: var(--light-blue); color: var(--ocean); }
+:root body [data-slot="button"][data-variant][data-size]:disabled { opacity: .5; cursor: not-allowed; }
+:root body [data-slot="button"][data-variant][data-size]:focus-visible { outline: 3px solid var(--ocean); outline-offset: 3px; }
+:root body [data-slot="button"][data-variant][data-size] :is(svg, .app-icon) { width: var(--button-icon-size); height: var(--button-icon-size); flex-shrink: 0; }
+
+/* Ionic actions use the same tokens through their shadow-DOM properties. */
+:root body ion-button {
+  --background: var(--action);
+  --color: #fff;
+  --border-radius: var(--button-radius);
+  --box-shadow: none;
+  --padding-start: 14px;
+  --padding-end: 14px;
+  min-height: var(--button-height);
+  font-size: var(--button-font-size);
+  font-weight: var(--button-font-weight);
+  letter-spacing: normal;
+  text-transform: none;
+}
+:root body ion-button[fill="outline"] {
+  --background: transparent;
+  --color: var(--ocean);
+  --border-color: var(--ocean);
+  --border-width: 1px;
+}
+:root body ion-button[fill="clear"] { --background: transparent; --color: var(--ocean); }
+:root body ion-button .app-icon { width: var(--button-icon-size); height: var(--button-icon-size); }
+:root body ion-button .app-icon[slot="start"] { margin-inline-end: 8px; }
+:root body ion-button .app-icon[slot="end"] { margin-inline-start: 8px; }
+:root body ion-button::part(native):focus-visible { outline: 3px solid var(--ocean); outline-offset: -3px; }
+
+/* Prominent form and marketing actions have one larger size. */
+:root body :is(.search-button[data-slot="button"][data-variant][data-size], ion-button.continue, ion-button.submit-button) {
+  min-height: var(--button-height-lg);
+  height: var(--button-height-lg);
+  border-radius: var(--button-radius);
+  font-size: 13px;
+  font-weight: var(--button-font-weight);
+}
+:root body .landing-page .landing-button {
+  min-height: var(--button-height-lg);
+  border-radius: var(--button-radius);
+  background: var(--action);
+  font-weight: var(--button-font-weight);
+}
+:root body .landing-page .landing-button.small { min-height: var(--button-height); }
+:root body .landing-page .landing-button.white { background: #fff; color: #10354f; }
+:root body .landing-page .landing-button.outline { background: transparent; border-color: #ffffff70; color: #fff; }
+:root body .landing-page .landing-button.pale { background: var(--light-blue); color: var(--ocean); }
+
+@media (prefers-reduced-motion: reduce) {
+  :root body [data-slot="button"][data-variant][data-size], :root body .landing-page .landing-button { transition: none; }
+}

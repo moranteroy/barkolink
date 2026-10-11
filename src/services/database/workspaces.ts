@@ -3,6 +3,7 @@ import type {
   CustomDiscountFare,
 } from "../../data/fareSettings";
 import { executeDatabase, type DatabaseClient } from "./client";
+import type { ReferenceMetadata } from '../../data/ferryReferences';
 export type Accommodation = {
   id: string;
   vesselId: string;
@@ -55,11 +56,13 @@ export type Overview = {
   routes: Array<{ route: string; passengers: number }>;
 };
 export type FerryRoute = {
+  referenceMetadata?: ReferenceMetadata | null;
+  vessels?: Array<{ id: string; name: string; operator: string }>;
   id: string;
   code: string;
   originPortId: string;
   destinationPortId: string;
-  durationMinutes: number;
+  durationMinutes: number | null;
   isActive: boolean;
   origin: { name: string };
   destination: { name: string };

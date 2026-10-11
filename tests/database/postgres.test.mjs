@@ -312,8 +312,8 @@ describe("Supabase PostgreSQL migrations and business rules", () => {
       settings.customDiscounts,
     );
     const create = await call("admin", "AdminCreateSailing", {
-      originPortId: origin,
-      destinationPortId: destination,
+      originPortId: destination,
+      destinationPortId: origin,
       vesselId: vessel,
       departureAt: "2099-01-02T08:00:00Z",
       arrivalAt: "2099-01-02T10:00:00Z",
@@ -330,6 +330,7 @@ describe("Supabase PostgreSQL migrations and business rules", () => {
       ).customDiscounts,
       [],
     );
+    await db.query('update public.app_user set assigned_port_id=$1 where uid=$2',[destination,ids.ticketing]);
     const args = {
       ...reserveArgs("CUSTOM-BOOKING"),
       sailingCode: code,
@@ -438,8 +439,8 @@ describe("Supabase PostgreSQL migrations and business rules", () => {
     };
     await call("admin", "AdminSaveFareSettings", settings);
     const schedule = {
-      originPortId: origin,
-      destinationPortId: destination,
+      originPortId: destination,
+      destinationPortId: origin,
       vesselId: vessel,
       departureAt: "2099-01-02T08:00:00Z",
       arrivalAt: "2099-01-02T10:00:00Z",
@@ -595,8 +596,8 @@ describe("Supabase PostgreSQL migrations and business rules", () => {
     ).vesselFareSettings.find((f) => f.code === vessel);
     assert.deepEqual(saved.passengerDiscounts, args.passengerDiscounts);
     const create = await call("admin", "AdminCreateSailing", {
-      originPortId: origin,
-      destinationPortId: destination,
+      originPortId: destination,
+      destinationPortId: origin,
       vesselId: vessel,
       departureAt: "2099-01-02T08:00:00Z",
       arrivalAt: "2099-01-02T10:00:00Z",
@@ -715,7 +716,7 @@ describe("Supabase PostgreSQL migrations and business rules", () => {
         ],
       );
     }
-    await db.exec(fs.readFileSync("supabase/seed.sql", "utf8"));
+    await db.exec(fs.readFileSync("tests/fixtures/basic-reference.sql", "utf8"));
     await db.query("update public.app_user set assigned_port_id=$1 where role in ('TICKETING','BOARDING')", [origin]);
     await db.query(
       `insert into public.sailing(code,origin_port_id,destination_port_id,vessel_id,departure_at,arrival_at,duration_minutes,
@@ -723,6 +724,7 @@ describe("Supabase PostgreSQL migrations and business rules", () => {
       values ('TEST-TRIP',$1,$2,$3,'2099-01-01T08:00:00Z','2099-01-01T10:00:00Z',120,600,480,480,300,480,600,2)`,
       [origin, destination, vessel],
     );
+    await db.query("insert into barkolink_private.vessel_port_observation(vessel_id,port_id,observed_at,confirmed_by_uid,note) values($1,$2,now(),$3,'Terminal location fixture.')",[vessel,origin,ids.admin]);
   });
 
   it('isolates staff listings and totals by departure port in both directions', async () => {
@@ -822,7 +824,10 @@ describe("Supabase PostgreSQL migrations and business rules", () => {
 
   async function loyaltyHistory(count) {
     for(let n=1;n<=count;n++) {
-      await db.query(`insert into public.sailing select (jsonb_populate_record(null::public.sailing,to_jsonb(s)||jsonb_build_object('code',$1::text,'departure_at',s.departure_at+$2::integer*interval '1 day','arrival_at',s.arrival_at+$2::integer*interval '1 day'))).* from public.sailing s where code='TEST-TRIP'`,[`HISTORY-${n}`,n]);
+      // Independent vessels make these reward-history fixtures physically consistent.
+      const historyShip=(await db.query("insert into public.vessel(code,name,passenger_capacity) values($1,$1,200) returning id",[`HISTORY-SHIP-${n}`])).rows[0].id;
+      await db.query("insert into barkolink_private.vessel_port_observation(vessel_id,port_id,observed_at,confirmed_by_uid,note) values($1,$2,now(),$3,'Terminal location fixture.')",[historyShip,origin,ids.admin]);
+      await db.query(`insert into public.sailing select (jsonb_populate_record(null::public.sailing,to_jsonb(s)||jsonb_build_object('code',$1::text,'vessel_id',$3::text,'departure_at',s.departure_at+$2::integer*interval '1 day','arrival_at',s.arrival_at+$2::integer*interval '1 day'))).* from public.sailing s where code='TEST-TRIP'`,[`HISTORY-${n}`,n,historyShip]);
       await call('passenger','ReserveSailing1',{...reserveArgs(`HISTORY-${n}`),sailingCode:`HISTORY-${n}`});
       await db.query(`update public.booking set status='CONFIRMED',payment_status='PAID' where reference=$1;
         `,[`HISTORY-${n}`]);
@@ -1611,8 +1616,8 @@ describe("Supabase PostgreSQL migrations and business rules", () => {
   });
   it("creates trips with stored vessel fares and rejects unsafe edits/status changes", async () => {
     const args = {
-      originPortId: origin,
-      destinationPortId: destination,
+      originPortId: destination,
+      destinationPortId: origin,
       vesselId: vessel,
       departureAt: "2099-02-01T08:00:00Z",
       arrivalAt: "2099-02-01T10:00:00Z",
@@ -1770,6 +1775,8 @@ describe("Supabase PostgreSQL migrations and business rules", () => {
     );
     const trip = await call("admin", "AdminCreateSailing", {
       ...args,
+      originPortId: destination,
+      destinationPortId: origin,
       departureAt: "2099-01-01T10:00:00Z",
       arrivalAt: "2099-01-01T12:00:00Z",
     });
@@ -1837,8 +1844,8 @@ describe("Supabase PostgreSQL migrations and business rules", () => {
       pregnantDiscount: 10,
     });
     const created = await call("admin", "AdminCreateSailing", {
-      originPortId: origin,
-      destinationPortId: destination,
+      originPortId: destination,
+      destinationPortId: origin,
       vesselId: vessel,
       departureAt: "2099-01-02T08:00:00Z",
       arrivalAt: "2099-01-02T10:00:00Z",

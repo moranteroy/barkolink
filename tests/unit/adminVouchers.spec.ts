@@ -78,7 +78,7 @@ describe('voucher management', () => {
     const wrapper = mount(VouchersPanel); await flushPromises();
     expect(wrapper.find('.voucher-dialog').exists()).toBe(false);
     expect(wrapper.findAll('tbody tr')).toHaveLength(5);
-    expect(wrapper.findAll('.status-badge').map(b => b.text())).toEqual(['Active', 'Paused', 'Fully used', 'Scheduled', 'Expired']);
+    expect(wrapper.findAll('.status-badge').map(b => b.text())).toEqual(['Active', 'Scheduled', 'Paused', 'Fully used', 'Expired']);
     await wrapper.find('input[type="search"]').setValue('sail');
     expect(wrapper.findAll('tbody tr')).toHaveLength(1);
     await wrapper.find('.reset-filters').trigger('click');
@@ -90,11 +90,13 @@ describe('voucher management', () => {
   it('creates a voucher using Philippine time and shows the refreshed directory', async () => {
     const wrapper = mount(VouchersPanel); await flushPromises();
     await wrapper.find('.create-voucher').trigger('click');
-    await wrapper.find('input[placeholder="SAIL50"]').setValue('NEW50');
+    const generated = (wrapper.find('input[aria-label="Voucher code"]').element as HTMLInputElement).value;
+    expect(generated).toMatch(/^VCH-[A-Z2-9]{16}$/);
+    expect(wrapper.find('input[aria-label="Voucher code"]').attributes('readonly')).toBeDefined();
     const dates = wrapper.findAll('input[type="datetime-local"]');
     await dates[0].setValue('2026-10-09T08:00'); await dates[1].setValue('2026-10-19T08:00');
     await wrapper.find('form.voucher-dialog').trigger('submit'); await flushPromises();
-    expect(mocks.save).toHaveBeenCalledWith({}, expect.objectContaining({ code: 'NEW50', startsAt: '2026-10-09T00:00:00.000Z', expiresAt: '2026-10-19T00:00:00.000Z', isActive: true }));
+    expect(mocks.save).toHaveBeenCalledWith({}, expect.objectContaining({ code: generated, startsAt: '2026-10-09T00:00:00.000Z', expiresAt: '2026-10-19T00:00:00.000Z', isActive: true }));
     expect(wrapper.find('.voucher-dialog').exists()).toBe(false);
     expect(wrapper.find('[role="status"]').text()).toContain('Voucher created.');
     expect(mocks.list).toHaveBeenCalledTimes(2);
@@ -103,13 +105,15 @@ describe('voucher management', () => {
   it('rejects an expiry before the start without losing the draft', async () => {
     const wrapper = mount(VouchersPanel); await flushPromises();
     await wrapper.find('.create-voucher').trigger('click');
-    await wrapper.find('input[placeholder="SAIL50"]').setValue('NEW50');
+    const generated = (wrapper.find('input[aria-label="Voucher code"]').element as HTMLInputElement).value;
+    expect(generated).toMatch(/^VCH-[A-Z2-9]{16}$/);
+    expect(wrapper.find('input[aria-label="Voucher code"]').attributes('readonly')).toBeDefined();
     const dates = wrapper.findAll('input[type="datetime-local"]');
     await dates[0].setValue('2026-10-19T08:00'); await dates[1].setValue('2026-10-09T08:00');
     await wrapper.find('form.voucher-dialog').trigger('submit'); await flushPromises();
     expect(mocks.save).not.toHaveBeenCalled();
     expect(wrapper.find('.voucher-dialog [role="alert"]').text()).toContain('Expiry must be later');
-    expect((wrapper.find('input[placeholder="SAIL50"]').element as HTMLInputElement).value).toBe('NEW50');
+    expect((wrapper.find('input[aria-label="Voucher code"]').element as HTMLInputElement).value).toBe(generated);
     wrapper.unmount();
   });
   it('pauses a voucher and refreshes its status without changing offer details', async () => {
@@ -125,12 +129,14 @@ describe('voucher management', () => {
     mocks.save.mockRejectedValue(new Error('Unavailable'));
     const wrapper = mount(VouchersPanel); await flushPromises();
     await wrapper.find('.create-voucher').trigger('click');
-    await wrapper.find('input[placeholder="SAIL50"]').setValue('NEW50');
+    const generated = (wrapper.find('input[aria-label="Voucher code"]').element as HTMLInputElement).value;
+    expect(generated).toMatch(/^VCH-[A-Z2-9]{16}$/);
+    expect(wrapper.find('input[aria-label="Voucher code"]').attributes('readonly')).toBeDefined();
     await wrapper.findAll('input[type="datetime-local"]')[1].setValue('2026-10-19T08:00');
     await wrapper.find('form.voucher-dialog').trigger('submit'); await flushPromises();
     expect(wrapper.find('.voucher-dialog [role="alert"]').exists()).toBe(true);
     expect(wrapper.find('.voucher-dialog fieldset').attributes('disabled')).toBeUndefined();
-    expect((wrapper.find('input[placeholder="SAIL50"]').element as HTMLInputElement).value).toBe('NEW50');
+    expect((wrapper.find('input[aria-label="Voucher code"]').element as HTMLInputElement).value).toBe(generated);
     wrapper.unmount();
   });
 });

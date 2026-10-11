@@ -1,34 +1,34 @@
 <template>
   <section class="online-payment" aria-label="Payment options">
     <div class="payment-heading">
-      <span class="payment-icon"><ion-icon :icon="walletOutline" aria-hidden="true" /></span>
+      <span class="payment-icon"><AppIcon :icon="walletOutline" aria-hidden="true" /></span>
       <div><h3>Awaiting payment</h3><p>Your seat is reserved. Payment has not been completed.</p></div>
     </div>
     <div class="online-option">
-      <div class="option-heading"><strong><ion-icon :icon="cardOutline" aria-hidden="true" /> Pay online</strong><span><ion-icon :icon="shieldCheckmarkOutline" aria-hidden="true" /> Secure checkout</span></div>
+      <div class="option-heading"><strong><AppIcon :icon="cardOutline" aria-hidden="true" /> Pay online</strong><span><AppIcon :icon="shieldCheckmarkOutline" aria-hidden="true" /> Secure checkout</span></div>
       <p>Choose a method and complete payment at checkout. We will verify your payment before issuing your e-ticket.</p>
       <div class="payment-methods" aria-label="Accepted online payment methods">
-        <span class="gcash">GCash</span><span class="maya">Maya</span><span><ion-icon :icon="cardOutline" aria-hidden="true" /> Credit / debit card</span>
+        <span class="gcash">GCash</span><span class="maya">Maya</span><span><AppIcon :icon="cardOutline" aria-hidden="true" /> Credit / debit card</span>
       </div>
-      <button class="pay-button" :disabled="busy || closed" @click="run('checkout')">
-        <ion-icon :icon="lockClosedOutline" aria-hidden="true" />
+      <button data-slot="button" data-variant="default" data-size="default" class="pay-button" :disabled="busy || closed" @click="run('checkout')">
+        <AppIcon :icon="lockClosedOutline" aria-hidden="true" />
         {{ busy ? 'Processing…' : closed ? 'Online checkout closed' : 'Continue to payment' }}
-        <ion-icon :icon="arrowForwardOutline" aria-hidden="true" />
+        <AppIcon :icon="arrowForwardOutline" aria-hidden="true" />
       </button>
       <div class="payment-support"><small>Payments processed by PayMongo</small><button :disabled="busy" @click="run('status')">Check payment</button></div>
     </div>
     <div class="cash-option">
-      <ion-icon :icon="cashOutline" aria-hidden="true" />
+      <AppIcon :icon="cashOutline" aria-hidden="true" />
       <div><strong>Prefer to pay in cash?</strong><p>Pay at the ticketing counter before your deadline.</p></div>
       <button :disabled="busy || closed" @click="run('close')">{{ closed ? 'Cash selected' : 'Choose cash' }}</button>
     </div>
-    <p v-if="notice" class="payment-notice" role="status"><ion-icon :icon="informationCircleOutline" aria-hidden="true" />{{ notice }}</p>
+    <p v-if="notice" class="payment-notice" role="status"><AppIcon :icon="informationCircleOutline" aria-hidden="true" />{{ notice }}</p>
     <p v-if="error" class="payment-error" role="alert">{{ error }}</p>
   </section>
 </template>
 <script setup lang="ts">
 import { ref } from 'vue';
-import { IonIcon } from '@ionic/vue';
+import AppIcon from "@/components/ui/icon/AppIcon.vue";
 import { walletOutline, shieldCheckmarkOutline, cardOutline, lockClosedOutline, arrowForwardOutline, cashOutline, informationCircleOutline } from 'ionicons/icons';
 import { paymentRequest } from '../../services/payments';
 const props = defineProps<{ bookingId: string; reference: string }>();
@@ -71,18 +71,18 @@ async function run(action: 'checkout' | 'status' | 'close') {
 .payment-methods .maya { color: var(--success, #218466); }
 .online-payment button { font-family: inherit; cursor: pointer; }
 .pay-button { display: flex; align-items: center; justify-content: center; gap: 9px; width: 100%; min-height: 46px; padding: 11px; border: 0; border-radius: 9px; background: var(--action); color: #fff; font-size: 13px; font-weight: 600; }
-.pay-button ion-icon { flex: none; font-size: 17px; }
-.pay-button ion-icon:last-child { margin-left: auto; }
-.pay-button ion-icon:first-child { margin-right: auto; }
+.pay-button .app-icon { flex: none; font-size: 17px; }
+.pay-button .app-icon:last-child { margin-left: auto; }
+.pay-button .app-icon:first-child { margin-right: auto; }
 .payment-support { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 5px; margin-top: 9px; }
 .payment-support small { color: var(--muted); font-size: 10px; }
 .payment-support button { padding: 7px 0; min-height: 36px; border: 0; background: transparent; color: var(--ocean); font-size: 11px; font-weight: 600; }
 .cash-option { display: grid; grid-template-columns: 22px minmax(0, 1fr); gap: 8px 10px; align-items: start; padding-top: 16px; margin-top: 16px; border-top: 1px solid var(--line); }
-.cash-option > ion-icon { color: var(--ocean); font-size: 21px; }
+.cash-option > .app-icon { color: var(--ocean); font-size: 21px; }
 .cash-option strong { font-size: 12px; }
 .cash-option button { grid-column: 2; justify-self: start; min-height: 36px; padding: 7px 12px; border: 1px solid var(--line); border-radius: 7px; background: var(--surface-soft); color: var(--ocean); font-size: 11px; font-weight: 600; }
 .online-payment .payment-notice { display: flex; gap: 7px; margin-top: 14px; color: var(--ocean); }
-.payment-notice ion-icon { flex: none; font-size: 18px; margin-top: 2px; }
+.payment-notice .app-icon { flex: none; font-size: 18px; margin-top: 2px; }
 .online-payment .payment-error { margin-top: 14px; color: var(--danger); }
 .online-payment button:disabled { opacity: .6; cursor: default; }
 .online-payment button:focus-visible { outline: 2px solid var(--ocean); outline-offset: 3px; }
@@ -90,11 +90,11 @@ async function run(action: 'checkout' | 'status' | 'close') {
 .online-payment { border-radius: 18px; padding: 20px; }
 .online-option { border-color: color-mix(in srgb, var(--ocean) 40%, var(--line)); border-radius: 14px; }
 .option-heading strong { display: inline-flex; align-items: center; gap: 8px; }
-.option-heading strong > ion-icon { padding: 5px; border-radius: 6px; background: var(--light-blue); color: var(--ocean); font-size: 16px; }
+.option-heading strong > .app-icon { padding: 5px; border-radius: 6px; background: var(--light-blue); color: var(--ocean); font-size: 16px; }
 .payment-methods .gcash { background: var(--light-blue); border-color: transparent; }
 .payment-methods .maya { background: color-mix(in srgb, #20ba90 12%, var(--surface)); border-color: transparent; }
 .cash-option { padding: 14px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface-soft); }
-.cash-option > ion-icon { padding: 5px; border-radius: 7px; background: color-mix(in srgb, #20ba90 12%, var(--surface)); color: #20a485; }
+.cash-option > .app-icon { padding: 5px; border-radius: 7px; background: color-mix(in srgb, #20ba90 12%, var(--surface)); color: #20a485; }
 .cash-option button { min-height: 44px; background: var(--surface); }
 .payment-support button { min-height: 44px; }
 .pay-button { min-height: 48px; border-radius: 10px; }

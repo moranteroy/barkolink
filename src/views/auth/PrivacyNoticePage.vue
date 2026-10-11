@@ -4,38 +4,38 @@
       <div class="privacy-page" :class="{ 'profile-privacy': fromProfile, 'registration-privacy': fromRegistration }">
         <PassengerHeader v-if="fromProfile" />
         <header v-else class="privacy-header">
-          <RouterLink v-if="fromRegistration" :to="backLocation" replace class="back-link"><IonIcon :icon="arrowBackOutline" aria-hidden="true" /> Back to create account</RouterLink>
+          <RouterLink v-if="fromRegistration" :to="backLocation" replace class="back-link"><AppIcon :icon="arrowBackOutline" aria-hidden="true" /> Back to create account</RouterLink>
           <RouterLink v-else to="/" class="brand-link" aria-label="BarkoLink home"><BrandMark /></RouterLink>
-          <RouterLink to="/help" class="help-link">Help <IonIcon :icon="helpCircleOutline" aria-hidden="true" /></RouterLink>
+          <RouterLink to="/help" class="help-link">Help <AppIcon :icon="helpCircleOutline" aria-hidden="true" /></RouterLink>
         </header>
         <main>
-          <a v-if="fromProfile" href="/profile" class="back-link" @click="returnToProfile"><IonIcon :icon="personOutline" aria-hidden="true" /> Back to profile</a>
-          <RouterLink v-else-if="!fromRegistration" :to="backLocation" class="back-link"><IonIcon :icon="homeOutline" aria-hidden="true" /> Back to BarkoLink</RouterLink>
+          <a v-if="fromProfile" href="/profile" class="back-link" @click="returnToProfile"><AppIcon :icon="personOutline" aria-hidden="true" /> Back to profile</a>
+          <RouterLink v-else-if="!fromRegistration" :to="backLocation" class="back-link"><AppIcon :icon="homeOutline" aria-hidden="true" /> Back to BarkoLink</RouterLink>
           <div class="privacy-intro">
-            <span class="privacy-icon"><IonIcon :icon="shieldCheckmarkOutline" aria-hidden="true" /></span>
+            <span class="privacy-icon"><AppIcon :icon="shieldCheckmarkOutline" aria-hidden="true" /></span>
             <p v-if="!fromRegistration" class="eyebrow">YOUR INFORMATION</p>
             <h1>Privacy notice</h1>
             <p class="intro-copy">How BarkoLink uses your information, who can access it, and where to get help with your records.</p>
           </div>
           <div class="privacy-layout">
             <details v-if="fromRegistration" class="registration-index">
-              <summary>Jump to a section <IonIcon :icon="chevronDownOutline" aria-hidden="true" /></summary>
+              <summary>Jump to a section <AppIcon :icon="chevronDownOutline" aria-hidden="true" /></summary>
               <nav class="registration-topics" aria-label="On this page">
               <a v-for="(section, index) in sections" :key="section.id" :href="`#${section.id}`" @click.prevent="jumpTo(section.id)"><span>{{ String(index + 1).padStart(2, '0') }}</span>{{ section.title }}</a>
               </nav>
             </details>
             <aside v-else class="privacy-sidebar">
               <component :is="fromRegistration ? 'details' : 'div'" class="section-index" :open="fromRegistration ? true : undefined">
-              <summary v-if="fromRegistration"><IonIcon :icon="documentTextOutline" aria-hidden="true" /> On this page <IonIcon :icon="chevronDownOutline" class="index-chevron" aria-hidden="true" /></summary>
+              <summary v-if="fromRegistration"><AppIcon :icon="documentTextOutline" aria-hidden="true" /> On this page <AppIcon :icon="chevronDownOutline" class="index-chevron" aria-hidden="true" /></summary>
               <nav class="section-nav" aria-label="On this page">
                 <h2>On this page</h2>
                 <a v-for="(section, index) in sections" :key="section.id" :href="`#${section.id}`" @click.prevent="jumpTo(section.id)">
                   <span class="nav-number" aria-hidden="true">{{ String(index + 1).padStart(2, '0') }}</span>{{ section.title }}
-                  <IonIcon :icon="documentTextOutline" aria-hidden="true" />
+                  <AppIcon :icon="documentTextOutline" aria-hidden="true" />
                 </a>
               </nav>
               </component>
-              <p class="sidebar-note"><IonIcon :icon="lockClosedOutline" aria-hidden="true" /> Using a shared device? Sign out when you're done.</p>
+              <p class="sidebar-note"><AppIcon :icon="lockClosedOutline" aria-hidden="true" /> Using a shared device? Sign out when you're done.</p>
             </aside>
             <article class="privacy-article" aria-label="BarkoLink privacy notice">
               <p class="notice-summary">BarkoLink uses account and passenger information to manage ferry reservations, ticketing, check-in, and boarding.</p>
@@ -45,9 +45,9 @@
                 <div v-if="section.id === 'records'" class="contact-panel"><OperatorContact /></div>
               </section>
               <footer v-if="!fromRegistration" class="notice-footer">
-                <a v-if="fromProfile" href="/profile" class="return-link" @click="returnToProfile"><IonIcon :icon="personOutline" aria-hidden="true" /> Back to profile</a>
+                <a v-if="fromProfile" href="/profile" class="return-link" @click="returnToProfile"><AppIcon :icon="personOutline" aria-hidden="true" /> Back to profile</a>
                 <template v-else>
-                  <RouterLink :to="registrationLocation" :replace="fromRegistration" class="return-link">{{ fromRegistration ? 'Return to registration' : 'Create account' }} <IonIcon :icon="personAddOutline" aria-hidden="true" /></RouterLink>
+                  <RouterLink :to="registrationLocation" :replace="fromRegistration" class="return-link">{{ fromRegistration ? 'Return to registration' : 'Create account' }} <AppIcon :icon="personAddOutline" aria-hidden="true" /></RouterLink>
                   <RouterLink v-if="!fromRegistration" :to="signInLocation" class="sign-in-link">Sign in</RouterLink>
                   <p v-else class="registration-return-note">Your account details are kept when you return. Check the privacy acknowledgement on the registration form to continue.</p>
                 </template>
@@ -61,13 +61,14 @@
     <IonFooter v-if="fromRegistration" class="registration-actions ion-no-border">
       <div class="registration-actions-inner">
         <div><p>Return to your form to confirm that you have read this notice.</p></div>
-        <RouterLink :to="registrationLocation" replace class="return-link">Return to registration <IonIcon :icon="arrowForwardOutline" aria-hidden="true" /></RouterLink>
+        <RouterLink :to="registrationLocation" replace class="return-link">Return to registration <AppIcon :icon="arrowForwardOutline" aria-hidden="true" /></RouterLink>
       </div>
     </IonFooter>
   </IonPage>
 </template>
 <script setup lang="ts">
-import { IonPage, IonContent, IonFooter, IonIcon, useIonRouter } from "@ionic/vue";
+import { IonPage, IonContent, IonFooter, useIonRouter } from "@ionic/vue";
+import AppIcon from "@/components/ui/icon/AppIcon.vue";
 import { computed } from "vue";
 import { RouterLink, useRoute } from "vue-router";
 import { personOutline, homeOutline, documentTextOutline, helpCircleOutline, lockClosedOutline, shieldCheckmarkOutline, personAddOutline, chevronDownOutline, arrowForwardOutline, arrowBackOutline } from "ionicons/icons";
@@ -119,9 +120,9 @@ a { color: var(--ocean); text-decoration: none; }
 a:focus-visible { outline: 2px solid var(--ocean); outline-offset: 4px; border-radius: 6px; }
 .brand-link { display: inline-flex; }
 .help-link, .back-link { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; font-size: 13px; font-weight: 600; }
-.help-link ion-icon { font-size: 20px; }
+.help-link .app-icon { font-size: 20px; }
 .back-link { margin-top: 22px; padding: 8px 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface-soft); color: var(--ink); }
-.back-link ion-icon { flex: none; font-size: 19px; color: var(--ocean); }
+.back-link .app-icon { flex: none; font-size: 19px; color: var(--ocean); }
 .back-link:hover, .help-link:hover, .sign-in-link:hover { color: var(--ocean); text-decoration: underline; text-underline-offset: 4px; }
 .privacy-intro { max-width: 660px; padding: 28px 0 38px; }
 .privacy-icon { display: grid; place-items: center; width: 54px; height: 54px; border: 1px solid var(--line); border-radius: 16px; background: var(--light-blue); color: var(--ocean); font-size: 27px; }
@@ -136,7 +137,7 @@ h1 { margin: 0; font-size: clamp(34px, 4vw, 48px); line-height: 1.15; letter-spa
 .section-nav a:hover { color: var(--ocean); background: var(--light-blue); }
 .nav-number { font-size: 10px; color: var(--ocean); font-weight: 700; }
 .sidebar-note { display: flex; align-items: flex-start; gap: 8px; padding: 0 12px; margin: 18px 0 0; color: var(--muted); font-size: 12px; line-height: 1.7; }
-.sidebar-note ion-icon { flex: none; font-size: 16px; margin-top: 3px; color: var(--ocean); }
+.sidebar-note .app-icon { flex: none; font-size: 16px; margin-top: 3px; color: var(--ocean); }
 .privacy-article { min-width: 0; padding: 36px; border: 1px solid var(--line); border-radius: 20px; background: var(--surface); box-shadow: 0 8px 30px #102b4c05; }
 .notice-summary { margin: 0 0 8px; color: var(--ink); font-size: 15px; line-height: 1.8; }
 .privacy-article section { padding-top: 28px; margin-top: 28px; border-top: 1px solid var(--line); scroll-margin-top: 24px; }
@@ -166,7 +167,7 @@ h1 { margin: 0; font-size: clamp(34px, 4vw, 48px); line-height: 1.15; letter-spa
 .profile-privacy .privacy-sidebar { position: static; }
 .profile-privacy .section-nav { display: block; padding: 16px 12px 10px; }
 .profile-privacy .section-nav a { grid-template-columns: 20px minmax(0, 1fr) 14px; min-height: 44px; }
-.profile-privacy .section-nav a ion-icon { display: block; }
+.profile-privacy .section-nav a .app-icon { display: block; }
 .profile-privacy .sidebar-note { display: none; }
 .profile-privacy .privacy-article { padding: 22px 18px; border-radius: 16px; }
 .profile-privacy .privacy-article h2 { font-size: 17px; gap: 10px; }
@@ -189,7 +190,7 @@ h1 { margin: 0; font-size: clamp(34px, 4vw, 48px); line-height: 1.15; letter-spa
   .eyebrow { margin-top: 20px; font-size: 10px; }
   .intro-copy { margin-top: 12px; font-size: 14px; }
   .section-nav a { grid-template-columns: 18px minmax(0, 1fr); gap: 6px; padding: 8px; }
-  .section-nav a ion-icon { display: none; }
+  .section-nav a .app-icon { display: none; }
   .privacy-article { padding: 22px 18px; border-radius: 16px; }
   .notice-summary { font-size: 14px; }
   .privacy-article section { margin-top: 24px; padding-top: 24px; }
@@ -207,14 +208,14 @@ h1 { margin: 0; font-size: clamp(34px, 4vw, 48px); line-height: 1.15; letter-spa
 .registration-privacy h1 { font-size: clamp(30px, 4vw, 38px); }
 .registration-privacy .intro-copy { max-width: none; font-size: 14px; line-height: 1.8; }
 .registration-guide { display: flex; align-items: flex-start; gap: 10px; margin: 18px 0 0; padding: 14px 16px; border: 1px solid var(--line); border-radius: 12px; background: var(--light-blue); color: var(--ink); font-size: 12px; line-height: 1.8; }
-.registration-guide > ion-icon { flex: none; margin-top: 3px; color: var(--ocean); font-size: 19px; }
+.registration-guide > .app-icon { flex: none; margin-top: 3px; color: var(--ocean); font-size: 19px; }
 .registration-privacy .privacy-layout { grid-template-columns: 240px minmax(0, 1fr); gap: 24px; }
 .registration-privacy .privacy-sidebar { position: sticky; top: 24px; }
 .registration-privacy .sidebar-note { display: none; }
 .registration-privacy .section-index { border: 1px solid var(--line); border-radius: 12px; background: var(--surface); overflow: hidden; }
 .registration-privacy .section-index summary { display: flex; align-items: center; gap: 8px; min-height: 48px; padding: 12px 16px; color: var(--ink); font-size: 13px; font-weight: 600; cursor: pointer; list-style: none; }
 .registration-privacy .section-index summary::-webkit-details-marker { display: none; }
-.registration-privacy .section-index summary > ion-icon { flex: none; color: var(--ocean); font-size: 18px; }
+.registration-privacy .section-index summary > .app-icon { flex: none; color: var(--ocean); font-size: 18px; }
 .registration-privacy .section-index summary .index-chevron { margin-left: auto; transition: transform .15s; }
 .registration-privacy .section-index[open] summary .index-chevron { transform: rotate(180deg); }
 .registration-privacy .section-nav { display: grid; grid-template-columns: minmax(0, 1fr); padding: 8px; border: 0; border-top: 1px solid var(--line); border-radius: 0; }
@@ -268,8 +269,8 @@ h1 { margin: 0; font-size: clamp(34px, 4vw, 48px); line-height: 1.15; letter-spa
 .registration-index { margin-bottom: 16px; }
 .registration-index summary { display: flex; align-items: center; justify-content: space-between; min-height: 44px; padding: 8px 0; border-bottom: 1px solid var(--line); color: var(--ocean); font-size: 13px; font-weight: 600; list-style: none; cursor: pointer; }
 .registration-index summary::-webkit-details-marker { display: none; }
-.registration-index summary ion-icon { font-size: 18px; }
-.registration-index[open] summary ion-icon { transform: rotate(180deg); }
+.registration-index summary .app-icon { font-size: 18px; }
+.registration-index[open] summary .app-icon { transform: rotate(180deg); }
 .registration-index summary:focus-visible { outline: 2px solid var(--ocean); outline-offset: 3px; }
 .registration-topics { display: flex; flex-wrap: wrap; gap: 4px 16px; padding-block: 8px; }
 .registration-topics a { display: inline-flex; align-items: center; gap: 7px; min-height: 44px; color: var(--muted); font-size: 13px; }

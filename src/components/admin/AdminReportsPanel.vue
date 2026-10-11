@@ -1,7 +1,7 @@
 <template>
   <div class="reports">
     <section class="card filters" aria-label="Report filters">
-      <div class="filter-heading"><div><p class="eyebrow">REPORT SCOPE</p><h2>Filter analytics</h2></div><Button variant="ghost" :disabled="loading" @click="resetFilters"><IonIcon :icon="refreshOutline" aria-hidden="true" />Reset filters</Button></div>
+      <div class="filter-heading"><div><p class="eyebrow">REPORT SCOPE</p><h2>Filter analytics</h2></div><Button variant="ghost" :disabled="loading" @click="resetFilters"><AppIcon :icon="refreshOutline" aria-hidden="true" />Reset filters</Button></div>
       <label
         >Period<select v-model="period" @change="applyPeriod">
           <option value="month">This month</option>
@@ -32,25 +32,25 @@
           </option>
         </select></label
       >
-      <p class="filter-note"><IonIcon :icon="informationCircleOutline" aria-hidden="true" />Reports use sailing departure dates in Philippine time. Select up to 366 days.</p>
+      <p class="filter-note"><AppIcon :icon="informationCircleOutline" aria-hidden="true" />Reports use sailing departure dates in Philippine time. Select up to 366 days.</p>
     </section>
-    <div v-if="error" class="card report-state error" role="alert"><IonIcon :icon="alertCircleOutline" aria-hidden="true" /><div><h3>Reports unavailable</h3><p>{{ error }}</p></div><Button variant="outline" @click="loadReports">Try again</Button></div>
+    <div v-if="error" class="card report-state error" role="alert"><AppIcon :icon="alertCircleOutline" aria-hidden="true" /><div><h3>Reports unavailable</h3><p>{{ error }}</p></div><Button variant="outline" @click="loadReports">Try again</Button></div>
     <p v-else-if="loading" class="card" role="status">
       Loading reports and analytics…
     </p>
     <template v-else-if="ready">
       <div class="report-metrics">
         <article v-for="m in metrics" :key="m.label" class="card">
-          <div class="metric-top"><small>{{ m.label }}</small><span class="metric-icon" :class="m.tone"><IonIcon :icon="m.icon" aria-hidden="true" /></span></div
+          <div class="metric-top"><small>{{ m.label }}</small><span class="metric-icon" :class="m.tone"><AppIcon :icon="m.icon" aria-hidden="true" /></span></div
           ><strong>{{ m.value }}</strong
           ><span>{{ m.note }}</span>
         </article>
       </div>
-      <div v-if="!filtered.length" class="card report-state"><IonIcon :icon="barChartOutline" aria-hidden="true" /><div><h3>No sailings in this report</h3><p>Try another date range, route, or vessel.</p></div></div>
+      <div v-if="!filtered.length" class="card report-state"><AppIcon :icon="barChartOutline" aria-hidden="true" /><div><h3>No sailings in this report</h3><p>Try another date range, route, or vessel.</p></div></div>
       <div class="charts">
         <section class="card">
           <div class="card-head">
-            <h2><IonIcon :icon="trendingUpOutline" aria-hidden="true" />Collection trend</h2>
+            <h2><AppIcon :icon="trendingUpOutline" aria-hidden="true" />Collection trend</h2>
             <Badge>{{ trend.mode }}</Badge>
           </div>
           <p>
@@ -94,7 +94,7 @@
           </div>
         </section>
         <section class="card">
-          <h2><IonIcon :icon="ticketOutline" aria-hidden="true" />Booking activity</h2>
+          <h2><AppIcon :icon="ticketOutline" aria-hidden="true" />Booking activity</h2>
           <p>
             Payment and cancellation breakdown for
             {{ totals.bookingCount }} reservations.
@@ -132,7 +132,7 @@
           <div class="refund-summary"><span>Refunds pending<strong>{{ money(totals.refundPending) }}</strong></span><span>Cash refunded<strong>{{ money(totals.refundedRevenue) }}</strong></span><span>Expired reservations<strong>{{ totals.expiredBookings }}</strong></span></div>
         </section>
         <section class="card">
-          <h2><IonIcon :icon="peopleOutline" aria-hidden="true" />Passenger mix</h2>
+          <h2><AppIcon :icon="peopleOutline" aria-hidden="true" />Passenger mix</h2>
           <p>Paid, confirmed passengers by fare category.</p>
           <div
             v-for="item in passengerMix"
@@ -158,7 +158,7 @@
           </div>
         </section>
         <section class="card">
-          <h2><IonIcon :icon="boatOutline" aria-hidden="true" />Sailing performance</h2>
+          <h2><AppIcon :icon="boatOutline" aria-hidden="true" />Sailing performance</h2>
           <p>
             Seat utilization and terminal progress across the selected sailings.
           </p>
@@ -211,7 +211,7 @@
             :disabled="!tableRows.length"
             @click="exportReport"
           >
-            <IonIcon :icon="downloadOutline" aria-hidden="true" />Export CSV
+            <AppIcon :icon="downloadOutline" aria-hidden="true" />Export CSV
           </Button>
         </div>
         <div class="table-toolbar">
@@ -225,7 +225,7 @@
               {{ label }}
             </button>
           </div>
-          <label class="report-search"><IonIcon :icon="searchOutline" aria-hidden="true" /><input
+          <label class="report-search"><AppIcon :icon="searchOutline" aria-hidden="true" /><input
             v-model="search"
             type="search"
             placeholder="Search this report"
@@ -251,7 +251,7 @@
 
 <script setup lang="ts">
 import { computed, onBeforeUnmount, ref, watch } from "vue";
-import { IonIcon } from '@ionic/vue';
+import AppIcon from "@/components/ui/icon/AppIcon.vue";
 import { alertCircleOutline, barChartOutline, boatOutline, cashOutline, downloadOutline, informationCircleOutline, peopleOutline, refreshOutline, scanOutline, searchOutline, ticketOutline, timeOutline, trendingUpOutline } from 'ionicons/icons';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -570,7 +570,7 @@ onBeforeUnmount(() => {
 .reports { display:grid; gap:14px; min-width:0; font-family:var(--ion-font-family); }
 .card { background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:14px 16px; color:var(--ink); min-width:0; }
 .card h2 { display:flex; align-items:center; gap:10px; font-size:16px; margin:0 0 8px; }
-.card h2 ion-icon { color:var(--ocean); font-size:21px; flex:none; }
+.card h2 .app-icon { color:var(--ocean); font-size:21px; flex:none; }
 .card p,.report-metrics span,.report-metrics small { color:var(--muted); font-size:12px; line-height:1.6; }
 .card p { margin:0 0 12px; }
 .card .eyebrow { margin:0 0 6px; color:var(--ocean); font-size:10px; font-weight:800; letter-spacing:.1em; }
@@ -579,14 +579,14 @@ onBeforeUnmount(() => {
 .filter-heading h2 { margin:0; }
 .filters label { display:grid; gap:8px; min-width:0; font-size:12px; font-weight:600; color:var(--muted); }
 .filters .filter-note { display:flex; align-items:center; gap:8px; grid-column:1/-1; margin:0; }
-.filter-note ion-icon { flex:none; font-size:17px; color:var(--ocean); }
+.filter-note .app-icon { flex:none; font-size:17px; color:var(--ocean); }
 .reports input,.reports select { width:100%; min-height:40px; border:1px solid var(--line); background:var(--surface-soft); color:var(--ink); border-radius:9px; padding:8px 12px; min-width:0; font:inherit; font-size:12px; }
 .report-metrics { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px; }
 .reports .report-metrics article.card { display:flex; flex-direction:column; gap:4px; padding:12px 14px; }
 .metric-top { display:flex; align-items:center; justify-content:space-between; gap:14px; }
 .metric-top small { font-weight:600; }
 .report-metrics .metric-icon { display:grid; place-items:center; width:28px; height:28px; flex:none; border-radius:11px; background:var(--light-blue); color:var(--ocean); }
-.metric-icon ion-icon { font-size:18px; }
+.metric-icon .app-icon { font-size:18px; }
 .report-metrics .metric-icon.green { background:rgba(38,185,154,.12); color:#26b99a; }
 .report-metrics .metric-icon.amber { background:rgba(227,171,76,.12); color:#e3ab4c; }
 .report-metrics .metric-icon.purple { background:rgba(160,138,226,.12); color:#a08ae2; }
@@ -628,7 +628,7 @@ onBeforeUnmount(() => {
 .tabs button { border:0; background:transparent; color:var(--muted); padding:7px 10px; border-radius:8px; font:inherit; font-size:12px; cursor:pointer; }
 .tabs button[aria-pressed="true"] { background:var(--light-blue); color:var(--ocean); font-weight:700; }
 .report-search { display:flex; align-items:center; position:relative; flex:1; max-width:280px; }
-.report-search ion-icon { position:absolute; left:12px; color:var(--muted); font-size:17px; pointer-events:none; }
+.report-search .app-icon { position:absolute; left:12px; color:var(--muted); font-size:17px; pointer-events:none; }
 .report-search input { padding-left:38px; }
 .report-table :deep(.grid-tools) { padding:8px 16px; border-top:1px solid var(--line); border-bottom:1px solid var(--line); }
 .report-table :deep(.grid-tools button) { min-height:34px; padding:6px 8px; }
@@ -649,11 +649,11 @@ onBeforeUnmount(() => {
 .reports :deep(.export-controls select) { min-width:0; width:100%; }
 .card .table-note { margin:0; padding:12px 16px; font-size:11px; }
 .report-state { display:flex; align-items:center; gap:16px; }
-.report-state > ion-icon { font-size:30px; color:var(--ocean); flex:none; }
+.report-state > .app-icon { font-size:30px; color:var(--ocean); flex:none; }
 .report-state h3 { margin:0 0 5px; font-size:16px; }
 .report-state p { margin:0; }
 .report-state > div { flex:1; }
-.error,.error > ion-icon { color:var(--danger); }
+.error,.error > .app-icon { color:var(--danger); }
 button:focus-visible,.table-scroll:focus-visible { outline:2px solid var(--ocean); outline-offset:3px; }
 @media(max-width:1000px) { .filters { grid-template-columns:repeat(3,minmax(0,1fr)); } }
 @media(max-width:700px) { .reports :deep(.manifest-export) { grid-template-columns:1fr; } .report-table :deep(.grid-tools) { flex-wrap:wrap; } .reports input,.reports select { min-height:44px; font-size:16px; } .tabs button { min-height:44px; }  .filters,.report-metrics { grid-template-columns:repeat(2,minmax(0,1fr)); } .charts { grid-template-columns:1fr; } .card { padding:16px; } .report-table { padding:0; } .report-metrics strong { font-size:22px; } .card-head { align-items:flex-start; flex-wrap:wrap; } .report-search { max-width:none; min-width:180px; } .table-toolbar,.report-table > .card-head { padding:16px; } .filter-heading { align-items:flex-start; } .report-state { flex-wrap:wrap; } }

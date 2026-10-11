@@ -12,7 +12,7 @@
         :aria-label="notificationUnreadCount ? `Notifications, ${notificationUnreadCount} unread` : 'Notifications'" title="Notifications"
         :aria-current="router.currentRoute.value.path === '/notifications' ? 'page' : undefined"
         @click="navigate($event, '/notifications')"
-      ><IonIcon :icon="notificationsOutline" aria-hidden="true" /><span v-if="notificationUnreadCount" class="notification-badge" aria-hidden="true">{{ notificationUnreadCount > 99 ? '99+' : notificationUnreadCount }}</span></a>
+      ><AppIcon :icon="notificationsOutline" aria-hidden="true" /><span v-if="notificationUnreadCount" class="notification-badge" aria-hidden="true">{{ notificationUnreadCount > 99 ? '99+' : notificationUnreadCount }}</span></a>
       <RouterLink v-else to="/login">Sign in</RouterLink>
     </nav>
   </header>
@@ -20,7 +20,8 @@
 
 <script setup lang="ts">
 import { RouterLink, useRouter } from "vue-router";
-import { IonIcon, useIonRouter } from "@ionic/vue";
+import { useIonRouter } from "@ionic/vue";
+import AppIcon from "@/components/ui/icon/AppIcon.vue";
 import { notificationsOutline } from "ionicons/icons";
 import { auth } from "../../services/session";
 import BrandMark from "../shared/BrandMark.vue";

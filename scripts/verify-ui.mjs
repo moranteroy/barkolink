@@ -20,7 +20,7 @@ try {
       await route.fulfill({ status: 400, contentType: 'application/json', body: JSON.stringify({ error_code: 'invalid_credentials', code: 'invalid_credentials', message: 'Invalid login credentials' }) })
     })
     const device = viewport.width > 700 ? 'desktop' : 'mobile'
-    for (const [path, heading] of [['/', 'Less waiting.'], ['/login', 'Welcome back'], ['/register', 'Create your account'], ['/privacy', 'Privacy notice']]) {
+    for (const [path, heading] of [['/', 'Less waiting.'], ['/login', 'Welcome to BarkoLink'], ['/register', 'Create your account'], ['/privacy', 'Privacy notice']]) {
       await page.goto(baseUrl + path)
       await page.getByRole('heading', { name: new RegExp(heading.replace('.', '\\.')) }).first().waitFor()
       await page.waitForTimeout(350)

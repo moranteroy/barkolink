@@ -72,6 +72,29 @@ beforeEach(() => {
   mocks.board.mockResolvedValue({ data: {} })
   mocks.checkIn.mockResolvedValue({ data: {} })
 })
+describe('admin navigation accordion', () => {
+  it('groups pricing separately, matches the page category and toggles one accessible panel at a time', async () => {
+    const wrapper = await load('fares')
+    const pricing = wrapper.findAll('.nav-group').find(group => group.find('.nav-group-toggle').text() === 'PRICING & PROMOS')!
+    const fleet = wrapper.findAll('.nav-group').find(group => group.find('.nav-group-toggle').text() === 'FLEET SETUP')!
+    expect(pricing.findAll('a').map(link => link.text())).toEqual(['Fares & discounts', 'Vouchers'])
+    expect(fleet.findAll('a').map(link => link.text())).toEqual(['Ports', 'Routes', 'Vessels', 'Accommodation'])
+    expect(pricing.find('.nav-group-toggle').attributes('aria-expanded')).toBe('true')
+    expect(wrapper.find('.heading .eyebrow').text()).toBe('PRICING & PROMOS')
+    expect(pricing.find('[aria-current="page"]').text()).toBe('Fares & discounts')
+    const toggle = fleet.find('.nav-group-toggle')
+    expect(fleet.find('[role="region"]').attributes('id')).toBe(toggle.attributes('aria-controls'))
+    expect(fleet.find('[role="region"]').attributes('aria-labelledby')).toBe(toggle.attributes('id'))
+    await toggle.trigger('click')
+    expect(wrapper.findAll('.nav-group-toggle[aria-expanded="true"]')).toHaveLength(1)
+    expect(pricing.find('.nav-group-items').isVisible()).toBe(false)
+    expect(fleet.find('.nav-group-items').isVisible()).toBe(true)
+    await toggle.trigger('click')
+    expect(wrapper.findAll('.nav-group-toggle[aria-expanded="true"]')).toHaveLength(0)
+    wrapper.unmount()
+  })
+})
+
 describe('port directory filters', () => {
   it('counts ports independently of passenger totals and does not paginate an unpaged catalog', async () => {
     mocks.passengerRecords.mockResolvedValue({ data: { bookingPassengers: [], totalCount: 169 } })
@@ -133,7 +156,7 @@ describe('reports workspace', () => {
   it('offers authorized export on the manifest page with sailing choices', async () => {
     const wrapper = await load('manifest')
     expect(wrapper.findAll('button').some(b => b.text() === 'Export manifest')).toBe(true)
-    expect(wrapper.find('#export-manifest-sailing').text()).toContain('TRP-EXISTING')
+    expect(wrapper.find('#check-in-sailing').text()).toContain('TRP-EXISTING')
     wrapper.unmount()
   })
   it('loads aggregate reports without fetching the limited dashboard records', async () => {
@@ -242,7 +265,7 @@ describe('admin boarding actions', () => {
   it('disables Board and explains that a scheduled trip must open boarding first', async () => {
     mocks.passengerRecords.mockResolvedValue({ data: { bookingPassengers: [gatePassenger('SCHEDULED')] } })
     const wrapper = await load('boarding')
-    const button = wrapper.findAll('button').find(button => button.text() === 'Board')!
+    const button = wrapper.find('button[aria-label="Board Test Passenger"]')
     expect(button.attributes('disabled')).toBeDefined()
     expect(button.attributes('title')).toContain('Set trip TRP2026-1002001 to BOARDING')
     expect(wrapper.find('.boarding-row-action small').exists()).toBe(false)
@@ -271,8 +294,8 @@ describe('admin boarding actions', () => {
     await wrapper.findAll('button').find(button => button.text() === 'Board')!.trigger('click'); await flushPromises()
     expect(wrapper.find('[role="alert"]').text()).toBe('Trip must be BOARDING.')
     expect(wrapper.text()).not.toContain('DataConnect error')
-    expect(wrapper.findAll('button').find(button => button.text() === 'Board')!.attributes('disabled')).toBeDefined()
-    expect(wrapper.findAll('button').find(button => button.text() === 'Board')!.attributes('title')).toContain('Current status: DELAYED.')
+    expect(wrapper.find('button[aria-label="Board Test Passenger"]').attributes('disabled')).toBeDefined()
+    expect(wrapper.find('button[aria-label="Board Test Passenger"]').attributes('title')).toContain('Current status: DELAYED.')
     confirm.mockRestore(); wrapper.unmount()
   })
 })
@@ -346,9 +369,9 @@ describe('admin fare flow', () => {
   it('creates a trip with an automatic code and saved discounted fares', async () => {
     const wrapper = await load()
     await wrapper.findAll('button').find(button => button.text() === 'Create trip')!.trigger('click')
-    const inputs = wrapper.findAll('main input, .modal-body input')
-    expect(inputs[1].attributes('readonly')).toBeDefined()
-    expect((inputs[1].element as HTMLInputElement).value).toBe('TRP2026-1002001')
+    const tripCode = wrapper.find('.trip-code-banner input')
+    expect(tripCode.attributes('readonly')).toBeDefined()
+    expect((tripCode.element as HTMLInputElement).value).toBe('TRP2026-1002001')
     const selects = wrapper.findAll('form select')
     await selects[0].setValue('origin'); await selects[1].setValue('destination'); await selects[2].setValue('vessel')
     const amounts = wrapper.findAll('input[type="number"]')
@@ -356,6 +379,8 @@ describe('admin fare flow', () => {
     expect(amounts.every(input => input.attributes('readonly') !== undefined)).toBe(true)
     const dates = wrapper.findAll('input[type="datetime-local"]')
     await dates[0].setValue('2099-01-02T08:00'); await dates[1].setValue('2099-01-02T10:00')
+    await dates[2].setValue('2099-01-02T07:30')
+    await wrapper.find('textarea[placeholder="Confirmed by the operator or terminal"]').setValue('Confirmed by the terminal supervisor')
     await wrapper.find('main form, .modal-body form').trigger('submit'); await flushPromises()
     expect(mocks.createTrip).toHaveBeenCalledWith({}, expect.objectContaining({ regularFare: 1000, studentFare: 800, seniorFare: 700, childFare: 500, pwdFare: 750 }))
     expect(wrapper.text()).toContain('TRP2026-1002002 created.')

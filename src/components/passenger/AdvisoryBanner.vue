@@ -4,7 +4,7 @@
     class="advisories"
     aria-label="Travel advisories"
   >
-    <h2 v-if="showHeading" class="advisory-heading"><ion-icon :icon="megaphoneOutline" aria-hidden="true" /> Travel advisories</h2>
+    <h2 v-if="showHeading" class="advisory-heading"><AppIcon :icon="megaphoneOutline" aria-hidden="true" /> Travel advisories</h2>
     <div v-if="showEmpty && !items.length && !error" class="advisory-empty" role="status"><span><ShieldCheck :size="20" aria-hidden="true" /></span><div><strong>{{ loading ? 'Checking travel advisories…' : 'No active travel advisories.' }}</strong><p v-if="!loading">Check operator updates again before departure.</p></div></div>
     <p v-if="error" role="alert">
       {{ error }} <button @click="load">Retry</button>
@@ -14,7 +14,7 @@
       :key="item.id"
       :class="item.priority.toLowerCase()"
     >
-      <ion-icon
+      <AppIcon
         :icon="
           item.category === 'WEATHER' || item.category === 'SAFETY'
             ? warningOutline
@@ -32,7 +32,8 @@
 </template>
 <script setup lang="ts">
 import { onMounted, ref, watch } from "vue";
-import { IonIcon, onIonViewWillEnter } from "@ionic/vue";
+import { onIonViewWillEnter } from "@ionic/vue";
+import AppIcon from "@/components/ui/icon/AppIcon.vue";
 import { megaphoneOutline, warningOutline } from "ionicons/icons";
 import { ShieldCheck } from '@lucide/vue';
 import {
@@ -77,7 +78,7 @@ watch(() => props.sailingCode, load);
   margin: 20px 0;
 }
 .advisory-heading { display: flex; align-items: center; gap: 8px; margin: 0 0 4px; color: var(--ink); font-size: 14px; font-weight: 650; }
-.advisory-heading ion-icon { font-size: 17px; }
+.advisory-heading .app-icon { font-size: 17px; }
 .advisory-empty { display:flex; align-items:center; gap:12px; padding:15px; border:1px solid var(--line); border-radius:13px; background:var(--surface); }
 .advisory-empty > span { display:grid; place-items:center; width:34px; height:34px; flex-shrink:0; border-radius:10px; background:color-mix(in srgb,#299e91 12%,var(--surface)); color:#299e91; }
 .advisory-empty strong { color:var(--ink); font-size:12px; font-weight:650; }
@@ -95,7 +96,7 @@ watch(() => props.sailingCode, load);
 .advisories .high {
   border-left-color: #ce634a;
 }
-.advisories ion-icon {
+.advisories .app-icon {
   font-size: 24px;
   color: var(--ocean);
   flex: none;

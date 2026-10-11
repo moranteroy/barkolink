@@ -3,7 +3,7 @@
     <RouterLink to="/" class="brand"><BrandMark /></RouterLink>
     <section class="verification-card">
       <RouterLink :to="purpose === 'signup' ? '/register' : '/login'" class="back">Back to {{ purpose === 'signup' ? 'create account' : 'sign in' }}</RouterLink>
-      <span class="mail-icon"><IonIcon :icon="mailOutline" aria-hidden="true" /></span>
+      <span class="mail-icon"><AppIcon :icon="mailOutline" aria-hidden="true" /></span>
       <h1>{{ purpose === 'signup' ? 'Verify your email' : 'Check your email' }}</h1>
       <p v-if="email">{{ purpose === 'signup' ? 'Enter the code sent to' : 'If an account exists, a reset code was sent to' }} <strong>{{ email }}</strong>.</p>
       <p v-else role="alert">Start from registration or forgot password to request a code.</p>
@@ -20,7 +20,8 @@
 </template>
 <script setup lang="ts">
 import { computed, onBeforeUnmount, ref } from 'vue';
-import { IonPage, IonContent, IonButton, IonIcon, onIonViewWillEnter } from '@ionic/vue';
+import { IonPage, IonContent, IonButton, onIonViewWillEnter } from '@ionic/vue';
+import AppIcon from "@/components/ui/icon/AppIcon.vue";
 import { RouterLink, useRoute, useRouter } from 'vue-router';
 import { mailOutline } from 'ionicons/icons';
 import BrandMark from '../../components/shared/BrandMark.vue';
@@ -73,7 +74,7 @@ async function resend() {
 h1 { margin: 20px 0 10px; font-size: 28px; } p { color: var(--muted); font-size: 14px; line-height: 1.7; overflow-wrap: anywhere; }
 form { display: grid; gap: 12px; margin-top: 24px; } label { font-size: 13px; font-weight: 650; }
 input { width: 100%; min-width: 0; height: 52px; padding: 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface-soft); color: var(--ink); font-size: 18px; }
-ion-button { margin: 0; height: 48px; --border-radius: 10px; text-transform: none; } .error { color: var(--danger, #c43c47); }
+ion-button { margin: 0; height: 48px; --border-radius: var(--button-radius); text-transform: none; } .error { color: var(--danger, #c43c47); }
 .resend { display: grid; gap: 8px; margin-top: 24px; text-align: center; color: var(--muted); font-size: 12px; }
 button { min-height: 44px; border: 0; border-radius: 8px; background: var(--light-blue); color: var(--ocean); font: inherit; font-size: 13px; cursor: pointer; } button:disabled { opacity: .6; cursor: default; }
 @media (max-width: 480px) { .verification-page { margin-top: 12px; } .verification-card { padding: 22px 18px; } }

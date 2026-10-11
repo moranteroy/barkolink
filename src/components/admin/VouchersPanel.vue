@@ -2,7 +2,7 @@
   <section class="admin-vouchers voucher-panel">
     <div class="voucher-summary" aria-label="Voucher counts">
       <article v-for="metric in metrics" :key="metric.label">
-        <span :class="['metric-icon', metric.tone]"><IonIcon :icon="metric.icon" aria-hidden="true" /></span>
+        <span :class="['metric-icon', metric.tone]"><AppIcon :icon="metric.icon" aria-hidden="true" /></span>
         <div><small>{{ metric.label }}</small><strong>{{ loading ? '—' : metric.value }}</strong></div>
       </article>
     </div>
@@ -13,10 +13,10 @@
     <section class="voucher-directory" aria-labelledby="voucher-directory-title">
       <div class="directory-heading">
         <div><p class="eyebrow">PROMO MANAGEMENT</p><h2 id="voucher-directory-title">Voucher directory</h2><p>Regular fare offers, usage limits and validity.</p></div>
-        <button class="primary create-voucher" :disabled="busy" @click="openCreate"><IonIcon :icon="addOutline" aria-hidden="true" /> Create voucher</button>
+        <button data-slot="button" data-variant="default" data-size="default" class="primary create-voucher" :disabled="busy" @click="openCreate"><AppIcon :icon="addOutline" aria-hidden="true" /> Create voucher</button>
       </div>
       <div class="directory-tools">
-        <label class="search-field"><IonIcon :icon="searchOutline" aria-hidden="true" /><input v-model="search" type="search" placeholder="Search voucher code…" aria-label="Search voucher code" /></label>
+        <label class="search-field"><AppIcon :icon="searchOutline" aria-hidden="true" /><input v-model="search" type="search" placeholder="Search voucher code…" aria-label="Search voucher code" /></label>
         <select v-model="statusFilter" aria-label="Filter vouchers by status">
           <option value="ALL">All statuses</option><option v-for="status in statuses" :key="status" :value="status">{{ statusLabel(status) }}</option>
         </select>
@@ -34,17 +34,17 @@
               <td data-label="Usage"><div class="usage"><span><strong>{{ voucher.used }}</strong> / {{ voucher.usageLimit }}</span><div class="usage-track" role="meter" :aria-label="`Uses for ${voucher.code}`" :aria-valuenow="voucher.used" :aria-valuemin="0" :aria-valuemax="voucher.usageLimit"><span :style="{ width: usagePercent(voucher) + '%' }" /></div></div></td>
               <td data-label="Validity"><div><small class="validity-date">{{ date(voucher.startsAt) }}</small><small>Until {{ date(voucher.expiresAt) }}</small></div></td>
               <td data-label="Status"><span :class="['status-badge', voucherStatus(voucher).toLowerCase()]">{{ statusLabel(voucherStatus(voucher)) }}</span></td>
-              <td data-label="Action" class="action-cell"><button :disabled="busy || loading" :aria-label="`${voucher.isActive ? 'Pause' : 'Activate'} voucher ${voucher.code}`" @click="toggle(voucher)"><IonIcon :icon="voucher.isActive ? pauseOutline : playOutline" aria-hidden="true" />{{ pendingId === voucher.id ? 'Saving…' : voucher.isActive ? 'Pause' : 'Activate' }}</button></td>
+              <td data-label="Action" class="action-cell"><button :disabled="busy || loading" :aria-label="`${voucher.isActive ? 'Pause' : 'Activate'} voucher ${voucher.code}`" @click="toggle(voucher)"><AppIcon :icon="voucher.isActive ? pauseOutline : playOutline" aria-hidden="true" />{{ pendingId === voucher.id ? 'Saving…' : voucher.isActive ? 'Pause' : 'Activate' }}</button></td>
             </tr>
           </tbody>
         </table>
       </div>
-      <div v-else class="empty-state"><IonIcon :icon="search || statusFilter !== 'ALL' ? searchOutline : giftOutline" aria-hidden="true" /><h3>{{ vouchers.length ? 'No matching vouchers' : 'No vouchers yet' }}</h3><p>{{ vouchers.length ? 'Try another code or reset your filters.' : 'Create an offer to add your first promo code.' }}</p><button v-if="search || statusFilter !== 'ALL'" @click="resetFilters">Clear filters</button></div>
+      <div v-else class="empty-state"><AppIcon :icon="search || statusFilter !== 'ALL' ? searchOutline : giftOutline" aria-hidden="true" /><h3>{{ vouchers.length ? 'No matching vouchers' : 'No vouchers yet' }}</h3><p>{{ vouchers.length ? 'Try another code or reset your filters.' : 'Create an offer to add your first promo code.' }}</p><button v-if="search || statusFilter !== 'ALL'" @click="resetFilters">Clear filters</button></div>
       <p class="directory-note">Each account can use a code once. Issued reservations count toward the usage limit, including cancelled reservations.</p>
     </section>
 
     <details class="loyalty-info">
-      <summary><span><IonIcon :icon="ribbonOutline" aria-hidden="true" /> Automatic loyalty rewards</span><small>Rules & milestones</small></summary>
+      <summary><span><AppIcon :icon="ribbonOutline" aria-hidden="true" /> Automatic loyalty rewards</span><small>Rules & milestones</small></summary>
       <div class="loyalty-body">
         <p v-if="loyaltyLoading" role="status">Loading saved milestones…</p>
         <p v-if="loyaltyError" class="message error" role="alert">{{ loyaltyError }}<button :disabled="loyaltyLoading || loyaltySaving" @click="loadLoyalty">Retry</button></p>
@@ -58,7 +58,7 @@
               <label>Silver reward (PHP)<input v-model.number="loyaltyDraft.silverReward" type="number" min="1" max="1000000" step="1" required /></label>
               <label>Gold reward (PHP)<input v-model.number="loyaltyDraft.goldReward" type="number" :min="loyaltyDraft.silverReward" max="1000000" step="1" required /></label>
               <label>Platinum reward (PHP)<input v-model.number="loyaltyDraft.platinumReward" type="number" :min="loyaltyDraft.goldReward" max="1000000" step="1" required /></label>
-            </fieldset><div class="loyalty-save"><p>Newly issued rewards use these settings. Existing vouchers keep their saved amounts and expiry dates.</p><button class="primary" :disabled="loyaltySaving || !loyaltyDirty" type="submit">{{ loyaltySaving ? 'Saving…' : 'Save milestones' }}</button></div></form>
+            </fieldset><div class="loyalty-save"><p>Newly issued rewards use these settings. Existing vouchers keep their saved amounts and expiry dates.</p><button data-slot="button" data-variant="default" data-size="default" class="primary" :disabled="loyaltySaving || !loyaltyDirty" type="submit">{{ loyaltySaving ? 'Saving…' : 'Save milestones' }}</button></div></form>
           </details>
           <p v-if="loyaltyNotice" role="status" class="loyalty-notice">{{ loyaltyNotice }}</p>
         </template>
@@ -67,12 +67,12 @@
 
     <IonModal class="admin-vouchers voucher-modal" :is-open="showCreate" :backdrop-dismiss="!busy" @didDismiss="showCreate = false">
       <form class="voucher-dialog" @submit.prevent="create">
-        <header class="modal-heading"><span class="modal-icon"><IonIcon :icon="giftOutline" aria-hidden="true" /></span><div><p class="eyebrow">NEW OFFER</p><h2>Create a voucher</h2><p>Set the discount, usage limit and availability.</p></div><button type="button" class="close-button" :disabled="busy" aria-label="Close voucher form" @click="showCreate = false"><IonIcon :icon="closeOutline" aria-hidden="true" /></button></header>
+        <header class="modal-heading"><span class="modal-icon"><AppIcon :icon="giftOutline" aria-hidden="true" /></span><div><p class="eyebrow">NEW OFFER</p><h2>Create a voucher</h2><p>Set the discount, usage limit and availability.</p></div><button type="button" class="close-button" :disabled="busy" aria-label="Close voucher form" @click="showCreate = false"><AppIcon :icon="closeOutline" aria-hidden="true" /></button></header>
         <div class="form-scroll">
           <p v-if="formError" class="message error" role="alert">{{ formError }}</p>
           <fieldset :disabled="busy" class="voucher-form">
             <section class="form-section"><h3><span class="form-step">1</span> Offer details</h3><div class="form-grid">
-              <label>Code<input v-model.trim="form.code" required pattern="[A-Za-z0-9_\-]{3,30}" maxlength="30" placeholder="SAIL50" /><small>3–30 letters, numbers, hyphens or underscores.</small></label>
+              <label>Code<input v-model.trim="form.code" readonly aria-label="Voucher code" required pattern="[A-Za-z0-9_\-]{3,30}" maxlength="30" placeholder="Generated voucher code" /><small>Generated automatically with random letters and numbers.</small></label>
               <label>Discount type<select v-model="form.discountType"><option value="FIXED">Fixed amount (PHP)</option><option value="PERCENT">Percentage (%)</option></select></label>
               <label>{{ form.discountType === 'PERCENT' ? 'Discount (%)' : 'Discount amount (PHP)' }}<input v-model.number="form.value" type="number" min="1" :max="form.discountType === 'PERCENT' ? 99 : undefined" step="1" required /></label>
               <label>Minimum booking total (PHP)<input v-model.number="form.minimumSpend" type="number" min="0" step="1" required /></label>
@@ -83,17 +83,20 @@
               <label>Expires (Philippine time)<input v-model="form.expiresAt" type="datetime-local" :min="form.startsAt" required /></label>
             </div></section>
           </fieldset>
-          <p class="form-note"><IonIcon :icon="informationCircleOutline" aria-hidden="true" /> Voucher discounts apply to regular passenger fares. Each account can use a code once.</p>
+          <p class="form-note"><AppIcon :icon="informationCircleOutline" aria-hidden="true" /> Voucher discounts apply to regular passenger fares. Each account can use a code once.</p>
         </div>
-        <footer class="form-footer"><span class="offer-preview">{{ form.discountType === 'PERCENT' ? `${form.value}%` : money(form.value || 0) }} off regular fares</span><button type="button" :disabled="busy" @click="showCreate = false">Cancel</button><button class="primary" :disabled="busy" type="submit">{{ busy ? 'Saving…' : 'Create voucher' }}</button></footer>
+        <footer class="form-footer"><span class="offer-preview">{{ form.discountType === 'PERCENT' ? `${form.value}%` : money(form.value || 0) }} off regular fares</span><button type="button" :disabled="busy" @click="showCreate = false">Cancel</button><button data-slot="button" data-variant="default" data-size="default" class="primary" :disabled="busy" type="submit">{{ busy ? 'Saving…' : 'Create voucher' }}</button></footer>
       </form>
     </IonModal>
   </section>
 </template>
 <script setup lang="ts">
+import { voucherCode } from '../../data/recordCodes';
+import { activeFirst } from '../../data/statusOrder';
 import '../../theme/admin-vouchers.css';
 import { computed, onBeforeUnmount, onMounted, reactive, ref } from 'vue';
-import { IonIcon, IonModal } from '@ionic/vue';
+import { IonModal } from '@ionic/vue';
+import AppIcon from "@/components/ui/icon/AppIcon.vue";
 import { addOutline, searchOutline, giftOutline, ribbonOutline, pauseOutline, playOutline, closeOutline, informationCircleOutline, checkmarkCircleOutline, timeOutline } from 'ionicons/icons';
 import { requireSupabase } from '../../services/supabase';
 import { listVouchers, saveVoucher, adminLoyaltySettings, saveLoyaltySettings, type LoyaltySettings, type Voucher } from '../../services/vouchers';
@@ -138,7 +141,7 @@ function voucherStatus(voucher: Voucher) {
   return 'ACTIVE';
 }
 const statusLabel = (status: string) => ({ ACTIVE: 'Active', SCHEDULED: 'Scheduled', PAUSED: 'Paused', EXPIRED: 'Expired', EXHAUSTED: 'Fully used' }[status] || status);
-const filteredVouchers = computed(() => vouchers.value.filter(v => v.code.toLowerCase().includes(search.value.trim().toLowerCase()) && (statusFilter.value === 'ALL' || voucherStatus(v) === statusFilter.value)));
+const filteredVouchers = computed(() => activeFirst(vouchers.value.filter(v => v.code.toLowerCase().includes(search.value.trim().toLowerCase()) && (statusFilter.value === 'ALL' || voucherStatus(v) === statusFilter.value)), v => !['ACTIVE', 'SCHEDULED'].includes(voucherStatus(v))));
 const metrics = computed(() => [
   { label: 'Total vouchers', value: vouchers.value.length, icon: giftOutline, tone: 'blue' },
   { label: 'Active offers', value: vouchers.value.filter(v => voucherStatus(v) === 'ACTIVE').length, icon: checkmarkCircleOutline, tone: 'green' },
@@ -151,7 +154,7 @@ const localNow = new Date(Date.now() + 8 * 3600000).toISOString().slice(0, 16);
 const form = reactive({ code: '', discountType: 'FIXED', value: 50, minimumSpend: 0, usageLimit: 100, startsAt: localNow, expiresAt: '' });
 const date = (value: string) => new Intl.DateTimeFormat('en-PH', { dateStyle: 'medium', timeStyle: 'short', timeZone: 'Asia/Manila' }).format(new Date(value));
 function resetFilters() { search.value = ''; statusFilter.value = 'ALL'; }
-function openCreate() { formError.value = ''; showCreate.value = true; }
+function openCreate() { formError.value = ''; if (!form.code) form.code = voucherCode(); showCreate.value = true; }
 async function load() {
   if (loading.value) return;
   loading.value = true; error.value = '';

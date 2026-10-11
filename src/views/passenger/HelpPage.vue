@@ -10,20 +10,20 @@
         </p>
         <router-link class="mascot-guide" to="/assistant">
           <BarkoMascot />
-          <span><small>YOUR BARKOLINK GUIDE</small><strong>Need a hand, passenger?</strong><span>Ask about sailings, bookings, or your QR ticket.</span><b>Ask the assistant <ion-icon :icon="arrowForwardOutline" aria-hidden="true" /></b></span>
+          <span><small>YOUR BARKOLINK GUIDE</small><strong>Need a hand, passenger?</strong><span>Ask about sailings, bookings, or your QR ticket.</span><b>Ask the assistant <AppIcon :icon="arrowForwardOutline" aria-hidden="true" /></b></span>
         </router-link>
         <section class="faq">
           <details v-for="item in questions" :key="item.title" :id="item.id" tabindex="-1">
             <summary>
-              <ion-icon :icon="item.icon" aria-hidden="true" />{{ item.title }}
+              <AppIcon :icon="item.icon" aria-hidden="true" />{{ item.title }}
             </summary>
             <p>{{ item.answer }}</p>
           </details>
         </section>
         <div class="help-actions">
-          <router-link to="/bookings"><ion-icon :icon="ticketOutline" aria-hidden="true" /> View my bookings</router-link
-          ><router-link to="/travelers"><ion-icon :icon="peopleOutline" aria-hidden="true" /> Manage saved travelers</router-link
-          ><router-link to="/privacy"><ion-icon :icon="shieldCheckmarkOutline" aria-hidden="true" /> Privacy notice</router-link>
+          <router-link to="/bookings"><AppIcon :icon="ticketOutline" aria-hidden="true" /> View my bookings</router-link
+          ><router-link to="/travelers"><AppIcon :icon="peopleOutline" aria-hidden="true" /> Manage saved travelers</router-link
+          ><router-link to="/privacy"><AppIcon :icon="shieldCheckmarkOutline" aria-hidden="true" /> Privacy notice</router-link>
         </div>
         <aside>
           <h2>Need help with a trip?</h2>
@@ -40,7 +40,8 @@
   ></ion-page>
 </template>
 <script setup lang="ts">
-import { IonPage, IonContent, IonIcon } from "@ionic/vue";
+import { IonPage, IonContent } from "@ionic/vue";
+import AppIcon from "@/components/ui/icon/AppIcon.vue";
 import { ref } from 'vue';
 import { useSectionNavigation } from '../../composables/useSectionNavigation';
 import {
@@ -167,7 +168,7 @@ summary {
   font-weight: 700;
   line-height: 1.5;
 }
-summary ion-icon {
+summary .app-icon {
   vertical-align: middle;
   margin-right: 10px;
   color: var(--ocean);
@@ -194,7 +195,7 @@ aside p {
   font-weight: 700;
   text-decoration: none;
 }
-.help-actions ion-icon { font-size: 17px; flex: none; }
+.help-actions .app-icon { font-size: 17px; flex: none; }
 aside {
   margin-top: 28px;
   padding: 22px;

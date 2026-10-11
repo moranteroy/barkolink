@@ -2,7 +2,7 @@
   <section class="audit-panel" aria-label="Audit records">
     <form class="audit-filters" @submit.prevent="applyFilters"><div class="filter-heading"><div><p class="eyebrow">ACTIVITY SEARCH</p><h2>Filter audit history</h2></div><span class="filter-time-note">Dates use Philippine time</span><div class="filter-actions"><Button type="submit" :disabled="loading">Apply filters</Button><Button variant="outline" type="button" :disabled="loading" @click="reset">Reset</Button></div></div>
       <label class="audit-search"
-        >Search activity<div class="search-field"><IonIcon :icon="searchOutline" aria-hidden="true" /><input
+        >Search activity<div class="search-field"><AppIcon :icon="searchOutline" aria-hidden="true" /><input
           v-model.trim="search"
           type="search"
           maxlength="120"
@@ -23,7 +23,7 @@
       ><label>To date<input v-model="toDate" type="date" /></label
       >
     </form>
-    <div v-if="error" class="audit-error" role="alert"><IonIcon :icon="alertCircleOutline" aria-hidden="true" /><p>{{ error }}</p><Button variant="outline" :disabled="loading" @click="load">Retry loading</Button></div><div class="audit-directory">
+    <div v-if="error" class="audit-error" role="alert"><AppIcon :icon="alertCircleOutline" aria-hidden="true" /><p>{{ error }}</p><Button variant="outline" :disabled="loading" @click="load">Retry loading</Button></div><div class="audit-directory">
     <div class="audit-summary">
       <div>
         <p class="eyebrow">ACCOUNTABILITY</p>
@@ -65,10 +65,10 @@
           ><strong>{{ humanize(row.source.entityType) }}</strong
           ><small :title="row.source.entityId">{{ shortRecordId(row.source.entityId) }}</small></span
         >
-        <template v-else><Button v-if="Object.keys(row.source.details || {}).length" variant="outline" size="sm" class="view-changes" :aria-label="`View changes: ${auditAction(row.source.action)}, ${row.source.actorName}, ${date(row.source.createdAt)}`" @click="selectedRecord = row.source"><IonIcon :icon="documentTextOutline" aria-hidden="true" />View changes</Button><span v-else class="muted">No additional details</span></template>
+        <template v-else><Button v-if="Object.keys(row.source.details || {}).length" variant="outline" size="sm" class="view-changes" :aria-label="`View changes: ${auditAction(row.source.action)}, ${row.source.actorName}, ${date(row.source.createdAt)}`" @click="selectedRecord = row.source"><AppIcon :icon="documentTextOutline" aria-hidden="true" />View changes</Button><span v-else class="muted">No additional details</span></template>
       </template>
     </RecordsGrid>
-    <div v-else-if="!error" class="audit-empty"><IonIcon :icon="listOutline" aria-hidden="true" />
+    <div v-else-if="!error" class="audit-empty"><AppIcon :icon="listOutline" aria-hidden="true" />
       <h3>No matching activity</h3>
       <p>Try another person, action, or date range.</p>
     </div>
@@ -77,14 +77,15 @@
       <p>{{ legacyRoleNote }}</p>
     </details>
 <WorkspacePagination :page="page" :total="total" :disabled="loading" @change="move($event - page)">Dates use Philippine time.</WorkspacePagination></div>
-    <IonModal :is-open="!!selectedRecord" class="audit-details-modal" @didDismiss="selectedRecord = null"><section v-if="selectedRecord" class="audit-dialog"><header><div><p class="eyebrow">AUDIT ENTRY</p><h2>{{ auditAction(selectedRecord.action) }}</h2></div><Button variant="ghost" size="icon" aria-label="Close audit details" @click="selectedRecord = null"><IonIcon :icon="closeOutline" aria-hidden="true" /></Button></header><div class="audit-dialog-scroll"><dl class="entry-context"><div><dt>When</dt><dd>{{ date(selectedRecord.createdAt) }} (PH)</dd></div><div><dt>Who</dt><dd>{{ selectedRecord.actorName }}<small>{{ roleName(selectedRecord.actorRole) }}</small></dd></div><div><dt>Record</dt><dd>{{ humanize(selectedRecord.entityType) }}<small>{{ selectedRecord.entityId }}</small></dd></div></dl><p v-if="isLegacyRole(selectedRecord)" class="legacy-note">{{ legacyRoleNote }}</p><h3>Recorded changes</h3><AuditChanges :details="selectedRecord.details" /></div><footer><Button variant="outline" @click="selectedRecord = null">Close</Button></footer></section></IonModal>
+    <IonModal :is-open="!!selectedRecord" class="audit-details-modal" @didDismiss="selectedRecord = null"><section v-if="selectedRecord" class="audit-dialog"><header><div><p class="eyebrow">AUDIT ENTRY</p><h2>{{ auditAction(selectedRecord.action) }}</h2></div><Button variant="ghost" size="icon" aria-label="Close audit details" @click="selectedRecord = null"><AppIcon :icon="closeOutline" aria-hidden="true" /></Button></header><div class="audit-dialog-scroll"><dl class="entry-context"><div><dt>When</dt><dd>{{ date(selectedRecord.createdAt) }} (PH)</dd></div><div><dt>Who</dt><dd>{{ selectedRecord.actorName }}<small>{{ roleName(selectedRecord.actorRole) }}</small></dd></div><div><dt>Record</dt><dd>{{ humanize(selectedRecord.entityType) }}<small>{{ selectedRecord.entityId }}</small></dd></div></dl><p v-if="isLegacyRole(selectedRecord)" class="legacy-note">{{ legacyRoleNote }}</p><h3>Recorded changes</h3><AuditChanges :details="selectedRecord.details" /></div><footer><Button variant="outline" @click="selectedRecord = null">Close</Button></footer></section></IonModal>
   </section>
 </template>
 <script setup lang="ts">
 import WorkspacePagination from "../shared/WorkspacePagination.vue";
 import { computed, onMounted, ref, watch } from "vue";
 import { useRoute } from "vue-router";
-import { IonIcon, IonModal } from '@ionic/vue';
+import { IonModal } from '@ionic/vue';
+import AppIcon from "@/components/ui/icon/AppIcon.vue";
 import { alertCircleOutline, closeOutline, documentTextOutline, listOutline, searchOutline } from 'ionicons/icons';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -226,7 +227,7 @@ label { display:grid; align-content:start; gap:8px; font-size:12px; font-weight:
 input,select { width:100%; min-width:0; height:40px; padding:0 12px; border:1px solid var(--line); border-radius:9px; background:var(--surface-soft); color:var(--ink); font:inherit; font-size:12px; }
 .search-field { position:relative; }
 .search-field input { padding-left:36px; }
-.search-field ion-icon { position:absolute; left:12px; top:13px; font-size:16px; pointer-events:none; color:var(--muted); }
+.search-field .app-icon { position:absolute; left:12px; top:13px; font-size:16px; pointer-events:none; color:var(--muted); }
 .filter-actions { display:flex; gap:8px; justify-content:flex-end; margin-left:auto; }
 .audit-summary { display:flex; justify-content:space-between; align-items:center; gap:10px 12px; padding:14px 16px; border-bottom:1px solid var(--line); }
 .eyebrow { font-size:10px; letter-spacing:.1em; font-weight:800; color:var(--ocean); margin:0 0 7px; }
@@ -242,11 +243,11 @@ h2 { margin:0; font-size:17px; color:var(--ink); }
 .audit-record small { color:var(--muted); font-size:10px; overflow-wrap:anywhere; }
 time { font-size:11px; }
 .audit-empty { text-align:center; padding:24px 16px; color:var(--muted); font-size:12px; }
-.audit-empty > ion-icon { font-size:30px; color:var(--ocean); }
+.audit-empty > .app-icon { font-size:30px; color:var(--ocean); }
 .audit-empty h3 { color:var(--ink); margin:12px 0 8px; }
 .audit-error { display:flex; align-items:center; gap:12px; padding:16px 20px; color:#bd3b45; border:1px solid #bd3b4533; background:var(--surface); border-radius:12px; font-size:12px; }
 .audit-error p { flex:1; margin:0; }
-.audit-error ion-icon { font-size:22px; flex:none; }
+.audit-error .app-icon { font-size:22px; flex:none; }
 .legacy-role-help { margin:10px 16px; padding:10px 12px; border:1px solid var(--line); border-radius:10px; background:var(--surface-soft); }
 .legacy-role-help summary { cursor:pointer; font-size:11px; color:var(--muted); }
 .legacy-role-help p,.legacy-note { max-width:650px; font-size:12px; line-height:1.6; color:var(--muted); margin:10px 0 0; }
@@ -273,7 +274,7 @@ time { font-size:11px; }
 .audit-directory .view-changes { min-height:32px; padding:5px 8px; font-size:11px; }
 .audit-dialog { font-family:var(--ion-font-family); }
 .audit-dialog header > button { width:44px; height:44px; padding:0; flex:none; }
-.audit-dialog header > button ion-icon { font-size:20px; }
+.audit-dialog header > button .app-icon { font-size:20px; }
 .audit-dialog :deep(.readable-changes) { gap:10px; }
 .filter-time-note { white-space:nowrap; }
 input:focus-visible, select:focus-visible { outline:2px solid var(--ocean); outline-offset:2px; }

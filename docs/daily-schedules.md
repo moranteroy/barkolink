@@ -1,0 +1,5 @@
+Daily schedules are admin-managed templates in Admin > Trips & schedules. Add or edit an operator, served route, departure times and optional duration in hours. Pause/Resume controls whether the template can prepare new trips. Inactive routes or ports block resuming and trip preparation.
+
+Choose a Philippine trip date, select a departure and click Prepare trip. This opens the existing sailing editor with the date, time, route and operator filter filled in. The administrator must confirm vessel deployment, arrival, seats, fares and boarding configuration, then save. No daily schedule automatically creates sailings or cancels existing bookings.
+
+Migration 038 seeds ten saved timetable templates from existing route metadata. Fresh catalog imports seed templates only when the template table is empty; later imports retain admin edits and pauses. Changes are restricted to admins and recorded in audit logs. Apply with node scripts/apply-daily-schedules.mjs --apply; its guard checks that existing sailings, bookings, passenger/QR records and vouchers remain unchanged.

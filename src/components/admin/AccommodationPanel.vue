@@ -3,9 +3,10 @@
     <p v-if="error" role="alert" class="catalog-error">{{ error }}</p>
     <button v-if="error && !loading && !busy" type="button" @click="load">Retry loading accommodations</button>
     <p v-if="notice" role="status">{{ notice }}</p>
+    <PublishedFerryReferences mode="classes" />
     <IonModal :is-open="editing" :can-dismiss="canDismiss" class="accommodation-modal" @didDismiss="editing = false">
       <div class="accommodation-dialog">
-        <header class="dialog-heading"><span class="dialog-symbol"><IonIcon :icon="bedOutline" aria-hidden="true" /></span><div><p class="eyebrow">VESSEL ACCOMMODATION</p><h2>{{ form.id ? 'Edit accommodation' : 'Add accommodation' }}</h2><p class="dialog-subtitle">Set the seating class, capacity, and extra fare.</p></div><button type="button" class="dialog-close" aria-label="Close dialog" :disabled="busy" @click="close"><IonIcon :icon="closeOutline" aria-hidden="true" /></button></header>
+        <header class="dialog-heading"><span class="dialog-symbol"><AppIcon :icon="bedOutline" aria-hidden="true" /></span><div><p class="eyebrow">VESSEL ACCOMMODATION</p><h2>{{ form.id ? 'Edit accommodation' : 'Add accommodation' }}</h2><p class="dialog-subtitle">Set the seating class, capacity, and extra fare.</p></div><button type="button" class="dialog-close" aria-label="Close dialog" :disabled="busy" @click="close"><AppIcon :icon="closeOutline" aria-hidden="true" /></button></header>
         <p v-if="formError" role="alert" class="form-error">{{ formError }}</p>
     <form class="accommodation-form" @submit.prevent="save">
       <div class="accommodation-scroll">
@@ -51,7 +52,7 @@
           charge.</small
         ></label
       ></div>
-      <p v-if="form.vesselId" class="capacity-note"><IonIcon :icon="peopleOutline" aria-hidden="true" /><span><strong>{{ remainingCapacity }} seats available to allocate</strong><small>Capacity already assigned to other active classes is excluded.</small></span></p>
+      <p v-if="form.vesselId" class="capacity-note"><AppIcon :icon="peopleOutline" aria-hidden="true" /><span><strong>{{ remainingCapacity }} seats available to allocate</strong><small>Capacity already assigned to other active classes is excluded.</small></span></p>
       <label class="accommodation-availability"
         ><input v-model="form.isActive" type="checkbox" />Available for new
         bookings</label
@@ -63,7 +64,7 @@
       </div>
     </IonModal>
     <div class="directory-filters">
-      <label class="directory-search" for="accommodation-search">Search accommodation<div class="search-input"><IonIcon :icon="searchOutline" aria-hidden="true" /><input id="accommodation-search" v-model="table.query.value" type="search" placeholder="Class name, vessel, or description" /></div></label>
+      <label class="directory-search" for="accommodation-search">Search accommodation<div class="search-input"><AppIcon :icon="searchOutline" aria-hidden="true" /><input id="accommodation-search" v-model="table.query.value" type="search" placeholder="Class name, vessel, or description" /></div></label>
       <label for="accommodation-vessel">Vessel<select id="accommodation-vessel" v-model="vesselFilter"><option value="ALL">All vessels</option><option v-for="v in vessels" :key="v.id" :value="v.id">{{ v.name }}</option></select></label>
       <label for="accommodation-status">Status<select id="accommodation-status" v-model="status"><option value="ALL">All statuses</option><option value="ACTIVE">Active</option><option value="INACTIVE">Inactive</option></select></label>
       <label for="accommodation-sort">Sort classes<select id="accommodation-sort" v-model="table.sort.value"><option value="">Original order</option><option value="name:asc">Class: A–Z</option><option value="capacity:desc">Capacity: highest first</option><option value="surcharge:asc">Extra fare: lowest first</option><option value="surcharge:desc">Extra fare: highest first</option></select></label>
@@ -71,7 +72,7 @@
     </div>
     <p v-if="!loading && !error && !vessels.length" class="form-note">Add an active vessel before creating accommodation. <router-link to="/admin/vessels">Manage vessels</router-link></p>
     <div class="accommodation-directory">
-      <div class="directory-heading"><div><p class="eyebrow">SEATING CLASSES</p><h2>Accommodation directory</h2><p class="directory-hint">{{ table.records.value.length }} of {{ rows.length }} classes</p></div><Button :disabled="busy || loading || !vessels.length" @click="start()"><IonIcon :icon="addOutline" aria-hidden="true" />Add accommodation</Button></div>
+      <div class="directory-heading"><div><p class="eyebrow">SEATING CLASSES</p><h2>Accommodation directory</h2><p class="directory-hint">{{ table.records.value.length }} of {{ rows.length }} classes</p></div><Button :disabled="busy || loading || !vessels.length" @click="start()"><AppIcon :icon="addOutline" aria-hidden="true" />Add accommodation</Button></div>
       <RecordsGrid title="Accommodation directory" :columns="['Class', 'Vessel', 'Description', 'Capacity', 'Extra fare', 'Status']" :rows="gridRows" :loading="loading" density="compact" :column-min-widths="[110, 160, 220, 100, 110, 100]" :action-width="110" :max-grid-height="360">
         <template #cell="{ row, index, value }">
           <strong v-if="index === 0" class="class-name">{{ value }}</strong>
@@ -88,7 +89,10 @@
 </template>
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from "vue";
-import { IonIcon, IonModal } from "@ionic/vue";
+import PublishedFerryReferences from './PublishedFerryReferences.vue';
+import referenceCatalog from '@/data/ferryReferenceCatalog.json';
+import { IonModal } from "@ionic/vue";
+import AppIcon from "@/components/ui/icon/AppIcon.vue";
 import { addOutline, bedOutline, closeOutline, peopleOutline, searchOutline } from "ionicons/icons";
 import RecordsGrid from "../shared/RecordsGrid.vue";
 import { Button } from "@/components/ui/button";
@@ -127,7 +131,7 @@ const filteredRows = computed(() => rows.value.filter(row =>
   (status.value === 'ALL' || row.isActive === (status.value === 'ACTIVE')) &&
   (vesselFilter.value === 'ALL' || row.vesselId === vesselFilter.value)));
 const table = useTableRecords(filteredRows);
-const classNames = computed(() => [...new Set(['Economy', 'Tourist', 'Premium', 'Business', ...rows.value.map(row => row.name), ...(form.name ? [form.name] : [])])]);
+const classNames = computed(() => [...new Set(['Economy', 'Tourist', 'Premium', 'Business', ...referenceCatalog.accommodationProfiles.flatMap(p => p.classes), ...rows.value.map(row => row.name), ...(form.name ? [form.name] : [])])]);
 const gridRows = computed(() => table.records.value.map(accommodation => ({
   key: accommodation.id,
   cells: [accommodation.name, accommodation.vesselName || vessels.value.find(vessel => vessel.id === accommodation.vesselId)?.name || 'Unavailable vessel', accommodation.description || 'Standard seating', `${accommodation.capacity} seats`, `PHP ${accommodation.surcharge.toLocaleString()}`, accommodation.isActive ? 'Active' : 'Inactive'],
@@ -176,7 +180,7 @@ async function load() {
       adminVessels(staffDatabase),
     ]);
     rows.value = a.data.accommodations;
-    vessels.value = v.data.vessels.filter((v) => v.isActive);
+    vessels.value = v.data.vessels.filter(v => v.isActive && v.passengerCapacity != null).map(v => ({ id: v.id, name: v.name, passengerCapacity: v.passengerCapacity! }));
   } catch (e) {
     error.value = databaseRequestError(e, "Could not load accommodations.");
   } finally {
@@ -215,13 +219,13 @@ textarea { resize: vertical; line-height: 1.5; }
 .directory-search { grid-column: 1 / -1; }
 .search-input { display: flex; align-items: center; gap: 8px; padding-left: 12px; border: 1px solid var(--line); border-radius: 9px; background: var(--surface-soft); }
 .search-input input { border: 0; background: transparent; outline: none; }
-.search-input ion-icon { flex: none; font-size: 17px; }
+.search-input .app-icon { flex: none; font-size: 17px; }
 .search-input:focus-within { outline: 2px solid var(--ocean); outline-offset: 2px; }
 .accommodation-workspace button, .accommodation-dialog button { display: inline-flex; align-items: center; justify-content: center; gap: 7px; min-height: 40px; font-family: inherit; font-size: 12px; }
 .accommodation-directory { border: 1px solid var(--line); border-radius: 14px; overflow: hidden; background: var(--surface); min-width: 0; }
 .directory-heading { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 14px 16px; border-bottom: 1px solid var(--line); }
 .directory-heading > button { flex: none; }
-.directory-heading > button ion-icon { font-size: 17px; }
+.directory-heading > button .app-icon { font-size: 17px; }
 .eyebrow { margin: 0 0 6px; font-size: 10px; font-weight: 800; letter-spacing: .1em; color: var(--ocean); }
 h2 { margin: 0; font-size: 17px; color: var(--ink); }
 .directory-hint { margin: 5px 0 0; color: var(--muted); font-size: 11px; line-height: 1.5; }
@@ -250,7 +254,7 @@ h2 { margin: 0; font-size: 17px; color: var(--ink); }
 .description-field { grid-column: 1 / -1; }
 .accommodation-fields label small { font-size: 11px; line-height: 1.5; font-weight: 400; }
 .capacity-note { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 10px; background: var(--light-blue); color: var(--ocean); margin: 14px 0 0; }
-.capacity-note ion-icon { font-size: 20px; flex: none; }
+.capacity-note .app-icon { font-size: 20px; flex: none; }
 .capacity-note span { display: grid; gap: 4px; }
 .capacity-note strong { font-size: 12px; font-weight: 650; }
 .capacity-note small { font-size: 11px; line-height: 1.5; color: var(--muted); }

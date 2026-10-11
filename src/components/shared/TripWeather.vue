@@ -1,6 +1,6 @@
 <template>
   <section class="trip-weather" :class="{ 'compact-weather': compact }" aria-label="Trip weather">
-    <div v-if="!compact" class="weather-heading"><div><small>PLAN YOUR JOURNEY</small><h2><ion-icon :icon="partlySunnyOutline" aria-hidden="true" /> Port weather</h2></div><button v-if="error" :disabled="loading" @click="load">Try again</button></div>
+    <div v-if="!compact" class="weather-heading"><div><small>PLAN YOUR JOURNEY</small><h2><AppIcon :icon="partlySunnyOutline" aria-hidden="true" /> Port weather</h2></div><button v-if="error" :disabled="loading" @click="load">Try again</button></div>
     <p v-if="loading" role="status" class="weather-message">Checking the latest port weather…</p>
     <p v-else-if="error || !data?.configured" role="status" class="weather-message">Weather updates are currently unavailable. Check your trip advisories for sailing updates.</p>
     <div v-else class="weather-ports">
@@ -22,7 +22,7 @@
 </template>
 <script setup lang="ts">
 import { ref,watch } from 'vue';
-import { IonIcon } from '@ionic/vue';
+import AppIcon from "@/components/ui/icon/AppIcon.vue";
 import { partlySunnyOutline } from 'ionicons/icons';
 import { tripWeather,type TripWeatherData } from '../../services/weather';
 import WeatherSymbol from './WeatherSymbol.vue';
@@ -47,7 +47,7 @@ const timestamp=(at?:string)=>at?new Date(at).toLocaleString('en-PH',{timeZone:'
 .weather-heading { display: flex; justify-content: space-between; gap: 12px; align-items: center; margin-bottom: 16px; }
 .weather-heading small { font-size: 9px; letter-spacing: .1em; color: var(--ocean); font-weight: 700; }
 .weather-heading h2 { display: flex; gap: 8px; align-items: center; font-size: 19px; margin: 6px 0 0; }
-.weather-heading ion-icon { color: var(--ocean); }
+.weather-heading .app-icon { color: var(--ocean); }
 .weather-heading button { border: 1px solid var(--line); border-radius: 8px; padding: 10px; color: var(--ocean); background: var(--surface-soft); font: inherit; font-size: 12px; cursor: pointer; }
 .weather-ports { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 12px; }
 .weather-port { min-width: 0; padding: 16px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface-soft); }

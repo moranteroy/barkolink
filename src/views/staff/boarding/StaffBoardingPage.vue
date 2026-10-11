@@ -45,15 +45,15 @@
                   :disabled="loading || busy"
                   @click="loadData"
                 >
-                  <ion-icon :icon="refreshOutline" />Refresh</button
-                ><button
+                  <AppIcon :icon="refreshOutline" />Refresh</button
+                ><button data-slot="button" data-variant="default" data-size="default"
                   v-if="!portBlocked && pageMode !== 'manifest'"
                   class="primary-button"
                   type="button"
                   :disabled="!selectedSailingCode || loading || busy"
                   @click="pageMode === 'dashboard' ? router.push(operationPath('check-in')) : openScanner()"
                 >
-                  <ion-icon :icon="scanOutline" />{{ pageMode === 'boarding' ? 'Find boarding ticket' : 'Find ticket' }}
+                  <AppIcon :icon="scanOutline" />{{ pageMode === 'boarding' ? 'Find boarding ticket' : 'Find ticket' }}
                 </button>
               </div>
             </div>
@@ -61,17 +61,17 @@
             <StaffPortRequired v-if="portBlocked" />
             <template v-else>
             <div v-if="error" class="notice error" role="alert">
-              <ion-icon :icon="alertCircleOutline" /><span>{{ error }}</span
+              <AppIcon :icon="alertCircleOutline" /><span>{{ error }}</span
               ><button
                 type="button"
                 @click="error = ''"
                 aria-label="Dismiss error"
               >
-                <ion-icon :icon="closeOutline" />
+                <AppIcon :icon="closeOutline" />
               </button>
             </div>
             <div v-if="success" class="notice success" role="status">
-              <ion-icon :icon="checkmarkCircleOutline" /><span>{{
+              <AppIcon :icon="checkmarkCircleOutline" /><span>{{
                 success
               }}</span
               ><button
@@ -79,20 +79,20 @@
                 @click="success = ''"
                 aria-label="Dismiss message"
               >
-                <ion-icon :icon="closeOutline" />
+                <AppIcon :icon="closeOutline" />
               </button>
             </div>
 
             <section class="sailing-card" aria-label="Selected sailing">
               <div class="sailing-copy">
                 <span class="sailing-icon"
-                  ><ion-icon :icon="boatOutline"
+                  ><AppIcon :icon="boatOutline"
                 /></span>
                 <div>
                   <p class="eyebrow">SELECTED SAILING</p>
                   <h2 v-if="selectedSailing">
                     {{ selectedSailing.origin.name }}
-                    <ion-icon :icon="arrowForwardOutline" />
+                    <AppIcon :icon="arrowForwardOutline" />
                     {{ selectedSailing.destination.name }}
                   </h2>
                   <h2 v-else>No available sailing</h2>
@@ -136,22 +136,22 @@
               v-if="selectedSailing && selectedSailing.status !== 'BOARDING'"
               class="gate-note"
             >
-              <ion-icon :icon="informationCircleOutline" /><span
+              <AppIcon :icon="informationCircleOutline" /><span
                 >Check-in is open. Boarding starts when the administrator sets
                 this sailing to BOARDING.</span
               >
             </div>
 
             <section v-if="pageMode === 'check-in' || pageMode === 'boarding'" class="gate-stage" :aria-label="pageMode === 'check-in' ? 'Arrival check-in' : 'Vessel boarding'">
-              <span class="stage-icon"><ion-icon :icon="pageMode === 'check-in' ? scanOutline : boatOutline" aria-hidden="true" /></span>
+              <span class="stage-icon"><AppIcon :icon="pageMode === 'check-in' ? scanOutline : boatOutline" aria-hidden="true" /></span>
               <div><p class="eyebrow">{{ pageMode === 'check-in' ? 'STEP 1 / PASSENGER ARRIVAL' : 'STEP 2 / VESSEL BOARDING' }}</p><h2>{{ pageMode === 'check-in' ? 'Record arrival at the gate' : 'Confirm passengers are on board' }}</h2><p>{{ pageMode === 'check-in' ? `${issuedCount} awaiting check-in. Verify each ticket and passenger ID before recording arrival.` : `${checkedInCount} ready to board · ${boardedCount} boarded. Only checked-in passengers can be marked as boarded.` }}</p></div>
-              <router-link :to="operationPath(pageMode === 'check-in' ? 'boarding' : 'check-in')">{{ pageMode === 'check-in' ? 'Go to boarding' : 'Go to check-in' }} <ion-icon :icon="arrowForwardOutline" aria-hidden="true" /></router-link>
+              <router-link :to="operationPath(pageMode === 'check-in' ? 'boarding' : 'check-in')">{{ pageMode === 'check-in' ? 'Go to boarding' : 'Go to check-in' }} <AppIcon :icon="arrowForwardOutline" aria-hidden="true" /></router-link>
             </section>
 
             <section v-if="pageMode === 'dashboard' || pageMode === 'manifest'" class="stats" aria-label="Boarding totals">
               <article>
                 <span class="stat-icon blue"
-                  ><ion-icon :icon="ticketOutline"
+                  ><AppIcon :icon="ticketOutline"
                 /></span>
                 <div>
                   <small>VALID TICKETS</small
@@ -161,7 +161,7 @@
               </article>
               <article>
                 <span class="stat-icon neutral"
-                  ><ion-icon :icon="peopleOutline"
+                  ><AppIcon :icon="peopleOutline"
                 /></span>
                 <div>
                   <small>AWAITING CHECK-IN</small
@@ -171,7 +171,7 @@
               </article>
               <article>
                 <span class="stat-icon amber"
-                  ><ion-icon :icon="scanOutline"
+                  ><AppIcon :icon="scanOutline"
                 /></span>
                 <div>
                   <small>CHECKED IN</small><strong>{{ checkedInCount }}</strong>
@@ -180,7 +180,7 @@
               </article>
               <article>
                 <span class="stat-icon green"
-                  ><ion-icon :icon="checkmarkCircleOutline"
+                  ><AppIcon :icon="checkmarkCircleOutline"
                 /></span>
                 <div>
                   <small>BOARDED</small><strong>{{ boardedCount }}</strong>
@@ -194,10 +194,10 @@
                 <div><p class="eyebrow">GATE OPERATIONS</p><h2 id="gate-actions-title">Manage passengers</h2></div>
               </div>
               <div class="boarding-shortcuts">
-                <router-link :to="operationPath('check-in')"><ion-icon :icon="scanOutline" aria-hidden="true" /><strong>Check-in</strong><span>{{ issuedCount }} awaiting arrival</span><ion-icon class="shortcut-arrow" :icon="arrowForwardOutline" aria-hidden="true" /></router-link>
-                <router-link :to="operationPath('boarding')"><ion-icon :icon="boatOutline" aria-hidden="true" /><strong>Boarding</strong><span>{{ checkedInCount }} ready to board</span><ion-icon class="shortcut-arrow" :icon="arrowForwardOutline" aria-hidden="true" /></router-link>
-                <router-link :to="operationPath('manifest')"><ion-icon :icon="peopleOutline" aria-hidden="true" /><strong>Passenger manifest</strong><span>{{ passengers.length }} paid passenger tickets</span><ion-icon class="shortcut-arrow" :icon="arrowForwardOutline" aria-hidden="true" /></router-link>
-                <router-link to="/staff/boarding/trips"><ion-icon :icon="boatOutline" aria-hidden="true" /><strong>Active trips</strong><span>Sailings and available seats</span><ion-icon class="shortcut-arrow" :icon="arrowForwardOutline" aria-hidden="true" /></router-link>
+                <router-link :to="operationPath('check-in')"><AppIcon :icon="scanOutline" aria-hidden="true" /><strong>Check-in</strong><span>{{ issuedCount }} awaiting arrival</span><AppIcon class="shortcut-arrow" :icon="arrowForwardOutline" aria-hidden="true" /></router-link>
+                <router-link :to="operationPath('boarding')"><AppIcon :icon="boatOutline" aria-hidden="true" /><strong>Boarding</strong><span>{{ checkedInCount }} ready to board</span><AppIcon class="shortcut-arrow" :icon="arrowForwardOutline" aria-hidden="true" /></router-link>
+                <router-link :to="operationPath('manifest')"><AppIcon :icon="peopleOutline" aria-hidden="true" /><strong>Passenger manifest</strong><span>{{ passengers.length }} paid passenger tickets</span><AppIcon class="shortcut-arrow" :icon="arrowForwardOutline" aria-hidden="true" /></router-link>
+                <router-link to="/staff/boarding/trips"><AppIcon :icon="boatOutline" aria-hidden="true" /><strong>Active trips</strong><span>Sailings and available seats</span><AppIcon class="shortcut-arrow" :icon="arrowForwardOutline" aria-hidden="true" /></router-link>
               </div>
             </section>
             <div v-else class="workspace-grid">
@@ -214,7 +214,7 @@
                 </div>
                 <div class="manifest-tools">
                   <label class="search-field"
-                    ><ion-icon :icon="searchOutline" /><input
+                    ><AppIcon :icon="searchOutline" /><input
                       v-model.trim="search"
                       type="search"
                       placeholder="Search name, reference, or ticket code"
@@ -285,7 +285,7 @@
                       class="ticket-status"
                       :class="person.status.toLowerCase().replace('_', '-')"
                       >{{ statusLabel(person.status) }}</span
-                    ><ion-icon :icon="pageMode === 'manifest' ? ticketOutline : arrowForwardOutline" aria-hidden="true" />
+                    ><AppIcon :icon="pageMode === 'manifest' ? ticketOutline : arrowForwardOutline" aria-hidden="true" />
                   </button>
                 </div>
               </section>
@@ -298,7 +298,7 @@
                       <h2>Passenger details</h2>
                     </div>
                     <span class="review-icon"
-                      ><ion-icon :icon="ticketOutline"
+                      ><AppIcon :icon="ticketOutline"
                     /></span>
                   </div>
                   <div class="review-identity">
@@ -352,7 +352,7 @@
                     </div>
                   </dl>
                   <p class="review-help">{{ actionHint }} Match the passenger's ID to the verified name before confirming.</p>
-                  <button
+                  <button data-slot="button" data-variant="default" data-size="default"
                     v-if="
                       (pageMode === 'check-in' && selectedPassenger.status === 'ISSUED') ||
                       (pageMode === 'boarding' && selectedPassenger.status === 'CHECKED_IN')
@@ -367,7 +367,7 @@
                     "
                     @click="updateSelectedTicket"
                   >
-                    <ion-icon
+                    <AppIcon
                       :icon="
                         selectedPassenger.status === 'ISSUED'
                           ? scanOutline
@@ -381,14 +381,14 @@
                           : "Mark as boarded"
                     }}
                   </button>
-                  <router-link v-else-if="pageMode === 'boarding' && selectedPassenger.status === 'ISSUED'" class="secondary-button review-action" :to="operationPath('check-in')"><ion-icon :icon="scanOutline" /> Check in this passenger first</router-link>
+                  <router-link v-else-if="pageMode === 'boarding' && selectedPassenger.status === 'ISSUED'" class="secondary-button review-action" :to="operationPath('check-in')"><AppIcon :icon="scanOutline" /> Check in this passenger first</router-link>
                   <div v-else class="complete-note">
-                    <ion-icon :icon="informationCircleOutline" /> {{ selectedPassenger.status === 'BOARDED' ? 'Boarding already recorded' : selectedPassenger.status === 'CHECKED_IN' ? 'Arrival already recorded' : 'This ticket is unavailable for gate processing' }}
+                    <AppIcon :icon="informationCircleOutline" /> {{ selectedPassenger.status === 'BOARDED' ? 'Boarding already recorded' : selectedPassenger.status === 'CHECKED_IN' ? 'Arrival already recorded' : 'This ticket is unavailable for gate processing' }}
                   </div></template
                 >
                 <template v-else
                   ><div class="review-placeholder">
-                    <span><ion-icon :icon="ticketOutline" /></span>
+                    <span><AppIcon :icon="ticketOutline" /></span>
                     <p class="eyebrow">TICKET REVIEW</p>
                     <h2>{{ pageMode === 'boarding' ? 'Review before boarding' : 'Select a passenger' }}</h2>
                     <p>
@@ -400,7 +400,7 @@
                       :disabled="!selectedSailingCode || loading || busy"
                       @click="openScanner"
                     >
-                      <ion-icon :icon="scanOutline" /> Find ticket
+                      <AppIcon :icon="scanOutline" /> Find ticket
                     </button>
                   </div></template
                 >
@@ -422,7 +422,7 @@
               <div v-else class="activity-list" tabindex="0" role="region" aria-label="Recent check-in and boarding events">
                 <article v-for="event in events" :key="event.id">
                   <span class="activity-icon" :class="{ boarded: event.eventType === 'BOARDED' }"
-                    ><ion-icon
+                    ><AppIcon
                       :icon="
                         event.eventType === 'BOARDED'
                           ? boatOutline
@@ -452,8 +452,8 @@
             aria-label="Close ticket search"
             @click="closeScanner"
           >
-            <ion-icon :icon="closeOutline" /></button
-          ><span class="scanner-icon"><ion-icon :icon="scanOutline" /></span>
+            <AppIcon :icon="closeOutline" /></button
+          ><span class="scanner-icon"><AppIcon :icon="scanOutline" /></span>
           <p class="eyebrow">GATE TICKET LOOKUP</p>
           <h2 id="ticket-lookup-title">Find a passenger ticket</h2>
           <p>
@@ -473,7 +473,7 @@
             type="button"
             @click="startCamera"
           >
-            <ion-icon :icon="cameraOutline" /> Scan QR with camera
+            <AppIcon :icon="cameraOutline" /> Scan QR with camera
           </button>
           <div class="lookup-divider"><span>or enter ticket code</span></div>
           <p v-if="scanError" class="scan-error" role="alert">
@@ -487,7 +487,7 @@
               autocomplete="off"
               :disabled="scanBusy"
               placeholder="Enter or paste ticket code"
-            /><button
+            /><button data-slot="button" data-variant="default" data-size="default"
               class="primary-button"
               type="submit"
               :disabled="!ticketLookup || scanBusy"
@@ -512,14 +512,8 @@ import BoardingProgress from "../../../components/staff/boarding/BoardingProgres
 import { databaseRequestError } from "../../../data/databaseErrors";
 import { computed, nextTick, onBeforeUnmount, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
-import {
-  IonContent,
-  IonIcon,
-  IonModal,
-  IonPage,
-  onIonViewWillEnter,
-  onIonViewWillLeave,
-} from "@ionic/vue";
+import { IonContent, IonModal, IonPage, onIonViewWillEnter, onIonViewWillLeave } from "@ionic/vue";
+import AppIcon from "@/components/ui/icon/AppIcon.vue";
 import {
   alertCircleOutline,
   arrowForwardOutline,
@@ -1012,9 +1006,9 @@ async function startCamera() {
   font-weight: 700;
   cursor: pointer;
 }
-.sidebar nav a ion-icon,
-.sidebar nav button ion-icon,
-.logout ion-icon {
+.sidebar nav a .app-icon,
+.sidebar nav button .app-icon,
+.logout .app-icon {
   font-size: 18px;
 }
 .sidebar nav a.active,
@@ -1056,7 +1050,7 @@ async function startCamera() {
   color: var(--muted);
   font-size: 12px;
 }
-.breadcrumb ion-icon {
+.breadcrumb .app-icon {
   color: var(--ocean);
 }
 .breadcrumb strong {
@@ -1165,8 +1159,8 @@ button:disabled {
   opacity: 0.5;
   cursor: not-allowed;
 }
-.primary-button ion-icon,
-.secondary-button ion-icon {
+.primary-button .app-icon,
+.secondary-button .app-icon {
   font-size: 17px;
 }
 .notice {
@@ -1179,7 +1173,7 @@ button:disabled {
   border-radius: 10px;
   font-size: 12px;
 }
-.notice ion-icon {
+.notice .app-icon {
   flex: none;
   font-size: 18px;
 }
@@ -1242,7 +1236,7 @@ button:disabled {
   margin: 6px 0 3px;
   font-size: 19px;
 }
-.sailing-copy h2 ion-icon {
+.sailing-copy h2 .app-icon {
   color: var(--ocean);
   font-size: 16px;
 }
@@ -1306,7 +1300,7 @@ button:disabled {
   color: var(--muted);
   font-size: 11px;
 }
-.gate-note ion-icon {
+.gate-note .app-icon {
   flex: none;
   color: var(--ocean);
   font-size: 17px;
@@ -1425,7 +1419,7 @@ button:disabled {
   color: var(--ink);
   font: 500 11px inherit;
 }
-.search-field ion-icon {
+.search-field .app-icon {
   font-size: 17px;
 }
 .status-tabs {
@@ -1511,7 +1505,7 @@ button:disabled {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.passenger-row > ion-icon {
+.passenger-row > .app-icon {
   color: var(--muted);
   font-size: 16px;
 }
@@ -1948,8 +1942,8 @@ button:disabled {
   font-weight: 800;
   letter-spacing: 0.12em;
 }
-.sidebar nav a ion-icon,
-.sidebar nav button ion-icon {
+.sidebar nav a .app-icon,
+.sidebar nav button .app-icon {
   flex: none;
   font-size: 17px;
 }
@@ -2361,7 +2355,7 @@ input:focus-visible {
 .boarding-shell .passenger-main strong { font-size: 13px; overflow-wrap: anywhere; }
 .boarding-shell .passenger-main small { font-size: 10px; line-height: 1.6; overflow-wrap: anywhere; }
 .boarding-shell .ticket-status { font-size: 9px; padding: 5px 7px; white-space: normal; text-align: center; }
-.boarding-shell .passenger-row > ion-icon { color: var(--ocean); font-size: 17px; }
+.boarding-shell .passenger-row > .app-icon { color: var(--ocean); font-size: 17px; }
 @media (max-width: 1199px) { .boarding-shell .workspace-grid { grid-template-columns: minmax(0, 1fr); } .boarding-shell .review-panel { position: static; } }
 @media (max-width: 800px) {
  .boarding-shell .content { padding: 20px 16px 32px; }
@@ -2374,18 +2368,18 @@ input:focus-visible {
  .boarding-shell .passenger-row { grid-template-columns: 26px minmax(0, 1fr) 18px; gap: 5px 8px; padding: 10px; }
  .boarding-shell .passenger-row .avatar { width: 26px; height: 26px; grid-row: 1 / 3; }
  .boarding-shell .passenger-row .ticket-status { grid-column: 2; justify-self: start; }
- .boarding-shell .passenger-row > ion-icon { grid-column: 3; grid-row: 1 / 3; }
+ .boarding-shell .passenger-row > .app-icon { grid-column: 3; grid-row: 1 / 3; }
 }
 
 
 .boarding-shortcuts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; margin: 18px 0; }
 .boarding-shortcuts a { display: grid; grid-template-columns: 32px minmax(0, 1fr); gap: 7px 12px; padding: 18px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); text-decoration: none; color: var(--ink); }
-.boarding-shortcuts ion-icon { grid-row: 1 / 3; color: var(--ocean); font-size: 25px; }
+.boarding-shortcuts .app-icon { grid-row: 1 / 3; color: var(--ocean); font-size: 25px; }
 .boarding-shortcuts strong { font-size: 15px; }
 .boarding-shortcuts span { color: var(--muted); font-size: 12px; line-height: 1.6; }
 .boarding-manifest .workspace-grid { grid-template-columns: minmax(0, 1fr); }
 .boarding-manifest .passenger-row:disabled { opacity: 1; cursor: default; }
-.boarding-manifest .passenger-row > ion-icon { display: none; }
+.boarding-manifest .passenger-row > .app-icon { display: none; }
 .boarding-check-in .status-tabs, .boarding-boarding .status-tabs { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 @media (max-width: 800px) { .boarding-shortcuts { grid-template-columns: minmax(0, 1fr); gap: 10px; } }
 
@@ -2506,7 +2500,7 @@ input:focus-visible {
   .boarding-check-in .passenger-row { grid-template-columns: 32px minmax(0, 1fr) 18px; gap: 5px 10px; }
   .boarding-check-in .passenger-row .avatar { width: 32px; height: 32px; grid-row: 1 / 3; }
   .boarding-check-in .passenger-row .ticket-status { grid-column: 2; justify-self: start; }
-  .boarding-check-in .passenger-row > ion-icon { grid-column: 3; grid-row: 1 / 3; }
+  .boarding-check-in .passenger-row > .app-icon { grid-column: 3; grid-row: 1 / 3; }
   .boarding-check-in .status-tabs button { font-size: 11px; gap: 5px; }
   .ticket-lookup-modal { --width: calc(100vw - 24px); --max-height: calc(100dvh - 24px); }
   .ticket-lookup-modal .scanner-modal { padding: 24px 20px; max-height: calc(100dvh - 24px); }
@@ -2538,7 +2532,7 @@ input:focus-visible {
 .boarding-dashboard .boarding-shortcuts a { grid-template-columns: 36px minmax(0, 1fr) 18px; gap: 4px 12px; align-items: center; padding: 14px; background: var(--surface-soft); transition: border-color .15s, background .15s; }
 .boarding-dashboard .boarding-shortcuts a:hover { border-color: var(--ocean); background: var(--light-blue); }
 .boarding-dashboard .boarding-shortcuts a:focus-visible, .boarding-dashboard .activity-list:focus-visible { outline: 2px solid var(--ocean); outline-offset: 3px; }
-.boarding-dashboard .boarding-shortcuts ion-icon { font-size: 23px; grid-column: 1; grid-row: 1 / 3; }
+.boarding-dashboard .boarding-shortcuts .app-icon { font-size: 23px; grid-column: 1; grid-row: 1 / 3; }
 .boarding-dashboard .boarding-shortcuts strong { grid-column: 2; font-size: 14px; line-height: 1.4; }
 .boarding-dashboard .boarding-shortcuts span { grid-column: 2; font-size: 12px; line-height: 1.5; }
 .boarding-dashboard .boarding-shortcuts .shortcut-arrow { grid-column: 3; grid-row: 1 / 3; font-size: 17px; color: var(--muted); }

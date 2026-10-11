@@ -121,7 +121,7 @@
   color: var(--ocean);
   text-decoration: none;
 }
-:root body .design-workspace .sailing-link ion-icon {
+:root body .design-workspace .sailing-link .app-icon {
   font-size: 12px;
 }
 :root body .design-workspace .queue-item {
@@ -330,10 +330,10 @@
   background: var(--surface);
   border-color: var(--line);
 }
-:root body .design-workspace .menu-button ion-icon {
+:root body .design-workspace .menu-button .app-icon {
   color: var(--ink);
   font-size: 20px;
 }
-.reference-menu ion-icon {
+.reference-menu .app-icon {
   font-size: 20px;
 }

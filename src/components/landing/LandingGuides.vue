@@ -5,21 +5,21 @@
         <span class="section-eyebrow">MEET YOUR BARKOLINK GUIDES</span>
         <h2 id="landing-guides-heading">A friendly crew.<br />Every step of the way.</h2>
         <p>From choosing your crossing to getting ready at the terminal, meet the guides who make your journey easier.</p>
-        <RouterLink to="/help" class="landing-button pale">Explore the travel guide <IonIcon :icon="arrowForwardOutline" aria-hidden="true" /></RouterLink>
+        <RouterLink to="/help" class="landing-button pale">Explore the travel guide <AppIcon :icon="arrowForwardOutline" aria-hidden="true" /></RouterLink>
         <span class="guide-language">English, Tagalog, o Taglish—welcome aboard.</span>
       </div>
       <div class="guide-pair">
         <article class="guide-profile captain-profile">
           <div class="guide-portrait"><BarkoMascot class="guide-captain" /></div>
-          <div class="guide-role"><span class="role-icon"><IonIcon :icon="boatOutline" aria-hidden="true" /></span><h3>Captain</h3><p>Your sailing guide</p></div>
+          <div class="guide-role"><span class="role-icon"><AppIcon :icon="boatOutline" aria-hidden="true" /></span><h3>Captain</h3><p>Your sailing guide</p></div>
           <span class="role-description">Find routes, schedules, and your next crossing.</span>
-          <RouterLink to="/trips?all=1" class="role-action">Find a sailing <IonIcon :icon="arrowForwardOutline" aria-hidden="true" /></RouterLink>
+          <RouterLink to="/trips?all=1" class="role-action">Find a sailing <AppIcon :icon="arrowForwardOutline" aria-hidden="true" /></RouterLink>
         </article>
         <article class="guide-profile service-profile">
           <div class="guide-portrait"><BarkoMascot character="female" class="guide-captain guide-service" /></div>
-          <div class="guide-role"><span class="role-icon"><IonIcon :icon="ticketOutline" aria-hidden="true" /></span><h3>Passenger service</h3><p>Your booking & boarding guide</p></div>
+          <div class="guide-role"><span class="role-icon"><AppIcon :icon="ticketOutline" aria-hidden="true" /></span><h3>Passenger service</h3><p>Your booking & boarding guide</p></div>
           <span class="role-description">Get help with reservations, payment, and QR tickets.</span>
-          <RouterLink to="/help#reserve-sailing" class="role-action">Get booking help <IonIcon :icon="arrowForwardOutline" aria-hidden="true" /></RouterLink>
+          <RouterLink to="/help#reserve-sailing" class="role-action">Get booking help <AppIcon :icon="arrowForwardOutline" aria-hidden="true" /></RouterLink>
         </article>
       </div>
     </div>
@@ -27,7 +27,7 @@
 </template>
 <script setup lang="ts">
 import { RouterLink } from 'vue-router';
-import { IonIcon } from '@ionic/vue';
+import AppIcon from "@/components/ui/icon/AppIcon.vue";
 import { arrowForwardOutline, boatOutline, ticketOutline } from 'ionicons/icons';
 import BarkoMascot from '../shared/BarkoMascot.vue';
 </script>

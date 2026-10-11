@@ -15,12 +15,12 @@
           :to="link.to"
           @click="jump($event, link.to)"
           >{{ link.label }}
-          <ion-icon :icon="openOutline" aria-hidden="true"
+          <AppIcon :icon="openOutline" aria-hidden="true"
         /></router-link>
       </div>
     </div>
     <div class="welcome-art" aria-hidden="true">
-      <span class="welcome-sun"></span><ion-icon :icon="boatOutline" /><span
+      <span class="welcome-sun"></span><AppIcon :icon="boatOutline" /><span
         class="welcome-wave"
       ></span
       ><span class="welcome-wave second"></span>
@@ -28,7 +28,7 @@
   </section>
 </template>
 <script setup lang="ts">
-import { IonIcon } from "@ionic/vue";
+import AppIcon from "@/components/ui/icon/AppIcon.vue";
 import { openOutline, boatOutline } from "ionicons/icons";
 function jump(event: MouseEvent, to: string) {
   if (
@@ -142,7 +142,7 @@ withDefaults(
   height: 150px;
   color: #d5effa;
 }
-.welcome-art > ion-icon {
+.welcome-art > .app-icon {
   position: absolute;
   font-size: 96px;
   left: 35px;

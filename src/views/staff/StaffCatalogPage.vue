@@ -28,7 +28,7 @@
                   {{ descriptions[section] || "Your operational workspace." }}
                 </p>
               </div>
-              <Button variant="outline" :disabled="loading" @click="load"><IonIcon :icon="refreshOutline" aria-hidden="true" />{{ loading ? "Refreshing..." : "Refresh" }}</Button>
+              <Button variant="outline" :disabled="loading" @click="load"><AppIcon :icon="refreshOutline" aria-hidden="true" />{{ loading ? "Refreshing..." : "Refresh" }}</Button>
             </div>
             <StaffPortRequired v-if="portBlocked && section !== 'notifications'" />
             <template v-else>
@@ -47,8 +47,8 @@
                   load();
                 "
               >
-                <label v-if="section === 'passengers'" class="directory-search-label" for="staff-record-search"><IonIcon :icon="searchOutline" aria-hidden="true" /> Find a passenger</label>
-                <label v-if="section === 'trips'" class="directory-search-label" for="staff-record-search"><IonIcon :icon="searchOutline" aria-hidden="true" /> Find a sailing</label>
+                <label v-if="section === 'passengers'" class="directory-search-label" for="staff-record-search"><AppIcon :icon="searchOutline" aria-hidden="true" /> Find a passenger</label>
+                <label v-if="section === 'trips'" class="directory-search-label" for="staff-record-search"><AppIcon :icon="searchOutline" aria-hidden="true" /> Find a sailing</label>
                 <input
                   id="staff-record-search"
                   v-model.trim="search"
@@ -67,7 +67,7 @@
                   <option value="DELAYED">Delayed</option>
                   <option value="COMPLETED">Completed</option>
                   <option value="CANCELLED">Cancelled</option></select
-                ><Button type="submit" :disabled="loading"><IonIcon :icon="searchOutline" aria-hidden="true" /> Search</Button><Button v-if="(section === 'passengers' && search) || (section === 'trips' && (search || status))" type="button" variant="ghost" :disabled="loading" @click="search = ''; status = ''; page = 0; load()">{{ section === 'trips' ? 'Reset filters' : 'Clear search' }}</Button>
+                ><Button type="submit" :disabled="loading"><AppIcon :icon="searchOutline" aria-hidden="true" /> Search</Button><Button v-if="(section === 'passengers' && search) || (section === 'trips' && (search || status))" type="button" variant="ghost" :disabled="loading" @click="search = ''; status = ''; page = 0; load()">{{ section === 'trips' ? 'Reset filters' : 'Clear search' }}</Button>
                 <p v-if="section === 'trips'" class="directory-search-help">Departure times are in Philippine time. Seats reflect the latest loaded records.</p>
                 <p v-if="section === 'passengers'" class="directory-search-help">Search all passenger records. Column filters apply to the current page.</p>
               </form>
@@ -84,29 +84,29 @@
                       <tr v-if="loading"><td colspan="6" class="sailing-empty" role="status">Loading sailings…</td></tr>
                       <tr v-else-if="!trips.length"><td colspan="6" class="sailing-empty">{{ error ? 'Sailings unavailable. Use Refresh to try again.' : 'No sailings match your search or status filter.' }}</td></tr>
                       <tr v-for="trip in loading ? [] : trips" :key="trip.code">
-                        <td data-label="Route"><div class="sailing-route"><strong>{{ trip.origin.name }} <IonIcon :icon="arrowForwardOutline" aria-hidden="true" /> {{ trip.destination.name }}</strong><small>{{ trip.code }}</small></div></td>
+                        <td data-label="Route"><div class="sailing-route"><strong>{{ trip.origin.name }} <AppIcon :icon="arrowForwardOutline" aria-hidden="true" /> {{ trip.destination.name }}</strong><small>{{ trip.code }}</small></div></td>
                         <td data-label="Departure" class="sailing-departure">{{ date(trip.departureAt) }}</td>
                         <td data-label="Vessel">{{ trip.vessel.name }}</td>
                         <td data-label="Available seats"><div class="seat-availability"><span><strong>{{ trip.availableSeats }}</strong><small> / {{ trip.vessel.passengerCapacity }}</small></span><div class="seat-track" aria-hidden="true"><i :style="{ width: `${trip.vessel.passengerCapacity > 0 ? Math.max(0, Math.min(100, trip.availableSeats / trip.vessel.passengerCapacity * 100)) : 0}%` }"></i></div></div></td>
                         <td data-label="Status"><Badge class="sailing-badge" :class="trip.status.toLowerCase()" :variant="trip.status === 'CANCELLED' ? 'destructive' : ['DELAYED', 'BOARDING'].includes(trip.status) ? 'warning' : 'default'">{{ humanize(trip.status) }}</Badge></td>
-                        <td class="sailing-action"><router-link :to="{path: '/staff/boarding/manifest', query: {sailing: trip.code}}" :aria-label="`View passenger manifest for ${trip.code}`">Manifest <IonIcon :icon="arrowForwardOutline" aria-hidden="true" /></router-link></td>
+                        <td class="sailing-action"><router-link :to="{path: '/staff/boarding/manifest', query: {sailing: trip.code}}" :aria-label="`View passenger manifest for ${trip.code}`">Manifest <AppIcon :icon="arrowForwardOutline" aria-hidden="true" /></router-link></td>
                       </tr>
                     </tbody>
                   </table>
                 </div>
               </section>
               <section v-else-if="section === 'fares'" class="fare-reference" aria-label="Vessel fares" :aria-busy="loading">
-                <div class="fare-toolbar"><label for="fare-vessel-search"><IonIcon :icon="searchOutline" aria-hidden="true" /> Find a vessel</label><input id="fare-vessel-search" v-model.trim="fareSearch" type="search" placeholder="Search vessel name" /><button v-if="fareSearch" @click="fareSearch = ''">Clear</button><span>{{ filteredFares.length }} of {{ fares.length }} vessels</span></div>
+                <div class="fare-toolbar"><label for="fare-vessel-search"><AppIcon :icon="searchOutline" aria-hidden="true" /> Find a vessel</label><input id="fare-vessel-search" v-model.trim="fareSearch" type="search" placeholder="Search vessel name" /><button v-if="fareSearch" @click="fareSearch = ''">Clear</button><span>{{ filteredFares.length }} of {{ fares.length }} vessels</span></div>
                 <p class="fare-help">Regular fares are per passenger. Accommodation charges are added to the fare.</p>
                 <p v-if="loading" class="fare-empty" role="status">Loading vessel fares...</p>
                 <p v-else-if="!filteredFares.length" class="fare-empty" role="status">{{ error ? 'Fares unavailable. Use Refresh to try again.' : fareSearch ? 'No vessels match your search.' : 'No vessel fares available yet.' }}</p>
                 <article v-for="fare in filteredFares" v-else :key="fare.vesselName" class="vessel-fare">
-                  <div class="fare-vessel"><span class="fare-ship"><IonIcon :icon="boatOutline" aria-hidden="true" /></span><h2>{{ fare.vesselName }}</h2></div>
+                  <div class="fare-vessel"><span class="fare-ship"><AppIcon :icon="boatOutline" aria-hidden="true" /></span><h2>{{ fare.vesselName }}</h2></div>
                   <div class="base-fare"><small>Regular fare</small><strong>PHP {{ fare.regularFare.toLocaleString() }}</strong><span>per passenger</span></div>
                   <div class="fare-discounts"><h3>Passenger discounts</h3><div class="discount-list"><span v-for="discount in passengerDiscountsForSettings(fare)" :key="discount.id" class="fare-discount" :class="{ inactive: !discount.isActive }">{{ discount.name }} <b>{{ discount.percentage }}%</b><small v-if="!discount.isActive">Inactive</small></span></div><p v-if="!passengerDiscountsForSettings(fare).length">No discounts configured.</p></div>
                   <div class="fare-accommodations"><h3>Accommodation extra fare</h3><div v-for="accommodation in fare.accommodations" :key="accommodation.id" class="accommodation-charge"><span>{{ accommodation.name }}</span><b>{{ accommodation.surcharge === 0 ? 'Included' : `+ PHP ${accommodation.surcharge.toLocaleString()}` }}</b></div><span v-if="!fare.accommodations.length">Standard seating</span></div>
                 </article>
-                <p class="fare-help fare-footnote"><IonIcon :icon="informationCircleOutline" aria-hidden="true" /> Verify passenger eligibility before applying discounts. Final fares are calculated when booking.</p>
+                <p class="fare-help fare-footnote"><AppIcon :icon="informationCircleOutline" aria-hidden="true" /> Verify passenger eligibility before applying discounts. Final fares are calculated when booking.</p>
               </section>
               <div v-else class="catalog-table">
                 <RecordsGrid
@@ -170,7 +170,8 @@ import { passengerDiscountsForSettings } from "../../data/fareSettings";
 import { computed, ref, watch } from "vue";
 import { useRoute } from "vue-router";
 import { boatOutline, informationCircleOutline, searchOutline, refreshOutline, arrowForwardOutline } from "ionicons/icons";
-import { IonIcon, IonPage, IonContent, onIonViewWillEnter } from "@ionic/vue";
+import { IonPage, IonContent, onIonViewWillEnter } from "@ionic/vue";
+import AppIcon from "@/components/ui/icon/AppIcon.vue";
 import BrandMark from "../../components/shared/BrandMark.vue";
 import StaffNavigation from "../../components/staff/StaffNavigation.vue";
 import RecordsGrid from "../../components/shared/RecordsGrid.vue";
@@ -414,7 +415,7 @@ onIonViewWillEnter(load);
 .sailing-table tbody tr:hover td { background: var(--surface-soft); }
 .sailing-route { min-width: 180px; }
 .sailing-route strong { display: block; font-size: 13px; line-height: 1.6; }
-.sailing-route ion-icon { color: var(--ocean); font-size: 13px; vertical-align: middle; margin: 0 3px; }
+.sailing-route .app-icon { color: var(--ocean); font-size: 13px; vertical-align: middle; margin: 0 3px; }
 .sailing-route small { display: block; color: var(--muted); font-size: 11px; margin-top: 4px; }
 .sailing-departure { min-width: 145px; font-variant-numeric: tabular-nums; }
 .seat-availability { min-width: 85px; }
@@ -688,7 +689,7 @@ button {
 .passenger-directory .reference-heading button { display: inline-flex; gap: 7px; min-height: 44px; }
 .passenger-directory .reference-filters { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 8px 10px; padding: 14px; margin-bottom: 16px; }
 .directory-search-label { grid-column: 1 / -1; display: flex; align-items: center; gap: 7px; font-size: 12px; font-weight: 600; }
-.directory-search-label ion-icon { color: var(--ocean); }
+.directory-search-label .app-icon { color: var(--ocean); }
 .passenger-directory .reference-filters input { width: 100%; min-height: 44px; padding: 10px 12px; background: var(--surface-soft); }
 .passenger-directory .reference-filters button { min-height: 44px; display: inline-flex; gap: 7px; }
 .directory-search-help { grid-column: 1 / -1; margin: 0; color: var(--muted); font-size: 11px; line-height: 1.6; }
@@ -730,7 +731,7 @@ button {
 .fare-reference { min-width: 0; }
 .fare-toolbar { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; padding: 12px 14px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; }
 .fare-toolbar label { display: flex; align-items: center; gap: 7px; font-size: 12px; font-weight: 600; }
-.fare-toolbar label ion-icon { color: var(--ocean); }
+.fare-toolbar label .app-icon { color: var(--ocean); }
 .fare-toolbar input { flex: 1; min-width: 140px; min-height: 44px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 9px; background: var(--surface-soft); color: var(--ink); font: inherit; font-size: 12px; }
 .fare-toolbar > span { color: var(--muted); font-size: 11px; }
 .fare-toolbar button { min-height: 44px; }
@@ -743,7 +744,7 @@ button {
 .vessel-fare h3 { margin: 0 0 8px; font-size: 11px; color: var(--muted); font-weight: 500; }
 .discount-list { display: flex; flex-wrap: wrap; gap: 5px; }.fare-discount { display: inline-flex; gap: 5px; align-items: center; flex-wrap: wrap; border: 1px solid var(--line); border-radius: 6px; padding: 4px 6px; font-size: 10px; background: var(--surface-soft); }.fare-discount b { color: var(--ocean); }.fare-discount.inactive { color: var(--muted); border-style: dashed; }.fare-discount small { font-size: 9px; }
 .accommodation-charge { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 5px; margin-top: 6px; font-size: 11px; line-height: 1.5; }.accommodation-charge b { font-weight: 600; color: var(--ocean); }.fare-accommodations > span,.fare-discounts p { font-size: 11px; color: var(--muted); }
-.fare-footnote { display: flex; align-items: flex-start; gap: 7px; }.fare-footnote ion-icon { flex: none; margin-top: 2px; color: var(--ocean); }
+.fare-footnote { display: flex; align-items: flex-start; gap: 7px; }.fare-footnote .app-icon { flex: none; margin-top: 2px; color: var(--ocean); }
 .fare-empty { padding: 24px; text-align: center; border: 1px dashed var(--line); border-radius: 12px; color: var(--muted); font-size: 12px; }
 @media(max-width:1200px) { .vessel-fare { grid-template-columns: minmax(0, 1fr) 130px; }.fare-discounts { grid-column: 1; }.fare-accommodations { grid-column: 2; } }
 @media(max-width:800px) { .fare-directory .reference-content { padding: 20px 16px 28px; } }

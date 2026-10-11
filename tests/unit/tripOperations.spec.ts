@@ -2,13 +2,13 @@ import { flushPromises, mount } from '@vue/test-utils';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import TripOperationsPanel from '../../src/components/admin/TripOperationsPanel.vue';
 
-const mocks = vi.hoisted(() => ({ list: vi.fn(), operations: vi.fn(), reconcile: vi.fn(), confirm: vi.fn() }));
+const mocks = vi.hoisted(() => ({ list: vi.fn(), operations: vi.fn(), reconcile: vi.fn(), confirm: vi.fn(), reason: vi.fn(), update: vi.fn() }));
 vi.mock('vue-router', () => ({ useRoute: () => ({ query: { sailing: 'TRP1' } }), useRouter: () => ({ replace: vi.fn() }) }));
 vi.mock('@ionic/vue', () => ({ IonIcon: { template: '<span />' } }));
 vi.mock('../../src/services/session', () => ({ staffDatabase: {} }));
-vi.mock('../../src/services/database/staff', () => ({ adminSailings: mocks.list }));
+vi.mock('../../src/services/database/staff', () => ({ adminSailings: mocks.list, adminUpdateSailingStatus: mocks.update }));
 vi.mock('../../src/services/database/experience', () => ({ tripOperations: mocks.operations, reconcileNoShows: mocks.reconcile }));
-vi.mock('../../src/composables/confirmation', () => ({ confirmAction: mocks.confirm }));
+vi.mock('../../src/composables/confirmation', () => ({ confirmAction: mocks.confirm, requestReason: mocks.reason }));
 
 const sailing = { code: 'TRP1', departureAt: '2020-01-01T08:00:00Z', arrivalAt: '2020-01-01T09:00:00Z', status: 'COMPLETED', availableSeats: 97, origin: { name: 'Batangas' }, destination: { name: 'Calapan' }, vessel: { name: 'Ferry', passengerCapacity: 100 } };
 const passenger = (id: string, ticketStatus: string, paymentStatus = 'PAID') => ({ id, fullName: `Passenger ${id}`, passengerType: 'REGULAR', ticketStatus, checkedInAt: ticketStatus === 'CHECKED_IN' ? sailing.departureAt : null, boardedAt: null, noShow: false, booking: { reference: `BOOK${id}`, status: 'CONFIRMED', paymentStatus } });
@@ -22,6 +22,8 @@ beforeEach(() => {
   mocks.list.mockResolvedValue({ data: { sailings: [sailing], totalCount: 1 } });
   mocks.operations.mockResolvedValue({ data });
   mocks.confirm.mockResolvedValue(true);
+  mocks.reason.mockResolvedValue('Weather disruption');
+  mocks.update.mockResolvedValue({data:{}});
   mocks.reconcile.mockResolvedValue({ data: { marked: 2 } });
 });
 describe('sailing workspace', () => {
@@ -67,4 +69,26 @@ describe('sailing workspace', () => {
     expect(wrapper.find('.activity').text()).toContain('Audit action: INSERT');
     wrapper.unmount();
   });
+  it('shows manual Delay and Cancel actions for a boarding trip and reloads after delay', async () => {
+    mocks.operations.mockResolvedValueOnce({data:{...data,sailing:{...sailing,status:'BOARDING'}}}).mockResolvedValue({data:{...data,sailing:{...sailing,status:'DELAYED'}}});
+    const wrapper=mountPanel();await flushPromises();
+    expect(wrapper.find('.sailing-status-controls').text()).toContain('Mark Delayed');
+    await wrapper.find('.status-actions button').trigger('click');await flushPromises();
+    expect(mocks.update).toHaveBeenCalledWith({}, {code:'TRP1',status:'DELAYED',reason:undefined});
+    expect(wrapper.find('.status-actions').text()).toContain('Update schedule to resume');
+    expect(wrapper.find('.status-actions').text()).not.toContain('Mark Delayed');
+    wrapper.unmount();
+  });
+  it('requires a cancellation reason and confirmation and preserves terminal trip controls', async () => {
+    mocks.operations.mockResolvedValueOnce({data:{...data,sailing:{...sailing,status:'SCHEDULED'}}}).mockResolvedValue({data:{...data,sailing:{...sailing,status:'CANCELLED'}}});
+    const wrapper=mountPanel();await flushPromises();
+    mocks.reason.mockResolvedValueOnce(null);
+    await wrapper.find('.cancel-trip').trigger('click');await flushPromises();expect(mocks.update).not.toHaveBeenCalled();
+    await wrapper.find('.cancel-trip').trigger('click');await flushPromises();
+    expect(mocks.update).toHaveBeenCalledWith({}, {code:'TRP1',status:'CANCELLED',reason:'Weather disruption'});
+    expect(wrapper.find('.status-actions').exists()).toBe(false);
+    expect(wrapper.find('[role="status"]').text()).toContain('refunds');
+    wrapper.unmount();
+  });
+
 });

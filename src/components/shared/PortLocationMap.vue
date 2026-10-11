@@ -21,14 +21,14 @@
     <p v-if="selected && !portCoordinates(selected) && locatedPorts.length" class="map-status" role="status">{{ selected.name }} has no verified map location yet. Use Get directions to search for this port.</p>
     <div v-if="selected" class="map-footer">
       <span><strong>{{ selected.name }}</strong><small>{{ [selected.city, selected.region].filter(Boolean).join(', ') }}</small></span>
-      <a :href="directionsUrl" target="_blank" rel="noopener noreferrer">Get directions <ion-icon :icon="openOutline" aria-hidden="true" /></a>
+      <a :href="directionsUrl" target="_blank" rel="noopener noreferrer">Get directions <AppIcon :icon="openOutline" aria-hidden="true" /></a>
     </div>
     <p class="map-note">{{ admin ? 'Markers show verified port-area references. Directions can search for ports without a map marker.' : 'Markers show port areas. Confirm your exact boarding terminal in your booking.' }}<template v-if="journey"> The dashed line connects ports for reference; it is not the vessel’s sailing path.</template></p>
   </section>
 </template>
 <script setup lang="ts">
 import { computed, ref, watch, onBeforeUnmount } from 'vue';
-import { IonIcon } from '@ionic/vue';
+import AppIcon from "@/components/ui/icon/AppIcon.vue";
 import { openOutline } from 'ionicons/icons';
 import type { Map, LayerGroup, Marker, TileLayer } from 'leaflet';
 import 'leaflet/dist/leaflet.css';

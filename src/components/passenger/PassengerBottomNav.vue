@@ -24,12 +24,13 @@
           : undefined
       "
       @click="navigateTab($event, item.to)"
-      ><ion-icon :icon="item.icon" /><span>{{ item.label }}</span></a
+      ><AppIcon :icon="item.icon" /><span>{{ item.label }}</span></a
     >
   </nav>
 </template>
 <script setup lang="ts">
-import { IonIcon, useIonRouter } from "@ionic/vue";
+import { useIonRouter } from "@ionic/vue";
+import AppIcon from "@/components/ui/icon/AppIcon.vue";
 import { computed } from "vue";
 import { useRoute } from "vue-router";
 import { auth } from "../../services/session";
@@ -91,16 +92,17 @@ function navigateTab(event: MouseEvent, path: string) {
   font-weight: 700;
   white-space: nowrap;
 }
-.bottom-nav ion-icon {
+.bottom-nav .app-icon {
   font-size: 20px;
+  width: 28px;
+  height: 28px;
+  padding: 4px;
+  border-radius: 8px;
 }
 .bottom-nav a.active {
   color: var(--ocean);
 }
-.bottom-nav a.active ion-icon {
+.bottom-nav a.active .app-icon {
   background: var(--light-blue);
-  padding: 4px;
-  border-radius: 8px;
-  font-size: 19px;
 }
 </style>

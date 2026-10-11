@@ -13,8 +13,8 @@
         <PortForecast id="weather-outlook" tabindex="-1" :port-id="weatherPortId" />
         <section class="section-block upcoming-block" aria-labelledby="upcoming-heading">
           <div class="section-heading">
-            <h2 id="upcoming-heading"><ion-icon :icon="boatOutline" aria-hidden="true" /> Upcoming trip</h2>
-            <router-link to="/bookings">See all <ion-icon :icon="ticketOutline" aria-hidden="true" /></router-link>
+            <h2 id="upcoming-heading"><AppIcon :icon="boatOutline" aria-hidden="true" /> Upcoming trip</h2>
+            <router-link to="/bookings">See all <AppIcon :icon="ticketOutline" aria-hidden="true" /></router-link>
           </div>
           <div v-if="loading" class="upcoming-empty" role="status">Loading your upcoming trip...</div>
           <article v-else-if="journey" class="upcoming-card">
@@ -25,7 +25,7 @@
               </div>
               <div class="upcoming-route">
                 <div><strong>{{ journey.from }}</strong><span>{{ journey.departure }} <small>Departure</small></span></div>
-                <ion-icon :icon="arrowForwardOutline" aria-label="to" />
+                <AppIcon :icon="arrowForwardOutline" aria-label="to" />
                 <div class="align-right"><strong>{{ journey.to }}</strong><span>{{ journey.arrival }} <small>Arrival</small></span></div>
               </div>
             </div>
@@ -40,20 +40,20 @@
             </div>
           </article>
           <article v-else-if="!loadError" class="upcoming-empty">
-            <span class="empty-icon"><ion-icon :icon="boatOutline" aria-hidden="true" /></span>
+            <span class="empty-icon"><AppIcon :icon="boatOutline" aria-hidden="true" /></span>
             <div><strong>Your next journey starts here</strong><p>Search a sailing above. Your active reservation will appear here.</p></div>
           </article>
         </section>
         <LoyaltyRewards id="loyalty-rewards" tabindex="-1" :active="boardActive" />
         <section class="section-block quick-block" aria-labelledby="quick-heading">
-          <div class="section-heading"><h2 id="quick-heading"><ion-icon :icon="sparklesOutline" aria-hidden="true" /> Travel essentials</h2></div>
+          <div class="section-heading"><h2 id="quick-heading"><AppIcon :icon="sparklesOutline" aria-hidden="true" /> Travel essentials</h2></div>
           <div class="essentials-grid">
             <router-link to="/travelers" class="travelers-shortcut"><span class="quick-icon"><UsersRound :size="20" aria-hidden="true" /></span><span><strong>Saved travelers</strong><small>Save details for faster booking</small></span><ChevronRight :size="16" class="shortcut-arrow" aria-hidden="true" /></router-link>
             <router-link to="/help" class="guide-shortcut"><span class="quick-icon"><LifeBuoy :size="20" aria-hidden="true" /></span><span><strong>Travel guide</strong><small>Payment & boarding help</small></span><ChevronRight :size="16" class="shortcut-arrow" aria-hidden="true" /></router-link>
           </div>
         </section>
         <section v-if="recentSearches.length" class="section-block recent-block" aria-labelledby="recent-heading">
-          <div class="section-heading"><h2 id="recent-heading"><ion-icon :icon="timeOutline" aria-hidden="true" /> Recent searches</h2></div>
+          <div class="section-heading"><h2 id="recent-heading"><AppIcon :icon="timeOutline" aria-hidden="true" /> Recent searches</h2></div>
           <div class="recent-list">
             <article v-for="item in recentSearches" :key="`${item.from}-${item.to}-${item.date}-${item.passengers}`">
               <span class="recent-icon"><Search :size="16" aria-hidden="true" /></span>
@@ -73,15 +73,8 @@
 import { databaseRequestError } from "../../data/databaseErrors";
 import { computed, ref, watch } from "vue";
 import { useSectionNavigation } from '../../composables/useSectionNavigation';
-import {
-  IonButton,
-  IonContent,
-  IonIcon,
-  IonPage,
-  onIonViewWillEnter,
-  onIonViewDidLeave,
-  useIonRouter,
-} from "@ionic/vue";
+import { IonButton, IonContent, IonPage, onIonViewWillEnter, onIonViewDidLeave, useIonRouter } from "@ionic/vue";
+import AppIcon from "@/components/ui/icon/AppIcon.vue";
 import { myBookings, myProfile, browseSailings, type MyBookingsData, type BrowseSailingsData } from "../../services/database/passenger";
 import { UsersRound, LifeBuoy, ChevronRight, Search, CalendarDays, ArrowRight, ArrowUpRight } from '@lucide/vue';
 import { frequentRoutes, type FrequentRoute } from '../../data/frequentRoutes';
@@ -282,7 +275,7 @@ onIonViewDidLeave(() => { boardActive.value = false; });
 .section-block { margin-top: 26px; }
 .section-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
 .section-heading h2 { display: flex; align-items: center; gap: 8px; margin: 0; font-size: 14px; font-weight: 650; line-height: 1.5; }
-.section-heading h2 ion-icon { color: var(--ocean); font-size: 17px; flex: none; }
+.section-heading h2 .app-icon { color: var(--ocean); font-size: 17px; flex: none; }
 .section-heading a { display: inline-flex; align-items: center; gap: 5px; min-height: 32px; color: var(--ocean); text-decoration: none; font-size: 12px; font-weight: 600; white-space: nowrap; }
 .upcoming-card { overflow: hidden; border: 1px solid var(--line); border-radius: 15px; background: var(--surface); box-shadow: 0 2px 6px #102b4c06; }
 .journey-banner { padding: 18px; background: linear-gradient(115deg, #102c4d, #166bc0); color: #fff; }
@@ -295,14 +288,14 @@ onIonViewDidLeave(() => { boardActive.value = false; });
 .upcoming-route strong { display: block; font-size: 23px; line-height: 1.25; letter-spacing: -.5px; overflow-wrap: anywhere; }
 .upcoming-route span { display: block; margin-top: 6px; font-size: 13px; color: #e1efff; }
 .upcoming-route small { display: block; margin-top: 4px; color: #bdd8f6; font-size: 10px; }
-.upcoming-route > ion-icon { font-size: 22px; color: #c6e0fa; }
+.upcoming-route > .app-icon { font-size: 22px; color: #c6e0fa; }
 .align-right { text-align: right; }
 .journey-footer { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 16px; }
 .journey-copy { min-width: 0; }
 .journey-copy > strong { display: block; font-size: 13px; line-height: 1.6; overflow-wrap: anywhere; }
 .journey-copy p { margin: 3px 0 0; font-size: 11px; line-height: 1.6; color: var(--muted); }
 .journey-copy small { display: block; margin-top: 6px; color: var(--muted); font-size: 11px; line-height: 1.6; }
-.journey-footer ion-button { flex: none; margin: 0; min-height: 44px; --border-radius: 9px; --background: var(--action); --color: #fff; --box-shadow: none; font-size: 11px; font-weight: 650; text-transform: none; }
+.journey-footer ion-button { flex: none; margin: 0; min-height: 44px; --border-radius: var(--button-radius); --background: var(--action); --color: #fff; --box-shadow: none; font-size: 11px; font-weight: 650; text-transform: none; }
 .upcoming-empty { display: flex; align-items: center; gap: 14px; min-height: 110px; padding: 18px; border: 1px dashed var(--line); border-radius: 14px; background: var(--surface); color: var(--muted); font-size: 13px; }
 .upcoming-empty strong { color: var(--ink); font-size: 13px; }
 .upcoming-empty p { margin: 6px 0 0; color: var(--muted); font-size: 12px; line-height: 1.7; }
@@ -319,8 +312,8 @@ onIonViewDidLeave(() => { boardActive.value = false; });
 @media(prefers-reduced-motion:reduce) { .essentials-grid a { transition:none; } }
 .home-advisories { margin: 26px 0 0; }
 .home-advisories :deep(article) { border-radius: 13px; border-left-width: 1px; }
-.home-advisories :deep(article > ion-icon) { box-sizing: content-box; padding: 9px; border-radius: 10px; background: var(--light-blue); font-size: 18px; }
-.home-advisories :deep(.high > ion-icon) { background: #fff0d4; color: #986009; }
+.home-advisories :deep(article > .app-icon) { box-sizing: content-box; padding: 9px; border-radius: 10px; background: var(--light-blue); font-size: 18px; }
+.home-advisories :deep(.high > .app-icon) { background: #fff0d4; color: #986009; }
 .home-advisories :deep(h3) { font-size: 13px; font-weight: 600; }
 .home-advisories :deep(article p) { font-size: 12px; }
 .home-error { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 12px; margin-bottom: 18px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); color: var(--danger); font-size: 12px; line-height: 1.6; }
@@ -340,7 +333,7 @@ a:focus-visible, button:focus-visible { outline: 2px solid var(--ocean); outline
   .journey-footer { flex-wrap: wrap; gap: 12px; }
   .journey-footer ion-button { width: 100%; }
   .essentials-grid a { align-items: flex-start; gap: 8px; padding: 12px 10px; }
-  .essentials-grid a > ion-icon { display: none; }
+  .essentials-grid a > .app-icon { display: none; }
   .quick-icon { width: 34px; height: 34px; font-size: 17px; }
   .recent-list article { flex-wrap: wrap; }
 }

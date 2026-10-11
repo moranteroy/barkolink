@@ -102,6 +102,12 @@ ion-content {
   --muted: hsl(220 13% 46%);
   --line: hsl(220 16% 91%);
   --action: hsl(210 80% 42%);
+  --button-radius: 10px;
+  --button-height: 44px;
+  --button-height-lg: 48px;
+  --button-font-size: 12px;
+  --button-font-weight: 600;
+  --button-icon-size: 16px;
   --teal: #137c88;
   --glass-background: var(--surface);
   --glass-border: var(--line);

@@ -1,7 +1,7 @@
 do $$ begin
   if exists(select 1 from public.booking b where b.passenger_count<>(select count(*) from public.booking_passenger p where p.booking_id=b.id)
     or b.passenger_fare_total<>(select sum(p.fare)+b.accommodation_surcharge*b.passenger_count from public.booking_passenger p where p.booking_id=b.id)
-    or b.total<>b.passenger_fare_total+b.service_fee) then raise exception 'Booking totals or passenger counts are inconsistent'; end if;
+    or b.total<>b.passenger_fare_total+b.service_fee-b.voucher_discount) then raise exception 'Booking totals or passenger counts are inconsistent'; end if;
   if exists(select 1 from public.sailing s join public.vessel v on v.id=s.vessel_id
     where s.available_seats<>v.passenger_capacity-coalesce((select sum(b.passenger_count) from public.booking b where b.sailing_code=s.code and b.status in ('PENDING','CONFIRMED')),0)) then raise exception 'Seat counts are inconsistent'; end if;
   if exists(select 1 from public.accommodation a join public.vessel v on v.id=a.vessel_id where a.is_active

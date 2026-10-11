@@ -74,7 +74,7 @@
           <p v-if="loading">Loading travelers…</p>
           <p v-else-if="!items.length">No saved travelers yet.</p>
           <article v-for="person in items" :key="person.id">
-            <ion-icon :icon="personOutline" aria-hidden="true" />
+            <AppIcon :icon="personOutline" aria-hidden="true" />
             <div>
               <strong>{{ person.fullName }}</strong
               ><small>{{ person.nationality }} · {{ person.phone }}</small>
@@ -90,7 +90,8 @@
 <script setup lang="ts">
 import { confirmAction } from "../../composables/confirmation";
 import { onMounted, reactive, ref } from "vue";
-import { IonPage, IonContent, IonIcon, onIonViewWillEnter } from "@ionic/vue";
+import { IonPage, IonContent, onIonViewWillEnter } from "@ionic/vue";
+import AppIcon from "@/components/ui/icon/AppIcon.vue";
 import { personOutline } from "ionicons/icons";
 import PassengerHeader from "../../components/passenger/PassengerHeader.vue";
 import PassengerBottomNav from "../../components/passenger/PassengerBottomNav.vue";
@@ -274,7 +275,7 @@ button:disabled {
   border: 1px solid var(--line);
   border-radius: 13px;
 }
-.traveler-list ion-icon {
+.traveler-list .app-icon {
   font-size: 24px;
   color: var(--ocean);
 }

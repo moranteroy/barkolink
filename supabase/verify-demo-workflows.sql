@@ -6,7 +6,7 @@ declare actor text; role_name text; operation_name text; result jsonb; row recor
   args jsonb:=jsonb_build_object('sailingCode','TRP2026-1006001','code','TRP2026-1006001','offset',0,'pageSize',30,
     'audience','ALL','startAt',now()-interval '8 months','endAt',now()+interval '5 days');
 begin
-  -- Temporary assignments are rolled back with the test operations.
+  -- This script must be rolled back, including these temporary test assignments.
   update public.app_user set assigned_port_id=(select origin_port_id from public.sailing where code='TRP2026-1006001') where role in ('TICKETING','BOARDING');
   for row in select * from (values
     ('ADMIN','AdminOverview'),('ADMIN','AdminSailings'),('ADMIN','AdminSailingOptions'),('ADMIN','AdminUsers'),

@@ -43,10 +43,10 @@ describe('route directory and modal', () => {
     await wrapper.find('#new-route-code').setValue('BTG-CAL-NEW');
     await wrapper.find('#new-route-origin').setValue('btg');
     await wrapper.find('#new-route-destination').setValue('cal');
-    await wrapper.find('#new-route-duration').setValue('95');
+    await wrapper.find('#new-route-duration').setValue('1:30');
     await wrapper.find('.route-form').trigger('submit');
     await flushPromises();
-    expect(mocks.save).toHaveBeenCalledWith({}, expect.objectContaining({ code: 'BTG-CAL-NEW', originPortId: 'btg', destinationPortId: 'cal', durationMinutes: 95 }));
+    expect(mocks.save).toHaveBeenCalledWith({}, expect.objectContaining({ code: 'BTG-CAL-NEW', originPortId: 'btg', destinationPortId: 'cal', durationMinutes: 90 }));
     expect(wrapper.find('[role="dialog"]').exists()).toBe(false);
     wrapper.unmount();
   });

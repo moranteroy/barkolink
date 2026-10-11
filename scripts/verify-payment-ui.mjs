@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import assert from 'node:assert/strict';
 import { chromium } from 'playwright-core';
 
-const base = 'http://localhost:8100';
+const base = process.env.BARKOLINK_UI_URL || 'http://127.0.0.1:8110';
 const project = fs.readFileSync('.env.local','utf8').match(/^VITE_SUPABASE_URL\s*=\s*(.+)$/m)[1].trim().replace(/^['"]|['"]$/g,'');
 const id = '11111111-1111-4111-8111-111111111111';
 const user = { id, email:'ui@example.invalid', app_metadata:{role:'PASSENGER'}, user_metadata:{fullName:'UI Passenger'}, aud:'authenticated',created_at:'2026-01-01T00:00:00Z' };
@@ -10,6 +10,16 @@ const exp = Math.floor(Date.now()/1000)+3600, encode = value => Buffer.from(JSON
 const session = {access_token:`${encode({alg:'HS256',typ:'JWT'})}.${encode({sub:id,exp,role:'authenticated',app_metadata:{role:'PASSENGER'}})}.fixture`,refresh_token:'ui-fixture',token_type:'bearer',expires_at:exp,expires_in:3600,user};
 const sailing = {code:'UI-TRIP',departureAt:'2099-10-08T04:16:00Z',arrivalAt:'2099-10-08T06:16:00Z',origin:{name:'Batangas Port'},destination:{name:'Calapan Port'},vessel:{name:'MV Isla Verde'}};
 const fixtures = ['BL-2026-1DDAD5E7','BL-2026-SECOND','BL-2026-UNPAID'].map((reference,index)=>({id:`11111111-1111-4111-8111-11111111111${index}`,reference,sailing,total:700,passengerCount:1,status:index===2?'PENDING':'CONFIRMED',paymentStatus:index===2?'UNPAID':'PAID',paymentMethod:index===2?null:'PAYMONGO_TEST',paymentDeadline:new Date(Date.now()+3600000).toISOString(),accommodationName:'Premium',serviceFee:100,createdAt:new Date().toISOString(),bookingPassengers_on_booking:[{id,fullName:'Maria Santos',passengerType:'REGULAR',fare:600,ticketStatus:index===2?'PENDING':'ISSUED',ticketCode:id}]}));
+for (const booking of fixtures) {
+  for (const passenger of booking.bookingPassengers_on_booking) {
+    passenger.ticketQrPayload = JSON.stringify({
+      BarkoLink: 'Ticket v2', Name: passenger.fullName,
+      Date: '2099-10-08 12:16 Philippine time', Vessel: sailing.vessel.name,
+      Route: 'Batangas Port to Calapan Port', Booking: booking.reference,
+      Ticket: passenger.ticketCode, Verification: 'a'.repeat(64),
+    });
+  }
+}
 const browser = await chromium.launch({channel:'msedge',headless:true});
 fs.mkdirSync('.audit/payment-ui',{recursive:true});
 try {

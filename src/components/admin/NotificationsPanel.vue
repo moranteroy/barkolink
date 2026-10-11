@@ -11,7 +11,7 @@
     </div>
     <p v-if="error" class="catalog-error" role="alert">{{ error }}</p>
     <p v-if="notice" role="status">{{ notice }}</p>
-<IonModal :is-open="editing" :can-dismiss="canDismiss" class="communication-modal broadcast-modal" @didDismiss="dismiss"><section class="communication-dialog broadcast-dialog"><header class="communication-dialog-heading"><div><p class="eyebrow">IN-APP BROADCAST</p><h2>New notification</h2><p>Choose an audience and review before sending.</p></div><button type="button" aria-label="Close notification" :disabled="busy" @click="close"><IonIcon :icon="closeOutline" /></button></header>    <form class="communication-form" @submit.prevent="send">
+<IonModal :is-open="editing" :can-dismiss="canDismiss" class="communication-modal broadcast-modal" @didDismiss="dismiss"><section class="communication-dialog broadcast-dialog"><header class="communication-dialog-heading"><div><p class="eyebrow">IN-APP BROADCAST</p><h2>New notification</h2><p>Choose an audience and review before sending.</p></div><button type="button" aria-label="Close notification" :disabled="busy" @click="close"><AppIcon :icon="closeOutline" /></button></header>    <form class="communication-form" @submit.prevent="send">
       <div class="communication-scroll"><fieldset :disabled="busy" class="communication-fields">
       <p v-if="formError" role="alert" class="catalog-error full-field">{{ formError }}</p><p v-if="formNotice" role="status" class="full-field">{{ formNotice }}</p>
       <label
@@ -64,7 +64,8 @@
 </template>
 <script setup lang="ts">
 import WorkspacePagination from "../shared/WorkspacePagination.vue";
-import { IonModal, IonIcon } from "@ionic/vue";
+import { IonModal } from "@ionic/vue";
+import AppIcon from "@/components/ui/icon/AppIcon.vue";
 import { closeOutline } from "ionicons/icons";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";

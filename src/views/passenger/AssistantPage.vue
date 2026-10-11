@@ -6,9 +6,9 @@
       <BarkoMascot class="intro-mascot" />
       <div class="intro-details"><p class="eyebrow">YOUR BARKOLINK GUIDE</p><h1>Ahoy! How can I help?</h1>
       <p class="intro-copy">Ask about sailings, bookings, or boarding.<br />English, Tagalog, o Taglish—puwede lahat.</p>
-      <span class="data-badge"><ion-icon :icon="shieldCheckmarkOutline" aria-hidden="true" /> Answers backed by your trip details</span></div>
+      <span class="data-badge"><AppIcon :icon="shieldCheckmarkOutline" aria-hidden="true" /> Answers backed by your trip details</span></div>
     </section>
-    <div v-if="!turns.length" class="suggestions" aria-label="Suggested questions"><button v-for="(question,index) in suggestions" :key="question" :disabled="busy" @click="send(question)"><ion-icon :icon="suggestionIcons[index]" aria-hidden="true" /><span><strong>{{ suggestionLabels[index] }}</strong><small>{{ question }}</small></span><ion-icon class="suggestion-arrow" :icon="arrowForwardOutline" aria-hidden="true" /></button></div>
+    <div v-if="!turns.length" class="suggestions" aria-label="Suggested questions"><button v-for="(question,index) in suggestions" :key="question" :disabled="busy" @click="send(question)"><AppIcon :icon="suggestionIcons[index]" aria-hidden="true" /><span><strong>{{ suggestionLabels[index] }}</strong><small>{{ question }}</small></span><AppIcon class="suggestion-arrow" :icon="arrowForwardOutline" aria-hidden="true" /></button></div>
     <div v-if="turns.length" class="conversation-heading"><h2>Your conversation</h2><span>Ask a follow-up anytime</span></div>
     <section ref="conversation" class="conversation" aria-label="Chat conversation" role="log" aria-live="polite" :aria-busy="busy">
       <article v-for="(turn,index) in turns" :key="index" class="chat-turn" :class="turn.role">
@@ -23,19 +23,20 @@
           <div v-for="(record,recordIndex) in source.records" :key="recordIndex" class="source-record"><dl><template v-for="(value,key) in record" :key="key"><template v-if="value!==null && value!==undefined"><dt>{{ fieldLabel(String(key)) }}</dt><dd>{{ fieldValue(String(key),value) }}</dd></template></template></dl></div>
           <p v-if="!source.records.length && source.topic!=='get_help'" class="empty-source">{{ source.topic==='get_sailings' ? 'No sailings matched this search. Try another date or route.' : 'No matching records found.' }}</p>
         </details>
-        <div v-if="turn.reply?.links.length" class="answer-links"><template v-for="link in turn.reply.links" :key="`${link.path}-${link.label}`"><router-link v-if="assistantPath(link.path)" :to="assistantDestination(link)">{{ link.label }} <ion-icon :icon="arrowForwardOutline" aria-hidden="true" /></router-link></template></div>
+        <div v-if="turn.reply?.links.length" class="answer-links"><template v-for="link in turn.reply.links" :key="`${link.path}-${link.label}`"><router-link v-if="assistantPath(link.path)" :to="assistantDestination(link)">{{ link.label }} <AppIcon :icon="arrowForwardOutline" aria-hidden="true" /></router-link></template></div>
       </article>
       <div v-if="busy" class="chat-status" role="status"><BarkoMascot portrait /><div><strong>Checking your trip details</strong><span>Sandali lang, tinitingnan ko…</span></div><span class="typing-dots" aria-hidden="true"><i></i><i></i><i></i></span></div>
     </section>
     <p v-if="error" class="chat-error" role="alert">{{ error }}</p>
-    <form class="composer" @submit.prevent="send()"><div class="composer-heading"><label for="chat-question">{{ turns.length ? 'Ask a follow-up / Tanong pa' : 'Your question / Tanong mo' }}</label><span>{{ question.length }}/1200</span></div><textarea id="chat-question" v-model="question" :disabled="busy" maxlength="1200" rows="2" placeholder="Hal. May biyahe ba bukas to Calapan?" @keydown.enter.exact="onEnter"></textarea><div class="composer-actions"><small class="keyboard-hint">Enter to send<br />Shift+Enter for a new line</small><button :disabled="busy || !question.trim()" type="submit"><span>{{ busy?'Checking…':'Send question' }}</span><ion-icon :icon="sendOutline" aria-hidden="true" /></button></div></form>
-    <details class="data-notice"><summary><ion-icon :icon="informationCircleOutline" aria-hidden="true" /> About your data</summary><p>Your question and relevant trip or booking details are sent to Cloudflare AI to prepare a response. Avoid sharing passwords, ID numbers, or payment details.</p></details>
+    <form class="composer" @submit.prevent="send()"><div class="composer-heading"><label for="chat-question">{{ turns.length ? 'Ask a follow-up / Tanong pa' : 'Your question / Tanong mo' }}</label><span>{{ question.length }}/1200</span></div><textarea id="chat-question" v-model="question" :disabled="busy" maxlength="1200" rows="2" placeholder="Hal. May biyahe ba bukas to Calapan?" @keydown.enter.exact="onEnter"></textarea><div class="composer-actions"><small class="keyboard-hint">Enter to send<br />Shift+Enter for a new line</small><button data-slot="button" data-variant="default" data-size="default" :disabled="busy || !question.trim()" type="submit"><span>{{ busy?'Checking…':'Send question' }}</span><AppIcon :icon="sendOutline" aria-hidden="true" /></button></div></form>
+    <details class="data-notice"><summary><AppIcon :icon="informationCircleOutline" aria-hidden="true" /> About your data</summary><p>Your question and relevant trip or booking details are sent to Cloudflare AI to prepare a response. Avoid sharing passwords, ID numbers, or payment details.</p></details>
     <p class="assistant-note">AI responses may contain mistakes. Check the verified details below each answer and confirm important travel information with your operator.</p>
   </main><PassengerBottomNav /></ion-content></ion-page>
 </template>
 <script setup lang="ts">
 import { ref, nextTick } from 'vue';
-import { IonPage, IonContent, IonIcon, onIonViewDidLeave } from '@ionic/vue';
+import { IonPage, IonContent, onIonViewDidLeave } from '@ionic/vue';
+import AppIcon from "@/components/ui/icon/AppIcon.vue";
 import { shieldCheckmarkOutline, informationCircleOutline, boatOutline, ticketOutline, giftOutline, qrCodeOutline, arrowForwardOutline, sendOutline } from 'ionicons/icons';
 import PassengerHeader from '../../components/passenger/PassengerHeader.vue';
 import PassengerBottomNav from '../../components/passenger/PassengerBottomNav.vue';
@@ -90,11 +91,11 @@ function fieldValue(key:string,value:string|number|boolean) {
 .assistant-intro h1 { margin: 0 0 12px; font-size: clamp(24px, 6vw, 29px); line-height: 1.3; letter-spacing: -.04em; }
 .intro-copy { margin: 0; color: var(--muted); font-size: 12px; line-height: 1.8; }
 .data-badge { display: inline-flex; align-items: center; gap: 6px; margin-top: 16px; padding: 6px 10px; border-radius: 20px; background: var(--success-soft); color: var(--success); font-size: 10px; font-weight: 600; }
-.data-badge ion-icon { font-size: 14px; }
+.data-badge .app-icon { font-size: 14px; }
 .suggestions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin: 0 0 14px; }
 .suggestions button { display: flex; align-items: flex-start; gap: 9px; min-width: 0; padding: 15px 12px; border: 1px solid var(--line); border-radius: 14px; background: var(--surface); color: var(--ink); font: inherit; text-align: left; cursor: pointer; transition: border-color .15s, background .15s; }
 .suggestions button:hover:not(:disabled) { border-color: var(--ocean); background: var(--light-blue); }
-.suggestions button > ion-icon { flex: none; font-size: 19px; color: var(--ocean); margin-top: 1px; }
+.suggestions button > .app-icon { flex: none; font-size: 19px; color: var(--ocean); margin-top: 1px; }
 .suggestions button > span { min-width: 0; }
 .suggestions strong { display: block; font-size: 11px; line-height: 1.5; }
 .suggestions small { display: block; margin-top: 4px; color: var(--muted); font-size: 10px; line-height: 1.6; }
@@ -102,7 +103,7 @@ function fieldValue(key:string,value:string|number|boolean) {
 .data-notice { margin: 12px 0 20px; color: var(--muted); font-size: 10px; line-height: 1.7; }
 .data-notice summary { display: flex; justify-content: center; align-items: center; gap: 5px; min-height: 32px; cursor: pointer; list-style: none; }
 .data-notice summary::-webkit-details-marker { display: none; }
-.data-notice summary ion-icon { font-size: 14px; }
+.data-notice summary .app-icon { font-size: 14px; }
 .data-notice p { margin: 8px 0 0; padding: 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface-soft); }
 .conversation { display: grid; gap: 16px; margin-bottom: 20px; }
 .conversation:empty { display: none; margin: 0; }
@@ -131,7 +132,7 @@ dt { color: var(--muted); } dd { margin: 0; overflow-wrap: anywhere; }
 .composer-actions { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-top: 12px; }
 .composer small { display: grid; gap: 3px; font-size: 9px; color: var(--muted); line-height: 1.5; }
 .composer button { display: inline-flex; align-items: center; justify-content: center; gap: 8px; flex-shrink: 0; min-height: 44px; padding: 10px 14px; border: 0; border-radius: 11px; background: var(--action); color: white; font: inherit; font-size: 11px; font-weight: 700; cursor: pointer; }
-.composer button ion-icon { font-size: 16px; }
+.composer button .app-icon { font-size: 16px; }
 button:disabled { opacity: .55; cursor: default; }
 button:focus-visible, a:focus-visible, summary:focus-visible, textarea:focus-visible { outline: 2px solid var(--ocean); outline-offset: 3px; }
 .chat-error { padding: 12px; border-radius: 10px; background: var(--danger-soft); color: var(--danger); font-size: 12px; line-height: 1.7; }
@@ -163,7 +164,7 @@ button:focus-visible, a:focus-visible, summary:focus-visible, textarea:focus-vis
 @keyframes message-arrive { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
 @keyframes typing-bounce { 0%, 70%, 100% { transform: translateY(0); opacity: .45; } 35% { transform: translateY(-4px); opacity: 1; } }
 .assistant-note { margin: 14px 6px 0; text-align: center; font-size: 10px; line-height: 1.7; color: var(--muted); }
-@media (max-width: 360px) { .suggestions button { padding: 12px 10px; gap: 6px; } .suggestions button > ion-icon { font-size: 16px; } .keyboard-hint { display: none; } .composer-actions { gap: 8px; } }
-@container passenger (max-width: 380px) { .assistant-intro { gap: 12px; padding: 16px 10px; } .intro-mascot { width: 76px; } .assistant-intro h1 { font-size: 22px; } .data-badge { align-items: flex-start; line-height: 1.5; border-radius: 10px; } .data-badge ion-icon { flex-shrink: 0; margin-top: 1px; } }
+@media (max-width: 360px) { .suggestions button { padding: 12px 10px; gap: 6px; } .suggestions button > .app-icon { font-size: 16px; } .keyboard-hint { display: none; } .composer-actions { gap: 8px; } }
+@container passenger (max-width: 380px) { .assistant-intro { gap: 12px; padding: 16px 10px; } .intro-mascot { width: 76px; } .assistant-intro h1 { font-size: 22px; } .data-badge { align-items: flex-start; line-height: 1.5; border-radius: 10px; } .data-badge .app-icon { flex-shrink: 0; margin-top: 1px; } }
 @media (prefers-reduced-motion: reduce) { .intro-mascot, .chat-turn, .chat-status, .typing-dots i { animation: none; } .suggestions button, .composer button { transition: none; } }
 </style>

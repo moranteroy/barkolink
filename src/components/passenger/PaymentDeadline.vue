@@ -4,7 +4,7 @@
     class="deadline"
     :class="{ urgent: seconds <= 3600 }"
   >
-    <ion-icon :icon="timeOutline" aria-hidden="true" />
+    <AppIcon :icon="timeOutline" aria-hidden="true" />
     <div role="status" aria-live="polite" aria-atomic="true">
       <strong>{{
         seconds > 0 ? "Pay before the deadline" : "Payment deadline reached"
@@ -20,7 +20,7 @@
 </template>
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref, watch } from "vue";
-import { IonIcon } from "@ionic/vue";
+import AppIcon from "@/components/ui/icon/AppIcon.vue";
 import { timeOutline } from "ionicons/icons";
 const props = defineProps<{ deadline: string }>();
 const emit = defineEmits<{ expired: [] }>();
@@ -77,7 +77,7 @@ onUnmounted(() => clearInterval(timer));
   background: var(--light-blue);
   color: var(--ocean);
 }
-.deadline ion-icon {
+.deadline .app-icon {
   font-size: 22px;
   flex: none;
 }

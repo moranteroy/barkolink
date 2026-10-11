@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import assert from 'node:assert/strict';
 import { chromium } from 'playwright-core';
+const baseUrl = process.env.BARKOLINK_UI_URL || 'http://127.0.0.1:8110';
 const project=fs.readFileSync('.env.local','utf8').match(/^VITE_SUPABASE_URL\s*=\s*(.+)$/m)[1].trim().replace(/^['"]|['"]$/g,'');
 const id='11111111-1111-4111-8111-111111111111';
 const user={id,email:'ui@example.invalid',app_metadata:{role:'PASSENGER'},user_metadata:{fullName:'UI Passenger'},aud:'authenticated',created_at:'2026-01-01T00:00:00Z'};
@@ -30,6 +31,7 @@ try{
     await context.route(`${project}/**`,route=>{
       if(route.request().url().includes('/auth/'))return route.fulfill({json:user});
       const body=route.request().postDataJSON();
+      if (body.operation === 'QuoteLoyaltyVoucher') return route.fulfill({ json: { quote: null } });
       if(body.operation==='ReserveSailing1'){
         if(scenario!=='new-passenger')return route.fulfill({status:400,json:{code:'P0001',message:'Duplicate booking: BL-OLD. You already have an active reservation with these passenger details for this trip. Open the existing booking.'}});
         reservations++; bookings.push(record(body.args.reference,'UNPAID'));
@@ -41,7 +43,7 @@ try{
     });
     const page=await context.newPage(),errors=[];
     page.on('pageerror',error=>errors.push(error.message));
-    await page.goto('http://localhost:8100/booking-summary',{waitUntil:'networkidle'});
+    await page.goto(`${baseUrl}/booking-summary`,{waitUntil:'networkidle'});
     await page.getByRole('button',{name:'Confirm reservation',exact:true}).click();
     if(['paid-duplicate','stale-paid-intent'].includes(scenario)){
       await page.getByRole('alert').filter({hasText:'Booking already exists'}).waitFor();

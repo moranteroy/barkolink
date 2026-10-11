@@ -2,7 +2,7 @@
 .landing-page *, .landing-page *::before, .landing-page *::after { box-sizing: border-box; }
 .landing-page .landing-container { width: min(100%, 1184px); margin-inline: auto; padding-inline: 32px; }
 .landing-page a { text-decoration: none; }
-.landing-page ion-icon { flex-shrink: 0; vertical-align: middle; }
+.landing-page .app-icon { flex-shrink: 0; vertical-align: middle; }
 .landing-page button { font: inherit; cursor: pointer; }
 .landing-page :is(a, button, input, select):focus-visible { outline: 3px solid var(--ocean); outline-offset: 4px; }
 .landing-page :is(.landing-hero, .landing-nav:not(.solid), .landing-cta) :is(a, button):focus-visible { outline-color: #bcecff; }
@@ -20,7 +20,7 @@
 .landing-page .landing-nav:not(.solid) .brand-copy small { color: #d0e6f2; }
 .landing-page .landing-button { display: inline-flex; align-items: center; justify-content: center; gap: 9px; min-height: 48px; padding: 12px 22px; border: 1px solid transparent; border-radius: 10px; background: #096fa4; color: #fff; font-size: 14px; font-weight: 750; transition: background-color .15s, transform .15s; }
 .landing-page .landing-button:hover { filter: brightness(.95); transform: translateY(-1px); }
-.landing-page .landing-button ion-icon { font-size: 18px; }
+.landing-page .landing-button .app-icon { font-size: 18px; }
 .landing-page .landing-nav .landing-button { color: #fff; }
 .landing-page .landing-button.small { min-height: 44px; padding: 10px 16px; font-size: 13px; }
 .landing-page .landing-button.white { color: #10354f; background: #fff; }
@@ -66,7 +66,7 @@
 .landing-page .landing-icon.filled { background: #096fa4; color: #fff; }
 .landing-page .route-card { padding: 22px; display: flex; flex-direction: column; }
 .landing-page .route-card h3 { font-size: 17px; }
-.landing-page .route-card h3 ion-icon { font-size: 14px; color: var(--muted); margin-inline: 3px; }
+.landing-page .route-card h3 .app-icon { font-size: 14px; color: var(--muted); margin-inline: 3px; }
 .landing-page .route-card .route-duration { font-size: 12px; }
 .landing-page .route-card .route-next { font-size: 12px; margin-top: 18px; }
 .landing-page .route-next strong { font-weight: 650; color: var(--ink); }
@@ -83,7 +83,7 @@
 .landing-page .step-number { position: absolute; top: 20px; right: 24px; color: var(--ocean); opacity: .55; font-size: 32px; font-weight: 800; }
 .landing-page .fleet-card { overflow: hidden; padding: 0; }
 .landing-page .fleet-visual { display: grid; place-items: center; height: 155px; position: relative; background: linear-gradient(135deg, #0a426a, #14839b); color: #fff; }
-.landing-page .fleet-visual > ion-icon { font-size: 55px; }
+.landing-page .fleet-visual > .app-icon { font-size: 55px; }
 .landing-page .fleet-visual > span { position: absolute; right: 14px; top: 14px; padding: 5px 9px; background: #ffffff18; border: 1px solid #ffffff35; border-radius: 20px; font-size: 10px; }
 .landing-page .fleet-visual svg { width: 100%; height: 30px; position: absolute; bottom: -1px; color: var(--surface); }
 .landing-page .fleet-details { padding: 8px 24px 24px; }
@@ -91,7 +91,7 @@
 .landing-page .fleet-details small { color: var(--muted); font-size: 12px; }
 .landing-page .fleet-details p { margin-top: 16px; font-size: 13px; }
 .landing-page .fleet-tag { display: inline-block; padding: 5px 10px; border-radius: 20px; background: var(--surface-soft); color: var(--muted); font-size: 12px; margin-top: 12px; }
-.landing-page .travel-tip > ion-icon { font-size: 24px; color: var(--success); }
+.landing-page .travel-tip > .app-icon { font-size: 24px; color: var(--success); }
 .landing-page .port-guide { max-width: 980px; }
 .landing-page .cta-section { padding-block: 48px; }
 .landing-page .landing-cta { position: relative; overflow: hidden; border-radius: 24px; background: radial-gradient(ellipse at right bottom, #2ac5c744, transparent 70%), linear-gradient(120deg, #083b5d, #0b738b); color: #fff; text-align: center; padding: 56px 24px; }

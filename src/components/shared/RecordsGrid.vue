@@ -58,7 +58,8 @@
       :theme="gridTheme"
       :modules="modules"
       :column-defs="columnDefs"
-      :row-data="rows"
+      :row-data="orderedRows"
+      :post-sort-rows="keepInactiveLast"
       :default-col-def="defaultColDef"
       :get-row-id="getRowId"
       :loading="loading"
@@ -91,6 +92,7 @@ import {
   type PropType,
 } from "vue";
 import { AgGridVue } from "ag-grid-vue3";
+import { activeFirst } from '../../data/statusOrder';
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
@@ -113,6 +115,7 @@ import {
   type GridApi,
   type GridReadyEvent,
   type ICellRendererParams,
+  type PostSortRowsParams,
 } from "ag-grid-community";
 
 export type RecordGridRow = {
@@ -164,16 +167,22 @@ function statusVariant(value: string | number) {
 }
 const compact = ref(typeof window !== "undefined" && window.innerWidth < 700);
 const mobileSort = ref("");
+const orderedRows = computed(() => activeFirst(props.rows, row => row.source?.isActive === false));
+function keepInactiveLast(params: PostSortRowsParams<RecordGridRow>) {
+  const ordered = activeFirst(params.nodes, node => node.data?.source?.isActive === false);
+  ordered.forEach((node, index) => { params.nodes[index] = node; });
+}
 function resetMobileView() { mobileSort.value = ""; hiddenColumns.value = []; }
 const mobileRows = computed(() => {
-  if (!mobileSort.value) return props.rows;
+  if (!mobileSort.value) return orderedRows.value;
   const [column, direction] = mobileSort.value.split(':');
   const index = Number(column);
-  return [...props.rows].sort((a, b) => {
+  const sorted = [...orderedRows.value].sort((a, b) => {
     const left = a.sortValues?.[index] ?? a.cells[index], right = b.sortValues?.[index] ?? b.cells[index];
     const result = typeof left === 'number' && typeof right === 'number' ? left - right : collator.compare(String(left ?? ''), String(right ?? ''));
     return direction === 'desc' ? -result : result;
   });
+  return activeFirst(sorted, row => row.source?.isActive === false);
 });
 const modules = [
   ClientSideRowModelModule,

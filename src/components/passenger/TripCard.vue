@@ -2,7 +2,7 @@
   <article class="trip-card glass-panel">
     <div class="trip-top">
       <div class="vessel">
-        <span class="vessel-icon"><ion-icon :icon="boatOutline" /></span>
+        <span class="vessel-icon"><AppIcon :icon="boatOutline" /></span>
         <div>
           <strong>{{ trip.vessel }}</strong
           ><small>Trip {{ trip.id }}</small>
@@ -20,7 +20,7 @@
         ><span>{{ trip.originPortName || trip.from + " Port" }}</span>
       </div>
       <div class="journey-line">
-        <ion-icon :icon="boatOutline" aria-hidden="true" /><span>{{ trip.duration }}</span>
+        <AppIcon :icon="boatOutline" aria-hidden="true" /><span>{{ trip.duration }}</span>
       </div>
       <div class="arrival">
         <small>Arrival</small
@@ -30,7 +30,7 @@
     </div>
     <div class="trip-bottom">
       <span
-        ><ion-icon :icon="peopleOutline" /> {{ trip.available }} slots
+        ><AppIcon :icon="peopleOutline" /> {{ trip.available }} slots
         available</span
       >
       <div class="fare-actions">
@@ -39,7 +39,7 @@
         ><small>Regular fare / passenger</small>
         </div>
         <Button @click="selectTrip"
-          >Book this sailing <ion-icon :icon="ticketOutline" aria-hidden="true"
+          >Book this sailing <AppIcon :icon="ticketOutline" aria-hidden="true"
         /></Button>
       </div>
     </div>
@@ -47,7 +47,7 @@
 </template>
 
 <script setup lang="ts">
-import { IonIcon } from "@ionic/vue";
+import AppIcon from "@/components/ui/icon/AppIcon.vue";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -107,18 +107,18 @@ const props = defineProps<{
 .journey strong { display: block; margin: 5px 0; color: var(--ink); font-size: 22px; line-height: 1.3; letter-spacing: -.5px; }
 .journey span { display: block; color: var(--muted); font-size: 11px; line-height: 1.6; overflow-wrap: anywhere; }
 .journey-line { display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 5px; }
-.journey-line ion-icon { color: var(--ocean); font-size: 20px; }
+.journey-line .app-icon { color: var(--ocean); font-size: 20px; }
 .journey-line span { font-size: 10px; text-align: center; }
 .arrival { text-align: right; }
 .trip-bottom { padding-top: 14px; border-top: 1px solid var(--line); }
 .trip-bottom > span { display: flex; align-items: center; gap: 6px; color: var(--muted); font-size: 11px; }
-.trip-bottom > span ion-icon { color: var(--ocean); font-size: 16px; }
+.trip-bottom > span .app-icon { color: var(--ocean); font-size: 16px; }
 .fare-actions { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 14px; }
 .fare-copy { min-width: 0; }
 .fare-copy strong { display: block; color: var(--ink); font-size: 20px; line-height: 1.5; }
 .fare-copy small { display: block; color: var(--muted); font-size: 10px; line-height: 1.5; }
 .fare-actions [data-slot="button"] { display: inline-flex; align-items: center; justify-content: center; gap: 6px; flex: none; min-height: 44px; padding: 10px 12px; border-radius: 9px; background: var(--action); color: #fff; font-size: 11px; font-weight: 600; white-space: normal; text-transform: none; }
-.fare-actions ion-icon { font-size: 17px; flex: none; }
+.fare-actions .app-icon { font-size: 17px; flex: none; }
 @container passenger (max-width: 380px) {
   .trip-card { padding: 16px; }
   .trip-top { gap: 8px; }

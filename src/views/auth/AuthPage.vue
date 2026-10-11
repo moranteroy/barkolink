@@ -13,9 +13,9 @@
             </p>
           </div>
           <div class="auth-benefits">
-            <span><ion-icon :icon="searchOutline" /> Simple trip search</span
+            <span><AppIcon :icon="searchOutline" /> Simple trip search</span
             ><span
-              ><ion-icon :icon="ticketOutline" /> Tickets in one place</span
+              ><AppIcon :icon="ticketOutline" /> Tickets in one place</span
             >
           </div>
           <FerryIllustration class="auth-ferry" />
@@ -24,7 +24,7 @@
         <section class="auth-form">
           <div class="form-inner">
             <RouterLink class="mobile-back" to="/" aria-label="Back to home"
-              ><ion-icon :icon="homeOutline" aria-hidden="true" /> Back to
+              ><AppIcon :icon="homeOutline" aria-hidden="true" /> Back to
               home</RouterLink
             >
             <div class="auth-mobile-brand"><BrandMark /></div>
@@ -42,7 +42,7 @@
               >
             </div>
             <div class="form-heading">
-              <h1>{{ isRegister ? "Create your account" : "Welcome back" }}</h1>
+              <h1>{{ isRegister ? "Create your account" : "Welcome to BarkoLink" }}</h1>
               <p>
                 {{
                   isRegister
@@ -97,7 +97,7 @@
                     "
                     @click="showPassword = !showPassword"
                   >
-                    <ion-icon
+                    <AppIcon
                       :icon="showPassword ? eyeOffOutline : eyeOutline"
                     />
                   </button></div
@@ -155,7 +155,7 @@
                       ? "Create account"
                       : "Sign in"
                 }}
-                <ion-icon slot="end" :icon="isRegister ? personAddOutline : logInOutline" aria-hidden="true"
+                <AppIcon slot="end" :icon="isRegister ? personAddOutline : logInOutline" aria-hidden="true"
               /></ion-button>
             </form>
             <p class="switch-copy">
@@ -170,7 +170,7 @@
             </p>
             <div class="prototype-box">
               <span class="prototype-icon"
-                ><ion-icon :icon="shieldCheckmarkOutline"
+                ><AppIcon :icon="shieldCheckmarkOutline"
               /></span>
               <div>
                 <strong>One account. Every crossing.</strong>
@@ -189,7 +189,8 @@
 <script setup lang="ts">
 import { computed, ref, watch } from "vue";
 import { RouterLink, useRoute, useRouter } from "vue-router";
-import { IonButton, IonContent, IonIcon, IonPage } from "@ionic/vue";
+import { IonButton, IonContent, IonPage } from "@ionic/vue";
+import AppIcon from "@/components/ui/icon/AppIcon.vue";
 import {
   homeOutline,
   personAddOutline,
@@ -416,13 +417,13 @@ async function submit() {
 .art-copy p { max-width: 370px; margin: 0; color: #deedf4; font-size: 16px; line-height: 1.8; }
 .auth-benefits { position: relative; z-index: 1; display: flex; flex-wrap: wrap; gap: 16px; margin-top: 24px; color: #e2f1f6; font-size: 13px; }
 .auth-benefits span { display: inline-flex; align-items: center; gap: 7px; }
-.auth-benefits ion-icon { color: #b7eef5; font-size: 18px; }
+.auth-benefits .app-icon { color: #b7eef5; font-size: 18px; }
 .auth-ferry { position: relative; z-index: 1; width: min(100%, 390px); min-height: 120px; max-height: 200px; margin: 24px auto auto; }
 .auth-form { min-width: 0; display: grid; place-items: center; padding: 28px clamp(24px, 4vw, 64px); }
 .form-inner { width: min(100%, 460px); padding: 28px 32px; border: 1px solid var(--line); border-radius: 24px; background: var(--surface); box-shadow: 0 16px 48px #0a29480a; }
 .mobile-back { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; margin: -8px 0 12px; color: var(--muted); font-size: 13px; text-decoration: none; }
 .mobile-back:hover { color: var(--ocean); }
-.mobile-back ion-icon { font-size: 18px; }
+.mobile-back .app-icon { font-size: 18px; }
 .auth-mobile-brand { display: none; }
 .auth-mode-tabs { display: flex; gap: 4px; padding: 4px; margin-bottom: 24px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface-soft); }
 .auth-mode-tabs a { display: flex; align-items: center; justify-content: center; flex: 1; min-height: 44px; padding: 8px; border-radius: 8px; color: var(--muted); font-size: 13px; font-weight: 650; text-decoration: none; }
@@ -446,7 +447,7 @@ input:focus { outline: none; border-color: var(--ocean); box-shadow: 0 0 0 3px c
 .check { display: flex; align-items: flex-start; gap: 10px; color: var(--muted); font-size: 13px; line-height: 1.7; }
 .check input { flex: none; width: 20px; height: 20px; margin: 1px 0 0; accent-color: var(--action); }
 .check a { color: var(--ocean); font-weight: 600; text-underline-offset: 3px; }
-.submit-button { --background: var(--action); --color: #fff; --box-shadow: none; --border-radius: 10px; height: 50px; margin: 0; font-size: 14px; font-weight: 700; letter-spacing: 0; text-transform: none; }
+.submit-button { --background: var(--action); --color: #fff; --box-shadow: none; --border-radius: var(--button-radius); height: 50px; margin: 0; font-size: 14px; font-weight: 700; letter-spacing: 0; text-transform: none; }
 .form-message { margin: 0; padding: 10px 12px; border: 1px solid #c43c4740; border-radius: 10px; background: #c43c470a; color: #ae2637; font-size: 13px; line-height: 1.6; }
 .recovery-note { margin: 0; padding: 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--light-blue); color: var(--ink); font-size: 13px; line-height: 1.6; }
 .switch-copy { margin: 20px 0; text-align: center; color: var(--muted); font-size: 13px; line-height: 1.7; }

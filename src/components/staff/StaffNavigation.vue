@@ -8,7 +8,7 @@
       :class="{ active: route.path === item.to }"
       :aria-current="route.path === item.to ? 'page' : undefined"
       @click="$emit('navigate')"
-      ><ion-icon :icon="item.icon" aria-hidden="true" />{{
+      ><AppIcon :icon="item.icon" aria-hidden="true" />{{
         item.label
       }}</router-link
     >
@@ -17,7 +17,7 @@
 <script setup lang="ts">
 import { computed } from "vue";
 import { useRoute } from "vue-router";
-import { IonIcon } from "@ionic/vue";
+import AppIcon from "@/components/ui/icon/AppIcon.vue";
 import {
   enterOutline,
   personAddOutline,
@@ -114,7 +114,7 @@ const items = computed(() =>
   font-size: 12px;
   font-weight: 550;
 }
-.staff-navigation a ion-icon {
+.staff-navigation a .app-icon {
   font-size: 18px;
   flex: none;
 }

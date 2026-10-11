@@ -1,6 +1,6 @@
-<template><section class="landing-section landing-container" aria-labelledby="tips-heading"><div class="landing-heading"><span class="section-eyebrow">ARRIVE PREPARED</span><h2 id="tips-heading">A little planning. A smoother trip.</h2><p>Keep these essentials handy before you head to the port.</p></div><div class="landing-grid three-columns"><article v-for="tip in tips" :key="tip.title" class="landing-card travel-tip"><IonIcon :icon="checkmarkCircleOutline" aria-hidden="true" /><h3>{{ tip.title }}</h3><p>{{ tip.description }}</p></article></div><RouterLink class="section-link" to="/help">Visit the Help page <IonIcon :icon="helpCircleOutline" aria-hidden="true" /></RouterLink></section></template>
+<template><section class="landing-section landing-container" aria-labelledby="tips-heading"><div class="landing-heading"><span class="section-eyebrow">ARRIVE PREPARED</span><h2 id="tips-heading">A little planning. A smoother trip.</h2><p>Keep these essentials handy before you head to the port.</p></div><div class="landing-grid three-columns"><article v-for="tip in tips" :key="tip.title" class="landing-card travel-tip"><AppIcon :icon="checkmarkCircleOutline" aria-hidden="true" /><h3>{{ tip.title }}</h3><p>{{ tip.description }}</p></article></div><RouterLink class="section-link" to="/help">Visit the Help page <AppIcon :icon="helpCircleOutline" aria-hidden="true" /></RouterLink></section></template>
 <script setup lang="ts">
-import { IonIcon } from '@ionic/vue';
+import AppIcon from "@/components/ui/icon/AppIcon.vue";
 import { RouterLink } from 'vue-router';
 import { helpCircleOutline, checkmarkCircleOutline } from 'ionicons/icons';
 const tips = [

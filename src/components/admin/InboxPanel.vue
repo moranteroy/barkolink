@@ -1,7 +1,7 @@
 <template><section class="notification-inbox">          <section class="notification-toolbar" aria-label="Inbox overview">
-            <span class="inbox-icon"><IonIcon :icon="notificationsOutline" aria-hidden="true" /></span>
+            <span class="inbox-icon"><AppIcon :icon="notificationsOutline" aria-hidden="true" /></span>
             <div><strong>{{ unreadCount ? `${unreadCount} unread ${unreadCount === 1 ? 'update' : 'updates'}` : 'You are all caught up' }}</strong><p>{{ unreadCount ? 'Keep track of your latest account and operational updates.' : 'Your account notices and operational updates stay here.' }}</p></div>
-            <button :disabled="noticeBusy || !!noticeUpdating || !unreadCount" @click="markAllRead"><IonIcon :icon="checkmarkOutline" aria-hidden="true" />{{ noticeBusy ? 'Updating...' : 'Mark all read' }}</button>
+            <button :disabled="noticeBusy || !!noticeUpdating || !unreadCount" @click="markAllRead"><AppIcon :icon="checkmarkOutline" aria-hidden="true" />{{ noticeBusy ? 'Updating...' : 'Mark all read' }}</button>
           </section>
 <div class="inbox-actions"><label>Search notifications<input v-model="query" type="search" placeholder="Title or message" /></label><button :disabled="loading || !!busy" @click="load">Refresh inbox</button><router-link v-if="showBroadcast" to="/admin/notifications">Send a broadcast</router-link></div>
 <p v-if="loading" role="status">Loading your inbox...</p><p v-if="error" role="alert" class="notice-error">{{ error }}<button :disabled="loading || !!busy" @click="load">Retry</button></p>
@@ -11,27 +11,27 @@
           </div>
           <div class="notification-filters" role="group" aria-label="Notification category">
             <button v-for="category in notificationCategories" :key="category" :aria-pressed="notificationFilter === category" :aria-label="notificationCategoryLabel(category)" :class="{ active: notificationFilter === category }" @click="notificationFilter = category">
-              <IonIcon :icon="noticeIcon(category)" aria-hidden="true" />{{ notificationCategoryLabel(category) }}<small aria-hidden="true">{{ notificationCategoryCount(category) }}</small>
+              <AppIcon :icon="noticeIcon(category)" aria-hidden="true" />{{ notificationCategoryLabel(category) }}<small aria-hidden="true">{{ notificationCategoryCount(category) }}</small>
             </button>
           </div>
 
           <p class="notification-results" aria-live="polite">{{ filteredNotices.length }} {{ filteredNotices.length === 1 ? 'update' : 'updates' }}<span>Latest first</span></p>
           <div v-if="filteredNotices.length" class="notifications">
             <article v-for="notice in filteredNotices" :key="notice.id" :class="{ unread: notice.unread }">
-              <span class="notice-icon" :class="notice.type.toLowerCase()"><IonIcon :icon="noticeIcon(notice.type)" aria-hidden="true" /></span>
+              <span class="notice-icon" :class="notice.type.toLowerCase()"><AppIcon :icon="noticeIcon(notice.type)" aria-hidden="true" /></span>
               <div class="notice-copy">
                 <div class="notice-eyebrow"><span>{{ notificationCategoryLabel(notice.type) }}</span><b v-if="notice.unread"><i aria-hidden="true"></i>Unread</b></div>
                 <h2>{{ notice.title }}</h2>
                 <p>{{ notice.body }}</p>
-                <div class="notice-footer"><time :datetime="notice.createdAt"><IonIcon :icon="timeOutline" aria-hidden="true" />{{ notice.time }}</time>
-                  <button v-if="notice.unread" :disabled="noticeBusy || !!noticeUpdating" :aria-label="`Mark read: ${notice.title}`" @click="markNotice(notice)"><IonIcon :icon="checkmarkOutline" aria-hidden="true" />{{ noticeUpdating === notice.id ? 'Updating...' : 'Mark read' }}</button>
-                  <span v-else class="notice-read"><IonIcon :icon="checkmarkCircleOutline" aria-hidden="true" />Read</span>
+                <div class="notice-footer"><time :datetime="notice.createdAt"><AppIcon :icon="timeOutline" aria-hidden="true" />{{ notice.time }}</time>
+                  <button v-if="notice.unread" :disabled="noticeBusy || !!noticeUpdating" :aria-label="`Mark read: ${notice.title}`" @click="markNotice(notice)"><AppIcon :icon="checkmarkOutline" aria-hidden="true" />{{ noticeUpdating === notice.id ? 'Updating...' : 'Mark read' }}</button>
+                  <span v-else class="notice-read"><AppIcon :icon="checkmarkCircleOutline" aria-hidden="true" />Read</span>
                 </div>
               </div>
             </article>
           </div>
           <div v-else-if="!loading && !error" class="empty-state">
-            <div class="empty-icon"><IonIcon :icon="notificationsOutline" aria-hidden="true" /></div>
+            <div class="empty-icon"><AppIcon :icon="notificationsOutline" aria-hidden="true" /></div>
             <h2>{{ query ? 'No matching notifications' : unreadOnly ? 'No unread updates' : notificationFilter !== 'ALL' ? `No ${notificationCategoryLabel(notificationFilter).toLowerCase()} updates` : 'Your inbox is ready' }}</h2>
             <p>{{ unreadOnly ? 'You have read all updates in this view. Check all updates to see your history.' : 'Account notices and operational updates will appear here.' }}</p>
             <button v-if="query || unreadOnly || notificationFilter !== 'ALL'" class="reset-notices" @click="query = ''; unreadOnly = false; notificationFilter = 'ALL'">View all updates</button>
@@ -39,7 +39,7 @@
 </section></template>
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue';
-import { IonIcon } from '@ionic/vue';
+import AppIcon from "@/components/ui/icon/AppIcon.vue";
 import { notificationsOutline, checkmarkOutline, checkmarkCircleOutline, timeOutline, boatOutline, giftOutline, ticketOutline } from 'ionicons/icons';
 import { staffDatabase, auth } from '../../services/session';
 import { myNotifications, markNotificationRead, type MyNotificationsData } from '../../services/database/passenger';
@@ -111,7 +111,7 @@ onMounted(load);
 .notification-inbox .notification-view .selected small { background: #ffffff26; }
 .notification-inbox .notification-filters { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 18px; }
 .notification-inbox .notification-filters button { display: inline-flex; align-items: center; gap: 6px; min-height: 40px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 9px; background: var(--surface); color: var(--muted); font: inherit; font-size: 11px; font-weight: 500; }
-.notification-inbox .notification-filters ion-icon { font-size: 15px; color: var(--ocean); }
+.notification-inbox .notification-filters .app-icon { font-size: 15px; color: var(--ocean); }
 .notification-inbox .notification-filters small { font-size: 10px; color: inherit; }
 .notification-inbox .notification-filters .active { background: var(--light-blue); color: var(--ocean); border-color: var(--ocean); }
 .notification-inbox .notification-results { display: flex; align-items: center; justify-content: space-between; margin: 0 0 12px; color: var(--muted); font-size: 11px; }
@@ -130,7 +130,7 @@ onMounted(load);
 .notification-inbox .notice-copy p { margin: 7px 0 12px; font-size: 12px; line-height: 1.8; }
 .notification-inbox .notice-footer { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 12px; padding-top: 10px; border-top: 1px solid var(--line); }
 .notification-inbox .notice-footer time, .notification-inbox .notice-read { display: inline-flex; align-items: center; gap: 5px; color: var(--muted); font-size: 10px; line-height: 1.7; }
-.notification-inbox .notice-footer ion-icon { flex: none; font-size: 14px; }
+.notification-inbox .notice-footer .app-icon { flex: none; font-size: 14px; }
 .notification-inbox .notice-footer button { margin: 0; min-height: 40px; padding: 8px 10px; font-size: 11px; font-weight: 600; }
 .notification-inbox .notice-read { margin-left: auto; }
 .notification-inbox button { cursor: pointer; }

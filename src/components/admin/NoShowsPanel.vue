@@ -2,13 +2,13 @@
   <section class="no-shows-panel">
     <div class="no-show-picker-card">
     <div class="catalog-tools no-show-heading">
-      <div class="no-show-intro"><span class="no-show-symbol"><IonIcon :icon="personRemoveOutline" aria-hidden="true" /></span><div><p class="eyebrow">ATTENDANCE REVIEW</p><h2>Review a completed sailing</h2>
+      <div class="no-show-intro"><span class="no-show-symbol"><AppIcon :icon="personRemoveOutline" aria-hidden="true" /></span><div><p class="eyebrow">ATTENDANCE REVIEW</p><h2>Review a completed sailing</h2>
       <p>
         Review paid passengers who did not board. Record no-shows only after the
         trip is completed.
       </p>
       </div></div>
-      <button
+      <button data-slot="button" data-variant="default" data-size="default"
         class="primary-button"
         :disabled="busy || loading || !eligibleCount || sailing?.status !== 'COMPLETED'"
         @click="mark()"
@@ -34,7 +34,7 @@
     <p v-if="error" role="alert" class="catalog-error">{{ error }}</p>
     <p v-if="notice" role="status" class="no-show-notice">{{ notice }}</p>
     <div v-if="code" class="catalog-tools no-show-search">
-      <label class="no-show-search-label" for="no-show-search">Search passengers<div class="no-show-search-input"><IonIcon :icon="searchOutline" aria-hidden="true" /><input
+      <label class="no-show-search-label" for="no-show-search">Search passengers<div class="no-show-search-input"><AppIcon :icon="searchOutline" aria-hidden="true" /><input
         id="no-show-search"
         v-model.trim="search"
         class="catalog-search"
@@ -46,9 +46,9 @@
         marked</span
       >
     </div>
-    <div v-if="code && !loading" class="no-show-counts" aria-label="Attendance totals"><div><span class="count-icon"><IonIcon :icon="peopleOutline" aria-hidden="true" /></span><div><span>Not boarded</span><strong>{{ rows.length }}</strong></div></div><div class="pending-count"><span class="count-icon"><IonIcon :icon="timeOutline" aria-hidden="true" /></span><div><span>Not yet recorded</span><strong>{{ eligibleCount }}</strong></div></div><div class="recorded-count"><span class="count-icon"><IonIcon :icon="checkmarkCircleOutline" aria-hidden="true" /></span><div><span>No-shows recorded</span><strong>{{ rows.filter(p => p.noShow).length }}</strong></div></div></div>
+    <div v-if="code && !loading" class="no-show-counts" aria-label="Attendance totals"><div><span class="count-icon"><AppIcon :icon="peopleOutline" aria-hidden="true" /></span><div><span>Not boarded</span><strong>{{ rows.length }}</strong></div></div><div class="pending-count"><span class="count-icon"><AppIcon :icon="timeOutline" aria-hidden="true" /></span><div><span>Not yet recorded</span><strong>{{ eligibleCount }}</strong></div></div><div class="recorded-count"><span class="count-icon"><AppIcon :icon="checkmarkCircleOutline" aria-hidden="true" /></span><div><span>No-shows recorded</span><strong>{{ rows.filter(p => p.noShow).length }}</strong></div></div></div>
     <div v-if="loading" class="no-show-empty" role="status">Loading passenger attendance…</div>
-    <div v-else-if="!visible.length && !error" class="no-show-empty" role="status"><span class="no-show-empty-symbol"><IonIcon :icon="code && !search ? checkmarkCircleOutline : personRemoveOutline" aria-hidden="true" /></span><strong>{{ search ? 'No matching passengers' : code ? 'No passengers to record' : 'Choose a completed trip' }}</strong><p>{{ search ? 'Try another passenger name or booking reference.' : code ? 'No non-boarded paid passengers were found for this completed sailing.' : 'Select a completed sailing to review attendance.' }}</p></div>
+    <div v-else-if="!visible.length && !error" class="no-show-empty" role="status"><span class="no-show-empty-symbol"><AppIcon :icon="code && !search ? checkmarkCircleOutline : personRemoveOutline" aria-hidden="true" /></span><strong>{{ search ? 'No matching passengers' : code ? 'No passengers to record' : 'Choose a completed trip' }}</strong><p>{{ search ? 'Try another passenger name or booking reference.' : code ? 'No non-boarded paid passengers were found for this completed sailing.' : 'Select a completed sailing to review attendance.' }}</p></div>
     <div v-else-if="visible.length" class="catalog-table">
       <div class="no-show-table-heading"><p class="eyebrow">PASSENGER ATTENDANCE</p><h2>Passengers who did not board</h2></div>
       <RecordsGrid title="Passenger no-show records" :columns="['Passenger', 'Booking', 'Accommodation', 'Ticket', 'Attendance']" :rows="gridRows" density="compact" :column-min-widths="[150, 145, 130, 105, 145]" :action-width="135" :max-grid-height="360">
@@ -58,14 +58,14 @@
           <Badge v-else-if="index === 4" :variant="row.source.noShow ? 'destructive' : 'warning'">{{ value }}</Badge>
           <span v-else>{{ value }}</span>
         </template>
-        <template #actions="{ row }"><button v-if="!row.source.noShow" class="mark-no-show" :disabled="busy || loading || sailing?.status !== 'COMPLETED'" :aria-label="`Mark ${row.source.fullName} as no-show`" @click="mark(row.source.id)">Mark no-show</button><span v-else class="attendance-recorded"><IonIcon :icon="checkmarkCircleOutline" aria-hidden="true" />Recorded</span></template>
+        <template #actions="{ row }"><button v-if="!row.source.noShow" class="mark-no-show" :disabled="busy || loading || sailing?.status !== 'COMPLETED'" :aria-label="`Mark ${row.source.fullName} as no-show`" @click="mark(row.source.id)">Mark no-show</button><span v-else class="attendance-recorded"><AppIcon :icon="checkmarkCircleOutline" aria-hidden="true" />Recorded</span></template>
       </RecordsGrid>
     </div>
   </section>
 </template>
 <script setup lang="ts">
 import { confirmAction } from "../../composables/confirmation";
-import { IonIcon } from "@ionic/vue";
+import AppIcon from "@/components/ui/icon/AppIcon.vue";
 import { personRemoveOutline, searchOutline, checkmarkCircleOutline, peopleOutline, timeOutline } from "ionicons/icons";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -204,7 +204,7 @@ onMounted(async () => {
 .no-show-search { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: end; gap: 8px 12px; padding: 12px 16px; border: 1px solid var(--line); border-radius: 14px; background: var(--surface); }
 .no-show-search > span { grid-column: 1 / -1; color: var(--muted); font-size: 11px; line-height: 1.5; }
 .no-show-search-input { display: flex; align-items: center; gap: 8px; padding-left: 12px; border: 1px solid var(--line); border-radius: 9px; background: var(--surface-soft); }
-.no-show-search-input ion-icon { font-size: 17px; flex: none; color: var(--muted); }
+.no-show-search-input .app-icon { font-size: 17px; flex: none; color: var(--muted); }
 .no-shows-panel .no-show-search-input input { border: 0; background: transparent; outline: none; }
 .no-show-search-input:focus-within { outline: 2px solid var(--ocean); outline-offset: 2px; }
 .no-show-counts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); border: 1px solid var(--line); border-radius: 12px; background: var(--surface); overflow: hidden; }
@@ -227,7 +227,7 @@ onMounted(async () => {
 .catalog-table :deep(.grid-row-actions) { display: flex; align-items: center; min-height: 44px; padding: 7px 0; }
 .no-shows-panel .mark-no-show { min-height: 32px; padding: 5px 9px; font-size: 11px; background: var(--light-blue); }
 .attendance-recorded { display: inline-flex; align-items: center; gap: 6px; color: var(--muted); font-size: 12px; white-space: nowrap; }
-.attendance-recorded ion-icon { color: var(--ocean); font-size: 16px; }
+.attendance-recorded .app-icon { color: var(--ocean); font-size: 16px; }
 .no-show-notice { padding: 10px 16px; margin: 0; border: 1px solid var(--line); border-radius: 10px; background: var(--light-blue); color: var(--ocean); font-size: 12px; }
 @media (max-width: 700px) {
   .no-show-heading { flex-direction: column; align-items: stretch; gap: 12px; }

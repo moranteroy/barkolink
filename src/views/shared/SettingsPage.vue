@@ -14,11 +14,11 @@
                   ? 'Back to staff workspace'
                   : 'Back to home'
             "
-            ><ion-icon :icon="isAdmin || isStaff ? gridOutline : homeOutline" aria-hidden="true"
+            ><AppIcon :icon="isAdmin || isStaff ? gridOutline : homeOutline" aria-hidden="true"
           /></router-link>
           <BrandMark />
           <span class="page-mode"
-            ><ion-icon :icon="settingsOutline" /> Account settings</span
+            ><AppIcon :icon="settingsOutline" /> Account settings</span
           >
         </header>
         <section class="settings-layout">
@@ -31,7 +31,7 @@
                 route.path === `${settingsPath}/appearance` ? 'page' : undefined
               "
               @click="navigateSection($event, `${settingsPath}/appearance`)"
-              ><ion-icon :icon="contrastOutline" />Appearance</a
+              ><AppIcon :icon="contrastOutline" />Appearance</a
             >
             <a
               :href="`${settingsPath}/profile`"
@@ -40,7 +40,7 @@
                 route.path === `${settingsPath}/profile` ? 'page' : undefined
               "
               @click="navigateSection($event, `${settingsPath}/profile`)"
-              ><ion-icon :icon="personOutline" />Personal information</a
+              ><AppIcon :icon="personOutline" />Personal information</a
             >
             <a
               :href="`${settingsPath}/password`"
@@ -49,13 +49,13 @@
                 route.path === `${settingsPath}/password` ? 'page' : undefined
               "
               @click="navigateSection($event, `${settingsPath}/password`)"
-              ><ion-icon :icon="shieldCheckmarkOutline" />Password</a
+              ><AppIcon :icon="shieldCheckmarkOutline" />Password</a
             >
             <a
               v-if="isPassenger"
               href="/notifications"
               @click="navigateSection($event, '/notifications')"
-              ><ion-icon :icon="notificationsOutline" />Notifications</a
+              ><AppIcon :icon="notificationsOutline" />Notifications</a
             >
           </nav>
           <section class="settings-content">
@@ -89,7 +89,7 @@
                 Loading your saved details...
               </p>
               <router-link v-if="isPassenger" to="/profile" class="profile-back"
-                ><ion-icon :icon="personOutline" aria-hidden="true" /> Back to my profile</router-link
+                ><AppIcon :icon="personOutline" aria-hidden="true" /> Back to my profile</router-link
               >
               <form class="setting-form" @submit.prevent="saveProfile">
                 <fieldset
@@ -216,7 +216,7 @@
               <ThemeSwitcher />
               <AppearancePreview />
               <div class="mode-note">
-                <ion-icon :icon="informationCircleOutline" /> System mode
+                <AppIcon :icon="informationCircleOutline" /> System mode
                 follows your device preference automatically.
               </div>
             </article>
@@ -247,15 +247,8 @@ import {
   syncAccountProfileName,
 } from "../../services/auth";
 import { useRoute } from "vue-router";
-import {
-  IonButton,
-  IonContent,
-  IonIcon,
-  IonPage,
-  onIonViewDidEnter,
-  onIonViewWillEnter,
-  useIonRouter,
-} from "@ionic/vue";
+import { IonButton, IonContent, IonPage, onIonViewDidEnter, onIonViewWillEnter, useIonRouter } from "@ionic/vue";
+import AppIcon from "@/components/ui/icon/AppIcon.vue";
 import {
   gridOutline,
   homeOutline,
@@ -562,7 +555,7 @@ async function changePassword() {
   color: var(--muted);
   font-size: 11px;
 }
-.page-mode ion-icon {
+.page-mode .app-icon {
   color: var(--ocean);
   font-size: 16px;
 }
@@ -609,7 +602,7 @@ async function changePassword() {
   background: var(--light-blue);
   color: var(--ocean);
 }
-.settings-nav ion-icon {
+.settings-nav .app-icon {
   flex: none;
   font-size: 17px;
 }
@@ -679,9 +672,9 @@ async function changePassword() {
   opacity: 0.7;
 }
 .primary {
-  --background: var(--ocean);
+  --background: var(--action);
   --box-shadow: none;
-  --border-radius: 9px;
+  --border-radius: var(--button-radius);
   justify-self: start;
   height: 42px;
   margin-top: 3px;
@@ -703,7 +696,7 @@ async function changePassword() {
   color: var(--muted);
   font-size: 10px;
 }
-.mode-note ion-icon {
+.mode-note .app-icon {
   color: var(--ocean);
   font-size: 15px;
 }
@@ -813,7 +806,7 @@ async function changePassword() {
   font-size: 12px;
   text-decoration: none;
 }
-.profile-back ion-icon { font-size: 19px; flex: none; }
+.profile-back .app-icon { font-size: 19px; flex: none; }
 .profile-hint,
 .setting-form small {
   font-size: 11px;

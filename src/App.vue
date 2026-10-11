@@ -10,14 +10,24 @@
 <script setup lang="ts">
 import { IonApp, IonRouterOutlet } from "@ionic/vue";
 import { computed, nextTick, watch, onMounted, onUnmounted } from "vue";
-import { useRoute } from "vue-router";
+import { useRoute, useRouter } from "vue-router";
 import { initializeTheme } from "./composables/useTheme";
-import { sessionViewsKey } from "./composables/sessionViews";
+import { sessionViewsKey, clearSessionViews } from "./composables/sessionViews";
 import { auth } from "./services/session";
 import { refreshNotificationUnread } from "./composables/notificationUnread";
 
 initializeTheme();
 const route = useRoute();
+const router = useRouter();
+watch(() => auth?.currentUser?.uid, async (uid, previousUid) => {
+  if (!previousUid || uid === previousUid) return;
+  // A logout/account change in another tab must also clear cached private pages.
+  sessionStorage.removeItem('barkolink-booking-draft');
+  sessionStorage.removeItem('barkolink-booking-intent');
+  if (route.path === '/port-display') return;
+  await router.replace(uid ? '/home' : '/login');
+  clearSessionViews();
+});
 watch(() => [auth?.currentUser?.uid, route.fullPath], () => {
   void refreshNotificationUnread();
 }, { immediate: true });

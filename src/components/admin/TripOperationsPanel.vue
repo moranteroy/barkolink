@@ -11,7 +11,7 @@
     <div class="sailing-picker-card">
       <div class="picker-heading">
         <span class="workspace-symbol">
-          <ion-icon :icon="boatOutline" aria-hidden="true" />
+          <AppIcon :icon="boatOutline" aria-hidden="true" />
         </span>
         <div>
           <p class="eyebrow">SAILING WORKSPACE</p>
@@ -31,28 +31,28 @@
     <div v-if="!code && !loading && !error" class="workspace-empty">
       <div class="empty-heading">
         <span class="empty-symbol">
-          <ion-icon :icon="boatOutline" aria-hidden="true" />
+          <AppIcon :icon="boatOutline" aria-hidden="true" />
         </span>
         <div>
           <h3>{{ sailings.length ? 'Everything for one sailing, in one place' : 'No sailings available yet' }}</h3>
           <p>{{ sailings.length ? 'Choose a sailing above to review reservations, arrival and boarding progress.' : 'Create a trip in Trips & schedules to get started.' }}</p>
         </div>
       </div>
-      <router-link v-if="!sailings.length" class="schedule-link" to="/admin/trips">Open Trips & schedules <ion-icon :icon="calendarOutline" aria-hidden="true" />
+      <router-link v-if="!sailings.length" class="schedule-link" to="/admin/trips">Open Trips & schedules <AppIcon :icon="calendarOutline" aria-hidden="true" />
       </router-link>
       <div class="workspace-features">
         <div>
-          <ion-icon :icon="ticketOutline" aria-hidden="true" />
+          <AppIcon :icon="ticketOutline" aria-hidden="true" />
           <strong>Reservations</strong>
           <small>Bookings and passenger tickets</small>
         </div>
         <div>
-          <ion-icon :icon="scanOutline" aria-hidden="true" />
+          <AppIcon :icon="scanOutline" aria-hidden="true" />
           <strong>Terminal operations</strong>
           <small>Separate arrival and boarding queues</small>
         </div>
         <div>
-          <ion-icon :icon="documentTextOutline" aria-hidden="true" />
+          <AppIcon :icon="documentTextOutline" aria-hidden="true" />
           <strong>Attendance records</strong>
           <small>Manifest, no-shows and activity</small>
         </div>
@@ -71,8 +71,17 @@
             </p>
           </div>
           <router-link to="/admin/trips">
-            <ion-icon :icon="calendarOutline" aria-hidden="true" /> Manage schedule</router-link>
+            <AppIcon :icon="calendarOutline" aria-hidden="true" /> Manage schedule</router-link>
         </div>
+        <section class="sailing-status-controls" aria-label="Manual sailing status">
+          <div><strong>Trip status</strong><p>Scheduled, Boarding and Completed follow the saved timing. Mark Delayed or Cancelled when operations change.</p></div>
+          <div class="status-actions" v-if="['SCHEDULED', 'BOARDING', 'DELAYED'].includes(data.sailing.status)">
+            <button v-if="['SCHEDULED', 'BOARDING'].includes(data.sailing.status)" :disabled="loading || busy" @click="setTripStatus('DELAYED')">Mark Delayed</button>
+            <button class="cancel-trip" :disabled="loading || busy" @click="setTripStatus('CANCELLED')">Cancel trip</button>
+            <router-link v-if="data.sailing.status === 'DELAYED'" to="/admin/trips">Update schedule to resume</router-link>
+          </div>
+          <p v-else class="status-final">{{ data.sailing.status === 'CANCELLED' ? 'This trip is cancelled.' : 'This trip is completed.' }}</p>
+        </section>
         <div class="metrics">
           <article v-for="metric in metrics" :key="metric.label">
             <small>{{ metric.label }}</small>
@@ -112,21 +121,21 @@
         <p class="operational-note">{{ terminalNote }}</p>
         <div class="links">
           <router-link :to="`/admin/check-in?sailing=${encodeURIComponent(code)}`">
-            <ion-icon :icon="scanOutline" aria-hidden="true" />
+            <AppIcon :icon="scanOutline" aria-hidden="true" />
             <div>
               <strong>Check-in desk</strong>
               <small>Verify tickets and record arrival</small>
             </div>
           </router-link>
           <router-link :to="`/admin/boarding?sailing=${encodeURIComponent(code)}`">
-            <ion-icon :icon="boatOutline" aria-hidden="true" />
+            <AppIcon :icon="boatOutline" aria-hidden="true" />
             <div>
               <strong>Boarding desk</strong>
               <small>Confirm passengers entering the vessel</small>
             </div>
           </router-link>
           <router-link :to="`/admin/manifest?sailing=${encodeURIComponent(code)}`">
-            <ion-icon :icon="documentTextOutline" aria-hidden="true" />
+            <AppIcon :icon="documentTextOutline" aria-hidden="true" />
             <div>
               <strong>Passenger manifest</strong>
               <small>Review attendance and export CSV</small>
@@ -144,14 +153,14 @@
           <small>{{ activityEvents.length }} events | PH time</small>
         </div>
         <div v-if="!activityEvents.length" class="record-empty">
-          <ion-icon :icon="timeOutline" aria-hidden="true" />
+          <AppIcon :icon="timeOutline" aria-hidden="true" />
           <strong>No activity recorded</strong>
           <p>Sailing and passenger events will appear here when available.</p>
         </div>
         <div v-else class="activity-list">
           <article v-for="event in activityEvents" :key="event.id">
             <span class="event-icon">
-              <ion-icon :icon="timeOutline" aria-hidden="true" />
+              <AppIcon :icon="timeOutline" aria-hidden="true" />
             </span>
             <div>
               <strong>{{ activityLabel(event.action) }}</strong>
@@ -182,7 +191,7 @@
             <span class="record-count">{{ filteredRecordsCount }} shown</span>
           </div>
           <label class="record-search">
-            <ion-icon :icon="searchOutline" aria-hidden="true" />
+            <AppIcon :icon="searchOutline" aria-hidden="true" />
             <input v-model="search" :placeholder="tab === 'Bookings' ? 'Search booking reference' : 'Search passenger, booking or category'" :aria-label="tab === 'Bookings' ? 'Search bookings' : 'Search passengers'" type="search" />
           </label>
           <div v-if="filteredRecordsCount" class="table-wrap">
@@ -241,7 +250,7 @@
             </table>
           </div>
           <div v-else class="record-empty">
-            <ion-icon :icon="search ? searchOutline : tab === 'Bookings' ? ticketOutline : peopleOutline" aria-hidden="true" />
+            <AppIcon :icon="search ? searchOutline : tab === 'Bookings' ? ticketOutline : peopleOutline" aria-hidden="true" />
             <strong>{{ search ? 'No matching records' : emptyTitle }}</strong>
             <p>{{ search ? 'Try a different name or reference, or clear your search.' : emptyDescription }}</p>
             <button v-if="search" @click="search = ''">Clear search</button>
@@ -252,15 +261,15 @@
   </section>
 </template>
 <script setup lang="ts">
-import { confirmAction } from "../../composables/confirmation";
+import { confirmAction, requestReason } from "../../composables/confirmation";
 import { Badge } from "@/components/ui/badge";
 defineProps<{ embedded?: boolean }>();
 import AdminManifestExport from "./AdminManifestExport.vue";
 import { computed, onMounted, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
-import { IonIcon } from "@ionic/vue";
+import AppIcon from "@/components/ui/icon/AppIcon.vue";
 import { timeOutline, calendarOutline, scanOutline, boatOutline, documentTextOutline, ticketOutline, searchOutline, peopleOutline } from "ionicons/icons";
-import { adminSailings } from "../../services/database/staff";
+import { adminSailings, adminUpdateSailingStatus } from "../../services/database/staff";
 import {
   tripOperations,
   reconcileNoShows,
@@ -382,7 +391,7 @@ const terminalNote = computed(() => data.value?.sailing.status === 'CANCELLED'
   : 'Check-in records passenger arrival. Boarding confirms that a checked-in passenger has entered the vessel.');
 const reconcileHint = computed(() => data.value?.sailing.status === 'CANCELLED'
   ? 'No-show reconciliation is unavailable for cancelled sailings.'
-  : !canReconcile.value ? 'Available after departure once this sailing is marked Completed in Trips & schedules.'
+  : !canReconcile.value ? 'Available after the sailing automatically becomes Completed at its scheduled arrival. Delayed sailings require an updated schedule and admin approval to resume.'
   : noShowCandidates.value ? 'Record paid passengers who did not board. Booking history and fares are preserved.'
   : 'All eligible passengers have been boarded or already recorded as no-shows.');
 const viewTitle = computed(() => ({ Bookings: 'Sailing bookings', Passengers: 'Passenger directory', 'Check-in': 'Awaiting check-in', Boarding: 'Ready to board', Manifest: 'Paid passenger manifest', 'No-shows': 'Recorded no-shows' }[tab.value] || 'Passengers'));
@@ -429,6 +438,24 @@ const visiblePassengers = computed(() =>
           : paid.value,
 );
 const matchesSearch = (value: string) => value.toLowerCase().includes(search.value.trim().toLowerCase());
+async function setTripStatus(status: 'DELAYED' | 'CANCELLED') {
+  if (!staffDatabase || !data.value || busy.value || loading.value) return;
+  const trip = data.value.sailing;
+  if (!['SCHEDULED', 'BOARDING', 'DELAYED'].includes(trip.status) || (status === 'DELAYED' && trip.status === 'DELAYED')) return;
+  let reason: string | undefined;
+  if (status === 'CANCELLED') {
+    reason = (await requestReason({ title: 'Cancel trip?', message: 'Enter the cancellation reason. Paid bookings will require a refund.' })) || undefined;
+    if (!reason) return;
+  }
+  if (!(await confirmAction({ title: status === 'CANCELLED' ? 'Cancel trip?' : 'Mark trip Delayed?', message: `Update ${trip.code}? Account holders with active bookings will be notified. Contact walk-in passengers directly.`, confirmText: status === 'CANCELLED' ? 'Cancel trip' : 'Mark Delayed', danger: status === 'CANCELLED' }))) return;
+  busy.value = true; error.value = ''; notice.value = '';
+  try {
+    await adminUpdateSailingStatus(staffDatabase, { code: trip.code, status, reason });
+    await load();
+    notice.value = status === 'CANCELLED' ? 'Trip cancelled. Review paid bookings for refunds.' : 'Trip marked Delayed. Automatic status changes are paused until the schedule is updated and resumed.';
+  } catch (cause) { error.value = databaseRequestError(cause, 'Could not update trip status.'); }
+  finally { busy.value = false; }
+}
 const filteredBookings = computed(() => (data.value?.bookings || []).filter(b => matchesSearch(b.reference)));
 const filteredPassengers = computed(() => visiblePassengers.value.filter(p => matchesSearch(`${p.fullName} ${p.booking.reference} ${label(p.passengerType)}`)));
 const filteredRecordsCount = computed(() => tab.value === 'Bookings' ? filteredBookings.value.length : filteredPassengers.value.length);
@@ -502,6 +529,13 @@ onMounted(async () => {
 });
 </script>
 <style scoped>
+.sailing-status-controls { display: grid; gap: 12px; padding: 16px; margin: 16px 0; border: 1px solid var(--line); border-radius: 12px; background: var(--surface-soft); }
+.sailing-status-controls strong { font-size: 13px; }
+.sailing-status-controls p { margin-top: 6px; font-size: 12px; line-height: 1.6; color: var(--muted); }
+.status-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+.status-actions button { min-height: 40px; padding: 8px 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); color: var(--ink); cursor: pointer; }
+.status-actions .cancel-trip { color: var(--danger); border-color: var(--danger); }
+.status-actions a { color: var(--ocean); font-size: 12px; }
 .trip-operations { display: grid; gap: 14px; color: var(--ink); }
 .trip-operations, .trip-operations > *, .picker { min-width: 0; }
 header, .trip-header, .content-heading, .picker-heading, .sailing-identity, .reconcile { display: flex; align-items: center; justify-content: space-between; gap: 14px; }
@@ -530,7 +564,7 @@ button:focus-visible, select:focus-visible, input:focus-visible, a:focus-visible
 .empty-heading p { margin-top: 6px; }
 .workspace-features { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; margin-top: 24px; padding-top: 20px; border-top: 1px solid var(--line); }
 .workspace-features > div { display: grid; grid-template-columns: 24px 1fr; gap: 3px 10px; }
-.workspace-features ion-icon { grid-row: span 2; color: var(--ocean); font-size: 21px; }
+.workspace-features .app-icon { grid-row: span 2; color: var(--ocean); font-size: 21px; }
 .workspace-features strong { font-size: 12px; }
 .workspace-features small { font-size: 11px; }
 .schedule-link { display: inline-flex; align-items: center; gap: 8px; margin-top: 16px; color: var(--ocean); text-decoration: none; font-size: 12px; }
@@ -542,7 +576,7 @@ button:focus-visible, select:focus-visible, input:focus-visible, a:focus-visible
 .trip-header p { display: flex; flex-wrap: wrap; gap: 6px; }
 .trip-header p small { font-size: 10px; }
 .trip-header > a { display: inline-flex; align-items: center; gap: 7px; color: var(--ocean); background: var(--surface-soft); text-decoration: none; font-size: 11px; flex: none; }
-.trip-header > a ion-icon { font-size: 16px; }
+.trip-header > a .app-icon { font-size: 16px; }
 .metrics { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); border-top: 1px solid var(--line); padding: 14px 4px; background: var(--surface-soft); border-radius: 0 0 12px 12px; }
 .metrics article { display: grid; gap: 5px; padding: 0 14px; border-right: 1px solid var(--line); }
 .metrics article:last-child { border-right: 0; }
@@ -567,7 +601,7 @@ progress::-moz-progress-bar { background: var(--ocean); border-radius: 8px; }
 .links { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 16px; }
 .links a { display: flex; align-items: center; gap: 10px; text-decoration: none; border: 1px solid var(--line); border-radius: 8px; padding: 12px; color: var(--ocean); }
 .links a:hover { background: var(--surface-soft); }
-.links ion-icon { flex: none; font-size: 22px; }
+.links .app-icon { flex: none; font-size: 22px; }
 .links strong, .links small { display: block; font-size: 11px; }
 .links small { margin-top: 4px; font-size: 10px; }
 .footnote { margin-top: 14px; font-size: 10px; }
@@ -576,7 +610,7 @@ progress::-moz-progress-bar { background: var(--ocean); border-radius: 8px; }
 .content-heading p:not(.eyebrow) { margin-top: 5px; font-size: 11px; }
 .record-count { color: var(--ocean); background: var(--light-blue); padding: 4px 8px; border-radius: 6px; font-size: 10px; white-space: nowrap; }
 .record-search { display: flex; align-items: center; gap: 8px; margin: 0 18px 14px; padding: 0 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface-soft); }
-.record-search ion-icon { color: var(--muted); font-size: 17px; flex: none; }
+.record-search .app-icon { color: var(--muted); font-size: 17px; flex: none; }
 .record-search input { width: 100%; min-height: 38px; background: transparent; border: 0; }
 .table-wrap { overflow: auto; max-height: 420px; border-top: 1px solid var(--line); border-radius: 0 0 12px 12px; }
 table { width: 100%; border-collapse: separate; border-spacing: 0; }
@@ -591,7 +625,7 @@ td strong { font-size: 12px; font-weight: 600; }
 .attendance.absent { color: var(--danger); }
 .attendance-time { display: block; font-size: 10px; margin-top: 3px; }
 .record-empty { display: grid; justify-items: center; text-align: center; padding: 30px 18px; gap: 8px; border-top: 1px solid var(--line); }
-.record-empty > ion-icon { color: var(--ocean); font-size: 27px; margin-bottom: 2px; }
+.record-empty > .app-icon { color: var(--ocean); font-size: 27px; margin-bottom: 2px; }
 .record-empty strong { font-size: 14px; }
 .record-empty p { max-width: 460px; font-size: 11px; }
 .reconcile { padding: 18px; }

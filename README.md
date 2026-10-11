@@ -84,6 +84,8 @@ npm run dev -- --host localhost --port 8100
 
 After editing `.env.local`, stop and restart the server. Sign in with an existing account, or register a passenger account and confirm its email if email confirmation is enabled. Admin and staff roles must be granted by an administrator; selecting a role in the browser does not grant access.
 
+One account is active per browser profile and app origin. All tabs share that login. New tabs opening Sign in or Create account go to the current account's workspace; another account can sign in only after logout. Logging out clears the shared browser session and private pages in other tabs. See [browser sessions](docs/BROWSER-SESSION.md).
+
 **For the existing team backend:** cloning the project and providing the public URL/key is enough. Do not rerun the schema installation or reset the database. All teammates using those settings share the same hosted records.
 
 ## Set up a new Supabase project

@@ -92,6 +92,7 @@ it('supports a new reservation with saved travelers and capacity checks', async 
   try {
     const result = await rpc('PASSENGER', 'MySavedTravelers')
     assert.equal(result.travelers.length, 3)
+    await db.query("insert into barkolink_private.vessel_port_observation(vessel_id,port_id,observed_at,confirmed_by_uid,note) select vessel_id,origin_port_id,departure_at-interval '1 second',$1,'Synthetic terminal observation for isolated reservation fixture.' from public.sailing where code='TEST-EMPTY'",[ids.ADMIN]);
     await rpc('PASSENGER', 'ReserveSailing2', { sailingCode: 'TEST-EMPTY', reference: 'TEST-NEW-RESERVATION',
       accommodationId: 'eeeeeeee-0000-4000-8000-000000000201', passenger1Name: 'TEST New Adult', passenger1Type: 'REGULAR',
       passenger2Name: 'TEST New Student', passenger2Type: 'STUDENT' })
@@ -104,6 +105,7 @@ it('verifies all seeded module reads and transactional flows without persisting 
   const snapshot = (await db.query(snapshotQuery)).rows[0]
   await db.exec('begin; create temporary table test_verification_result(module_reads integer,transaction_flows integer) on commit drop;')
   try {
+    await db.query("insert into barkolink_private.vessel_port_observation(vessel_id,port_id,observed_at,confirmed_by_uid,note) select vessel_id,origin_port_id,departure_at-interval '1 second',$1,'Synthetic terminal observation for isolated verification fixture.' from public.sailing where code='TEST-EMPTY'",[ids.ADMIN]);
     await db.exec(fs.readFileSync('supabase/verify-test-data.sql', 'utf8'))
     assert.deepEqual((await db.query('select * from pg_temp.test_verification_result')).rows, [{ module_reads: 34, transaction_flows: 7 }])
   } finally { await db.exec('rollback') }

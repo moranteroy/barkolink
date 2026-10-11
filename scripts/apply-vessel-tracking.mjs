@@ -1,0 +1,11 @@
+import fs from 'node:fs';
+import {queryLive,projectRef} from './test-data-database.mjs';
+const exists=(await queryLive("select to_regclass('barkolink_private.vessel_port_observation') is not null present"))[0].present;
+if(exists)throw new Error('Tracking migration already exists; refusing repeat deployment.');
+const original=(await queryLive("select pg_get_functiondef('barkolink_private.execute_flexible_discounts(text,jsonb,text,text)'::regprocedure) definition"))[0];
+fs.mkdirSync('.backups',{recursive:true});fs.writeFileSync(`.backups/before-vessel-tracking-${Date.now()}.json`,JSON.stringify({projectRef,definition:original.definition},null,2));
+const hash=`jsonb_build_object('sailings',(select md5(coalesce(jsonb_agg(to_jsonb(t) order by code),'[]'::jsonb)::text) from public.sailing t),'bookings',(select md5(coalesce(jsonb_agg(to_jsonb(t) order by id),'[]'::jsonb)::text) from public.booking t),'tickets',(select md5(coalesce(jsonb_agg(to_jsonb(t) order by id),'[]'::jsonb)::text) from public.booking_passenger t),'accounts',(select md5(coalesce(jsonb_agg(to_jsonb(t) order by uid),'[]'::jsonb)::text) from public.app_user t),'auth',(select md5(coalesce(jsonb_agg(to_jsonb(t) order by id),'[]'::jsonb)::text) from auth.users t))`;
+await queryLive(`begin;set local lock_timeout='10s';create temporary table tracking_history_guard on commit drop as select ${hash} fingerprint;${fs.readFileSync('supabase/migrations/040_vessel_position_tracking.sql','utf8')}do $$begin if (select fingerprint from tracking_history_guard) is distinct from ${hash} then raise exception 'Existing records changed; rollback tracking migration';end if;end $$;commit;`,false);
+const result=(await queryLive("select (select count(*)::int from public.vessel where is_active) active_vessels,(select count(*)::int from barkolink_private.vessel_port_observation) confirmed_observations,(select count(*)::int from public.booking) preserved_bookings,(select count(*)::int from public.booking_passenger) preserved_passengers"))[0];
+fs.mkdirSync('.audit',{recursive:true});fs.writeFileSync('.audit/vessel-tracking-migration.json',JSON.stringify({appliedAt:new Date().toISOString(),...result},null,2));
+console.log(JSON.stringify(result));

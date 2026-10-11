@@ -11,6 +11,11 @@
         <aside id="admin-sidebar" class="sidebar" :class="{ open: menuOpen }">
           <BrandMark />
           <nav aria-label="Admin navigation">
+            <div class="nav-group port-display-shortcut">
+              <router-link to="/port-display" target="_blank" rel="noopener" @click="menuOpen = false">
+                <AppIcon :icon="gridOutline" aria-hidden="true" />Port Display (TV)
+              </router-link>
+            </div>
             <div
               v-for="group in navigation"
               :key="group.label"
@@ -18,28 +23,33 @@
             >
               <button
                 class="nav-group-toggle"
+                :id="`admin-nav-toggle-${group.items[0].key}`"
+                type="button"
                 :aria-expanded="expandedNavigation === group.label"
                 :aria-controls="`admin-nav-${group.items[0].key}`"
                 @click="expandedNavigation = expandedNavigation === group.label ? '' : group.label"
               >
                 <span class="nav-group-label">
-                  <ion-icon :icon="group.icon" aria-hidden="true" />
+                  <AppIcon :icon="group.icon" aria-hidden="true" />
                   {{ group.label }}
                 </span>
-                <ion-icon class="nav-group-chevron" :icon="chevronDownOutline" aria-hidden="true" />
+                <AppIcon class="nav-group-chevron" :icon="chevronDownOutline" aria-hidden="true" />
               </button>
               <div
                 v-show="expandedNavigation === group.label"
                 :id="`admin-nav-${group.items[0].key}`"
                 class="nav-group-items"
+                role="region"
+                :aria-labelledby="`admin-nav-toggle-${group.items[0].key}`"
               >
               <router-link
                 v-for="item in group.items"
                 :key="item.key"
                 :to="item.key === 'dashboard' ? '/admin' : `/admin/${item.key}`"
-                :class="{ active: section === item.key }"
+                :class="{ active: navigationSection === item.key }"
+                :aria-current="navigationSection === item.key ? 'page' : undefined"
                 @click="menuOpen = false"
-                ><ion-icon :icon="item.icon" aria-hidden="true" />{{
+                ><AppIcon :icon="item.icon" aria-hidden="true" />{{
                   item.label
                 }}</router-link
               >
@@ -56,7 +66,7 @@
               aria-label="Open menu"
               @click="menuOpen = true"
             >
-              <ion-icon :icon="menuOutline" />
+              <AppIcon :icon="menuOutline" />
             </button>
             <div class="admin-breadcrumbs">
               <strong>Admin workspace</strong>
@@ -70,7 +80,7 @@
                 })
               "
             >
-              <ion-icon :icon="searchOutline" /><input
+              <AppIcon :icon="searchOutline" /><input
                 v-model.trim="globalSearch"
                 type="search"
                 placeholder="Search bookings..."
@@ -84,7 +94,7 @@
               class="admin-bell"
               :aria-label="notificationUnreadCount ? `Notifications, ${notificationUnreadCount} unread` : 'Notifications'"
               title="Notifications"
-              ><ion-icon :icon="notificationsOutline" aria-hidden="true" />
+              ><AppIcon :icon="notificationsOutline" aria-hidden="true" />
               <span v-if="notificationUnreadCount" class="admin-unread-badge" aria-hidden="true">{{ notificationUnreadCount > 99 ? '99+' : notificationUnreadCount }}</span>
             </router-link>
             <AdminAccountMenu />
@@ -98,8 +108,11 @@
                 <p>{{ page.description }}</p>
               </div>
               <div class="heading-actions">
+                <Button v-if="section === 'trips'" variant="outline" class="secondary" as-child>
+                  <RouterLink to="/port-display" target="_blank" rel="noopener">Open port display</RouterLink>
+                </Button>
                 <Button variant="outline" class="secondary" :disabled="loading || refreshDecision" @click="loadData">
-                  <ion-icon :icon="refreshOutline" />Refresh</Button
+                  <AppIcon :icon="refreshOutline" />Refresh</Button
                 ><Button
                   v-if="primaryAction"
                   class="primary"
@@ -111,6 +124,7 @@
             </div>
             <p v-if="error" class="alert" role="alert">{{ error }}</p>
             <p v-if="notice" class="notice" role="status">{{ notice }}</p>
+            <FerryReferenceDetails :record="referenceRecord" @close="referenceRecord = null" />
             <AdminReportsPanel
               v-if="section === 'reports'"
               :refresh-token="reportsRefresh"
@@ -154,7 +168,7 @@
               embedded
               v-else-if="section === 'trip-operations'"
               :key="`trip-${reportsRefresh}`"
-            /><OperationsPanel v-else-if="section === 'operations'" />
+            /><OperationsPanel ref="childEditorRef" v-else-if="section === 'operations'" :key="`operations-${reportsRefresh}`" />
             <VouchersPanel v-else-if="section === 'vouchers'" :key="`vouchers-${reportsRefresh}`" />
             <section
               v-else-if="section === 'fares'"
@@ -163,7 +177,7 @@
             >
               <div class="panel fare-vessel-picker">
                 <div class="fare-vessel-heading">
-                  <span class="fare-card-icon"><ion-icon :icon="boatOutline" aria-hidden="true" /></span>
+                  <span class="fare-card-icon"><AppIcon :icon="boatOutline" aria-hidden="true" /></span>
                   <div>
                   <p class="eyebrow">VESSEL PRICING</p>
                   <h2>Choose a vessel</h2>
@@ -233,7 +247,7 @@
                       <section class="panel fare-card fare-base-card">
                         <div class="fare-card-heading">
                           <span class="fare-card-icon"
-                            ><ion-icon :icon="ticketOutline" aria-hidden="true"
+                            ><AppIcon :icon="ticketOutline" aria-hidden="true"
                           /></span>
                           <div>
                             <h2>Regular fare</h2>
@@ -268,7 +282,7 @@
                       </section>
                       <section class="panel fare-card custom-discounts">
                         <div class="fare-card-heading">
-                          <span class="fare-card-icon"><ion-icon :icon="pricetagsOutline" aria-hidden="true" /></span>
+                          <span class="fare-card-icon"><AppIcon :icon="pricetagsOutline" aria-hidden="true" /></span>
                           <div>
                             <h2>Passenger discounts</h2>
                             <p>
@@ -351,7 +365,7 @@
                             )
                           }}
                         </p>
-                        <button
+                        <button data-slot="button" data-variant="outline" data-size="default"
                           type="button"
                           class="secondary"
                           :disabled="
@@ -420,7 +434,7 @@
                         </div>
                       </div>
                       <p class="fare-preview-note">
-                        <ion-icon
+                        <AppIcon
                           :icon="ticketOutline"
                           aria-hidden="true"
                         />Fares are rounded to whole pesos, with a minimum of
@@ -439,7 +453,7 @@
                         Existing trips and reservations keep their saved fares.
                       </p>
                     </div>
-                    <button
+                    <button data-slot="button" data-variant="default" data-size="default"
                       class="primary"
                       type="submit"
                       :disabled="
@@ -457,7 +471,7 @@
             </section>
             <template v-else
               ><p v-if="section === 'boarding'" class="boarding-help">
-                <ion-icon
+                <AppIcon
                   :icon="informationCircleOutline"
                   aria-hidden="true"
                 /><span
@@ -470,13 +484,13 @@
               </p>
               <AdminManifestExport v-if="section === 'manifest'" class="manifest-download-card" :external-selection="true" :sailing-code="sailingFilter === 'ALL' ? '' : sailingFilter" :sailings="sailingOptions.map(s => ({ code: s.code, origin: s.origin.name, destination: s.destination.name, vessel: s.vessel.name }))" />
               <div v-if="['check-in', 'boarding', 'manifest'].includes(section)" class="booking-filters check-in-filters">
-                <label class="booking-search-field" for="check-in-search"><span>Search passengers</span><div class="booking-search-input"><ion-icon :icon="searchOutline" aria-hidden="true" /><input id="check-in-search" v-model.trim="search" type="search" placeholder="Passenger name or booking reference" /></div></label>
+                <label class="booking-search-field" for="check-in-search"><span>Search passengers</span><div class="booking-search-input"><AppIcon :icon="searchOutline" aria-hidden="true" /><input id="check-in-search" v-model.trim="search" type="search" placeholder="Passenger name or booking reference" /></div></label>
                 <label v-if="section !== 'manifest'" for="check-in-status"><span>Ticket status</span><select id="check-in-status" v-model="statusFilter" aria-label="Filter by status"><option value="ALL">All statuses</option><option v-for="value in filterOptions" :key="value" :value="value">{{ value.replaceAll('_', ' ') }}</option></select></label>
                 <label class="check-in-sailing-filter" for="check-in-sailing"><span>Sailing</span><select id="check-in-sailing" v-model="sailingFilter" aria-label="Filter by sailing"><option value="ALL">All sailings</option><option v-for="s in sailingOptions" :key="s.code" :value="s.code">{{ s.code }} · {{ routeLabel(s) }}</option></select></label>
                 <Button variant="ghost" :disabled="!search && statusFilter === 'ALL' && sailingFilter === 'ALL'" @click="search = ''; statusFilter = 'ALL'; sailingFilter = 'ALL'">Reset filters</Button>
               </div>
               <div v-else-if="section === 'users'" class="booking-filters user-filters">
-                <label class="booking-search-field" for="user-search"><span>Search users</span><div class="booking-search-input"><ion-icon :icon="searchOutline" aria-hidden="true" /><input id="user-search" v-model.trim="search" type="search" placeholder="Full name or email address" /></div></label>
+                <label class="booking-search-field" for="user-search"><span>Search users</span><div class="booking-search-input"><AppIcon :icon="searchOutline" aria-hidden="true" /><input id="user-search" v-model.trim="search" type="search" placeholder="Full name or email address" /></div></label>
                 <label for="user-role-filter"><span>Account role</span><select id="user-role-filter" v-model="statusFilter"><option value="ALL">All roles</option><option v-for="value in filterOptions" :key="value" :value="value">{{ userRoleLabel(value) }}</option></select></label>
                 <Button variant="ghost" :disabled="!search && statusFilter === 'ALL'" @click="search = ''; statusFilter = 'ALL'">Reset filters</Button>
               </div>
@@ -484,7 +498,7 @@
                 <label class="booking-search-field" for="directory-search">
                   <span>{{ section === 'vessels' ? 'Search vessels' : section === 'ports' ? 'Search ports' : section === 'trips' ? 'Search trips' : section === 'passengers' ? 'Search passengers' : 'Search bookings' }}</span>
                   <div class="booking-search-input">
-                    <ion-icon :icon="searchOutline" aria-hidden="true" />
+                    <AppIcon :icon="searchOutline" aria-hidden="true" />
                     <input id="directory-search" v-model.trim="search" type="search" :placeholder="section === 'vessels' ? 'Vessel code or name' : section === 'ports' ? 'Port code, name, city, or region' : section === 'trips' ? 'Trip code, route, or vessel' : section === 'passengers' ? 'Passenger name or booking reference' : 'Booking reference or account name'" />
                   </div>
                 </label>
@@ -492,7 +506,7 @@
                   <span>{{ section === 'vessels' ? 'Vessel status' : section === 'ports' ? 'Port status' : section === 'trips' ? 'Trip status' : section === 'passengers' ? 'Ticket status' : 'Payment / booking status' }}</span>
                   <select id="directory-status" v-model="statusFilter">
                     <option value="ALL">All statuses</option>
-                    <option v-for="value in filterOptions" :key="value" :value="value">{{ section === 'trips' ? value.toLowerCase().replaceAll('_', ' ') : value }}</option>
+                    <option v-for="value in filterOptions" :key="value" :value="value">{{ section === 'trips' ? value.toLowerCase().replaceAll('_', ' ').replace(/\b\w/g, letter => letter.toUpperCase()) : value }}</option>
                   </select>
                 </label>
                 <Button variant="ghost" :disabled="!search && statusFilter === 'ALL'" @click="search = ''; statusFilter = 'ALL'">Reset filters</Button>
@@ -536,8 +550,11 @@
                   </option>
                 </select>
               </div>
-              <p v-if="section === 'check-in'" class="check-in-guidance"><ion-icon :icon="informationCircleOutline" aria-hidden="true" /><span>Check in issued tickets for paid, confirmed bookings. Choose a sailing to focus on its passengers.</span></p>
-              <details v-if="section === 'trips'" class="admin-trip-weather"><summary><span><ion-icon :icon="boatOutline" aria-hidden="true" /> Port weather</span><span>Choose a sailing to view its forecast</span></summary><WeatherTripPicker :trips="sailings" /></details>
+              <p v-if="section === 'check-in'" class="check-in-guidance"><AppIcon :icon="informationCircleOutline" aria-hidden="true" /><span>Check in issued tickets for paid, confirmed bookings. Choose a sailing to focus on its passengers.</span></p>
+              <VesselTrackingPanel v-if="section === 'vessels'" ref="childEditorRef" />
+              <DailySchedulesPanel ref="childEditorRef" v-if="section === 'trips'" :disabled="loading || !!busy" @plan="planPublishedDeparture" />
+              <p v-if="section === 'trips'" class="trip-field-hint">Automatic status follows each trip's confirmed boarding time and scheduled arrival. Updates run every minute. Trips without a confirmed boarding time are flagged for review. Admin controls Delayed and Cancelled; update the schedule before resuming a delayed trip.</p>
+              <details v-if="section === 'trips'" class="admin-trip-weather"><summary><span><AppIcon :icon="boatOutline" aria-hidden="true" /> Port weather</span><span>Choose a sailing to view its forecast</span></summary><WeatherTripPicker :trips="sailings" /></details>
               <section class="panel" :class="{ 'booking-records-panel': ['bookings', 'passengers', 'trips', 'ports', 'vessels', 'check-in', 'boarding', 'manifest', 'users'].includes(section), 'passenger-records-panel': section === 'passengers', 'trip-records-panel': section === 'trips', 'boarding-records-panel': section === 'boarding', 'manifest-records-panel': section === 'manifest' }">
                 <div class="panel-head">
                   <div>
@@ -559,7 +576,7 @@
                   :column-flex="section === 'manifest' ? [1.2, .45, .65, 1.15, 1.15, .85, 1.15] : section === 'users' ? [1.1, 1.6, .8, 1] : []"
                   :density="['bookings', 'passengers', 'trips', 'ports', 'vessels', 'check-in', 'boarding', 'manifest', 'users'].includes(section) ? 'compact' : 'comfortable'"
                   :max-grid-height="['ports', 'vessels', 'users'].includes(section) ? 360 : ['check-in', 'boarding', 'manifest'].includes(section) ? 440 : ['bookings', 'passengers', 'trips'].includes(section) ? 480 : 560"
-                  :action-width="['check-in', 'boarding'].includes(section) ? 130 : section === 'trips' ? 150 : ['check-in', 'boarding'].includes(section) ? 140 : ['bookings', 'ports', 'vessels'].includes(section) ? 110 : 170"
+                  :action-width="['check-in', 'boarding'].includes(section) ? 130 : section === 'trips' ? 150 : ['check-in', 'boarding'].includes(section) ? 140 : ['ports', 'vessels'].includes(section) ? 170 : section === 'bookings' ? 110 : 170"
                   ><template v-if="section === 'bookings'" #cell="{ row, index, value }">
                     <div v-if="index === 0" class="booking-identity"><strong>{{ row.source.reference }}</strong><small>{{ row.source.owner.fullName }}</small></div>
                     <div v-else-if="index === 1" class="booking-sailing"><strong>{{ row.source.sailing.origin.name }} → {{ row.source.sailing.destination.name }}</strong><small>{{ dateTime(row.source.sailing.departureAt) }}</small></div>
@@ -582,14 +599,14 @@
                   <template v-else-if="section === 'trips'" #cell="{ row, index, value }">
                     <div v-if="index === 0" class="schedule-identity"><strong class="trip-reference">{{ row.source.code }}</strong><small>{{ routeLabel(row.source) }}</small></div>
                     <div v-else-if="index === 3" class="trip-capacity"><strong>{{ value }}</strong><div class="schedule-seat-track" aria-hidden="true"><i :style="{ width: `${row.source.vessel.passengerCapacity ? Math.max(0, Math.min(100, 100 * (row.source.vessel.passengerCapacity - row.source.availableSeats) / row.source.vessel.passengerCapacity)) : 0}%` }"></i></div></div>
-                    <template v-else-if="index === row.statusIndex"><select v-if="nextStatuses(row.source).length > 1" class="schedule-status-select" :class="row.source.status.toLowerCase()" :value="row.source.status" :disabled="!!busy" :aria-label="`Change status for ${row.key}`" @change="changeSailingStatus(row.source, $event)"><option v-for="state in nextStatuses(row.source)" :key="state" :value="state">{{ state.toLowerCase().replaceAll('_', ' ') }}</option></select><Badge v-else class="schedule-status-badge" :class="row.source.status.toLowerCase()" :variant="value === 'CANCELLED' ? 'destructive' : value === 'COMPLETED' ? 'success' : 'default'">{{ String(value).toLowerCase() }}</Badge></template>
+                    <template v-else-if="index === row.statusIndex"><select v-if="nextStatuses(row.source).length > 1" class="schedule-status-select" :class="row.source.status.toLowerCase()" :value="row.source.status" :disabled="!!busy" :aria-label="`Change status for ${row.key}`" @change="changeSailingStatus(row.source, $event)"><option v-for="state in nextStatuses(row.source)" :key="state" :value="state">{{ state.toLowerCase().replaceAll('_', ' ').replace(/\b\w/g, letter => letter.toUpperCase()) }}</option></select><Badge v-else class="schedule-status-badge" :class="row.source.status.toLowerCase()" :variant="value === 'CANCELLED' ? 'destructive' : value === 'COMPLETED' ? 'success' : 'default'">{{ String(value).toLowerCase() }}</Badge></template>
                     <span v-else>{{ value }}</span>
                   </template>
                   <template v-else-if="['ports', 'vessels'].includes(section)" #cell="{ row, index, value }">
                     <strong v-if="index === 0" class="port-code">{{ value }}</strong>
-                    <strong v-else-if="index === 1" class="port-name">{{ value }}</strong>
+                    <div v-else-if="index === 1" class="catalog-identity"><strong class="port-name">{{ row.source.name }}</strong></div>
                     <Badge v-else-if="index === row.statusIndex" :variant="row.source.isActive ? 'success' : 'destructive'">{{ row.source.isActive ? 'Active' : 'Inactive' }}</Badge>
-                    <span v-else-if="section === 'vessels' && index === 2" class="vessel-capacity">{{ value }} seats</span>
+                    <span v-else-if="section === 'vessels' && index === 2" class="vessel-capacity">{{ row.source.passengerCapacity == null ? 'Needs confirmation' : `${value} seats` }}</span>
                     <span v-else>{{ value }}</span>
                   </template>
                   <template v-else-if="['check-in', 'boarding'].includes(section)" #cell="{ row, index, value }">
@@ -626,7 +643,7 @@
                       </button><span v-else class="booking-no-action" title="Only unpaid pending or confirmed bookings can be cancelled" aria-label="Cancellation unavailable">—</span></template
                     ><template
                       v-else-if="section === 'ports' || section === 'vessels'"
-                      ><button
+                      ><button v-if="row.source.referenceMetadata" type="button" class="text-action" :aria-label="`View details for ${section === 'ports' ? 'port' : 'vessel'} ${row.source.name}`" @click="referenceRecord = row.source">Details</button><button
                         class="text-action"
                         :aria-label="`Edit ${section === 'ports' ? 'port' : 'vessel'} ${row.source.name}`"
                         @click="editRecord(row.source)"
@@ -669,7 +686,7 @@
                         "
                         @click="processTicket(row.source, 'check-in')"
                       >
-                        <ion-icon :icon="row.source.ticketStatus === 'ISSUED' ? scanOutline : ['CHECKED_IN', 'BOARDED'].includes(row.source.ticketStatus) ? checkmarkCircleOutline : informationCircleOutline" aria-hidden="true" />
+                        <AppIcon :icon="row.source.ticketStatus === 'ISSUED' ? scanOutline : ['CHECKED_IN', 'BOARDED'].includes(row.source.ticketStatus) ? checkmarkCircleOutline : informationCircleOutline" aria-hidden="true" />
                         {{
                           busy === row.key ? 'Checking in…' : row.source.ticketStatus === "ISSUED"
                             ? "Check in"
@@ -691,7 +708,7 @@
                           "
                           @click="processTicket(row.source, 'boarding')"
                         >
-                          <ion-icon :icon="row.source.ticketStatus === 'BOARDED' ? checkmarkCircleOutline : boatOutline" aria-hidden="true" />
+                          <AppIcon :icon="row.source.ticketStatus === 'BOARDED' ? checkmarkCircleOutline : boatOutline" aria-hidden="true" />
                           {{
                             busy === row.key
                               ? "Boarding…"
@@ -704,7 +721,7 @@
                     ></template
                   ></RecordsGrid
                 >
-                <p class="table-foot">
+                <p v-if="section !== 'trips'" class="table-foot">
                   {{ section === 'ports' ? `${rows.length} of ${recordTotal} ports.` : `${recordTotal} records.` }}
                   {{
                     section === 'ports' ? 'Search and status filters apply to all ports. Inactive ports are unavailable for new sailings.' : section === 'bookings' ? 'Search and status filters apply to all bookings. Cancellation is available only for eligible unpaid reservations.' : ['trips', 'users', 'passengers', 'check-in', 'boarding', 'manifest'].includes(section)
@@ -712,7 +729,7 @@
                       : "Search, column sorting, and filters apply to the loaded page."
                   }}
                 </p>
-<WorkspacePagination v-if="!['ports', 'vessels'].includes(section) && (['bookings', 'passengers'].includes(section) ? recordTotal > 0 : recordTotal > pageSize)" :page="recordPage" :total="recordTotal" :page-size="pageSize" :disabled="loading || !!busy" @change="recordPage = $event; loadData()"><span v-if="['bookings', 'passengers'].includes(section)">{{ rows.length ? recordPage * pageSize + 1 : 0 }}–{{ rows.length ? recordPage * pageSize + rows.length : 0 }} of {{ recordTotal.toLocaleString() }} {{ section === 'passengers' ? 'passengers' : 'bookings' }}</span><span v-else>{{ recordTotal.toLocaleString() }} records</span></WorkspacePagination>
+<WorkspacePagination v-if="!['ports', 'vessels'].includes(section) && (['bookings', 'passengers'].includes(section) ? recordTotal > 0 : recordTotal > pageSize)" :page="recordPage" :total="recordTotal" :page-size="pageSize" :disabled="loading || !!busy" @change="recordPage = $event; loadData()"><span v-if="['bookings', 'passengers'].includes(section)">{{ rows.length ? recordPage * pageSize + 1 : 0 }}–{{ rows.length ? recordPage * pageSize + rows.length : 0 }} of {{ recordTotal.toLocaleString() }} {{ section === 'passengers' ? 'passengers' : 'bookings' }}</span><span v-else>{{ recordPage * pageSize + 1 }}&ndash;{{ recordPage * pageSize + rows.length }} of {{ recordTotal.toLocaleString() }} {{ section === 'trips' ? 'trips' : 'records' }}</span></WorkspacePagination>
               </section></template
             >
             <PortLocationMap
@@ -747,13 +764,13 @@
         >
           <div class="modal-head">
             <div class="trip-modal-title">
-              <span v-if="modal === 'port' || modal === 'vessel'" class="port-title-icon"><ion-icon :icon="modal === 'vessel' ? boatOutline : locationOutline" aria-hidden="true" /></span>
+              <span v-if="modal === 'port' || modal === 'vessel'" class="port-title-icon"><AppIcon :icon="modal === 'vessel' ? boatOutline : locationOutline" aria-hidden="true" /></span>
               <span v-if="modal === 'user'" class="account-title-icon"
-                ><ion-icon
+                ><AppIcon
                   :icon="peopleCircleOutline"
                   aria-hidden="true" /></span
               ><span v-if="modal === 'trip'" class="trip-title-icon"
-                ><ion-icon :icon="boatOutline" aria-hidden="true"
+                ><AppIcon :icon="boatOutline" aria-hidden="true"
               /></span>
               <div>
                 <p v-if="modal === 'trip'" class="eyebrow">TRIPS & SCHEDULES</p>
@@ -785,7 +802,7 @@
               :disabled="!!busy"
               @click="closeModal"
             >
-              <ion-icon :icon="closeOutline" />
+              <AppIcon :icon="closeOutline" />
             </button>
           </div>
           <p v-if="formError" class="alert" role="alert">{{ formError }}</p>
@@ -805,8 +822,8 @@
               <label v-if="editingId" class="port-availability"><input v-model="portForm.isActive" type="checkbox" /><span><strong>Active port</strong><small>Available when creating new sailings.</small></span></label>
             </fieldset>
             <footer class="port-form-footer">
-              <button class="secondary" type="button" :disabled="!!busy" @click="closeModal">Cancel</button>
-              <button class="primary" type="submit" :disabled="!!busy">{{ busy ? "Saving…" : editingId ? "Save changes" : "Add port" }}</button>
+              <button data-slot="button" data-variant="outline" data-size="default" class="secondary" type="button" :disabled="!!busy" @click="closeModal">Cancel</button>
+              <button data-slot="button" data-variant="default" data-size="default" class="primary" type="submit" :disabled="!!busy">{{ busy ? "Saving…" : editingId ? "Save changes" : "Add port" }}</button>
             </footer>
           </form>
           <form v-else-if="modal === 'vessel'" class="port-form" @submit.prevent="saveVessel">
@@ -821,7 +838,7 @@
                 <label v-if="editingId" class="port-availability"><input v-model="vesselForm.isActive" type="checkbox" /><span><strong>Active vessel</strong><small>Available when creating new sailings.</small></span></label>
               </fieldset>
             </div>
-            <footer class="port-form-footer"><button class="secondary" type="button" :disabled="!!busy" @click="closeModal">Cancel</button><button class="primary" type="submit" :disabled="!!busy">{{ busy ? 'Saving…' : 'Save vessel' }}</button></footer>
+            <footer class="port-form-footer"><button data-slot="button" data-variant="outline" data-size="default" class="secondary" type="button" :disabled="!!busy" @click="closeModal">Cancel</button><button data-slot="button" data-variant="default" data-size="default" class="primary" type="submit" :disabled="!!busy">{{ busy ? 'Saving…' : 'Save vessel' }}</button></footer>
           </form>
           <form
             v-else-if="modal === 'trip'"
@@ -843,14 +860,14 @@
                 </p>
               </div>
               <div v-if="editingId && tripEditLoading" class="trip-callout">
-                <ion-icon :icon="refreshOutline" aria-hidden="true" />
+                <AppIcon :icon="refreshOutline" aria-hidden="true" />
                 <p>Checking active reservations…</p>
               </div>
               <div
                 v-if="editingId && tripBookingsLoaded && tripHasBookings"
                 class="trip-callout"
               >
-                <ion-icon :icon="lockClosedOutline" aria-hidden="true" />
+                <AppIcon :icon="lockClosedOutline" aria-hidden="true" />
                 <div>
                   <strong
                     >{{ tripBookings.length }} active
@@ -881,14 +898,14 @@
                   >
                     <div class="trip-section-heading">
                       <span
-                        ><ion-icon :icon="locationOutline" aria-hidden="true"
+                        ><AppIcon :icon="locationOutline" aria-hidden="true"
                       /></span>
                       <div>
                         <h3 id="trip-route-title">Route & vessel</h3>
                         <p>Choose where and how passengers will travel.</p>
                       </div>
                       <small v-if="tripFieldsLocked" class="trip-lock-badge"
-                        ><ion-icon
+                        ><AppIcon
                           :icon="lockClosedOutline"
                           aria-hidden="true"
                         />Locked</small
@@ -937,7 +954,7 @@
                       >
                         <option value="" disabled>Select vessel</option>
                         <option
-                          v-for="v in activeVessels"
+                          v-for="v in tripVesselOptions"
                           :key="v.id"
                           :value="v.id"
                         >
@@ -945,8 +962,9 @@
                         </option>
                       </select></label
                     >
+                    <p v-if="tripPublishedOperator" class="trip-field-hint">{{ tripPublishedOperator }} published timetable · confirm the assigned vessel, arrival time, and fares before saving.</p>
                     <p v-if="selectedTripVessel" class="trip-field-hint">
-                      <ion-icon :icon="peopleOutline" aria-hidden="true" />{{
+                      <AppIcon :icon="peopleOutline" aria-hidden="true" />{{
                         selectedTripVessel.passengerCapacity
                       }}
                       passenger seats on {{ selectedTripVessel.name }}
@@ -959,15 +977,16 @@
                       >
                         <option value="">Choose ports manually</option>
                         <option
-                          v-for="r in routeOptions"
+                          v-for="r in tripRouteOptions"
                           :key="r.id"
                           :value="r.id"
                         >
                           {{ r.code }} · {{ r.origin.name }} →
-                          {{ r.destination.name }} · {{ r.durationMinutes }} min
+                          {{ r.destination.name }} · {{ estimatedRouteMinutes(r) == null ? 'Set arrival time manually' : durationHours(estimatedRouteMinutes(r)) }}
                         </option>
                       </select></label
                     >
+                    <div class="vessel-position-hint" v-if="tripVesselIssue || vesselAvailabilityError"><p>{{ tripVesselIssue || vesselAvailabilityError }}</p><router-link to="/admin/vessels">Manage vessel locations</router-link></div>
                   </section>
                   <section
                     class="trip-section"
@@ -975,7 +994,7 @@
                   >
                     <div class="trip-section-heading">
                       <span
-                        ><ion-icon :icon="calendarOutline" aria-hidden="true"
+                        ><AppIcon :icon="calendarOutline" aria-hidden="true"
                       /></span>
                       <div>
                         <h3 id="trip-schedule-title">Sailing schedule</h3>
@@ -996,11 +1015,18 @@
                       /></label>
                     </div>
                     <p class="trip-field-hint">
-                      <ion-icon :icon="timeOutline" aria-hidden="true" />{{
+                      <AppIcon :icon="timeOutline" aria-hidden="true" />{{
                         tripDurationLabel ||
                         "Arrival must be later than departure."
                       }}
                     </p>
+                  </section>
+                  <section class="trip-section trip-boarding-section" aria-labelledby="trip-boarding-title">
+                    <div class="trip-section-heading"><span><AppIcon :icon="timeOutline" aria-hidden="true" /></span><div><h3 id="trip-boarding-title">Boarding</h3><p>Confirm when boarding opens for this trip.</p></div><router-link class="boarding-settings-action" to="/admin/operations">Status settings</router-link></div>
+                    <div class="form-grid">
+                      <label>Confirmed boarding start<input v-model="tripForm.boardingAt" type="datetime-local" :max="tripForm.departureAt" :required="!selectedStatusPolicy?.boardingLeadMinutes" /><small>{{ selectedStatusPolicy?.boardingLeadMinutes ? `Optional override. Operator setting: ${selectedStatusPolicy.boardingLeadMinutes} minutes before departure.` : 'Enter the boarding time confirmed by the operator or terminal.' }}</small></label>
+                      <label>Boarding time confirmation<textarea v-model.trim="tripForm.boardingTimeSource" rows="2" minlength="3" maxlength="500" :required="!!tripForm.boardingAt" placeholder="Confirmed by the operator or terminal" /><small>Record who confirmed the time and when. Required when you enter a boarding start.</small></label>
+                    </div>
                   </section>
                 </div>
                 <aside
@@ -1009,7 +1035,7 @@
                 >
                   <div class="trip-section-heading">
                     <span
-                      ><ion-icon :icon="ticketOutline" aria-hidden="true"
+                      ><AppIcon :icon="ticketOutline" aria-hidden="true"
                     /></span>
                     <div>
                       <h3 id="trip-fares-title">Passenger fares</h3>
@@ -1072,7 +1098,7 @@
                     </div>
                   </div>
                   <div v-else class="trip-fares-empty">
-                    <ion-icon :icon="boatOutline" aria-hidden="true" /><strong
+                    <AppIcon :icon="boatOutline" aria-hidden="true" /><strong
                       >Select a vessel</strong
                     >
                     <p>
@@ -1107,21 +1133,21 @@
             </div>
             <footer class="trip-form-footer">
               <span
-                ><ion-icon :icon="boatOutline" aria-hidden="true" />{{
+                ><AppIcon :icon="boatOutline" aria-hidden="true" />{{
                   editingId
                     ? "Review your changes before saving."
                     : "New trips start as Scheduled."
                 }}</span
               >
               <div>
-                <button
+                <button data-slot="button" data-variant="outline" data-size="default"
                   class="secondary"
                   type="button"
                   :disabled="!!busy"
                   @click="closeModal"
                 >
                   Cancel</button
-                ><button
+                ><button data-slot="button" data-variant="default" data-size="default"
                   class="primary"
                   type="submit"
                   :disabled="
@@ -1149,7 +1175,7 @@
             <div v-if="createdAccount" class="created account-success">
               <div class="account-success-heading">
                 <span
-                  ><ion-icon :icon="checkmarkCircleOutline" aria-hidden="true"
+                  ><AppIcon :icon="checkmarkCircleOutline" aria-hidden="true"
                 /></span>
                 <div>
                   <strong>Ready for their first sign-in</strong>
@@ -1195,7 +1221,7 @@
                 Temporary password copied.
               </p>
               <footer class="account-footer">
-                <button class="primary" type="button" @click="closeModal">
+                <button data-slot="button" data-variant="default" data-size="default" class="primary" type="button" @click="closeModal">
                   Done
                 </button>
               </footer>
@@ -1256,7 +1282,7 @@
                       "
                       @click="showTemporaryPassword = !showTemporaryPassword"
                     >
-                      <ion-icon
+                      <AppIcon
                         :icon="
                           showTemporaryPassword ? eyeOffOutline : eyeOutline
                         "
@@ -1265,7 +1291,7 @@
                     </button></div
                 ></label>
                 <p class="account-role-note">
-                  <ion-icon
+                  <AppIcon
                     :icon="shieldCheckmarkOutline"
                     aria-hidden="true"
                   /><span>{{
@@ -1287,14 +1313,14 @@
                   </button>
                 </div>
                 </fieldset></div><footer class="account-footer">
-                  <button
+                  <button data-slot="button" data-variant="outline" data-size="default"
                     type="button"
                     class="secondary"
                     :disabled="!!busy"
                     @click="closeModal"
                   >
                     Cancel</button
-                  ><button type="submit" class="primary" :disabled="!!busy">
+                  ><button data-slot="button" data-variant="default" data-size="default" type="submit" class="primary" :disabled="!!busy">
                     {{ busy === "user" ? "Creating..." : "Create account" }}
                   </button>
                 </footer>
@@ -1307,6 +1333,9 @@
 </template>
 
 <script setup lang="ts">
+import { durationHours } from '../../data/duration';
+import FerryReferenceDetails from '../../components/admin/FerryReferenceDetails.vue';
+import type { ReferenceRecord } from '../../data/ferryReferences';
 import StaffPortAssignmentsPanel from '../../components/admin/StaffPortAssignmentsPanel.vue';
 import { paymentMethodLabel } from '../../data/paymentMethod';
 import WeatherTripPicker from '../../components/shared/WeatherTripPicker.vue';
@@ -1320,6 +1349,11 @@ import { notificationUnreadCount } from "../../composables/notificationUnread";
 import AuditLogsPanel from "../../components/admin/AuditLogsPanel.vue";
 import AdminOverviewPanel from "../../components/admin/AdminOverviewPanel.vue";
 import AccommodationPanel from "../../components/admin/AccommodationPanel.vue";
+import { vesselAvailability } from '../../services/database/vesselTracking';
+import VesselTrackingPanel from '../../components/admin/VesselTrackingPanel.vue';
+import DailySchedulesPanel from '../../components/admin/DailySchedulesPanel.vue';
+import type { PublishedDeparture } from '../../components/admin/PublishedFerryReferences.vue';
+import { sailingStatusPolicies, type SailingStatusPolicy } from '@/services/database/sailingStatus';
 import RoutesPanel from "../../components/admin/RoutesPanel.vue";
 import {
   routes as savedRoutes,
@@ -1340,13 +1374,8 @@ import { computed, onBeforeUnmount, reactive, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import AdminAccountMenu from "../../components/admin/AdminAccountMenu.vue";
 import { accountFunction } from "../../services/accountFunctions";
-import {
-  IonContent,
-  IonIcon,
-  IonModal,
-  IonPage,
-  onIonViewWillEnter,
-} from "@ionic/vue";
+import { IonContent, IonModal, IonPage, onIonViewWillEnter } from "@ionic/vue";
+import AppIcon from "@/components/ui/icon/AppIcon.vue";
 import {
   bedOutline,
   homeOutline,
@@ -1455,7 +1484,7 @@ const selectedFareVesselId = ref("");
 const fareSettingsForm = reactive({ ...defaultFareSettings });
 const fareSettingsLoaded = ref(false);
 const nextTripCode = ref("");
-const childEditorRef = ref<{ hasUnsavedChanges?: () => boolean } | null>(null);
+const childEditorRef = ref<{ hasUnsavedChanges?: () => boolean; hasOpenEditor?: () => boolean; isBusy?: () => boolean; durationForRoute?: (routeId:string,operator:string) => number|null|undefined; refresh?: () => Promise<void> } | null>(null);
 const refreshDecision = ref(false);
 const settingsFarePreview = computed(() =>
   calculateFares(fareSettingsForm.regularFare, fareSettingsForm),
@@ -1483,17 +1512,25 @@ const search = ref(String(route.query.search || "")),
   statusFilter = ref("ALL"),
   sailingFilter = ref(String(route.query.sailing || "ALL"));
 const reportsRefresh = ref(0);
+const referenceRecord = ref<ReferenceRecord | null>(null);
 const routeOptions = ref<FerryRoute[]>([]),
   savedRouteId = ref("");
+const statusPolicies = ref<SailingStatusPolicy[]>([]);
+function estimatedRouteMinutes(route: FerryRoute): number | null {
+  const operator = tripPublishedOperator.value || selectedTripVessel.value?.referenceMetadata?.operator;
+  const duration = operator ? childEditorRef.value?.durationForRoute?.(route.id, operator) : undefined;
+  return duration === undefined ? route.durationMinutes : duration;
+}
 function useSavedRoute() {
   const selected = routeOptions.value.find((r) => r.id === savedRouteId.value);
   if (!selected) return;
   tripForm.originPortId = selected.originPortId;
   tripForm.destinationPortId = selected.destinationPortId;
-  if (tripForm.departureAt) {
+  const duration = estimatedRouteMinutes(selected);
+  if (tripForm.departureAt && duration != null) {
     const arrival = new Date(
       new Date(tripForm.departureAt).getTime() +
-        selected.durationMinutes * 60000,
+        duration * 60000,
     );
     tripForm.arrivalAt = new Date(
       arrival.getTime() - arrival.getTimezoneOffset() * 60000,
@@ -1554,12 +1591,18 @@ const navigation = [
     label: "FLEET SETUP",
     icon: constructOutline,
     items: [
-      { key: "fares", label: "Fares & discounts", icon: pricetagsOutline },
-      { key: "vouchers", label: "Vouchers", icon: giftOutline },
       { key: "ports", label: "Ports", icon: locationOutline },
       { key: "routes", label: "Routes", icon: navigateOutline },
-      { key: "accommodation", label: "Accommodation", icon: bedOutline },
       { key: "vessels", label: "Vessels", icon: boatOutline },
+      { key: "accommodation", label: "Accommodation", icon: bedOutline },
+    ],
+  },
+  {
+    label: "PRICING & PROMOS",
+    icon: pricetagsOutline,
+    items: [
+      { key: "fares", label: "Fares & discounts", icon: pricetagsOutline },
+      { key: "vouchers", label: "Vouchers", icon: giftOutline },
     ],
   },
   {
@@ -1594,18 +1637,19 @@ const navigation = [
       { key: "audit-logs", label: "Audit logs", icon: receiptOutline },
       {
         key: "operations",
-        label: "Reservation settings",
+        label: "Operations settings",
         icon: settingsOutline,
       },
     ],
   },
 ];
 const expandedNavigation = ref("");
+const navigationSection = computed(() => section.value === 'analytics' ? 'reports' : section.value);
+const navigationGroupFor = (value: string) => navigation.find(group =>
+  group.items.some(item => item.key === (value === 'analytics' ? 'reports' : value))
+)?.label;
 watch(section, (value) => {
-  expandedNavigation.value = navigation.find(group =>
-    group.items.some(item => item.key === value) ||
-    (value === "inbox" && group.label === "COMMUNICATION")
-  )?.label || "OVERVIEW";
+  expandedNavigation.value = navigationGroupFor(value) || "OVERVIEW";
 }, { immediate: true });
 const recordPage = ref(0);
 const recordTotal = ref(0);
@@ -1737,8 +1781,8 @@ const pages: Record<
   },
   operations: {
     group: "MANAGEMENT",
-    title: "Reservation settings",
-    description: "Set payment deadlines for new reservations.",
+    title: "Operations settings",
+    description: "Configure reservation payment deadlines and automatic sailing statuses.",
     table: "",
   },
   users: {
@@ -1749,7 +1793,10 @@ const pages: Record<
   },
   'staff-ports': { group: 'MANAGEMENT', title: 'Staff port assignments', description: 'Assign departure ports to ticketing and boarding staff.', table: '' },
 };
-const page = computed(() => pages[section.value] || pages.dashboard);
+const page = computed(() => {
+  const details = pages[section.value] || pages.dashboard;
+  return { ...details, group: navigationGroupFor(section.value) || details.group };
+});
 const primaryAction = computed(
   () =>
     (
@@ -1883,6 +1930,7 @@ async function loadData() {
     section.value === "trips"
       ? savedRoutes(dc)
       : Promise.resolve({ data: { routes: [] as FerryRoute[] } }),
+    section.value === 'trips' ? sailingStatusPolicies(dc) : Promise.resolve({data:{policies:[] as SailingStatusPolicy[]}}),
   ] as const);
   if (["check-in", "boarding", "manifest"].includes(section.value)) {
     try { sailingOptions.value = (await adminSailingOptions(dc)).data.sailings; }
@@ -1921,11 +1969,13 @@ async function loadData() {
     "Fares & discounts",
     "Trip code",
     "Saved routes",
+    "Sailing status configuration",
   ];
   results.forEach((result, index) => {
     if (result.status === "rejected") failed.push(names[index]);
   });
-  const [b, s, u, p, v, a, d, f, c, routeResult] = results;
+  const [b, s, u, p, v, a, d, f, c, routeResult, policyResult] = results;
+  if (policyResult.status === 'fulfilled') statusPolicies.value = policyResult.value.data.policies || [];
   if (section.value === 'ports') recordTotal.value = p.status === 'fulfilled' ? p.value.data.ports.length : 0;
   if (section.value === 'vessels') recordTotal.value = v.status === 'fulfilled' ? v.value.data.vessels.length : 0;
   if (routeResult.status === "fulfilled")
@@ -1982,6 +2032,7 @@ async function loadData() {
   }
   if (failed.length)
     error.value = `Could not refresh ${failed.join(", ")}. Other admin records remain available. Try Refresh.`;
+  if (['trips','vessels'].includes(section.value)) await childEditorRef.value?.refresh?.();
   loading.value = false;
 }
 onIonViewWillEnter(() => {
@@ -2009,7 +2060,7 @@ useQueueRefresh(
     ].includes(section.value) &&
     !busy.value &&
     !loading.value &&
-    !modal.value,
+    !modal.value && !childEditorRef.value?.hasOpenEditor?.() && !childEditorRef.value?.isBusy?.(),
 );
 const activePorts = computed(() => ports.value.filter((p) => p.isActive)),
   activeVessels = computed(() => vessels.value.filter((v) => v.isActive));
@@ -2056,6 +2107,8 @@ const tripForm = reactive({
   vesselId: "",
   departureAt: "",
   arrivalAt: "",
+  boardingAt: "",
+  boardingTimeSource: "",
   regularFare: 500,
   studentFare: 400,
   seniorFare: 400,
@@ -2063,14 +2116,47 @@ const tripForm = reactive({
   pwdFare: 400,
   pregnantFare: 500,
 });
+const tripPublishedOperator = ref('');
 const tripVesselFares = computed(() =>
   fareSettingsLoaded.value
     ? vesselFareSettings.value[tripForm.vesselId]
     : undefined,
 );
+const vesselDepartureIssues = ref<Record<string,string|null>>({});
+const vesselAvailabilityError = ref('');
+let vesselAvailabilityRequest = 0;
+watch(() => [modal.value, tripForm.originPortId, tripForm.departureAt, editingId.value], async () => {
+  const request = ++vesselAvailabilityRequest;
+  vesselDepartureIssues.value = {}; vesselAvailabilityError.value = '';
+  if (modal.value !== 'trip' || !staffDatabase || !tripForm.originPortId || !tripForm.departureAt) return;
+  const departure = new Date(tripForm.departureAt);
+  if (!Number.isFinite(departure.getTime())) return;
+  try {
+    const result = await vesselAvailability(staffDatabase,{originPortId:tripForm.originPortId,departureAt:departure.toISOString(),excludeCode:editingId.value || undefined});
+    if (request === vesselAvailabilityRequest) vesselDepartureIssues.value = Object.fromEntries(result.data.vessels.map(v => [v.id,v.issue]));
+  } catch { if (request === vesselAvailabilityRequest) vesselAvailabilityError.value = 'Vessel location check is unavailable. The database will check availability when you save.'; }
+});
+const tripVesselIssue = computed(() => vesselDepartureIssues.value[tripForm.vesselId]);
+const tripVesselOptions = computed(() => vessels.value.filter(v => {
+  if (editingId.value && v.id === editingTrip.value?.vessel.id) return true;
+  if (!v.isActive || v.passengerCapacity == null) return false;
+  if (tripPublishedOperator.value && v.referenceMetadata?.operator !== tripPublishedOperator.value) return false;
+  if (!tripForm.originPortId || !tripForm.destinationPortId || v.referenceMetadata?.kind !== 'verified-reference') return true;
+  return (v.routes || []).some(r => r.isActive && r.originPortId === tripForm.originPortId && r.destinationPortId === tripForm.destinationPortId);
+}));
+const tripRouteOptions = computed(() => {
+  const v = vessels.value.find(v => v.id === tripForm.vesselId);
+  if (!v || v.referenceMetadata?.kind !== 'verified-reference') return routeOptions.value;
+  return routeOptions.value.filter(r => (v.routes || []).some(vr => vr.id === r.id && vr.isActive));
+});
+watch(() => [tripForm.originPortId, tripForm.destinationPortId], () => {
+  if (!tripFieldsLocked.value && tripForm.vesselId && !tripVesselOptions.value.some(v => v.id === tripForm.vesselId)) tripForm.vesselId = '';
+});
 const selectedTripVessel = computed(() =>
   vessels.value.find((v) => v.id === tripForm.vesselId),
 );
+const selectedStatusPolicy = computed(() => statusPolicies.value.find(p => p.operator === selectedTripVessel.value?.referenceMetadata?.operator));
+watch(() => [tripForm.vesselId, tripForm.departureAt], () => { if (modal.value === 'trip' && !tripFieldsLocked.value && savedRouteId.value) useSavedRoute(); });
 const tripDurationLabel = computed(() => {
   const minutes = Math.round(
     (new Date(tripForm.arrivalAt).getTime() -
@@ -2078,9 +2164,7 @@ const tripDurationLabel = computed(() => {
       60000,
   );
   if (!Number.isFinite(minutes) || minutes <= 0) return "";
-  const hours = Math.floor(minutes / 60),
-    remainder = minutes % 60;
-  return `Estimated travel time: ${hours ? `${hours}h` : ""}${hours && remainder ? " " : ""}${remainder ? `${remainder}m` : ""}`;
+  return `Travel time: ${durationHours(minutes)}`;
 });
 const tripBookings = ref<AdminSailingBookingsData["bookings"]>([]);
 const tripEditLoading = ref(false);
@@ -2112,7 +2196,9 @@ const tripScheduleChanged = computed(
   () =>
     !editingTrip.value ||
     tripForm.departureAt !== toLocalDateTime(editingTrip.value.departureAt) ||
-    tripForm.arrivalAt !== toLocalDateTime(editingTrip.value.arrivalAt),
+    tripForm.arrivalAt !== toLocalDateTime(editingTrip.value.arrivalAt) ||
+    tripForm.boardingAt !== (editingTrip.value.boardingAt ? toLocalDateTime(editingTrip.value.boardingAt) : '') ||
+    tripForm.boardingTimeSource !== (editingTrip.value.boardingTimeSource || ''),
 );
 const fareTypes = [
   { key: "regularFare", label: "Regular" },
@@ -2241,7 +2327,27 @@ const modalTitle = computed(
       }) as Record<string, string>
     )[modal.value] || "",
 );
+function planPublishedDeparture(departure: PublishedDeparture) {
+  const [originCode, destinationCode] = departure.routeCode.split('-');
+  const route = routeOptions.value.find(r => r.id === departure.routeId);
+  const origin = ports.value.find(p => (route ? p.id === route.originPortId : p.code === originCode) && p.isActive);
+  const destination = ports.value.find(p => (route ? p.id === route.destinationPortId : p.code === destinationCode) && p.isActive);
+  if (!origin || !destination) return;
+  openAction();
+  if (modal.value !== 'trip') return;
+  tripForm.originPortId = origin.id;
+  tripForm.destinationPortId = destination.id;
+  tripForm.departureAt = departure.departureAt;
+  tripPublishedOperator.value = departure.operator;
+  if (departure.durationMinutes != null) {
+    const arrival = new Date(`${departure.departureAt}:00+08:00`);
+    arrival.setTime(arrival.getTime() + departure.durationMinutes * 60000);
+    tripForm.arrivalAt = new Date(arrival.getTime() + 8 * 3600000).toISOString().slice(0, 16);
+  }
+}
 function openAction() {
+  savedRouteId.value = '';
+  tripPublishedOperator.value = '';
   formError.value = "";
   editingId.value = "";
   modal.value =
@@ -2288,6 +2394,8 @@ function openAction() {
       vesselId: "",
       departureAt: "",
       arrivalAt: "",
+      boardingAt: "",
+      boardingTimeSource: "",
       regularFare: 0,
       studentFare: 0,
       seniorFare: 0,
@@ -2342,7 +2450,7 @@ function editRecord(
     Object.assign(vesselForm, {
       code: record.code,
       name: record.name,
-      capacity: record.passengerCapacity,
+      capacity: record.passengerCapacity ?? 0,
       isActive: record.isActive,
     });
     modal.value = "vessel";
@@ -2470,13 +2578,15 @@ function canEditTrip(sailing: AdminSailingsData["sailings"][number]) {
 }
 function nextStatuses(sailing: AdminSailingsData["sailings"][number]) {
   const options: Record<string, string[]> = {
-    SCHEDULED: ["BOARDING", "DELAYED", "CANCELLED"],
-    DELAYED: ["SCHEDULED", "BOARDING", "CANCELLED"],
-    BOARDING: ["COMPLETED", "CANCELLED"],
+    SCHEDULED: ["DELAYED", "CANCELLED"],
+    DELAYED: ["SCHEDULED", "CANCELLED"],
+    BOARDING: ["DELAYED", "CANCELLED", ...(statusPolicies.value.find(p => p.operator === vessels.value.find(v => v.id === sailing.vessel.id)?.referenceMetadata?.operator)?.autoComplete === false ? ['COMPLETED'] : [])],
   };
   return [sailing.status, ...(options[sailing.status] || [])];
 }
 async function openTripEditor(sailing: AdminSailingsData["sailings"][number]) {
+  savedRouteId.value = '';
+  tripPublishedOperator.value = '';
   if (!canEditTrip(sailing) || !staffDatabase) return;
   editingId.value = sailing.code;
   formError.value = "";
@@ -2490,6 +2600,8 @@ async function openTripEditor(sailing: AdminSailingsData["sailings"][number]) {
     vesselId: sailing.vessel.id,
     departureAt: toLocalDateTime(sailing.departureAt),
     arrivalAt: toLocalDateTime(sailing.arrivalAt),
+    boardingAt: sailing.boardingAt ? toLocalDateTime(sailing.boardingAt) : '',
+    boardingTimeSource: sailing.boardingTimeSource || '',
     regularFare: sailing.regularFare,
     studentFare: sailing.studentFare,
     seniorFare: sailing.seniorFare,
@@ -2530,8 +2642,18 @@ async function saveTrip() {
       "Save fare settings for the selected vessel before creating or switching a trip.";
     return;
   }
+  const vessel = vessels.value.find(v => v.id === tripForm.vesselId);
+  if (vessel?.referenceMetadata?.kind === 'verified-reference' && !(vessel.routes || []).some(r => r.isActive && r.originPortId === tripForm.originPortId && r.destinationPortId === tripForm.destinationPortId)) {
+    formError.value = 'Choose a verified route assigned to this vessel.';
+    return;
+  }
   const departure = new Date(tripForm.departureAt),
     arrival = new Date(tripForm.arrivalAt);
+  const boarding = new Date(tripForm.boardingAt);
+  if ((!tripForm.boardingAt && !selectedStatusPolicy.value?.boardingLeadMinutes) || (tripForm.boardingAt && (!Number.isFinite(boarding.getTime()) || boarding >= departure || tripForm.boardingTimeSource.trim().length < 3))) {
+    formError.value = 'Enter the operator-confirmed boarding start before departure and its source.';
+    return;
+  }
   const valid =
     tripForm.code.trim() &&
     tripForm.originPortId &&
@@ -2562,6 +2684,8 @@ async function saveTrip() {
     code: tripForm.code.trim().toUpperCase(),
     departureAt: departure.toISOString(),
     arrivalAt: arrival.toISOString(),
+    boardingAt: tripForm.boardingAt ? boarding.toISOString() : undefined,
+    boardingTimeSource: tripForm.boardingAt ? tripForm.boardingTimeSource.trim() : undefined,
     durationMinutes: Math.round(
       (arrival.getTime() - departure.getTime()) / 60000,
     ),
@@ -2641,6 +2765,11 @@ async function changeSailingStatus(
   if (!dc) return;
   const select = event.target as HTMLSelectElement;
   const status = select.value;
+  if (status === 'SCHEDULED' && s.status === 'DELAYED' && (!s.boardingAt && !statusPolicies.value.find(p => p.operator === vessels.value.find(v => v.id === s.vessel.id)?.referenceMetadata?.operator)?.boardingLeadMinutes || Date.parse(s.arrivalAt) <= Date.now())) {
+    select.value = s.status;
+    error.value = 'Update the schedule and confirm boarding timing before resuming this delayed trip.';
+    return;
+  }
   let reason: string | undefined;
   if (status === "CANCELLED") {
     reason =
@@ -3007,8 +3136,8 @@ const rows = computed<Row[]>(() => {
       statusIndex: 3,
       cells: [
         v.code,
-        v.name,
-        v.passengerCapacity,
+        `${v.name} ${v.referenceMetadata?.operator || ''}`,
+        v.passengerCapacity ?? 'Needs confirmation',
         v.isActive ? "ACTIVE" : "INACTIVE",
       ],
     }));
@@ -3069,6 +3198,8 @@ const rows = computed<Row[]>(() => {
 </script>
 
 <style scoped>
+.catalog-identity { display: grid; gap: 3px; padding: 5px 0; }
+
 .content.staff-port-content { padding: 24px 28px; }
 .staff-port-content .heading { margin-bottom: 18px; }
 @media(max-width:600px) { .content.staff-port-content { padding: 20px 16px; } }
@@ -3328,7 +3459,7 @@ const rows = computed<Row[]>(() => {
   color: var(--muted);
   font-size: 12px;
 }
-.admin-breadcrumbs > ion-icon {
+.admin-breadcrumbs > .app-icon {
   flex: none;
   color: var(--ocean);
   font-size: 14px;
@@ -3359,7 +3490,7 @@ const rows = computed<Row[]>(() => {
   flex: none;
   color: var(--ocean);
 }
-.admin-profile-icon ion-icon {
+.admin-profile-icon .app-icon {
   font-size: 23px;
 }
 .admin-header-actions {
@@ -3425,7 +3556,7 @@ const rows = computed<Row[]>(() => {
 }
 @media (max-width: 540px) {
   .admin-breadcrumbs > span,
-  .admin-breadcrumbs > ion-icon {
+  .admin-breadcrumbs > .app-icon {
     display: none;
   }
   .topbar {
@@ -3633,7 +3764,7 @@ const rows = computed<Row[]>(() => {
   font-size: 11px;
   line-height: 1.6;
 }
-.fare-preview-note ion-icon {
+.fare-preview-note .app-icon {
   flex-shrink: 0;
   margin-top: 2px;
   font-size: 16px;
@@ -3752,7 +3883,7 @@ input[readonly] {
 .nav-group-toggle:hover,
 .nav-group-toggle[aria-expanded="true"] { background: #ffffff08; color: #d4e6f4; }
 .nav-group-label { display: flex; align-items: center; gap: 10px; min-width: 0; }
-.nav-group .nav-group-label ion-icon { font-size: 17px; flex: none; color: #79a9ce; }
+.nav-group .nav-group-label .app-icon { font-size: 17px; flex: none; color: #79a9ce; }
 .nav-group .nav-group-chevron { font-size: 13px; flex: none; transition: transform 160ms ease; }
 .nav-group-toggle[aria-expanded="true"] .nav-group-chevron { transform: rotate(180deg); }
 .nav-group-items { display: grid; gap: 3px; padding: 0 0 4px 8px; margin-left: 12px; border-left: 1px solid #28445b; }
@@ -3775,7 +3906,9 @@ input[readonly] {
   background: #174266;
   color: #fff;
 }
-.nav-group ion-icon {
+.port-display-shortcut { margin-bottom: 14px; }
+.port-display-shortcut a { background: #174266; color: #fff; border: 1px solid #356789; font-weight: 700; }
+.nav-group .app-icon {
   font-size: 18px;
 }
 .sidebar :deep(.staff-signout) { flex: none; margin-top: 12px; }
@@ -3965,7 +4098,7 @@ input[readonly] {
   border-radius: 9px;
   background: var(--surface-soft);
 }
-.booking-search-input ion-icon { flex: none; font-size: 17px; color: var(--muted); }
+.booking-search-input .app-icon { flex: none; font-size: 17px; color: var(--muted); }
 .booking-search-input:focus-within { border-color: var(--ocean); outline: 2px solid var(--light-blue); }
 .booking-search-input input {
   width: 100%;
@@ -3993,9 +4126,9 @@ input[readonly] {
 .check-in-filters .check-in-sailing-filter { flex: 1; }
 .check-in-filters select { width: 100%; min-width: 0; }
 .check-in-guidance { display: flex; align-items: flex-start; gap: 9px; margin: -6px 0 20px; color: var(--muted); font-size: 11px; line-height: 1.6; }
-.check-in-guidance ion-icon { flex: none; margin-top: 1px; color: var(--ocean); font-size: 17px; }
+.check-in-guidance .app-icon { flex: none; margin-top: 1px; color: var(--ocean); font-size: 17px; }
 .check-in-action { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 36px; background: var(--light-blue); border-color: var(--line); white-space: nowrap; }
-.check-in-action ion-icon { font-size: 15px; }
+.check-in-action .app-icon { font-size: 15px; }
 .check-in-action:focus-visible { outline: 2px solid var(--ocean); outline-offset: 2px; }
 :is(.admin-checkin-directory, .admin-boarding-directory, .admin-manifest-directory) .booking-filters { grid-template-columns: minmax(180px, 1fr) 150px minmax(220px, 1fr) auto; }
 :is(.admin-checkin-directory, .admin-boarding-directory, .admin-manifest-directory) .check-in-guidance { margin: -4px 0 14px; font-size: 12px; }
@@ -4224,7 +4357,7 @@ td strong {
 .modal-body .primary {
   margin-top: 5px;
 }
-.port-code { color: var(--ocean); font-size: 12px; font-weight: 650; }
+.port-code { color: var(--ink); font-size: 12px; font-weight: 650; }
 .port-name { color: var(--ink); font-size: 13px; font-weight: 650; }
 .port-modal { --width: min(680px, calc(100vw - 32px)); --height: auto; --max-height: calc(100dvh - 40px); --border-radius: 16px; --background: var(--surface); }
 .modal-body.port-dialog { display: flex; flex-direction: column; width: 100%; max-height: calc(100dvh - 40px); margin: 0; padding: 0; overflow: hidden; border: 0; border-radius: 0; background: var(--surface); color: var(--ink); }
@@ -4598,7 +4731,7 @@ td strong {
   border-radius: 12px;
   background: var(--light-blue);
 }
-.trip-callout > ion-icon {
+.trip-callout > .app-icon {
   flex-shrink: 0;
   color: var(--ocean);
   font-size: 19px;
@@ -4706,7 +4839,7 @@ td strong {
   font-size: 10px;
   line-height: 1.6;
 }
-.trip-field-hint ion-icon {
+.trip-field-hint .app-icon {
   flex-shrink: 0;
   margin-top: 1px;
   color: var(--ocean);
@@ -4783,7 +4916,7 @@ td strong {
   padding: 28px 10px;
   text-align: center;
 }
-.trip-fares-empty ion-icon {
+.trip-fares-empty .app-icon {
   color: var(--ocean);
   font-size: 30px;
 }
@@ -4826,7 +4959,7 @@ td strong {
   color: var(--muted);
   font-size: 11px;
 }
-.trip-form-footer > span ion-icon {
+.trip-form-footer > span .app-icon {
   font-size: 16px;
   color: var(--ocean);
 }
@@ -4915,7 +5048,7 @@ td strong {
   font-size: 12px;
   line-height: 1.6;
 }
-.boarding-help > ion-icon {
+.boarding-help > .app-icon {
   flex-shrink: 0;
   margin-top: 2px;
   color: var(--ocean);
@@ -5127,7 +5260,7 @@ td strong {
   font-size: 11px;
   line-height: 1.6;
 }
-.account-role-note ion-icon {
+.account-role-note .app-icon {
   color: var(--ocean);
   font-size: 17px;
   flex: none;
@@ -5409,17 +5542,20 @@ td strong {
 .trip-dialog .trip-scroll { padding: 16px 22px; }
 .trip-dialog .trip-code-banner { padding: 10px 14px; margin-bottom: 14px; gap: 3px 12px; }
 .trip-dialog .trip-code-banner > p { font-size: 10px; }
-.trip-dialog .trip-grid { grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); gap: 14px; align-items: start; }
+.trip-dialog .trip-grid { grid-template-columns: repeat(2,minmax(0, 1fr)); gap: 14px; align-items: start; }
 .trip-dialog .trip-details { display: contents; }
 .trip-dialog .trip-section { padding: 16px; gap: 12px; border-radius: 11px; }
 .trip-dialog .trip-section-heading { gap: 9px; }
 .trip-dialog .trip-section-heading h3 { font-size: 14px; }
 .trip-dialog .trip-section-heading p { font-size: 11px; }
 .trip-dialog .trip-section-heading > span { width: 30px; height: 30px; font-size: 17px; }
-.trip-dialog .trip-details > .trip-section:nth-child(2) .form-grid { grid-template-columns: minmax(0, 1fr); }
+.vessel-position-hint { padding:10px 12px; border:1px solid var(--line); border-radius:8px; background:var(--surface-soft); font-size:12px; }.vessel-position-hint p { margin:0 0 6px; color:var(--muted); }.vessel-position-hint a { color:var(--ocean); }
+.trip-dialog .trip-boarding-section { grid-column:1/-1; }
+.trip-dialog .boarding-settings-action { margin-left:auto; flex:none; font-size:12px; text-decoration:none; border:1px solid var(--line); border-radius:8px; padding:8px 10px; color:var(--ocean); }
+.trip-dialog textarea { width:100%; box-sizing:border-box; min-height:76px; padding:10px 12px; border:1px solid var(--line); border-radius:8px; background:var(--surface-soft); color:var(--ink); font:inherit; resize:vertical; }
 .trip-dialog .form-grid { gap: 12px; }
 .trip-dialog label { font-size: 12px; gap: 6px; }
-.trip-dialog input, .trip-dialog select { min-height: 40px; padding: 8px 10px; font-family: inherit; font-size: 12px; }
+.trip-dialog input, .trip-dialog select { min-height: 40px; padding: 8px 10px; font-family: inherit; font-size: 14px; }
 .trip-dialog .trip-code-banner input { min-height: 24px; padding: 0; }
 .trip-dialog .trip-fare-section { grid-column: 1 / -1; }
 .trip-dialog .trip-fare-values { grid-template-columns: 160px minmax(0, 1fr); gap: 16px; align-items: start; }
@@ -5429,7 +5565,7 @@ td strong {
 .trip-dialog .trip-discount-fares label { padding: 7px 0; gap: 8px; font-size: 11px; }
 .trip-dialog .trip-discount-fares input { width: 70px; min-height: 28px; font-size: 13px; padding: 2px 0; }
 .trip-dialog .trip-fares-empty { grid-template-columns: 30px auto minmax(0, 1fr); align-items: center; justify-items: start; gap: 12px; padding: 10px 0; text-align: left; }
-.trip-dialog .trip-fares-empty ion-icon { font-size: 26px; }.trip-dialog .trip-fares-empty p { font-size: 12px; }
+.trip-dialog .trip-fares-empty .app-icon { font-size: 26px; }.trip-dialog .trip-fares-empty p { font-size: 12px; }
 .trip-dialog .trip-form-footer { padding: 12px 22px; }
 .trip-dialog .trip-form-footer button { min-height: 40px; }
 .fare-settings-panel .fare-base-card { display: grid; grid-template-columns: minmax(0, 1fr) minmax(170px, .85fr); align-items: center; gap: 16px; }

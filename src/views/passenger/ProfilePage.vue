@@ -19,12 +19,12 @@
           <p class="email">{{ profile.email }}</p>
           <span class="role">Passenger</span
           ><router-link class="edit" to="/settings/profile"
-            ><ion-icon :icon="createOutline" /> Edit personal
+            ><AppIcon :icon="createOutline" /> Edit personal
             information</router-link
           >
         </section>
         <section class="contact-summary">
-          <ion-icon :icon="callOutline" />
+          <AppIcon :icon="callOutline" />
           <div>
             <small>CONTACT NUMBER</small
             ><strong>{{
@@ -33,7 +33,7 @@
           </div>
           <router-link to="/settings/profile"
             >{{ profile.phone ? "Update" : "Add" }}
-            <ion-icon :icon="chevronForwardOutline"
+            <AppIcon :icon="chevronForwardOutline"
           /></router-link>
         </section>
         <div class="profile-sections">
@@ -46,19 +46,19 @@
                 :href="item.to"
                 @click="openMenu($event, item.to)"
                 ><span class="item-icon"
-                  ><ion-icon :icon="item.icon" aria-hidden="true"
+                  ><AppIcon :icon="item.icon" aria-hidden="true"
                 /></span>
                 <div>
                   <strong>{{ item.label }}</strong
                   ><small>{{ item.description }}</small>
                 </div>
-                <ion-icon :icon="chevronForwardOutline" aria-hidden="true"
+                <AppIcon :icon="chevronForwardOutline" aria-hidden="true"
               /></a>
             </div>
           </section>
         </div>
         <button class="logout" :disabled="loggingOut" @click="logout">
-          <ion-icon :icon="logOutOutline" />{{
+          <AppIcon :icon="logOutOutline" />{{
             loggingOut ? "Signing out…" : "Log out"
           }}
         </button>
@@ -69,7 +69,8 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from "vue";
 import { useRouter } from "vue-router";
-import { IonPage, IonContent, IonIcon, onIonViewWillEnter, useIonRouter } from "@ionic/vue";
+import { IonPage, IonContent, onIonViewWillEnter, useIonRouter } from "@ionic/vue";
+import AppIcon from "@/components/ui/icon/AppIcon.vue";
 import {
   callOutline,
   chevronForwardOutline,
@@ -300,7 +301,7 @@ onIonViewWillEnter(load);
   border-radius: 14px;
   background: var(--surface);
 }
-.contact-summary > ion-icon {
+.contact-summary > .app-icon {
   font-size: 23px;
   color: var(--ocean);
 }
@@ -366,10 +367,10 @@ onIonViewWillEnter(load);
   color: var(--ocean);
   flex: none;
 }
-.item-icon ion-icon {
+.item-icon .app-icon {
   font-size: 19px;
 }
-.menu-card a > ion-icon {
+.menu-card a > .app-icon {
   color: var(--muted);
   flex: none;
 }

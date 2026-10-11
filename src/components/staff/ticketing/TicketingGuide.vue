@@ -12,13 +12,13 @@
       </li>
     </ol>
     <RouterLink to="/staff/ticketing/walk-in" class="walk-in-link"
-      ><ion-icon :icon="ticketOutline" /> Issue walk-in ticket</RouterLink
+      ><AppIcon :icon="ticketOutline" /> Issue walk-in ticket</RouterLink
     >
   </aside>
 </template>
 <script setup lang="ts">
 import { RouterLink } from "vue-router";
-import { IonIcon } from "@ionic/vue";
+import AppIcon from "@/components/ui/icon/AppIcon.vue";
 import { ticketOutline } from "ionicons/icons";
 </script>
 <style scoped>
@@ -80,7 +80,7 @@ li::marker {
 .walk-in-link:hover {
   filter: brightness(1.08);
 }
-ion-icon {
+.app-icon {
   font-size: 16px;
 }
 @media (max-width: 600px) {

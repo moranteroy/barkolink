@@ -14,7 +14,7 @@
             <h1>Account settings</h1>
             <p>Keep your contact details and sign-in preferences up to date.</p>
           </div>
-          <router-link class="settings-back" :to="workspacePath"><ion-icon :icon="gridOutline" aria-hidden="true" /> Back to workspace</router-link>
+          <router-link class="settings-back" :to="workspacePath"><AppIcon :icon="gridOutline" aria-hidden="true" /> Back to workspace</router-link>
         </section>
 
         <div class="settings-layout">
@@ -27,7 +27,7 @@
               :class="{ active: section === item.section }"
               :aria-current="section === item.section ? 'page' : undefined"
               @click="navigateSection($event, item.path)"
-              ><ion-icon :icon="item.icon" /><span>{{ item.label }}</span
+              ><AppIcon :icon="item.icon" /><span>{{ item.label }}</span
               ></a>
           </nav>
 
@@ -39,7 +39,7 @@
                   <h2>Profile details</h2>
                   <p>Information linked to your staff account.</p>
                 </div>
-                <ion-icon :icon="personOutline" />
+                <AppIcon :icon="personOutline" />
               </div>
               <div class="account-overview">
               <div class="identity-card">
@@ -89,7 +89,7 @@
                     maxlength="30"
                     placeholder="09XX XXX XXXX"
                     :disabled="profileLoading || savingPhone || !profile"
-                  /><button
+                  /><button data-slot="button" data-variant="default" data-size="default"
                     type="submit"
                     :disabled="
                       savingPhone ||
@@ -128,7 +128,7 @@
                     Confirm your current password before choosing a new one.
                   </p>
                 </div>
-                <ion-icon :icon="shieldCheckmarkOutline" />
+                <AppIcon :icon="shieldCheckmarkOutline" />
               </div>
               <form class="password-form" @submit.prevent="changePassword">
                 <label
@@ -168,7 +168,7 @@
                 >
                   {{ passwordMessage }}
                 </p>
-                <button type="submit" :disabled="savingPassword">
+                <button data-slot="button" data-variant="default" data-size="default" type="submit" :disabled="savingPassword">
                   {{ savingPassword ? "Updating…" : "Update password" }}
                 </button>
               </form>
@@ -181,7 +181,7 @@
                   <h2>Color theme</h2>
                   <p>Choose how BarkoLink looks on this device.</p>
                 </div>
-                <ion-icon :icon="contrastOutline" />
+                <AppIcon :icon="contrastOutline" />
               </div>
               <div class="theme-card">
                 <ThemeSwitcher />
@@ -212,13 +212,8 @@ import {
   reauthenticateWithCredential,
   updatePassword,
 } from "../../services/auth";
-import {
-  IonContent,
-  IonIcon,
-  IonPage,
-  onIonViewWillEnter,
-  useIonRouter,
-} from "@ionic/vue";
+import { IonContent, IonPage, onIonViewWillEnter, useIonRouter } from "@ionic/vue";
+import AppIcon from "@/components/ui/icon/AppIcon.vue";
 import {
   contrastOutline,
   gridOutline,
@@ -556,7 +551,7 @@ async function changePassword() {
   font-weight: 700;
   text-decoration: none;
 }
-.settings-nav a > ion-icon:first-child {
+.settings-nav a > .app-icon:first-child {
   flex: none;
   font-size: 19px;
 }
@@ -593,7 +588,7 @@ async function changePassword() {
   font-size: 23px;
   letter-spacing: -0.025em;
 }
-.card-heading > ion-icon {
+.card-heading > .app-icon {
   display: grid;
   place-items: center;
   flex: none;
@@ -799,7 +794,7 @@ async function changePassword() {
     padding: 0 5px;
     font-size: 10px;
   }
-  .settings-nav a > ion-icon:first-child {
+  .settings-nav a > .app-icon:first-child {
     font-size: 16px;
   }
   .settings-nav .nav-chevron {
@@ -854,14 +849,14 @@ async function changePassword() {
 .page-heading { margin: 24px 0 18px; gap: 12px; flex-wrap: wrap; }
 .page-heading h1 { font-size: 28px; margin: 5px 0; }
 .settings-back { display: inline-flex; align-items: center; gap: 7px; min-height: 42px; padding: 8px 12px; border: 1px solid var(--line); border-radius: 9px; background: var(--surface); color: var(--ocean); font-size: 12px; text-decoration: none; }
-.settings-back ion-icon { font-size: 17px; }
+.settings-back .app-icon { font-size: 17px; }
 .settings-layout { grid-template-columns: 190px minmax(0, 1fr); gap: 18px; }
 .settings-nav, .settings-card { border-radius: 12px; box-shadow: none; }
 .settings-nav { padding: 10px; position: sticky; top: 18px; }
 .settings-card { padding: 20px; min-height: 0; }
 .card-heading { padding-bottom: 16px; }
 .card-heading h2 { margin: 4px 0 5px; font-size: 20px; }
-.card-heading > ion-icon { width: 26px; height: 26px; padding: 8px; }
+.card-heading > .app-icon { width: 26px; height: 26px; padding: 8px; }
 .identity-card { margin: 16px 0; padding: 12px; border-radius: 10px; }
 .avatar { width: 38px; height: 38px; border-radius: 10px; font-size: 13px; }
 .detail-grid { gap: 12px; }
@@ -897,12 +892,12 @@ async function changePassword() {
 .page-heading { margin: 0 0 20px; gap: 12px; }.page-heading h1 { font-size: 28px; }
 .settings-layout { grid-template-columns: 180px minmax(0, 1fr); gap: 16px; }
 .settings-nav, .settings-card { border-radius: 12px; box-shadow: none; }.settings-nav { padding: 10px; }.settings-card { padding: 20px; }
-.card-heading { margin-bottom: 16px; }.card-heading h2 { font-size: 19px; }.card-heading > ion-icon { width: 36px; height: 36px; padding: 8px; border-radius: 10px; }
+.card-heading { margin-bottom: 16px; }.card-heading h2 { font-size: 19px; }.card-heading > .app-icon { width: 36px; height: 36px; padding: 8px; border-radius: 10px; }
 .identity-card { padding: 12px; }.identity-card .avatar { width: 38px; height: 38px; border-radius: 10px; }.detail-grid { gap: 10px; }.detail { padding: 12px; }
 .phone-actions input, .password-form input { min-height: 44px; }.phone-actions button, .password-form > button { min-height: 44px; }
 @media(max-width:1100px) { .settings-layout { grid-template-columns: minmax(0, 1fr); }.settings-nav { display: flex; flex-wrap: wrap; gap: 5px; }.nav-title { display: none; }.settings-nav a { flex: 1; justify-content: center; font-size: 12px; gap: 6px; } }
 @media(max-width:800px) { .staff-settings-main { margin-left: 0; }.staff-sidebar { display: none; }.staff-sidebar.mobile-open { display: flex; width: min(84vw, 300px); z-index: 31; box-shadow: 12px 0 36px #020b1880; }.settings-scrim { position: fixed; inset: 0; display: block; width: 100%; height: 100%; z-index: 30; border: 0; background: #061222a8; }.staff-settings-page { padding: 20px 16px 32px; } }
-@media(max-width:480px) { .settings-card { padding: 16px; }.page-heading { flex-wrap: wrap; }.page-heading h1 { font-size: 25px; }.settings-nav a { min-width: 0; padding: 0 6px; font-size: 11px; }.settings-nav a ion-icon { font-size: 16px; } }
+@media(max-width:480px) { .settings-card { padding: 16px; }.page-heading { flex-wrap: wrap; }.page-heading h1 { font-size: 25px; }.settings-nav a { min-width: 0; padding: 0 6px; font-size: 11px; }.settings-nav a .app-icon { font-size: 16px; } }
 </style>
 
 <style scoped>
@@ -911,9 +906,9 @@ async function changePassword() {
 .settings-layout { display: grid; grid-template-columns: minmax(0, 1fr); gap: 14px; }
 .settings-nav { position: static; display: flex; align-items: center; flex-wrap: nowrap; gap: 5px; width: fit-content; max-width: 100%; padding: 5px; border-radius: 10px; background: var(--surface-soft); }
 .settings-nav .nav-title { display: none; }.settings-nav a { min-width: 0; min-height: 44px; flex: initial; justify-content: center; gap: 7px; padding: 8px 16px; font-size: 12px; border: 1px solid transparent; border-radius: 7px; }.settings-nav a.active { border-color: var(--line); background: var(--surface); color: var(--ocean); box-shadow: 0 1px 4px #061a3510; }
-.settings-nav a ion-icon { font-size: 17px; }
+.settings-nav a .app-icon { font-size: 17px; }
 .settings-card { min-height: 0; padding: 20px; border-radius: 12px; }.settings-card.account-section { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px 22px; }
-.account-section > .card-heading { grid-column: 1 / -1; margin: 0; padding-bottom: 14px; }.card-heading h2 { margin-top: 4px; font-size: 18px; }.card-heading > ion-icon { width: 32px; height: 32px; padding: 7px; }
+.account-section > .card-heading { grid-column: 1 / -1; margin: 0; padding-bottom: 14px; }.card-heading h2 { margin-top: 4px; font-size: 18px; }.card-heading > .app-icon { width: 32px; height: 32px; padding: 7px; }
 .account-overview { min-width: 0; }.identity-card { margin: 0 0 12px; padding: 10px; border-radius: 9px; }.identity-card strong { font-size: 13px; }.identity-card .avatar { width: 36px; height: 36px; font-size: 12px; }
 .detail-grid { grid-template-columns: minmax(0, 1fr); gap: 0; border: 1px solid var(--line); border-radius: 9px; overflow: hidden; }.detail { border: 0; border-radius: 0; background: transparent; padding: 10px 12px; }.detail + .detail { border-top: 1px solid var(--line); }.detail strong { font-size: 12px; }.detail span { font-size: 10px; }
 .phone-form { margin: 0; padding: 12px 14px; border: 1px solid var(--line); border-radius: 9px; background: var(--surface-soft); align-self: start; }.phone-form h3 { font-size: 14px; margin: 0 0 5px; }.phone-form p { font-size: 11px; }.phone-actions { display: flex; flex-direction: column; flex-wrap: nowrap; align-items: stretch; gap: 8px; }.phone-actions input { box-sizing: border-box; width: 100%; max-width: 100%; flex: none; background: var(--surface); }.phone-actions button { align-self: flex-start; }.phone-actions button { width: auto; padding: 9px 14px; }

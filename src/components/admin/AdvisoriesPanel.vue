@@ -7,14 +7,14 @@
         <p>Publish updates for every passenger or for one sailing.</p>
       </div>
       <button v-if="!embedded" :disabled="busy || loading" @click="load">
-        <ion-icon :icon="refreshOutline" /> Refresh
+        <AppIcon :icon="refreshOutline" /> Refresh
       </button>
     </header>
     <p v-if="error" class="error" role="alert">{{ error }}</p>
     <p v-if="notice" role="status">{{ notice }}</p>
     <div class="communication-heading"><div><p class="eyebrow">PASSENGER UPDATES</p><h3>Advisory directory</h3><p>Manage drafts and updates for upcoming travel.</p></div><Button :disabled="busy || loading" @click="start">Create advisory</Button></div>
     <div class="communication-filters"><label>Search advisories<input v-model="query" type="search" placeholder="Title, message, or sailing" /></label><label>Status<select v-model="statusFilter"><option value="ALL">All statuses</option><option value="ACTIVE">Active</option><option value="SCHEDULED">Scheduled</option><option value="DRAFT">Draft</option><option value="ENDED">Ended</option></select></label><Button variant="ghost" @click="query = ''; statusFilter = 'ALL'" :disabled="!query && statusFilter === 'ALL'">Reset filters</Button></div>
-    <IonModal :is-open="editing" :can-dismiss="canDismiss" class="communication-modal advisory-modal" @didDismiss="editing = false"><section class="communication-dialog advisory-dialog"><header class="communication-dialog-heading"><div><p class="eyebrow">TRAVEL ADVISORY</p><h2>{{ form.id ? 'Edit advisory' : 'Create advisory' }}</h2><p>Set the audience and publishing period.</p></div><button type="button" aria-label="Close advisory" :disabled="busy" @click="close"><ion-icon :icon="closeOutline" /></button></header>    <form class="communication-form" @submit.prevent="save"><div class="communication-scroll"><fieldset :disabled="busy">
+    <IonModal :is-open="editing" :can-dismiss="canDismiss" class="communication-modal advisory-modal" @didDismiss="editing = false"><section class="communication-dialog advisory-dialog"><header class="communication-dialog-heading"><div><p class="eyebrow">TRAVEL ADVISORY</p><h2>{{ form.id ? 'Edit advisory' : 'Create advisory' }}</h2><p>Set the audience and publishing period.</p></div><button type="button" aria-label="Close advisory" :disabled="busy" @click="close"><AppIcon :icon="closeOutline" /></button></header>    <form class="communication-form" @submit.prevent="save"><div class="communication-scroll"><fieldset :disabled="busy">
 <p v-if="formError" class="error" role="alert">{{ formError }}</p>
       <label
         >Title<input
@@ -95,7 +95,7 @@
     <p v-if="!loading && items.length" class="communication-count">{{ filteredItems.length }} of {{ items.length }} advisories</p><p v-if="!loading && items.length && !filteredItems.length" class="communication-empty">No advisories match these filters.</p>
     <div v-if="filteredItems.length" class="advisory-list">
       <article v-for="item in filteredItems" :key="item.id">
-        <ion-icon
+        <AppIcon
           :icon="item.priority === 'HIGH' ? warningOutline : megaphoneOutline"
         />
         <div>
@@ -114,7 +114,8 @@
 </template>
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from "vue";
-import { IonIcon, IonModal } from "@ionic/vue";
+import { IonModal } from "@ionic/vue";
+import AppIcon from "@/components/ui/icon/AppIcon.vue";
 import {
   closeOutline,
   megaphoneOutline,
@@ -295,7 +296,7 @@ onMounted(load);
 .advisory-list { display: grid; border: 1px solid var(--line); border-radius: 14px; background: var(--surface); overflow: hidden; }
 .advisory-list article { display: grid; grid-template-columns: 32px minmax(0, 1fr) auto; align-items: start; gap: 12px; padding: 14px 16px; }
 .advisory-list article + article { border-top: 1px solid var(--line); }
-.advisory-list article > ion-icon { color: var(--ocean); font-size: 21px; margin-top: 3px; }
+.advisory-list article > .app-icon { color: var(--ocean); font-size: 21px; margin-top: 3px; }
 .advisory-list article > div { min-width: 0; }
 .advisory-badges { gap: 8px; }
 .advisory-list h3 { font-size: 14px; line-height: 1.5; margin: 7px 0 4px; overflow-wrap: anywhere; }

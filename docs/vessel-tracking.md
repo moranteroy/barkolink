@@ -1,0 +1,11 @@
+# Vessel ports and booking eligibility
+
+Fleet setup ? Vessels ? Vessel locations lets an administrator confirm a vessel at an active terminal, with the observation time and terminal confirmation note. These observations are audited and retained privately. Initial locations remain unknown until confirmed; no location is invented from reference sources or demonstration data.
+
+New passenger and walk-in bookings require a confirmed starting port and a connected itinerary to the sailing origin. A vessel currently in Batangas may be reserved for a later Calapan departure when a preceding Batangas?Calapan voyage arrives in time. Underway, disconnected, delayed or cancelled incoming voyages cannot establish eligibility for an incompatible departure. Cancelling an incoming trip hides dependent departures from search and their booking requests are rejected by the database. Existing reservations, payments and tickets remain intact.
+
+Future sailings with unknown starting positions may be saved for planning, but remain unavailable for booking until the port is confirmed. When a location is known, trip creation and rescheduling validate the preceding and following port connections, in addition to the existing overlap lock. Transfer voyages must be entered in the itinerary. The confirmed observation supersedes earlier voyages; reconfirm after an actual arrival or unscheduled transfer.
+
+Confirmed means an administrator has recorded a terminal observation. Expected at port and Expected underway are estimates from scheduled departure/arrival times, not live GPS. Automatic Completed status does not create a confirmed observation. Delayed voyages block dependent trips until their arrival is confirmed or the schedule is corrected. Observations must be within the last 24 hours and cannot be future-dated. Every observation remains visible in audit logs.
+
+Daily schedule times use Asia/Manila (UTC+08:00). Elapsed departures are removed from the departure picker and preview, checked every second and again when preparing a trip. The selected current day rolls forward at Philippine midnight. Future dates show that day's full timetable. The recurring schedule card remains accessible for Edit and Pause/Resume; existing actual trip and booking history is retained.

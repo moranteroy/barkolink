@@ -1,0 +1,8307 @@
+{
+  "checkedAt": "2026-10-11",
+  "scope": "Nationwide ferry reference network; active operations limited to Batangas Port and Calapan Port in both directions. Published timetables require operational confirmation.",
+  "sources": {
+    "marina": {
+      "url": "https://marina.gov.ph/wp-content/uploads/2026/04/Philippine-Nautical-Highway-Matrix-MAR-2026.pdf",
+      "published": "2026-03",
+      "title": "MARINA Philippine Nautical Highway Matrix"
+    },
+    "starlite": {
+      "url": "https://starliteferries.com/our-fleet/",
+      "published": null,
+      "title": "Starlite official fleet and vessel routes"
+    },
+    "montenegro": {
+      "url": "https://montenegrolines.com.ph/contact.php",
+      "published": null,
+      "title": "Montenegro official offices and routes"
+    },
+    "ppa": {
+      "url": "https://www.ppa.com.ph/content/mindoro%E2%80%99s-%E2%80%98food-highway%E2%80%99-gets-boost-completion-8-integrated-seaport-projects-prrd-leads?page=1",
+      "published": "2021-11",
+      "title": "PPA Mindoro port projects"
+    },
+    "pcbsi": {
+      "url": "https://linkrigroup.com/pcbsi-port-terminal-management-corp/",
+      "published": null,
+      "title": "PCBSI Port Terminal Management Corp."
+    },
+    "fastcatSchedules": {
+      "url": "https://www.fastcat.ph/routes-schedules/",
+      "published": "2026-08",
+      "title": "FastCat official schedules"
+    },
+    "fastcatClasses": {
+      "url": "https://www.fastcat.ph/rates/",
+      "published": null,
+      "title": "FastCat official accommodation classes"
+    },
+    "starliteSchedules": {
+      "url": "https://starliteferries.com/schedule-and-rates-2025-2/",
+      "published": "2025",
+      "title": "Starlite published schedules and classes (2025)"
+    },
+    "supercatSchedules": {
+      "url": "https://supercat.ph/schedules-and-rates/",
+      "published": null,
+      "title": "SuperCat official schedules and classes"
+    },
+    "oceanjetClasses": {
+      "url": "https://www.oceanjet.net/travel-advisories/updated-baggage-policy",
+      "published": "2026-02-02",
+      "title": "OceanJet official accommodation classes"
+    },
+    "montenegroBooking": {
+      "url": "https://montenegrolines.com.ph/booking.php",
+      "published": null,
+      "title": "Montenegro date-specific schedule lookup"
+    }
+  },
+  "ports": [
+    {
+      "code": "BTG",
+      "name": "Batangas Port",
+      "city": "Batangas City",
+      "region": "Batangas",
+      "sourceIds": [
+        "marina"
+      ],
+      "terminalOperator": null,
+      "isActive": true
+    },
+    {
+      "code": "CAL",
+      "name": "Calapan Port",
+      "city": "Calapan City",
+      "region": "Oriental Mindoro",
+      "sourceIds": [
+        "marina"
+      ],
+      "terminalOperator": "PCBSI Port Terminal Management Corp.",
+      "isActive": true
+    },
+    {
+      "code": "PGA",
+      "name": "Balatero Port",
+      "city": "Puerto Galera",
+      "region": "Oriental Mindoro",
+      "sourceIds": [
+        "marina"
+      ],
+      "terminalOperator": null,
+      "isActive": false
+    },
+    {
+      "code": "ADI",
+      "name": "Abra de Ilog Port",
+      "city": "Abra de Ilog",
+      "region": "Occidental Mindoro",
+      "sourceIds": [
+        "marina"
+      ],
+      "terminalOperator": null,
+      "isActive": false
+    },
+    {
+      "code": "ROX",
+      "name": "Dangay Port",
+      "city": "Roxas",
+      "region": "Oriental Mindoro",
+      "sourceIds": [
+        "marina"
+      ],
+      "terminalOperator": null,
+      "isActive": false
+    },
+    {
+      "code": "CAT",
+      "name": "Caticlan Jetty Port",
+      "city": "Malay",
+      "region": "Aklan",
+      "sourceIds": [
+        "marina"
+      ],
+      "terminalOperator": null,
+      "isActive": false
+    },
+    {
+      "code": "ODI",
+      "name": "Poctoy Port",
+      "city": "Odiongan",
+      "region": "Romblon",
+      "sourceIds": [
+        "marina"
+      ],
+      "terminalOperator": null,
+      "isActive": false
+    },
+    {
+      "code": "ROM",
+      "name": "Romblon Port",
+      "city": "Romblon",
+      "region": "Romblon",
+      "sourceIds": [
+        "marina"
+      ],
+      "terminalOperator": null,
+      "isActive": false
+    },
+    {
+      "code": "MAG",
+      "name": "Magdiwang Port",
+      "city": "Magdiwang",
+      "region": "Romblon",
+      "sourceIds": [
+        "marina"
+      ],
+      "terminalOperator": null,
+      "isActive": false
+    },
+    {
+      "code": "SAG",
+      "name": "San Agustin Port",
+      "city": "San Agustin",
+      "region": "Romblon",
+      "sourceIds": [
+        "marina"
+      ],
+      "terminalOperator": null,
+      "isActive": false
+    },
+    {
+      "code": "RXS",
+      "name": "Culasi Port",
+      "city": "Roxas City",
+      "region": "Capiz",
+      "sourceIds": [
+        "marina"
+      ],
+      "terminalOperator": null,
+      "isActive": false
+    },
+    {
+      "code": "CEB",
+      "name": "Cebu Port",
+      "city": "Cebu City",
+      "region": "Cebu",
+      "sourceIds": [
+        "marina"
+      ],
+      "terminalOperator": null,
+      "isActive": false
+    },
+    {
+      "code": "SUR",
+      "name": "Surigao Port",
+      "city": "Surigao City",
+      "region": "Surigao del Norte",
+      "sourceIds": [
+        "marina"
+      ],
+      "terminalOperator": null,
+      "isActive": false
+    },
+    {
+      "code": "NAS",
+      "name": "Nasipit Port",
+      "city": "Nasipit",
+      "region": "Agusan del Norte",
+      "sourceIds": [
+        "marina"
+      ],
+      "terminalOperator": null,
+      "isActive": false
+    },
+    {
+      "code": "DAP",
+      "name": "Dapitan (Pulauan) Port",
+      "city": "Dapitan City",
+      "region": "Zamboanga del Norte",
+      "sourceIds": [
+        "marina"
+      ],
+      "terminalOperator": null,
+      "isActive": false
+    },
+    {
+      "code": "DUM",
+      "name": "Dumaguete Port",
+      "city": "Dumaguete City",
+      "region": "Negros Oriental",
+      "sourceIds": [
+        "marina"
+      ],
+      "terminalOperator": null,
+      "isActive": false
+    },
+    {
+      "code": "SIQ",
+      "name": "Siquijor Port",
+      "city": "Siquijor",
+      "region": "Siquijor",
+      "sourceIds": [
+        "marina"
+      ],
+      "terminalOperator": null,
+      "isActive": false
+    },
+    {
+      "code": "LAR",
+      "name": "Larena Port",
+      "city": "Larena",
+      "region": "Siquijor",
+      "sourceIds": [
+        "marina"
+      ],
+      "terminalOperator": null,
+      "isActive": false
+    },
+    {
+      "code": "ILO",
+      "name": "Iloilo Port",
+      "city": "Iloilo City",
+      "region": "Iloilo",
+      "sourceIds": [
+        "marina"
+      ],
+      "terminalOperator": null,
+      "isActive": false
+    },
+    {
+      "code": "BAC",
+      "name": "BREDCO Port",
+      "city": "Bacolod City",
+      "region": "Negros Occidental",
+      "sourceIds": [
+        "marina"
+      ],
+      "terminalOperator": null,
+      "isActive": false
+    },
+    {
+      "code": "DMG",
+      "name": "Dumangas Port",
+      "city": "Dumangas",
+      "region": "Iloilo",
+      "sourceIds": [
+        "marina"
+      ],
+      "terminalOperator": null,
+      "isActive": false
+    },
+    {
+      "code": "JRD",
+      "name": "Jordan Port",
+      "city": "Jordan",
+      "region": "Guimaras",
+      "sourceIds": [
+        "marina"
+      ],
+      "terminalOperator": null,
+      "isActive": false
+    },
+    {
+      "code": "CUY",
+      "name": "Cuyo Port",
+      "city": "Cuyo",
+      "region": "Palawan",
+      "sourceIds": [
+        "marina"
+      ],
+      "terminalOperator": null,
+      "isActive": false
+    },
+    {
+      "code": "PPS",
+      "name": "Puerto Princesa Port",
+      "city": "Puerto Princesa City",
+      "region": "Palawan",
+      "sourceIds": [
+        "marina"
+      ],
+      "terminalOperator": null,
+      "isActive": false
+    },
+    {
+      "code": "COR",
+      "name": "Coron Port",
+      "city": "Coron",
+      "region": "Palawan",
+      "sourceIds": [
+        "marina"
+      ],
+      "terminalOperator": null,
+      "isActive": false
+    },
+    {
+      "code": "CUL",
+      "name": "Culion Port",
+      "city": "Culion",
+      "region": "Palawan",
+      "sourceIds": [
+        "marina"
+      ],
+      "terminalOperator": null,
+      "isActive": false
+    },
+    {
+      "code": "ELN",
+      "name": "El Nido Port",
+      "city": "El Nido",
+      "region": "Palawan",
+      "sourceIds": [
+        "marina"
+      ],
+      "terminalOperator": null,
+      "isActive": false
+    },
+    {
+      "code": "LUC",
+      "name": "Lucena (Talao-Talao) Port",
+      "city": "Lucena City",
+      "region": "Quezon",
+      "sourceIds": [
+        "marina"
+      ],
+      "terminalOperator": null,
+      "isActive": false
+    },
+    {
+      "code": "BAL",
+      "name": "Balanacan Port",
+      "city": "Mogpog",
+      "region": "Marinduque",
+      "sourceIds": [
+        "marina"
+      ],
+      "terminalOperator": null,
+      "isActive": false
+    },
+    {
+      "code": "MAS",
+      "name": "Masbate Port",
+      "city": "Masbate City",
+      "region": "Masbate",
+      "sourceIds": [
+        "marina"
+      ],
+      "terminalOperator": null,
+      "isActive": false
+    },
+    {
+      "code": "PIL",
+      "name": "Pilar Port",
+      "city": "Pilar",
+      "region": "Sorsogon",
+      "sourceIds": [
+        "marina"
+      ],
+      "terminalOperator": null,
+      "isActive": false
+    },
+    {
+      "code": "LAG",
+      "name": "Lagundi Port",
+      "city": "Batuan",
+      "region": "Masbate",
+      "sourceIds": [
+        "marina"
+      ],
+      "terminalOperator": null,
+      "isActive": false
+    },
+    {
+      "code": "MTN",
+      "name": "Matnog Port",
+      "city": "Matnog",
+      "region": "Sorsogon",
+      "sourceIds": [
+        "marina"
+      ],
+      "terminalOperator": null,
+      "isActive": false
+    },
+    {
+      "code": "ALN",
+      "name": "Balwharteco Port (Looc)",
+      "city": "Allen",
+      "region": "Northern Samar",
+      "sourceIds": [
+        "marina"
+      ],
+      "terminalOperator": null,
+      "isActive": false
+    },
+    {
+      "code": "ADD",
+      "name": "Dapdap Port",
+      "city": "Allen",
+      "region": "Northern Samar",
+      "sourceIds": [
+        "marina"
+      ],
+      "terminalOperator": null,
+      "isActive": false
+    },
+    {
+      "code": "SIS",
+      "name": "San Isidro Port",
+      "city": "San Isidro",
+      "region": "Northern Samar",
+      "sourceIds": [
+        "marina"
+      ],
+      "terminalOperator": null,
+      "isActive": false
+    },
+    {
+      "code": "LAV",
+      "name": "Lavezares Port",
+      "city": "Lavezares",
+      "region": "Northern Samar",
+      "sourceIds": [
+        "marina"
+      ],
+      "terminalOperator": null,
+      "isActive": false
+    },
+    {
+      "code": "BIR",
+      "name": "Biri Port",
+      "city": "Biri",
+      "region": "Northern Samar",
+      "sourceIds": [
+        "marina"
+      ],
+      "terminalOperator": null,
+      "isActive": false
+    },
+    {
+      "code": "LIP",
+      "name": "Lipata Ferry Terminal",
+      "city": "Surigao City",
+      "region": "Surigao del Norte",
+      "sourceIds": [
+        "marina"
+      ],
+      "terminalOperator": null,
+      "isActive": false
+    },
+    {
+      "code": "BEN",
+      "name": "Benit Port",
+      "city": "San Ricardo",
+      "region": "Southern Leyte",
+      "sourceIds": [
+        "marina"
+      ],
+      "terminalOperator": null,
+      "isActive": false
+    },
+    {
+      "code": "LIL",
+      "name": "Liloan Port",
+      "city": "Liloan",
+      "region": "Southern Leyte",
+      "sourceIds": [
+        "marina"
+      ],
+      "terminalOperator": null,
+      "isActive": false
+    },
+    {
+      "code": "SJL",
+      "name": "San Juan Port",
+      "city": "San Juan",
+      "region": "Southern Leyte",
+      "sourceIds": [
+        "marina"
+      ],
+      "terminalOperator": null,
+      "isActive": false
+    },
+    {
+      "code": "DPA",
+      "name": "Dapa Port",
+      "city": "Dapa",
+      "region": "Surigao del Norte",
+      "sourceIds": [
+        "marina"
+      ],
+      "terminalOperator": null,
+      "isActive": false
+    },
+    {
+      "code": "DIN",
+      "name": "San Jose Port",
+      "city": "San Jose",
+      "region": "Dinagat Islands",
+      "sourceIds": [
+        "marina"
+      ],
+      "terminalOperator": null,
+      "isActive": false
+    },
+    {
+      "code": "ZAM",
+      "name": "Zamboanga Port",
+      "city": "Zamboanga City",
+      "region": "Zamboanga del Sur",
+      "sourceIds": [
+        "marina"
+      ],
+      "terminalOperator": null,
+      "isActive": false
+    },
+    {
+      "code": "ISA",
+      "name": "Isabela Port",
+      "city": "Isabela City",
+      "region": "Basilan",
+      "sourceIds": [
+        "marina"
+      ],
+      "terminalOperator": null,
+      "isActive": false
+    },
+    {
+      "code": "LAM",
+      "name": "Lamitan Port",
+      "city": "Lamitan City",
+      "region": "Basilan",
+      "sourceIds": [
+        "marina"
+      ],
+      "terminalOperator": null,
+      "isActive": false
+    },
+    {
+      "code": "JOL",
+      "name": "Jolo Port",
+      "city": "Jolo",
+      "region": "Sulu",
+      "sourceIds": [
+        "marina"
+      ],
+      "terminalOperator": null,
+      "isActive": false
+    },
+    {
+      "code": "MBN",
+      "name": "Mabini Port",
+      "city": "Mabini",
+      "region": "Batangas",
+      "sourceIds": [
+        "marina"
+      ],
+      "terminalOperator": null,
+      "isActive": false
+    },
+    {
+      "code": "TIN",
+      "name": "Tingloy Port",
+      "city": "Tingloy",
+      "region": "Batangas",
+      "sourceIds": [
+        "marina"
+      ],
+      "terminalOperator": null,
+      "isActive": false
+    },
+    {
+      "code": "STA",
+      "name": "Santa Teresa Port",
+      "city": "Magsaysay",
+      "region": "Occidental Mindoro",
+      "sourceIds": [
+        "marina"
+      ],
+      "terminalOperator": null,
+      "isActive": false
+    },
+    {
+      "code": "SJM",
+      "name": "San Jose Port",
+      "city": "San Jose",
+      "region": "Occidental Mindoro",
+      "sourceIds": [
+        "marina"
+      ],
+      "terminalOperator": null,
+      "isActive": false
+    },
+    {
+      "code": "BUL",
+      "name": "Bulalacao Port",
+      "city": "Bulalacao",
+      "region": "Oriental Mindoro",
+      "sourceIds": [
+        "marina"
+      ],
+      "terminalOperator": null,
+      "isActive": false
+    },
+    {
+      "code": "SEM",
+      "name": "Semirara Port",
+      "city": "Caluya",
+      "region": "Antique",
+      "sourceIds": [
+        "marina"
+      ],
+      "terminalOperator": null,
+      "isActive": false
+    },
+    {
+      "code": "BUR",
+      "name": "Buruanga Port",
+      "city": "Buruanga",
+      "region": "Aklan",
+      "sourceIds": [
+        "marina"
+      ],
+      "terminalOperator": null,
+      "isActive": false
+    },
+    {
+      "code": "UNI",
+      "name": "Unidos Port",
+      "city": "Nabas",
+      "region": "Aklan",
+      "sourceIds": [
+        "marina"
+      ],
+      "terminalOperator": null,
+      "isActive": false
+    },
+    {
+      "code": "ANT",
+      "name": "Lipata Port",
+      "city": "Culasi",
+      "region": "Antique",
+      "sourceIds": [
+        "marina"
+      ],
+      "terminalOperator": null,
+      "isActive": false
+    },
+    {
+      "code": "EST",
+      "name": "Estancia Port",
+      "city": "Estancia",
+      "region": "Iloilo",
+      "sourceIds": [
+        "marina"
+      ],
+      "terminalOperator": null,
+      "isActive": false
+    },
+    {
+      "code": "BOG",
+      "name": "Polambato Port",
+      "city": "Bogo City",
+      "region": "Cebu",
+      "sourceIds": [
+        "marina"
+      ],
+      "terminalOperator": null,
+      "isActive": false
+    },
+    {
+      "code": "PIO",
+      "name": "Pio Duran Port",
+      "city": "Pio Duran",
+      "region": "Albay",
+      "sourceIds": [
+        "marina"
+      ],
+      "terminalOperator": null,
+      "isActive": false
+    },
+    {
+      "code": "ARO",
+      "name": "Aroroy Port",
+      "city": "Aroroy",
+      "region": "Masbate",
+      "sourceIds": [
+        "marina"
+      ],
+      "terminalOperator": null,
+      "isActive": false
+    },
+    {
+      "code": "CTA",
+      "name": "Cataingan Port",
+      "city": "Cataingan",
+      "region": "Masbate",
+      "sourceIds": [
+        "marina"
+      ],
+      "terminalOperator": null,
+      "isActive": false
+    },
+    {
+      "code": "NAV",
+      "name": "Naval Port",
+      "city": "Naval",
+      "region": "Biliran",
+      "sourceIds": [
+        "marina"
+      ],
+      "terminalOperator": null,
+      "isActive": false
+    },
+    {
+      "code": "TAB",
+      "name": "Tabaco Port",
+      "city": "Tabaco City",
+      "region": "Albay",
+      "sourceIds": [
+        "marina"
+      ],
+      "terminalOperator": null,
+      "isActive": false
+    },
+    {
+      "code": "VIR",
+      "name": "Virac Port",
+      "city": "Virac",
+      "region": "Catanduanes",
+      "sourceIds": [
+        "marina"
+      ],
+      "terminalOperator": null,
+      "isActive": false
+    },
+    {
+      "code": "TAY",
+      "name": "Taytay Port",
+      "city": "Taytay",
+      "region": "Palawan",
+      "sourceIds": [
+        "marina"
+      ],
+      "terminalOperator": null,
+      "isActive": false
+    },
+    {
+      "code": "CLR",
+      "name": "Calatrava Port",
+      "city": "Calatrava",
+      "region": "Romblon",
+      "sourceIds": [
+        "marina"
+      ],
+      "terminalOperator": null,
+      "isActive": false
+    },
+    {
+      "code": "PIN",
+      "name": "Pinamalayan Port",
+      "city": "Pinamalayan",
+      "region": "Oriental Mindoro",
+      "sourceIds": [
+        "marina"
+      ],
+      "terminalOperator": null,
+      "isActive": false
+    },
+    {
+      "code": "CON",
+      "name": "Concepcion Port (Sibale)",
+      "city": "Concepcion",
+      "region": "Romblon",
+      "sourceIds": [
+        "marina"
+      ],
+      "terminalOperator": null,
+      "isActive": false
+    },
+    {
+      "code": "BAN",
+      "name": "Banton Port",
+      "city": "Banton",
+      "region": "Romblon",
+      "sourceIds": [
+        "marina"
+      ],
+      "terminalOperator": null,
+      "isActive": false
+    },
+    {
+      "code": "CGN",
+      "name": "Cagban Port",
+      "city": "Malay",
+      "region": "Aklan",
+      "sourceIds": [
+        "marina"
+      ],
+      "terminalOperator": null,
+      "isActive": false
+    },
+    {
+      "code": "TBL",
+      "name": "Tabuelan Port",
+      "city": "Tabuelan",
+      "region": "Cebu",
+      "sourceIds": [
+        "marina"
+      ],
+      "terminalOperator": null,
+      "isActive": false
+    },
+    {
+      "code": "ESC",
+      "name": "Escalante Port",
+      "city": "Escalante City",
+      "region": "Negros Occidental",
+      "sourceIds": [
+        "marina"
+      ],
+      "terminalOperator": null,
+      "isActive": false
+    },
+    {
+      "code": "OSL",
+      "name": "Oslob Port",
+      "city": "Oslob",
+      "region": "Cebu",
+      "sourceIds": [
+        "marina"
+      ],
+      "terminalOperator": null,
+      "isActive": false
+    },
+    {
+      "code": "BNG",
+      "name": "Banago Port",
+      "city": "Bacolod City",
+      "region": "Negros Occidental",
+      "sourceIds": [
+        "fastcatSchedules"
+      ],
+      "terminalOperator": null,
+      "isActive": false
+    },
+    {
+      "code": "SCA",
+      "name": "San Carlos Port",
+      "city": "San Carlos City",
+      "region": "Negros Occidental",
+      "sourceIds": [
+        "fastcatSchedules"
+      ],
+      "terminalOperator": null,
+      "isActive": false
+    },
+    {
+      "code": "TOL",
+      "name": "Toledo Port",
+      "city": "Toledo",
+      "region": "Cebu",
+      "sourceIds": [
+        "fastcatSchedules"
+      ],
+      "terminalOperator": null,
+      "isActive": false
+    },
+    {
+      "code": "TUB",
+      "name": "Tubigon Port",
+      "city": "Tubigon",
+      "region": "Bohol",
+      "sourceIds": [
+        "fastcatSchedules"
+      ],
+      "terminalOperator": null,
+      "isActive": false
+    },
+    {
+      "code": "MSN",
+      "name": "Maasin Port",
+      "city": "Maasin",
+      "region": "Southern Leyte",
+      "sourceIds": [
+        "fastcatSchedules"
+      ],
+      "terminalOperator": null,
+      "isActive": false
+    }
+  ],
+  "routes": [
+    {
+      "code": "ADD-MTN",
+      "origin": "ADD",
+      "destination": "MTN",
+      "durationMinutes": null,
+      "operators": [
+        "Montenegro Shipping Lines",
+        "FastCat"
+      ],
+      "sources": [
+        {
+          "sourceId": "marina",
+          "page": 10
+        },
+        {
+          "sourceId": "fastcatSchedules"
+        }
+      ],
+      "isActive": false,
+      "inactiveReason": "Outside the active Batangas-Calapan service area.",
+      "schedules": [],
+      "accommodationProfiles": []
+    },
+    {
+      "code": "ADI-BTG",
+      "origin": "ADI",
+      "destination": "BTG",
+      "durationMinutes": null,
+      "operators": [
+        "Montenegro Shipping Lines",
+        "Besta Shipping Lines",
+        "Orange Navigation"
+      ],
+      "sources": [
+        {
+          "sourceId": "montenegro",
+          "page": null
+        },
+        {
+          "sourceId": "marina",
+          "page": 3
+        }
+      ],
+      "isActive": false,
+      "inactiveReason": "Outside the active Batangas-Calapan service area.",
+      "schedules": [],
+      "accommodationProfiles": []
+    },
+    {
+      "code": "ALN-MTN",
+      "origin": "ALN",
+      "destination": "MTN",
+      "durationMinutes": null,
+      "operators": [
+        "Montenegro Shipping Lines",
+        "Starlite Ferries"
+      ],
+      "sources": [
+        {
+          "sourceId": "montenegro",
+          "page": null
+        },
+        {
+          "sourceId": "marina",
+          "page": 9
+        }
+      ],
+      "isActive": false,
+      "inactiveReason": "Outside the active Batangas-Calapan service area.",
+      "schedules": [],
+      "accommodationProfiles": []
+    },
+    {
+      "code": "ANT-BTG",
+      "origin": "ANT",
+      "destination": "BTG",
+      "durationMinutes": null,
+      "operators": [
+        "Starlite Ferries"
+      ],
+      "sources": [
+        {
+          "sourceId": "marina",
+          "page": 4
+        }
+      ],
+      "isActive": false,
+      "inactiveReason": "Outside the active Batangas-Calapan service area.",
+      "schedules": [],
+      "accommodationProfiles": []
+    },
+    {
+      "code": "ANT-ILO",
+      "origin": "ANT",
+      "destination": "ILO",
+      "durationMinutes": null,
+      "operators": [
+        "Starlite Ferries"
+      ],
+      "sources": [
+        {
+          "sourceId": "marina",
+          "page": 4
+        }
+      ],
+      "isActive": false,
+      "inactiveReason": "Outside the active Batangas-Calapan service area.",
+      "schedules": [],
+      "accommodationProfiles": []
+    },
+    {
+      "code": "ARO-PIO",
+      "origin": "ARO",
+      "destination": "PIO",
+      "durationMinutes": null,
+      "operators": [
+        "Montenegro Shipping Lines"
+      ],
+      "sources": [
+        {
+          "sourceId": "marina",
+          "page": 16
+        }
+      ],
+      "isActive": false,
+      "inactiveReason": "Outside the active Batangas-Calapan service area.",
+      "schedules": [],
+      "accommodationProfiles": []
+    },
+    {
+      "code": "BAC-BTG",
+      "origin": "BAC",
+      "destination": "BTG",
+      "durationMinutes": null,
+      "operators": [
+        "Starlite Ferries"
+      ],
+      "sources": [
+        {
+          "sourceId": "marina",
+          "page": 4
+        }
+      ],
+      "isActive": false,
+      "inactiveReason": "Outside the active Batangas-Calapan service area.",
+      "schedules": [],
+      "accommodationProfiles": []
+    },
+    {
+      "code": "BAC-DMG",
+      "origin": "BAC",
+      "destination": "DMG",
+      "durationMinutes": null,
+      "operators": [
+        "Montenegro Shipping Lines"
+      ],
+      "sources": [
+        {
+          "sourceId": "montenegro",
+          "page": null
+        },
+        {
+          "sourceId": "marina",
+          "page": 6
+        }
+      ],
+      "isActive": false,
+      "inactiveReason": "Outside the active Batangas-Calapan service area.",
+      "schedules": [],
+      "accommodationProfiles": []
+    },
+    {
+      "code": "BAC-EST",
+      "origin": "BAC",
+      "destination": "EST",
+      "durationMinutes": null,
+      "operators": [
+        "Starlite Ferries"
+      ],
+      "sources": [
+        {
+          "sourceId": "marina",
+          "page": 4
+        }
+      ],
+      "isActive": false,
+      "inactiveReason": "Outside the active Batangas-Calapan service area.",
+      "schedules": [],
+      "accommodationProfiles": []
+    },
+    {
+      "code": "BAC-ILO",
+      "origin": "BAC",
+      "destination": "ILO",
+      "durationMinutes": null,
+      "operators": [
+        "Montenegro Shipping Lines",
+        "Starlite Ferries"
+      ],
+      "sources": [
+        {
+          "sourceId": "montenegro",
+          "page": null
+        },
+        {
+          "sourceId": "marina",
+          "page": 4
+        }
+      ],
+      "isActive": false,
+      "inactiveReason": "Outside the active Batangas-Calapan service area.",
+      "schedules": [],
+      "accommodationProfiles": []
+    },
+    {
+      "code": "BAL-LUC",
+      "origin": "BAL",
+      "destination": "LUC",
+      "durationMinutes": null,
+      "operators": [
+        "Montenegro Shipping Lines"
+      ],
+      "sources": [
+        {
+          "sourceId": "montenegro",
+          "page": null
+        },
+        {
+          "sourceId": "marina",
+          "page": 24
+        }
+      ],
+      "isActive": false,
+      "inactiveReason": "Outside the active Batangas-Calapan service area.",
+      "schedules": [],
+      "accommodationProfiles": []
+    },
+    {
+      "code": "BAN-CON",
+      "origin": "BAN",
+      "destination": "CON",
+      "durationMinutes": null,
+      "operators": [
+        "Montenegro Shipping Lines"
+      ],
+      "sources": [
+        {
+          "sourceId": "marina",
+          "page": 27
+        }
+      ],
+      "isActive": false,
+      "inactiveReason": "Outside the active Batangas-Calapan service area.",
+      "schedules": [],
+      "accommodationProfiles": []
+    },
+    {
+      "code": "BEN-LIP",
+      "origin": "BEN",
+      "destination": "LIP",
+      "durationMinutes": null,
+      "operators": [
+        "Montenegro Shipping Lines"
+      ],
+      "sources": [
+        {
+          "sourceId": "montenegro",
+          "page": null
+        },
+        {
+          "sourceId": "marina",
+          "page": 11
+        }
+      ],
+      "isActive": false,
+      "inactiveReason": "Outside the active Batangas-Calapan service area.",
+      "schedules": [],
+      "accommodationProfiles": []
+    },
+    {
+      "code": "BIR-LAV",
+      "origin": "BIR",
+      "destination": "LAV",
+      "durationMinutes": null,
+      "operators": [
+        "Montenegro Shipping Lines"
+      ],
+      "sources": [
+        {
+          "sourceId": "montenegro",
+          "page": null
+        }
+      ],
+      "isActive": false,
+      "inactiveReason": "Outside the active Batangas-Calapan service area.",
+      "schedules": [],
+      "accommodationProfiles": []
+    },
+    {
+      "code": "BOG-CTA",
+      "origin": "BOG",
+      "destination": "CTA",
+      "durationMinutes": null,
+      "operators": [
+        "Montenegro Shipping Lines"
+      ],
+      "sources": [
+        {
+          "sourceId": "marina",
+          "page": 17
+        },
+        {
+          "sourceId": "marina",
+          "page": 18
+        }
+      ],
+      "isActive": false,
+      "inactiveReason": "Outside the active Batangas-Calapan service area.",
+      "schedules": [],
+      "accommodationProfiles": []
+    },
+    {
+      "code": "BOG-EST",
+      "origin": "BOG",
+      "destination": "EST",
+      "durationMinutes": null,
+      "operators": [
+        "Starlite Ferries"
+      ],
+      "sources": [
+        {
+          "sourceId": "marina",
+          "page": 24
+        }
+      ],
+      "isActive": false,
+      "inactiveReason": "Outside the active Batangas-Calapan service area.",
+      "schedules": [],
+      "accommodationProfiles": []
+    },
+    {
+      "code": "BOG-RXS",
+      "origin": "BOG",
+      "destination": "RXS",
+      "durationMinutes": null,
+      "operators": [
+        "Starlite Ferries"
+      ],
+      "sources": [
+        {
+          "sourceId": "marina",
+          "page": 4
+        }
+      ],
+      "isActive": false,
+      "inactiveReason": "Outside the active Batangas-Calapan service area.",
+      "schedules": [],
+      "accommodationProfiles": []
+    },
+    {
+      "code": "BTG-ADI",
+      "origin": "BTG",
+      "destination": "ADI",
+      "durationMinutes": null,
+      "operators": [
+        "Montenegro Shipping Lines",
+        "Besta Shipping Lines",
+        "Orange Navigation"
+      ],
+      "sources": [
+        {
+          "sourceId": "montenegro",
+          "page": null
+        },
+        {
+          "sourceId": "marina",
+          "page": 3
+        }
+      ],
+      "isActive": false,
+      "inactiveReason": "Outside the active Batangas-Calapan service area.",
+      "schedules": [],
+      "accommodationProfiles": []
+    },
+    {
+      "code": "BTG-ANT",
+      "origin": "BTG",
+      "destination": "ANT",
+      "durationMinutes": null,
+      "operators": [
+        "Starlite Ferries"
+      ],
+      "sources": [
+        {
+          "sourceId": "marina",
+          "page": 4
+        }
+      ],
+      "isActive": false,
+      "inactiveReason": "Outside the active Batangas-Calapan service area.",
+      "schedules": [],
+      "accommodationProfiles": []
+    },
+    {
+      "code": "BTG-BAC",
+      "origin": "BTG",
+      "destination": "BAC",
+      "durationMinutes": null,
+      "operators": [
+        "Starlite Ferries"
+      ],
+      "sources": [
+        {
+          "sourceId": "marina",
+          "page": 4
+        }
+      ],
+      "isActive": false,
+      "inactiveReason": "Outside the active Batangas-Calapan service area.",
+      "schedules": [],
+      "accommodationProfiles": []
+    },
+    {
+      "code": "BTG-CAL",
+      "origin": "BTG",
+      "destination": "CAL",
+      "durationMinutes": null,
+      "operators": [
+        "Montenegro Shipping Lines",
+        "Starlite Ferries",
+        "FastCat",
+        "OceanJet",
+        "SuperCat",
+        "Besta Shipping Lines"
+      ],
+      "sources": [
+        {
+          "sourceId": "montenegro",
+          "page": null
+        },
+        {
+          "sourceId": "starlite",
+          "page": null
+        },
+        {
+          "sourceId": "marina",
+          "page": 1
+        },
+        {
+          "sourceId": "marina",
+          "page": 2
+        },
+        {
+          "sourceId": "fastcatSchedules"
+        }
+      ],
+      "isActive": true,
+      "inactiveReason": null,
+      "schedules": [
+        {
+          "operator": "FastCat",
+          "routeCode": "BTG-CAL",
+          "days": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6
+          ],
+          "departureTimes": [
+            "01:00",
+            "06:00",
+            "09:00",
+            "13:00",
+            "15:00",
+            "21:00"
+          ],
+          "durationMinutes": 120,
+          "timezone": "Asia/Manila",
+          "sourceId": "fastcatSchedules",
+          "published": "2026-08",
+          "status": "published-reference"
+        },
+        {
+          "operator": "Starlite Ferries",
+          "routeCode": "BTG-CAL",
+          "days": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6
+          ],
+          "departureTimes": [
+            "01:00",
+            "03:00",
+            "05:00",
+            "07:00",
+            "09:00",
+            "11:00",
+            "13:00",
+            "15:00",
+            "17:00",
+            "19:00",
+            "21:00",
+            "23:00"
+          ],
+          "durationMinutes": null,
+          "timezone": "Asia/Manila",
+          "sourceId": "starliteSchedules",
+          "published": "2025",
+          "status": "published-reference"
+        },
+        {
+          "operator": "SuperCat",
+          "routeCode": "BTG-CAL",
+          "days": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6
+          ],
+          "departureTimes": [
+            "09:30",
+            "13:30",
+            "17:30"
+          ],
+          "durationMinutes": null,
+          "timezone": "Asia/Manila",
+          "sourceId": "supercatSchedules",
+          "published": null,
+          "status": "published-reference"
+        }
+      ],
+      "accommodationProfiles": [
+        {
+          "operator": "FastCat",
+          "routeCodes": [
+            "BTG-CAL",
+            "CAL-BTG",
+            "BUL-CAT",
+            "CAT-BUL"
+          ],
+          "classes": [
+            "Economy",
+            "Premium Economy",
+            "Business Class"
+          ],
+          "sourceId": "fastcatClasses",
+          "capacity": null,
+          "surcharge": null,
+          "status": "allocation-required",
+          "scope": "operator-route; availability depends on the assigned vessel"
+        },
+        {
+          "operator": "Starlite Ferries",
+          "routeCodes": [
+            "BTG-CAL",
+            "CAL-BTG",
+            "ROX-CAT",
+            "CAT-ROX"
+          ],
+          "classes": [
+            "Economy",
+            "Tourist Class",
+            "Business Class"
+          ],
+          "sourceId": "starliteSchedules",
+          "capacity": null,
+          "surcharge": null,
+          "status": "allocation-required",
+          "scope": "operator-route; availability depends on the assigned vessel"
+        },
+        {
+          "operator": "SuperCat",
+          "routeCodes": [
+            "BTG-CAL",
+            "CAL-BTG"
+          ],
+          "classes": [
+            "Economy (Open Air)",
+            "Tourist Class",
+            "Business Class"
+          ],
+          "sourceId": "supercatSchedules",
+          "capacity": null,
+          "surcharge": null,
+          "status": "allocation-required",
+          "scope": "operator-route; availability depends on the assigned vessel"
+        },
+        {
+          "operator": "OceanJet",
+          "routeCodes": [
+            "BTG-CAL",
+            "CAL-BTG"
+          ],
+          "classes": [
+            "Open Air",
+            "Tourist Class",
+            "Business Class"
+          ],
+          "sourceId": "oceanjetClasses",
+          "capacity": null,
+          "surcharge": null,
+          "status": "allocation-required",
+          "scope": "operator-route; availability depends on the assigned vessel"
+        }
+      ]
+    },
+    {
+      "code": "BTG-CAT",
+      "origin": "BTG",
+      "destination": "CAT",
+      "durationMinutes": null,
+      "operators": [
+        "Starlite Ferries"
+      ],
+      "sources": [
+        {
+          "sourceId": "starlite",
+          "page": null
+        },
+        {
+          "sourceId": "marina",
+          "page": 4
+        }
+      ],
+      "isActive": false,
+      "inactiveReason": "Outside the active Batangas-Calapan service area.",
+      "schedules": [],
+      "accommodationProfiles": []
+    },
+    {
+      "code": "BTG-EST",
+      "origin": "BTG",
+      "destination": "EST",
+      "durationMinutes": null,
+      "operators": [
+        "Starlite Ferries"
+      ],
+      "sources": [
+        {
+          "sourceId": "marina",
+          "page": 24
+        }
+      ],
+      "isActive": false,
+      "inactiveReason": "Outside the active Batangas-Calapan service area.",
+      "schedules": [],
+      "accommodationProfiles": []
+    },
+    {
+      "code": "BTG-ILO",
+      "origin": "BTG",
+      "destination": "ILO",
+      "durationMinutes": null,
+      "operators": [
+        "Starlite Ferries"
+      ],
+      "sources": [
+        {
+          "sourceId": "marina",
+          "page": 4
+        }
+      ],
+      "isActive": false,
+      "inactiveReason": "Outside the active Batangas-Calapan service area.",
+      "schedules": [],
+      "accommodationProfiles": []
+    },
+    {
+      "code": "BTG-MAG",
+      "origin": "BTG",
+      "destination": "MAG",
+      "durationMinutes": null,
+      "operators": [
+        "Starlite Ferries"
+      ],
+      "sources": [
+        {
+          "sourceId": "starlite",
+          "page": null
+        }
+      ],
+      "isActive": false,
+      "inactiveReason": "Outside the active Batangas-Calapan service area.",
+      "schedules": [],
+      "accommodationProfiles": []
+    },
+    {
+      "code": "BTG-ODI",
+      "origin": "BTG",
+      "destination": "ODI",
+      "durationMinutes": null,
+      "operators": [
+        "Montenegro Shipping Lines",
+        "Starlite Ferries"
+      ],
+      "sources": [
+        {
+          "sourceId": "montenegro",
+          "page": null
+        },
+        {
+          "sourceId": "marina",
+          "page": 4
+        },
+        {
+          "sourceId": "marina",
+          "page": 27
+        }
+      ],
+      "isActive": false,
+      "inactiveReason": "Outside the active Batangas-Calapan service area.",
+      "schedules": [],
+      "accommodationProfiles": []
+    },
+    {
+      "code": "BTG-PGA",
+      "origin": "BTG",
+      "destination": "PGA",
+      "durationMinutes": null,
+      "operators": [
+        "Montenegro Shipping Lines",
+        "Starlite Ferries",
+        "Atienza Inter-Island Ferries"
+      ],
+      "sources": [
+        {
+          "sourceId": "montenegro",
+          "page": null
+        },
+        {
+          "sourceId": "marina",
+          "page": 2
+        }
+      ],
+      "isActive": false,
+      "inactiveReason": "Outside the active Batangas-Calapan service area.",
+      "schedules": [],
+      "accommodationProfiles": []
+    },
+    {
+      "code": "BTG-ROM",
+      "origin": "BTG",
+      "destination": "ROM",
+      "durationMinutes": null,
+      "operators": [
+        "Montenegro Shipping Lines",
+        "Starlite Ferries"
+      ],
+      "sources": [
+        {
+          "sourceId": "marina",
+          "page": 4
+        },
+        {
+          "sourceId": "marina",
+          "page": 27
+        }
+      ],
+      "isActive": false,
+      "inactiveReason": "Outside the active Batangas-Calapan service area.",
+      "schedules": [],
+      "accommodationProfiles": []
+    },
+    {
+      "code": "BTG-RXS",
+      "origin": "BTG",
+      "destination": "RXS",
+      "durationMinutes": null,
+      "operators": [
+        "Starlite Ferries"
+      ],
+      "sources": [
+        {
+          "sourceId": "marina",
+          "page": 4
+        }
+      ],
+      "isActive": false,
+      "inactiveReason": "Outside the active Batangas-Calapan service area.",
+      "schedules": [],
+      "accommodationProfiles": []
+    },
+    {
+      "code": "BUL-SEM",
+      "origin": "BUL",
+      "destination": "SEM",
+      "durationMinutes": null,
+      "operators": [
+        "Montenegro Shipping Lines"
+      ],
+      "sources": [
+        {
+          "sourceId": "marina",
+          "page": 5
+        },
+        {
+          "sourceId": "marina",
+          "page": 26
+        }
+      ],
+      "isActive": false,
+      "inactiveReason": "Outside the active Batangas-Calapan service area.",
+      "schedules": [],
+      "accommodationProfiles": []
+    },
+    {
+      "code": "BUR-ROX",
+      "origin": "BUR",
+      "destination": "ROX",
+      "durationMinutes": null,
+      "operators": [
+        "Montenegro Shipping Lines"
+      ],
+      "sources": [
+        {
+          "sourceId": "marina",
+          "page": 5
+        }
+      ],
+      "isActive": false,
+      "inactiveReason": "Outside the active Batangas-Calapan service area.",
+      "schedules": [],
+      "accommodationProfiles": []
+    },
+    {
+      "code": "BUR-SEM",
+      "origin": "BUR",
+      "destination": "SEM",
+      "durationMinutes": null,
+      "operators": [
+        "Montenegro Shipping Lines"
+      ],
+      "sources": [
+        {
+          "sourceId": "marina",
+          "page": 5
+        }
+      ],
+      "isActive": false,
+      "inactiveReason": "Outside the active Batangas-Calapan service area.",
+      "schedules": [],
+      "accommodationProfiles": []
+    },
+    {
+      "code": "CAL-BTG",
+      "origin": "CAL",
+      "destination": "BTG",
+      "durationMinutes": null,
+      "operators": [
+        "Montenegro Shipping Lines",
+        "Starlite Ferries",
+        "FastCat",
+        "OceanJet",
+        "SuperCat",
+        "Besta Shipping Lines"
+      ],
+      "sources": [
+        {
+          "sourceId": "montenegro",
+          "page": null
+        },
+        {
+          "sourceId": "starlite",
+          "page": null
+        },
+        {
+          "sourceId": "marina",
+          "page": 1
+        },
+        {
+          "sourceId": "marina",
+          "page": 2
+        },
+        {
+          "sourceId": "fastcatSchedules"
+        }
+      ],
+      "isActive": true,
+      "inactiveReason": null,
+      "schedules": [
+        {
+          "operator": "FastCat",
+          "routeCode": "CAL-BTG",
+          "days": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6
+          ],
+          "departureTimes": [
+            "00:00",
+            "04:00",
+            "10:00",
+            "12:00",
+            "16:00",
+            "21:00"
+          ],
+          "durationMinutes": 120,
+          "timezone": "Asia/Manila",
+          "sourceId": "fastcatSchedules",
+          "published": "2026-08",
+          "status": "published-reference"
+        },
+        {
+          "operator": "Starlite Ferries",
+          "routeCode": "CAL-BTG",
+          "days": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6
+          ],
+          "departureTimes": [
+            "01:00",
+            "03:00",
+            "05:00",
+            "07:00",
+            "09:00",
+            "11:00",
+            "13:00",
+            "15:00",
+            "17:00",
+            "19:00",
+            "21:00",
+            "23:00"
+          ],
+          "durationMinutes": null,
+          "timezone": "Asia/Manila",
+          "sourceId": "starliteSchedules",
+          "published": "2025",
+          "status": "published-reference"
+        },
+        {
+          "operator": "SuperCat",
+          "routeCode": "CAL-BTG",
+          "days": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6
+          ],
+          "departureTimes": [
+            "07:30",
+            "11:30",
+            "17:30"
+          ],
+          "durationMinutes": null,
+          "timezone": "Asia/Manila",
+          "sourceId": "supercatSchedules",
+          "published": null,
+          "status": "published-reference"
+        }
+      ],
+      "accommodationProfiles": [
+        {
+          "operator": "FastCat",
+          "routeCodes": [
+            "BTG-CAL",
+            "CAL-BTG",
+            "BUL-CAT",
+            "CAT-BUL"
+          ],
+          "classes": [
+            "Economy",
+            "Premium Economy",
+            "Business Class"
+          ],
+          "sourceId": "fastcatClasses",
+          "capacity": null,
+          "surcharge": null,
+          "status": "allocation-required",
+          "scope": "operator-route; availability depends on the assigned vessel"
+        },
+        {
+          "operator": "Starlite Ferries",
+          "routeCodes": [
+            "BTG-CAL",
+            "CAL-BTG",
+            "ROX-CAT",
+            "CAT-ROX"
+          ],
+          "classes": [
+            "Economy",
+            "Tourist Class",
+            "Business Class"
+          ],
+          "sourceId": "starliteSchedules",
+          "capacity": null,
+          "surcharge": null,
+          "status": "allocation-required",
+          "scope": "operator-route; availability depends on the assigned vessel"
+        },
+        {
+          "operator": "SuperCat",
+          "routeCodes": [
+            "BTG-CAL",
+            "CAL-BTG"
+          ],
+          "classes": [
+            "Economy (Open Air)",
+            "Tourist Class",
+            "Business Class"
+          ],
+          "sourceId": "supercatSchedules",
+          "capacity": null,
+          "surcharge": null,
+          "status": "allocation-required",
+          "scope": "operator-route; availability depends on the assigned vessel"
+        },
+        {
+          "operator": "OceanJet",
+          "routeCodes": [
+            "BTG-CAL",
+            "CAL-BTG"
+          ],
+          "classes": [
+            "Open Air",
+            "Tourist Class",
+            "Business Class"
+          ],
+          "sourceId": "oceanjetClasses",
+          "capacity": null,
+          "surcharge": null,
+          "status": "allocation-required",
+          "scope": "operator-route; availability depends on the assigned vessel"
+        }
+      ]
+    },
+    {
+      "code": "CAT-BTG",
+      "origin": "CAT",
+      "destination": "BTG",
+      "durationMinutes": null,
+      "operators": [
+        "Starlite Ferries"
+      ],
+      "sources": [
+        {
+          "sourceId": "starlite",
+          "page": null
+        },
+        {
+          "sourceId": "marina",
+          "page": 4
+        }
+      ],
+      "isActive": false,
+      "inactiveReason": "Outside the active Batangas-Calapan service area.",
+      "schedules": [],
+      "accommodationProfiles": []
+    },
+    {
+      "code": "CAT-CGN",
+      "origin": "CAT",
+      "destination": "CGN",
+      "durationMinutes": null,
+      "operators": [
+        "Montenegro Shipping Lines"
+      ],
+      "sources": [
+        {
+          "sourceId": "marina",
+          "page": 27
+        }
+      ],
+      "isActive": false,
+      "inactiveReason": "Outside the active Batangas-Calapan service area.",
+      "schedules": [],
+      "accommodationProfiles": []
+    },
+    {
+      "code": "CAT-ODI",
+      "origin": "CAT",
+      "destination": "ODI",
+      "durationMinutes": null,
+      "operators": [
+        "Starlite Ferries",
+        "Montenegro Shipping Lines"
+      ],
+      "sources": [
+        {
+          "sourceId": "marina",
+          "page": 4
+        },
+        {
+          "sourceId": "marina",
+          "page": 5
+        },
+        {
+          "sourceId": "marina",
+          "page": 27
+        }
+      ],
+      "isActive": false,
+      "inactiveReason": "Outside the active Batangas-Calapan service area.",
+      "schedules": [],
+      "accommodationProfiles": []
+    },
+    {
+      "code": "CAT-ROX",
+      "origin": "CAT",
+      "destination": "ROX",
+      "durationMinutes": null,
+      "operators": [
+        "Montenegro Shipping Lines",
+        "Starlite Ferries"
+      ],
+      "sources": [
+        {
+          "sourceId": "montenegro",
+          "page": null
+        },
+        {
+          "sourceId": "starlite",
+          "page": null
+        },
+        {
+          "sourceId": "marina",
+          "page": 5
+        },
+        {
+          "sourceId": "marina",
+          "page": 27
+        }
+      ],
+      "isActive": false,
+      "inactiveReason": "Outside the active Batangas-Calapan service area.",
+      "schedules": [
+        {
+          "operator": "Starlite Ferries",
+          "routeCode": "CAT-ROX",
+          "days": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6
+          ],
+          "departureTimes": [
+            "01:00",
+            "05:00",
+            "09:00",
+            "12:00",
+            "16:00",
+            "20:00"
+          ],
+          "durationMinutes": null,
+          "timezone": "Asia/Manila",
+          "sourceId": "starliteSchedules",
+          "published": "2025",
+          "status": "published-reference"
+        }
+      ],
+      "accommodationProfiles": [
+        {
+          "operator": "Starlite Ferries",
+          "routeCodes": [
+            "BTG-CAL",
+            "CAL-BTG",
+            "ROX-CAT",
+            "CAT-ROX"
+          ],
+          "classes": [
+            "Economy",
+            "Tourist Class",
+            "Business Class"
+          ],
+          "sourceId": "starliteSchedules",
+          "capacity": null,
+          "surcharge": null,
+          "status": "allocation-required",
+          "scope": "operator-route; availability depends on the assigned vessel"
+        }
+      ]
+    },
+    {
+      "code": "CAT-STA",
+      "origin": "CAT",
+      "destination": "STA",
+      "durationMinutes": null,
+      "operators": [
+        "Montenegro Shipping Lines"
+      ],
+      "sources": [
+        {
+          "sourceId": "montenegro",
+          "page": null
+        }
+      ],
+      "isActive": false,
+      "inactiveReason": "Outside the active Batangas-Calapan service area.",
+      "schedules": [],
+      "accommodationProfiles": []
+    },
+    {
+      "code": "CEB-DAP",
+      "origin": "CEB",
+      "destination": "DAP",
+      "durationMinutes": null,
+      "operators": [
+        "Starlite Ferries"
+      ],
+      "sources": [
+        {
+          "sourceId": "starlite",
+          "page": null
+        }
+      ],
+      "isActive": false,
+      "inactiveReason": "Outside the active Batangas-Calapan service area.",
+      "schedules": [],
+      "accommodationProfiles": []
+    },
+    {
+      "code": "CEB-NAS",
+      "origin": "CEB",
+      "destination": "NAS",
+      "durationMinutes": null,
+      "operators": [
+        "Starlite Ferries"
+      ],
+      "sources": [
+        {
+          "sourceId": "starlite",
+          "page": null
+        }
+      ],
+      "isActive": false,
+      "inactiveReason": "Outside the active Batangas-Calapan service area.",
+      "schedules": [],
+      "accommodationProfiles": []
+    },
+    {
+      "code": "CEB-SUR",
+      "origin": "CEB",
+      "destination": "SUR",
+      "durationMinutes": null,
+      "operators": [
+        "Starlite Ferries"
+      ],
+      "sources": [
+        {
+          "sourceId": "starlite",
+          "page": null
+        }
+      ],
+      "isActive": false,
+      "inactiveReason": "Outside the active Batangas-Calapan service area.",
+      "schedules": [],
+      "accommodationProfiles": []
+    },
+    {
+      "code": "CGN-CAT",
+      "origin": "CGN",
+      "destination": "CAT",
+      "durationMinutes": null,
+      "operators": [
+        "Montenegro Shipping Lines"
+      ],
+      "sources": [
+        {
+          "sourceId": "marina",
+          "page": 27
+        }
+      ],
+      "isActive": false,
+      "inactiveReason": "Outside the active Batangas-Calapan service area.",
+      "schedules": [],
+      "accommodationProfiles": []
+    },
+    {
+      "code": "CLR-ROM",
+      "origin": "CLR",
+      "destination": "ROM",
+      "durationMinutes": null,
+      "operators": [
+        "Montenegro Shipping Lines"
+      ],
+      "sources": [
+        {
+          "sourceId": "marina",
+          "page": 27
+        }
+      ],
+      "isActive": false,
+      "inactiveReason": "Outside the active Batangas-Calapan service area.",
+      "schedules": [],
+      "accommodationProfiles": []
+    },
+    {
+      "code": "CLR-ROX",
+      "origin": "CLR",
+      "destination": "ROX",
+      "durationMinutes": null,
+      "operators": [
+        "Montenegro Shipping Lines"
+      ],
+      "sources": [
+        {
+          "sourceId": "marina",
+          "page": 27
+        }
+      ],
+      "isActive": false,
+      "inactiveReason": "Outside the active Batangas-Calapan service area.",
+      "schedules": [],
+      "accommodationProfiles": []
+    },
+    {
+      "code": "CON-BAN",
+      "origin": "CON",
+      "destination": "BAN",
+      "durationMinutes": null,
+      "operators": [
+        "Montenegro Shipping Lines"
+      ],
+      "sources": [
+        {
+          "sourceId": "marina",
+          "page": 27
+        }
+      ],
+      "isActive": false,
+      "inactiveReason": "Outside the active Batangas-Calapan service area.",
+      "schedules": [],
+      "accommodationProfiles": []
+    },
+    {
+      "code": "CON-PIN",
+      "origin": "CON",
+      "destination": "PIN",
+      "durationMinutes": null,
+      "operators": [
+        "Montenegro Shipping Lines"
+      ],
+      "sources": [
+        {
+          "sourceId": "marina",
+          "page": 27
+        }
+      ],
+      "isActive": false,
+      "inactiveReason": "Outside the active Batangas-Calapan service area.",
+      "schedules": [],
+      "accommodationProfiles": []
+    },
+    {
+      "code": "COR-CUL",
+      "origin": "COR",
+      "destination": "CUL",
+      "durationMinutes": null,
+      "operators": [
+        "Montenegro Shipping Lines"
+      ],
+      "sources": [
+        {
+          "sourceId": "montenegro",
+          "page": null
+        },
+        {
+          "sourceId": "marina",
+          "page": 26
+        }
+      ],
+      "isActive": false,
+      "inactiveReason": "Outside the active Batangas-Calapan service area.",
+      "schedules": [],
+      "accommodationProfiles": []
+    },
+    {
+      "code": "COR-ELN",
+      "origin": "COR",
+      "destination": "ELN",
+      "durationMinutes": null,
+      "operators": [
+        "Montenegro Shipping Lines"
+      ],
+      "sources": [
+        {
+          "sourceId": "montenegro",
+          "page": null
+        }
+      ],
+      "isActive": false,
+      "inactiveReason": "Outside the active Batangas-Calapan service area.",
+      "schedules": [],
+      "accommodationProfiles": []
+    },
+    {
+      "code": "COR-SJM",
+      "origin": "COR",
+      "destination": "SJM",
+      "durationMinutes": null,
+      "operators": [
+        "Montenegro Shipping Lines"
+      ],
+      "sources": [
+        {
+          "sourceId": "marina",
+          "page": 26
+        }
+      ],
+      "isActive": false,
+      "inactiveReason": "Outside the active Batangas-Calapan service area.",
+      "schedules": [],
+      "accommodationProfiles": []
+    },
+    {
+      "code": "COR-TAY",
+      "origin": "COR",
+      "destination": "TAY",
+      "durationMinutes": null,
+      "operators": [
+        "Montenegro Shipping Lines"
+      ],
+      "sources": [
+        {
+          "sourceId": "marina",
+          "page": 26
+        }
+      ],
+      "isActive": false,
+      "inactiveReason": "Outside the active Batangas-Calapan service area.",
+      "schedules": [],
+      "accommodationProfiles": []
+    },
+    {
+      "code": "CTA-BOG",
+      "origin": "CTA",
+      "destination": "BOG",
+      "durationMinutes": null,
+      "operators": [
+        "Montenegro Shipping Lines"
+      ],
+      "sources": [
+        {
+          "sourceId": "marina",
+          "page": 17
+        },
+        {
+          "sourceId": "marina",
+          "page": 18
+        }
+      ],
+      "isActive": false,
+      "inactiveReason": "Outside the active Batangas-Calapan service area.",
+      "schedules": [],
+      "accommodationProfiles": []
+    },
+    {
+      "code": "CTA-NAV",
+      "origin": "CTA",
+      "destination": "NAV",
+      "durationMinutes": null,
+      "operators": [
+        "Montenegro Shipping Lines"
+      ],
+      "sources": [
+        {
+          "sourceId": "marina",
+          "page": 18
+        }
+      ],
+      "isActive": false,
+      "inactiveReason": "Outside the active Batangas-Calapan service area.",
+      "schedules": [],
+      "accommodationProfiles": []
+    },
+    {
+      "code": "CUL-COR",
+      "origin": "CUL",
+      "destination": "COR",
+      "durationMinutes": null,
+      "operators": [
+        "Montenegro Shipping Lines"
+      ],
+      "sources": [
+        {
+          "sourceId": "montenegro",
+          "page": null
+        },
+        {
+          "sourceId": "marina",
+          "page": 26
+        }
+      ],
+      "isActive": false,
+      "inactiveReason": "Outside the active Batangas-Calapan service area.",
+      "schedules": [],
+      "accommodationProfiles": []
+    },
+    {
+      "code": "CUY-ILO",
+      "origin": "CUY",
+      "destination": "ILO",
+      "durationMinutes": null,
+      "operators": [
+        "Montenegro Shipping Lines"
+      ],
+      "sources": [
+        {
+          "sourceId": "montenegro",
+          "page": null
+        },
+        {
+          "sourceId": "marina",
+          "page": 26
+        }
+      ],
+      "isActive": false,
+      "inactiveReason": "Outside the active Batangas-Calapan service area.",
+      "schedules": [],
+      "accommodationProfiles": []
+    },
+    {
+      "code": "CUY-PPS",
+      "origin": "CUY",
+      "destination": "PPS",
+      "durationMinutes": null,
+      "operators": [
+        "Montenegro Shipping Lines"
+      ],
+      "sources": [
+        {
+          "sourceId": "montenegro",
+          "page": null
+        },
+        {
+          "sourceId": "marina",
+          "page": 26
+        }
+      ],
+      "isActive": false,
+      "inactiveReason": "Outside the active Batangas-Calapan service area.",
+      "schedules": [],
+      "accommodationProfiles": []
+    },
+    {
+      "code": "DAP-CEB",
+      "origin": "DAP",
+      "destination": "CEB",
+      "durationMinutes": null,
+      "operators": [
+        "Starlite Ferries"
+      ],
+      "sources": [
+        {
+          "sourceId": "starlite",
+          "page": null
+        }
+      ],
+      "isActive": false,
+      "inactiveReason": "Outside the active Batangas-Calapan service area.",
+      "schedules": [],
+      "accommodationProfiles": []
+    },
+    {
+      "code": "DAP-DUM",
+      "origin": "DAP",
+      "destination": "DUM",
+      "durationMinutes": null,
+      "operators": [
+        "Montenegro Shipping Lines",
+        "FastCat"
+      ],
+      "sources": [
+        {
+          "sourceId": "montenegro",
+          "page": null
+        },
+        {
+          "sourceId": "marina",
+          "page": 7
+        },
+        {
+          "sourceId": "fastcatSchedules"
+        }
+      ],
+      "isActive": false,
+      "inactiveReason": "Outside the active Batangas-Calapan service area.",
+      "schedules": [],
+      "accommodationProfiles": []
+    },
+    {
+      "code": "DIN-SUR",
+      "origin": "DIN",
+      "destination": "SUR",
+      "durationMinutes": null,
+      "operators": [
+        "Montenegro Shipping Lines"
+      ],
+      "sources": [
+        {
+          "sourceId": "montenegro",
+          "page": null
+        },
+        {
+          "sourceId": "marina",
+          "page": 36
+        }
+      ],
+      "isActive": false,
+      "inactiveReason": "Outside the active Batangas-Calapan service area.",
+      "schedules": [],
+      "accommodationProfiles": []
+    },
+    {
+      "code": "DMG-BAC",
+      "origin": "DMG",
+      "destination": "BAC",
+      "durationMinutes": null,
+      "operators": [
+        "Montenegro Shipping Lines"
+      ],
+      "sources": [
+        {
+          "sourceId": "montenegro",
+          "page": null
+        },
+        {
+          "sourceId": "marina",
+          "page": 6
+        }
+      ],
+      "isActive": false,
+      "inactiveReason": "Outside the active Batangas-Calapan service area.",
+      "schedules": [],
+      "accommodationProfiles": []
+    },
+    {
+      "code": "DPA-SUR",
+      "origin": "DPA",
+      "destination": "SUR",
+      "durationMinutes": null,
+      "operators": [
+        "Montenegro Shipping Lines"
+      ],
+      "sources": [
+        {
+          "sourceId": "montenegro",
+          "page": null
+        },
+        {
+          "sourceId": "marina",
+          "page": 36
+        }
+      ],
+      "isActive": false,
+      "inactiveReason": "Outside the active Batangas-Calapan service area.",
+      "schedules": [],
+      "accommodationProfiles": []
+    },
+    {
+      "code": "DUM-DAP",
+      "origin": "DUM",
+      "destination": "DAP",
+      "durationMinutes": null,
+      "operators": [
+        "Montenegro Shipping Lines",
+        "FastCat"
+      ],
+      "sources": [
+        {
+          "sourceId": "montenegro",
+          "page": null
+        },
+        {
+          "sourceId": "marina",
+          "page": 7
+        },
+        {
+          "sourceId": "fastcatSchedules"
+        }
+      ],
+      "isActive": false,
+      "inactiveReason": "Outside the active Batangas-Calapan service area.",
+      "schedules": [],
+      "accommodationProfiles": []
+    },
+    {
+      "code": "DUM-LAR",
+      "origin": "DUM",
+      "destination": "LAR",
+      "durationMinutes": null,
+      "operators": [
+        "Montenegro Shipping Lines"
+      ],
+      "sources": [
+        {
+          "sourceId": "marina",
+          "page": 29
+        }
+      ],
+      "isActive": false,
+      "inactiveReason": "Outside the active Batangas-Calapan service area.",
+      "schedules": [],
+      "accommodationProfiles": []
+    },
+    {
+      "code": "DUM-SIQ",
+      "origin": "DUM",
+      "destination": "SIQ",
+      "durationMinutes": null,
+      "operators": [
+        "Montenegro Shipping Lines"
+      ],
+      "sources": [
+        {
+          "sourceId": "montenegro",
+          "page": null
+        },
+        {
+          "sourceId": "marina",
+          "page": 29
+        }
+      ],
+      "isActive": false,
+      "inactiveReason": "Outside the active Batangas-Calapan service area.",
+      "schedules": [],
+      "accommodationProfiles": []
+    },
+    {
+      "code": "ELN-COR",
+      "origin": "ELN",
+      "destination": "COR",
+      "durationMinutes": null,
+      "operators": [
+        "Montenegro Shipping Lines"
+      ],
+      "sources": [
+        {
+          "sourceId": "montenegro",
+          "page": null
+        }
+      ],
+      "isActive": false,
+      "inactiveReason": "Outside the active Batangas-Calapan service area.",
+      "schedules": [],
+      "accommodationProfiles": []
+    },
+    {
+      "code": "ESC-TBL",
+      "origin": "ESC",
+      "destination": "TBL",
+      "durationMinutes": null,
+      "operators": [
+        "Montenegro Shipping Lines"
+      ],
+      "sources": [
+        {
+          "sourceId": "marina",
+          "page": 28
+        }
+      ],
+      "isActive": false,
+      "inactiveReason": "Outside the active Batangas-Calapan service area.",
+      "schedules": [],
+      "accommodationProfiles": []
+    },
+    {
+      "code": "EST-BAC",
+      "origin": "EST",
+      "destination": "BAC",
+      "durationMinutes": null,
+      "operators": [
+        "Starlite Ferries"
+      ],
+      "sources": [
+        {
+          "sourceId": "marina",
+          "page": 4
+        }
+      ],
+      "isActive": false,
+      "inactiveReason": "Outside the active Batangas-Calapan service area.",
+      "schedules": [],
+      "accommodationProfiles": []
+    },
+    {
+      "code": "EST-BOG",
+      "origin": "EST",
+      "destination": "BOG",
+      "durationMinutes": null,
+      "operators": [
+        "Starlite Ferries"
+      ],
+      "sources": [
+        {
+          "sourceId": "marina",
+          "page": 24
+        }
+      ],
+      "isActive": false,
+      "inactiveReason": "Outside the active Batangas-Calapan service area.",
+      "schedules": [],
+      "accommodationProfiles": []
+    },
+    {
+      "code": "EST-BTG",
+      "origin": "EST",
+      "destination": "BTG",
+      "durationMinutes": null,
+      "operators": [
+        "Starlite Ferries"
+      ],
+      "sources": [
+        {
+          "sourceId": "marina",
+          "page": 24
+        }
+      ],
+      "isActive": false,
+      "inactiveReason": "Outside the active Batangas-Calapan service area.",
+      "schedules": [],
+      "accommodationProfiles": []
+    },
+    {
+      "code": "ILO-ANT",
+      "origin": "ILO",
+      "destination": "ANT",
+      "durationMinutes": null,
+      "operators": [
+        "Starlite Ferries"
+      ],
+      "sources": [
+        {
+          "sourceId": "marina",
+          "page": 4
+        }
+      ],
+      "isActive": false,
+      "inactiveReason": "Outside the active Batangas-Calapan service area.",
+      "schedules": [],
+      "accommodationProfiles": []
+    },
+    {
+      "code": "ILO-BAC",
+      "origin": "ILO",
+      "destination": "BAC",
+      "durationMinutes": null,
+      "operators": [
+        "Montenegro Shipping Lines",
+        "Starlite Ferries"
+      ],
+      "sources": [
+        {
+          "sourceId": "montenegro",
+          "page": null
+        },
+        {
+          "sourceId": "marina",
+          "page": 4
+        }
+      ],
+      "isActive": false,
+      "inactiveReason": "Outside the active Batangas-Calapan service area.",
+      "schedules": [],
+      "accommodationProfiles": []
+    },
+    {
+      "code": "ILO-BTG",
+      "origin": "ILO",
+      "destination": "BTG",
+      "durationMinutes": null,
+      "operators": [
+        "Starlite Ferries"
+      ],
+      "sources": [
+        {
+          "sourceId": "marina",
+          "page": 4
+        }
+      ],
+      "isActive": false,
+      "inactiveReason": "Outside the active Batangas-Calapan service area.",
+      "schedules": [],
+      "accommodationProfiles": []
+    },
+    {
+      "code": "ILO-CUY",
+      "origin": "ILO",
+      "destination": "CUY",
+      "durationMinutes": null,
+      "operators": [
+        "Montenegro Shipping Lines"
+      ],
+      "sources": [
+        {
+          "sourceId": "montenegro",
+          "page": null
+        },
+        {
+          "sourceId": "marina",
+          "page": 26
+        }
+      ],
+      "isActive": false,
+      "inactiveReason": "Outside the active Batangas-Calapan service area.",
+      "schedules": [],
+      "accommodationProfiles": []
+    },
+    {
+      "code": "ILO-JRD",
+      "origin": "ILO",
+      "destination": "JRD",
+      "durationMinutes": null,
+      "operators": [
+        "Montenegro Shipping Lines"
+      ],
+      "sources": [
+        {
+          "sourceId": "montenegro",
+          "page": null
+        }
+      ],
+      "isActive": false,
+      "inactiveReason": "Outside the active Batangas-Calapan service area.",
+      "schedules": [],
+      "accommodationProfiles": []
+    },
+    {
+      "code": "ILO-PPS",
+      "origin": "ILO",
+      "destination": "PPS",
+      "durationMinutes": null,
+      "operators": [
+        "Montenegro Shipping Lines"
+      ],
+      "sources": [
+        {
+          "sourceId": "montenegro",
+          "page": null
+        }
+      ],
+      "isActive": false,
+      "inactiveReason": "Outside the active Batangas-Calapan service area.",
+      "schedules": [],
+      "accommodationProfiles": []
+    },
+    {
+      "code": "ISA-ZAM",
+      "origin": "ISA",
+      "destination": "ZAM",
+      "durationMinutes": null,
+      "operators": [
+        "Montenegro Shipping Lines",
+        "FastCat"
+      ],
+      "sources": [
+        {
+          "sourceId": "montenegro",
+          "page": null
+        },
+        {
+          "sourceId": "marina",
+          "page": 39
+        },
+        {
+          "sourceId": "fastcatSchedules"
+        }
+      ],
+      "isActive": false,
+      "inactiveReason": "Outside the active Batangas-Calapan service area.",
+      "schedules": [],
+      "accommodationProfiles": []
+    },
+    {
+      "code": "JOL-ZAM",
+      "origin": "JOL",
+      "destination": "ZAM",
+      "durationMinutes": null,
+      "operators": [
+        "Montenegro Shipping Lines"
+      ],
+      "sources": [
+        {
+          "sourceId": "montenegro",
+          "page": null
+        },
+        {
+          "sourceId": "marina",
+          "page": 40
+        }
+      ],
+      "isActive": false,
+      "inactiveReason": "Outside the active Batangas-Calapan service area.",
+      "schedules": [],
+      "accommodationProfiles": []
+    },
+    {
+      "code": "JRD-ILO",
+      "origin": "JRD",
+      "destination": "ILO",
+      "durationMinutes": null,
+      "operators": [
+        "Montenegro Shipping Lines"
+      ],
+      "sources": [
+        {
+          "sourceId": "montenegro",
+          "page": null
+        }
+      ],
+      "isActive": false,
+      "inactiveReason": "Outside the active Batangas-Calapan service area.",
+      "schedules": [],
+      "accommodationProfiles": []
+    },
+    {
+      "code": "LAG-MAS",
+      "origin": "LAG",
+      "destination": "MAS",
+      "durationMinutes": null,
+      "operators": [
+        "Montenegro Shipping Lines"
+      ],
+      "sources": [
+        {
+          "sourceId": "montenegro",
+          "page": null
+        },
+        {
+          "sourceId": "marina",
+          "page": 27
+        }
+      ],
+      "isActive": false,
+      "inactiveReason": "Outside the active Batangas-Calapan service area.",
+      "schedules": [],
+      "accommodationProfiles": []
+    },
+    {
+      "code": "LAM-ZAM",
+      "origin": "LAM",
+      "destination": "ZAM",
+      "durationMinutes": null,
+      "operators": [
+        "Montenegro Shipping Lines"
+      ],
+      "sources": [
+        {
+          "sourceId": "marina",
+          "page": 40
+        }
+      ],
+      "isActive": false,
+      "inactiveReason": "Outside the active Batangas-Calapan service area.",
+      "schedules": [],
+      "accommodationProfiles": []
+    },
+    {
+      "code": "LAR-DUM",
+      "origin": "LAR",
+      "destination": "DUM",
+      "durationMinutes": null,
+      "operators": [
+        "Montenegro Shipping Lines"
+      ],
+      "sources": [
+        {
+          "sourceId": "marina",
+          "page": 29
+        }
+      ],
+      "isActive": false,
+      "inactiveReason": "Outside the active Batangas-Calapan service area.",
+      "schedules": [],
+      "accommodationProfiles": []
+    },
+    {
+      "code": "LAR-OSL",
+      "origin": "LAR",
+      "destination": "OSL",
+      "durationMinutes": null,
+      "operators": [
+        "Montenegro Shipping Lines"
+      ],
+      "sources": [
+        {
+          "sourceId": "marina",
+          "page": 30
+        }
+      ],
+      "isActive": false,
+      "inactiveReason": "Outside the active Batangas-Calapan service area.",
+      "schedules": [],
+      "accommodationProfiles": []
+    },
+    {
+      "code": "LAV-BIR",
+      "origin": "LAV",
+      "destination": "BIR",
+      "durationMinutes": null,
+      "operators": [
+        "Montenegro Shipping Lines"
+      ],
+      "sources": [
+        {
+          "sourceId": "montenegro",
+          "page": null
+        }
+      ],
+      "isActive": false,
+      "inactiveReason": "Outside the active Batangas-Calapan service area.",
+      "schedules": [],
+      "accommodationProfiles": []
+    },
+    {
+      "code": "LIL-LIP",
+      "origin": "LIL",
+      "destination": "LIP",
+      "durationMinutes": null,
+      "operators": [
+        "Montenegro Shipping Lines"
+      ],
+      "sources": [
+        {
+          "sourceId": "montenegro",
+          "page": null
+        }
+      ],
+      "isActive": false,
+      "inactiveReason": "Outside the active Batangas-Calapan service area.",
+      "schedules": [],
+      "accommodationProfiles": []
+    },
+    {
+      "code": "LIP-BEN",
+      "origin": "LIP",
+      "destination": "BEN",
+      "durationMinutes": null,
+      "operators": [
+        "Montenegro Shipping Lines"
+      ],
+      "sources": [
+        {
+          "sourceId": "montenegro",
+          "page": null
+        },
+        {
+          "sourceId": "marina",
+          "page": 11
+        }
+      ],
+      "isActive": false,
+      "inactiveReason": "Outside the active Batangas-Calapan service area.",
+      "schedules": [],
+      "accommodationProfiles": []
+    },
+    {
+      "code": "LIP-LIL",
+      "origin": "LIP",
+      "destination": "LIL",
+      "durationMinutes": null,
+      "operators": [
+        "Montenegro Shipping Lines"
+      ],
+      "sources": [
+        {
+          "sourceId": "montenegro",
+          "page": null
+        }
+      ],
+      "isActive": false,
+      "inactiveReason": "Outside the active Batangas-Calapan service area.",
+      "schedules": [],
+      "accommodationProfiles": []
+    },
+    {
+      "code": "LIP-SJL",
+      "origin": "LIP",
+      "destination": "SJL",
+      "durationMinutes": null,
+      "operators": [
+        "Montenegro Shipping Lines"
+      ],
+      "sources": [
+        {
+          "sourceId": "marina",
+          "page": 11
+        }
+      ],
+      "isActive": false,
+      "inactiveReason": "Outside the active Batangas-Calapan service area.",
+      "schedules": [],
+      "accommodationProfiles": []
+    },
+    {
+      "code": "LUC-BAL",
+      "origin": "LUC",
+      "destination": "BAL",
+      "durationMinutes": null,
+      "operators": [
+        "Montenegro Shipping Lines"
+      ],
+      "sources": [
+        {
+          "sourceId": "montenegro",
+          "page": null
+        },
+        {
+          "sourceId": "marina",
+          "page": 24
+        }
+      ],
+      "isActive": false,
+      "inactiveReason": "Outside the active Batangas-Calapan service area.",
+      "schedules": [],
+      "accommodationProfiles": []
+    },
+    {
+      "code": "LUC-ROM",
+      "origin": "LUC",
+      "destination": "ROM",
+      "durationMinutes": null,
+      "operators": [
+        "Montenegro Shipping Lines"
+      ],
+      "sources": [
+        {
+          "sourceId": "montenegro",
+          "page": null
+        }
+      ],
+      "isActive": false,
+      "inactiveReason": "Outside the active Batangas-Calapan service area.",
+      "schedules": [],
+      "accommodationProfiles": []
+    },
+    {
+      "code": "LUC-SAG",
+      "origin": "LUC",
+      "destination": "SAG",
+      "durationMinutes": null,
+      "operators": [
+        "Montenegro Shipping Lines"
+      ],
+      "sources": [
+        {
+          "sourceId": "montenegro",
+          "page": null
+        }
+      ],
+      "isActive": false,
+      "inactiveReason": "Outside the active Batangas-Calapan service area.",
+      "schedules": [],
+      "accommodationProfiles": []
+    },
+    {
+      "code": "MAG-BTG",
+      "origin": "MAG",
+      "destination": "BTG",
+      "durationMinutes": null,
+      "operators": [
+        "Starlite Ferries"
+      ],
+      "sources": [
+        {
+          "sourceId": "starlite",
+          "page": null
+        }
+      ],
+      "isActive": false,
+      "inactiveReason": "Outside the active Batangas-Calapan service area.",
+      "schedules": [],
+      "accommodationProfiles": []
+    },
+    {
+      "code": "MAG-ROM",
+      "origin": "MAG",
+      "destination": "ROM",
+      "durationMinutes": null,
+      "operators": [
+        "Montenegro Shipping Lines",
+        "Starlite Ferries"
+      ],
+      "sources": [
+        {
+          "sourceId": "montenegro",
+          "page": null
+        },
+        {
+          "sourceId": "starlite",
+          "page": null
+        },
+        {
+          "sourceId": "marina",
+          "page": 27
+        }
+      ],
+      "isActive": false,
+      "inactiveReason": "Outside the active Batangas-Calapan service area.",
+      "schedules": [],
+      "accommodationProfiles": []
+    },
+    {
+      "code": "MAG-RXS",
+      "origin": "MAG",
+      "destination": "RXS",
+      "durationMinutes": null,
+      "operators": [
+        "Starlite Ferries"
+      ],
+      "sources": [
+        {
+          "sourceId": "starlite",
+          "page": null
+        },
+        {
+          "sourceId": "marina",
+          "page": 27
+        }
+      ],
+      "isActive": false,
+      "inactiveReason": "Outside the active Batangas-Calapan service area.",
+      "schedules": [],
+      "accommodationProfiles": []
+    },
+    {
+      "code": "MAS-LAG",
+      "origin": "MAS",
+      "destination": "LAG",
+      "durationMinutes": null,
+      "operators": [
+        "Montenegro Shipping Lines"
+      ],
+      "sources": [
+        {
+          "sourceId": "montenegro",
+          "page": null
+        },
+        {
+          "sourceId": "marina",
+          "page": 27
+        }
+      ],
+      "isActive": false,
+      "inactiveReason": "Outside the active Batangas-Calapan service area.",
+      "schedules": [],
+      "accommodationProfiles": []
+    },
+    {
+      "code": "MAS-PIL",
+      "origin": "MAS",
+      "destination": "PIL",
+      "durationMinutes": null,
+      "operators": [
+        "Montenegro Shipping Lines"
+      ],
+      "sources": [
+        {
+          "sourceId": "montenegro",
+          "page": null
+        },
+        {
+          "sourceId": "marina",
+          "page": 16
+        }
+      ],
+      "isActive": false,
+      "inactiveReason": "Outside the active Batangas-Calapan service area.",
+      "schedules": [],
+      "accommodationProfiles": []
+    },
+    {
+      "code": "MAS-PIO",
+      "origin": "MAS",
+      "destination": "PIO",
+      "durationMinutes": null,
+      "operators": [
+        "Montenegro Shipping Lines"
+      ],
+      "sources": [
+        {
+          "sourceId": "marina",
+          "page": 11
+        }
+      ],
+      "isActive": false,
+      "inactiveReason": "Outside the active Batangas-Calapan service area.",
+      "schedules": [],
+      "accommodationProfiles": []
+    },
+    {
+      "code": "MAS-SUR",
+      "origin": "MAS",
+      "destination": "SUR",
+      "durationMinutes": null,
+      "operators": [
+        "Montenegro Shipping Lines"
+      ],
+      "sources": [
+        {
+          "sourceId": "marina",
+          "page": 11
+        }
+      ],
+      "isActive": false,
+      "inactiveReason": "Outside the active Batangas-Calapan service area.",
+      "schedules": [],
+      "accommodationProfiles": []
+    },
+    {
+      "code": "MBN-TIN",
+      "origin": "MBN",
+      "destination": "TIN",
+      "durationMinutes": null,
+      "operators": [
+        "Montenegro Shipping Lines"
+      ],
+      "sources": [
+        {
+          "sourceId": "montenegro",
+          "page": null
+        },
+        {
+          "sourceId": "marina",
+          "page": 24
+        }
+      ],
+      "isActive": false,
+      "inactiveReason": "Outside the active Batangas-Calapan service area.",
+      "schedules": [],
+      "accommodationProfiles": []
+    },
+    {
+      "code": "MTN-ADD",
+      "origin": "MTN",
+      "destination": "ADD",
+      "durationMinutes": null,
+      "operators": [
+        "Montenegro Shipping Lines",
+        "FastCat"
+      ],
+      "sources": [
+        {
+          "sourceId": "marina",
+          "page": 10
+        },
+        {
+          "sourceId": "fastcatSchedules"
+        }
+      ],
+      "isActive": false,
+      "inactiveReason": "Outside the active Batangas-Calapan service area.",
+      "schedules": [],
+      "accommodationProfiles": []
+    },
+    {
+      "code": "MTN-ALN",
+      "origin": "MTN",
+      "destination": "ALN",
+      "durationMinutes": null,
+      "operators": [
+        "Montenegro Shipping Lines",
+        "Starlite Ferries"
+      ],
+      "sources": [
+        {
+          "sourceId": "montenegro",
+          "page": null
+        },
+        {
+          "sourceId": "marina",
+          "page": 9
+        }
+      ],
+      "isActive": false,
+      "inactiveReason": "Outside the active Batangas-Calapan service area.",
+      "schedules": [],
+      "accommodationProfiles": []
+    },
+    {
+      "code": "MTN-SIS",
+      "origin": "MTN",
+      "destination": "SIS",
+      "durationMinutes": null,
+      "operators": [
+        "Montenegro Shipping Lines"
+      ],
+      "sources": [
+        {
+          "sourceId": "marina",
+          "page": 10
+        }
+      ],
+      "isActive": false,
+      "inactiveReason": "Outside the active Batangas-Calapan service area.",
+      "schedules": [],
+      "accommodationProfiles": []
+    },
+    {
+      "code": "NAS-CEB",
+      "origin": "NAS",
+      "destination": "CEB",
+      "durationMinutes": null,
+      "operators": [
+        "Starlite Ferries"
+      ],
+      "sources": [
+        {
+          "sourceId": "starlite",
+          "page": null
+        }
+      ],
+      "isActive": false,
+      "inactiveReason": "Outside the active Batangas-Calapan service area.",
+      "schedules": [],
+      "accommodationProfiles": []
+    },
+    {
+      "code": "NAV-CTA",
+      "origin": "NAV",
+      "destination": "CTA",
+      "durationMinutes": null,
+      "operators": [
+        "Montenegro Shipping Lines"
+      ],
+      "sources": [
+        {
+          "sourceId": "marina",
+          "page": 18
+        }
+      ],
+      "isActive": false,
+      "inactiveReason": "Outside the active Batangas-Calapan service area.",
+      "schedules": [],
+      "accommodationProfiles": []
+    },
+    {
+      "code": "ODI-BTG",
+      "origin": "ODI",
+      "destination": "BTG",
+      "durationMinutes": null,
+      "operators": [
+        "Montenegro Shipping Lines",
+        "Starlite Ferries"
+      ],
+      "sources": [
+        {
+          "sourceId": "montenegro",
+          "page": null
+        },
+        {
+          "sourceId": "marina",
+          "page": 4
+        },
+        {
+          "sourceId": "marina",
+          "page": 27
+        }
+      ],
+      "isActive": false,
+      "inactiveReason": "Outside the active Batangas-Calapan service area.",
+      "schedules": [],
+      "accommodationProfiles": []
+    },
+    {
+      "code": "ODI-CAT",
+      "origin": "ODI",
+      "destination": "CAT",
+      "durationMinutes": null,
+      "operators": [
+        "Starlite Ferries",
+        "Montenegro Shipping Lines"
+      ],
+      "sources": [
+        {
+          "sourceId": "marina",
+          "page": 4
+        },
+        {
+          "sourceId": "marina",
+          "page": 5
+        },
+        {
+          "sourceId": "marina",
+          "page": 27
+        }
+      ],
+      "isActive": false,
+      "inactiveReason": "Outside the active Batangas-Calapan service area.",
+      "schedules": [],
+      "accommodationProfiles": []
+    },
+    {
+      "code": "ODI-ROM",
+      "origin": "ODI",
+      "destination": "ROM",
+      "durationMinutes": null,
+      "operators": [
+        "Montenegro Shipping Lines"
+      ],
+      "sources": [
+        {
+          "sourceId": "montenegro",
+          "page": null
+        },
+        {
+          "sourceId": "marina",
+          "page": 4
+        },
+        {
+          "sourceId": "marina",
+          "page": 27
+        }
+      ],
+      "isActive": false,
+      "inactiveReason": "Outside the active Batangas-Calapan service area.",
+      "schedules": [],
+      "accommodationProfiles": []
+    },
+    {
+      "code": "ODI-ROX",
+      "origin": "ODI",
+      "destination": "ROX",
+      "durationMinutes": null,
+      "operators": [
+        "Montenegro Shipping Lines",
+        "Starlite Ferries"
+      ],
+      "sources": [
+        {
+          "sourceId": "montenegro",
+          "page": null
+        },
+        {
+          "sourceId": "starlite",
+          "page": null
+        },
+        {
+          "sourceId": "marina",
+          "page": 5
+        },
+        {
+          "sourceId": "marina",
+          "page": 27
+        }
+      ],
+      "isActive": false,
+      "inactiveReason": "Outside the active Batangas-Calapan service area.",
+      "schedules": [],
+      "accommodationProfiles": []
+    },
+    {
+      "code": "OSL-LAR",
+      "origin": "OSL",
+      "destination": "LAR",
+      "durationMinutes": null,
+      "operators": [
+        "Montenegro Shipping Lines"
+      ],
+      "sources": [
+        {
+          "sourceId": "marina",
+          "page": 30
+        }
+      ],
+      "isActive": false,
+      "inactiveReason": "Outside the active Batangas-Calapan service area.",
+      "schedules": [],
+      "accommodationProfiles": []
+    },
+    {
+      "code": "PGA-BTG",
+      "origin": "PGA",
+      "destination": "BTG",
+      "durationMinutes": null,
+      "operators": [
+        "Montenegro Shipping Lines",
+        "Starlite Ferries",
+        "Atienza Inter-Island Ferries"
+      ],
+      "sources": [
+        {
+          "sourceId": "montenegro",
+          "page": null
+        },
+        {
+          "sourceId": "marina",
+          "page": 2
+        }
+      ],
+      "isActive": false,
+      "inactiveReason": "Outside the active Batangas-Calapan service area.",
+      "schedules": [],
+      "accommodationProfiles": []
+    },
+    {
+      "code": "PIL-MAS",
+      "origin": "PIL",
+      "destination": "MAS",
+      "durationMinutes": null,
+      "operators": [
+        "Montenegro Shipping Lines"
+      ],
+      "sources": [
+        {
+          "sourceId": "montenegro",
+          "page": null
+        },
+        {
+          "sourceId": "marina",
+          "page": 16
+        }
+      ],
+      "isActive": false,
+      "inactiveReason": "Outside the active Batangas-Calapan service area.",
+      "schedules": [],
+      "accommodationProfiles": []
+    },
+    {
+      "code": "PIN-CON",
+      "origin": "PIN",
+      "destination": "CON",
+      "durationMinutes": null,
+      "operators": [
+        "Montenegro Shipping Lines"
+      ],
+      "sources": [
+        {
+          "sourceId": "marina",
+          "page": 27
+        }
+      ],
+      "isActive": false,
+      "inactiveReason": "Outside the active Batangas-Calapan service area.",
+      "schedules": [],
+      "accommodationProfiles": []
+    },
+    {
+      "code": "PIO-ARO",
+      "origin": "PIO",
+      "destination": "ARO",
+      "durationMinutes": null,
+      "operators": [
+        "Montenegro Shipping Lines"
+      ],
+      "sources": [
+        {
+          "sourceId": "marina",
+          "page": 16
+        }
+      ],
+      "isActive": false,
+      "inactiveReason": "Outside the active Batangas-Calapan service area.",
+      "schedules": [],
+      "accommodationProfiles": []
+    },
+    {
+      "code": "PIO-MAS",
+      "origin": "PIO",
+      "destination": "MAS",
+      "durationMinutes": null,
+      "operators": [
+        "Montenegro Shipping Lines"
+      ],
+      "sources": [
+        {
+          "sourceId": "marina",
+          "page": 11
+        }
+      ],
+      "isActive": false,
+      "inactiveReason": "Outside the active Batangas-Calapan service area.",
+      "schedules": [],
+      "accommodationProfiles": []
+    },
+    {
+      "code": "PPS-CUY",
+      "origin": "PPS",
+      "destination": "CUY",
+      "durationMinutes": null,
+      "operators": [
+        "Montenegro Shipping Lines"
+      ],
+      "sources": [
+        {
+          "sourceId": "montenegro",
+          "page": null
+        },
+        {
+          "sourceId": "marina",
+          "page": 26
+        }
+      ],
+      "isActive": false,
+      "inactiveReason": "Outside the active Batangas-Calapan service area.",
+      "schedules": [],
+      "accommodationProfiles": []
+    },
+    {
+      "code": "PPS-ILO",
+      "origin": "PPS",
+      "destination": "ILO",
+      "durationMinutes": null,
+      "operators": [
+        "Montenegro Shipping Lines"
+      ],
+      "sources": [
+        {
+          "sourceId": "montenegro",
+          "page": null
+        }
+      ],
+      "isActive": false,
+      "inactiveReason": "Outside the active Batangas-Calapan service area.",
+      "schedules": [],
+      "accommodationProfiles": []
+    },
+    {
+      "code": "ROM-BTG",
+      "origin": "ROM",
+      "destination": "BTG",
+      "durationMinutes": null,
+      "operators": [
+        "Montenegro Shipping Lines",
+        "Starlite Ferries"
+      ],
+      "sources": [
+        {
+          "sourceId": "marina",
+          "page": 4
+        },
+        {
+          "sourceId": "marina",
+          "page": 27
+        }
+      ],
+      "isActive": false,
+      "inactiveReason": "Outside the active Batangas-Calapan service area.",
+      "schedules": [],
+      "accommodationProfiles": []
+    },
+    {
+      "code": "ROM-CLR",
+      "origin": "ROM",
+      "destination": "CLR",
+      "durationMinutes": null,
+      "operators": [
+        "Montenegro Shipping Lines"
+      ],
+      "sources": [
+        {
+          "sourceId": "marina",
+          "page": 27
+        }
+      ],
+      "isActive": false,
+      "inactiveReason": "Outside the active Batangas-Calapan service area.",
+      "schedules": [],
+      "accommodationProfiles": []
+    },
+    {
+      "code": "ROM-LUC",
+      "origin": "ROM",
+      "destination": "LUC",
+      "durationMinutes": null,
+      "operators": [
+        "Montenegro Shipping Lines"
+      ],
+      "sources": [
+        {
+          "sourceId": "montenegro",
+          "page": null
+        }
+      ],
+      "isActive": false,
+      "inactiveReason": "Outside the active Batangas-Calapan service area.",
+      "schedules": [],
+      "accommodationProfiles": []
+    },
+    {
+      "code": "ROM-MAG",
+      "origin": "ROM",
+      "destination": "MAG",
+      "durationMinutes": null,
+      "operators": [
+        "Montenegro Shipping Lines",
+        "Starlite Ferries"
+      ],
+      "sources": [
+        {
+          "sourceId": "montenegro",
+          "page": null
+        },
+        {
+          "sourceId": "starlite",
+          "page": null
+        },
+        {
+          "sourceId": "marina",
+          "page": 27
+        }
+      ],
+      "isActive": false,
+      "inactiveReason": "Outside the active Batangas-Calapan service area.",
+      "schedules": [],
+      "accommodationProfiles": []
+    },
+    {
+      "code": "ROM-ODI",
+      "origin": "ROM",
+      "destination": "ODI",
+      "durationMinutes": null,
+      "operators": [
+        "Montenegro Shipping Lines"
+      ],
+      "sources": [
+        {
+          "sourceId": "montenegro",
+          "page": null
+        },
+        {
+          "sourceId": "marina",
+          "page": 4
+        },
+        {
+          "sourceId": "marina",
+          "page": 27
+        }
+      ],
+      "isActive": false,
+      "inactiveReason": "Outside the active Batangas-Calapan service area.",
+      "schedules": [],
+      "accommodationProfiles": []
+    },
+    {
+      "code": "ROM-RXS",
+      "origin": "ROM",
+      "destination": "RXS",
+      "durationMinutes": null,
+      "operators": [
+        "Starlite Ferries"
+      ],
+      "sources": [
+        {
+          "sourceId": "starlite",
+          "page": null
+        }
+      ],
+      "isActive": false,
+      "inactiveReason": "Outside the active Batangas-Calapan service area.",
+      "schedules": [],
+      "accommodationProfiles": []
+    },
+    {
+      "code": "ROM-SAG",
+      "origin": "ROM",
+      "destination": "SAG",
+      "durationMinutes": null,
+      "operators": [
+        "Montenegro Shipping Lines"
+      ],
+      "sources": [
+        {
+          "sourceId": "montenegro",
+          "page": null
+        },
+        {
+          "sourceId": "marina",
+          "page": 27
+        }
+      ],
+      "isActive": false,
+      "inactiveReason": "Outside the active Batangas-Calapan service area.",
+      "schedules": [],
+      "accommodationProfiles": []
+    },
+    {
+      "code": "ROX-BUR",
+      "origin": "ROX",
+      "destination": "BUR",
+      "durationMinutes": null,
+      "operators": [
+        "Montenegro Shipping Lines"
+      ],
+      "sources": [
+        {
+          "sourceId": "marina",
+          "page": 5
+        }
+      ],
+      "isActive": false,
+      "inactiveReason": "Outside the active Batangas-Calapan service area.",
+      "schedules": [],
+      "accommodationProfiles": []
+    },
+    {
+      "code": "ROX-CAT",
+      "origin": "ROX",
+      "destination": "CAT",
+      "durationMinutes": null,
+      "operators": [
+        "Montenegro Shipping Lines",
+        "Starlite Ferries"
+      ],
+      "sources": [
+        {
+          "sourceId": "montenegro",
+          "page": null
+        },
+        {
+          "sourceId": "starlite",
+          "page": null
+        },
+        {
+          "sourceId": "marina",
+          "page": 5
+        },
+        {
+          "sourceId": "marina",
+          "page": 27
+        }
+      ],
+      "isActive": false,
+      "inactiveReason": "Outside the active Batangas-Calapan service area.",
+      "schedules": [
+        {
+          "operator": "Starlite Ferries",
+          "routeCode": "ROX-CAT",
+          "days": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6
+          ],
+          "departureTimes": [
+            "02:00",
+            "06:00",
+            "11:00",
+            "14:00",
+            "18:00",
+            "23:00"
+          ],
+          "durationMinutes": null,
+          "timezone": "Asia/Manila",
+          "sourceId": "starliteSchedules",
+          "published": "2025",
+          "status": "published-reference"
+        }
+      ],
+      "accommodationProfiles": [
+        {
+          "operator": "Starlite Ferries",
+          "routeCodes": [
+            "BTG-CAL",
+            "CAL-BTG",
+            "ROX-CAT",
+            "CAT-ROX"
+          ],
+          "classes": [
+            "Economy",
+            "Tourist Class",
+            "Business Class"
+          ],
+          "sourceId": "starliteSchedules",
+          "capacity": null,
+          "surcharge": null,
+          "status": "allocation-required",
+          "scope": "operator-route; availability depends on the assigned vessel"
+        }
+      ]
+    },
+    {
+      "code": "ROX-CLR",
+      "origin": "ROX",
+      "destination": "CLR",
+      "durationMinutes": null,
+      "operators": [
+        "Montenegro Shipping Lines"
+      ],
+      "sources": [
+        {
+          "sourceId": "marina",
+          "page": 27
+        }
+      ],
+      "isActive": false,
+      "inactiveReason": "Outside the active Batangas-Calapan service area.",
+      "schedules": [],
+      "accommodationProfiles": []
+    },
+    {
+      "code": "ROX-ODI",
+      "origin": "ROX",
+      "destination": "ODI",
+      "durationMinutes": null,
+      "operators": [
+        "Montenegro Shipping Lines",
+        "Starlite Ferries"
+      ],
+      "sources": [
+        {
+          "sourceId": "montenegro",
+          "page": null
+        },
+        {
+          "sourceId": "starlite",
+          "page": null
+        },
+        {
+          "sourceId": "marina",
+          "page": 5
+        },
+        {
+          "sourceId": "marina",
+          "page": 27
+        }
+      ],
+      "isActive": false,
+      "inactiveReason": "Outside the active Batangas-Calapan service area.",
+      "schedules": [],
+      "accommodationProfiles": []
+    },
+    {
+      "code": "ROX-UNI",
+      "origin": "ROX",
+      "destination": "UNI",
+      "durationMinutes": null,
+      "operators": [
+        "Montenegro Shipping Lines"
+      ],
+      "sources": [
+        {
+          "sourceId": "marina",
+          "page": 5
+        }
+      ],
+      "isActive": false,
+      "inactiveReason": "Outside the active Batangas-Calapan service area.",
+      "schedules": [],
+      "accommodationProfiles": []
+    },
+    {
+      "code": "RXS-BOG",
+      "origin": "RXS",
+      "destination": "BOG",
+      "durationMinutes": null,
+      "operators": [
+        "Starlite Ferries"
+      ],
+      "sources": [
+        {
+          "sourceId": "marina",
+          "page": 4
+        }
+      ],
+      "isActive": false,
+      "inactiveReason": "Outside the active Batangas-Calapan service area.",
+      "schedules": [],
+      "accommodationProfiles": []
+    },
+    {
+      "code": "RXS-BTG",
+      "origin": "RXS",
+      "destination": "BTG",
+      "durationMinutes": null,
+      "operators": [
+        "Starlite Ferries"
+      ],
+      "sources": [
+        {
+          "sourceId": "marina",
+          "page": 4
+        }
+      ],
+      "isActive": false,
+      "inactiveReason": "Outside the active Batangas-Calapan service area.",
+      "schedules": [],
+      "accommodationProfiles": []
+    },
+    {
+      "code": "RXS-MAG",
+      "origin": "RXS",
+      "destination": "MAG",
+      "durationMinutes": null,
+      "operators": [
+        "Starlite Ferries"
+      ],
+      "sources": [
+        {
+          "sourceId": "starlite",
+          "page": null
+        },
+        {
+          "sourceId": "marina",
+          "page": 27
+        }
+      ],
+      "isActive": false,
+      "inactiveReason": "Outside the active Batangas-Calapan service area.",
+      "schedules": [],
+      "accommodationProfiles": []
+    },
+    {
+      "code": "RXS-ROM",
+      "origin": "RXS",
+      "destination": "ROM",
+      "durationMinutes": null,
+      "operators": [
+        "Starlite Ferries"
+      ],
+      "sources": [
+        {
+          "sourceId": "starlite",
+          "page": null
+        }
+      ],
+      "isActive": false,
+      "inactiveReason": "Outside the active Batangas-Calapan service area.",
+      "schedules": [],
+      "accommodationProfiles": []
+    },
+    {
+      "code": "SAG-LUC",
+      "origin": "SAG",
+      "destination": "LUC",
+      "durationMinutes": null,
+      "operators": [
+        "Montenegro Shipping Lines"
+      ],
+      "sources": [
+        {
+          "sourceId": "montenegro",
+          "page": null
+        }
+      ],
+      "isActive": false,
+      "inactiveReason": "Outside the active Batangas-Calapan service area.",
+      "schedules": [],
+      "accommodationProfiles": []
+    },
+    {
+      "code": "SAG-ROM",
+      "origin": "SAG",
+      "destination": "ROM",
+      "durationMinutes": null,
+      "operators": [
+        "Montenegro Shipping Lines"
+      ],
+      "sources": [
+        {
+          "sourceId": "montenegro",
+          "page": null
+        },
+        {
+          "sourceId": "marina",
+          "page": 27
+        }
+      ],
+      "isActive": false,
+      "inactiveReason": "Outside the active Batangas-Calapan service area.",
+      "schedules": [],
+      "accommodationProfiles": []
+    },
+    {
+      "code": "SEM-BUL",
+      "origin": "SEM",
+      "destination": "BUL",
+      "durationMinutes": null,
+      "operators": [
+        "Montenegro Shipping Lines"
+      ],
+      "sources": [
+        {
+          "sourceId": "marina",
+          "page": 5
+        },
+        {
+          "sourceId": "marina",
+          "page": 26
+        }
+      ],
+      "isActive": false,
+      "inactiveReason": "Outside the active Batangas-Calapan service area.",
+      "schedules": [],
+      "accommodationProfiles": []
+    },
+    {
+      "code": "SEM-BUR",
+      "origin": "SEM",
+      "destination": "BUR",
+      "durationMinutes": null,
+      "operators": [
+        "Montenegro Shipping Lines"
+      ],
+      "sources": [
+        {
+          "sourceId": "marina",
+          "page": 5
+        }
+      ],
+      "isActive": false,
+      "inactiveReason": "Outside the active Batangas-Calapan service area.",
+      "schedules": [],
+      "accommodationProfiles": []
+    },
+    {
+      "code": "SEM-SJM",
+      "origin": "SEM",
+      "destination": "SJM",
+      "durationMinutes": null,
+      "operators": [
+        "Montenegro Shipping Lines"
+      ],
+      "sources": [
+        {
+          "sourceId": "marina",
+          "page": 27
+        }
+      ],
+      "isActive": false,
+      "inactiveReason": "Outside the active Batangas-Calapan service area.",
+      "schedules": [],
+      "accommodationProfiles": []
+    },
+    {
+      "code": "SEM-STA",
+      "origin": "SEM",
+      "destination": "STA",
+      "durationMinutes": null,
+      "operators": [
+        "Montenegro Shipping Lines"
+      ],
+      "sources": [
+        {
+          "sourceId": "marina",
+          "page": 5
+        }
+      ],
+      "isActive": false,
+      "inactiveReason": "Outside the active Batangas-Calapan service area.",
+      "schedules": [],
+      "accommodationProfiles": []
+    },
+    {
+      "code": "SIQ-DUM",
+      "origin": "SIQ",
+      "destination": "DUM",
+      "durationMinutes": null,
+      "operators": [
+        "Montenegro Shipping Lines"
+      ],
+      "sources": [
+        {
+          "sourceId": "montenegro",
+          "page": null
+        },
+        {
+          "sourceId": "marina",
+          "page": 29
+        }
+      ],
+      "isActive": false,
+      "inactiveReason": "Outside the active Batangas-Calapan service area.",
+      "schedules": [],
+      "accommodationProfiles": []
+    },
+    {
+      "code": "SIS-MTN",
+      "origin": "SIS",
+      "destination": "MTN",
+      "durationMinutes": null,
+      "operators": [
+        "Montenegro Shipping Lines"
+      ],
+      "sources": [
+        {
+          "sourceId": "marina",
+          "page": 10
+        }
+      ],
+      "isActive": false,
+      "inactiveReason": "Outside the active Batangas-Calapan service area.",
+      "schedules": [],
+      "accommodationProfiles": []
+    },
+    {
+      "code": "SJL-LIP",
+      "origin": "SJL",
+      "destination": "LIP",
+      "durationMinutes": null,
+      "operators": [
+        "Montenegro Shipping Lines"
+      ],
+      "sources": [
+        {
+          "sourceId": "marina",
+          "page": 11
+        }
+      ],
+      "isActive": false,
+      "inactiveReason": "Outside the active Batangas-Calapan service area.",
+      "schedules": [],
+      "accommodationProfiles": []
+    },
+    {
+      "code": "SJM-COR",
+      "origin": "SJM",
+      "destination": "COR",
+      "durationMinutes": null,
+      "operators": [
+        "Montenegro Shipping Lines"
+      ],
+      "sources": [
+        {
+          "sourceId": "marina",
+          "page": 26
+        }
+      ],
+      "isActive": false,
+      "inactiveReason": "Outside the active Batangas-Calapan service area.",
+      "schedules": [],
+      "accommodationProfiles": []
+    },
+    {
+      "code": "SJM-SEM",
+      "origin": "SJM",
+      "destination": "SEM",
+      "durationMinutes": null,
+      "operators": [
+        "Montenegro Shipping Lines"
+      ],
+      "sources": [
+        {
+          "sourceId": "marina",
+          "page": 27
+        }
+      ],
+      "isActive": false,
+      "inactiveReason": "Outside the active Batangas-Calapan service area.",
+      "schedules": [],
+      "accommodationProfiles": []
+    },
+    {
+      "code": "SJM-STA",
+      "origin": "SJM",
+      "destination": "STA",
+      "durationMinutes": null,
+      "operators": [
+        "Montenegro Shipping Lines"
+      ],
+      "sources": [
+        {
+          "sourceId": "marina",
+          "page": 5
+        }
+      ],
+      "isActive": false,
+      "inactiveReason": "Outside the active Batangas-Calapan service area.",
+      "schedules": [],
+      "accommodationProfiles": []
+    },
+    {
+      "code": "STA-CAT",
+      "origin": "STA",
+      "destination": "CAT",
+      "durationMinutes": null,
+      "operators": [
+        "Montenegro Shipping Lines"
+      ],
+      "sources": [
+        {
+          "sourceId": "montenegro",
+          "page": null
+        }
+      ],
+      "isActive": false,
+      "inactiveReason": "Outside the active Batangas-Calapan service area.",
+      "schedules": [],
+      "accommodationProfiles": []
+    },
+    {
+      "code": "STA-SEM",
+      "origin": "STA",
+      "destination": "SEM",
+      "durationMinutes": null,
+      "operators": [
+        "Montenegro Shipping Lines"
+      ],
+      "sources": [
+        {
+          "sourceId": "marina",
+          "page": 5
+        }
+      ],
+      "isActive": false,
+      "inactiveReason": "Outside the active Batangas-Calapan service area.",
+      "schedules": [],
+      "accommodationProfiles": []
+    },
+    {
+      "code": "STA-SJM",
+      "origin": "STA",
+      "destination": "SJM",
+      "durationMinutes": null,
+      "operators": [
+        "Montenegro Shipping Lines"
+      ],
+      "sources": [
+        {
+          "sourceId": "marina",
+          "page": 5
+        }
+      ],
+      "isActive": false,
+      "inactiveReason": "Outside the active Batangas-Calapan service area.",
+      "schedules": [],
+      "accommodationProfiles": []
+    },
+    {
+      "code": "SUR-CEB",
+      "origin": "SUR",
+      "destination": "CEB",
+      "durationMinutes": null,
+      "operators": [
+        "Starlite Ferries"
+      ],
+      "sources": [
+        {
+          "sourceId": "starlite",
+          "page": null
+        }
+      ],
+      "isActive": false,
+      "inactiveReason": "Outside the active Batangas-Calapan service area.",
+      "schedules": [],
+      "accommodationProfiles": []
+    },
+    {
+      "code": "SUR-DIN",
+      "origin": "SUR",
+      "destination": "DIN",
+      "durationMinutes": null,
+      "operators": [
+        "Montenegro Shipping Lines"
+      ],
+      "sources": [
+        {
+          "sourceId": "montenegro",
+          "page": null
+        },
+        {
+          "sourceId": "marina",
+          "page": 36
+        }
+      ],
+      "isActive": false,
+      "inactiveReason": "Outside the active Batangas-Calapan service area.",
+      "schedules": [],
+      "accommodationProfiles": []
+    },
+    {
+      "code": "SUR-DPA",
+      "origin": "SUR",
+      "destination": "DPA",
+      "durationMinutes": null,
+      "operators": [
+        "Montenegro Shipping Lines"
+      ],
+      "sources": [
+        {
+          "sourceId": "montenegro",
+          "page": null
+        },
+        {
+          "sourceId": "marina",
+          "page": 36
+        }
+      ],
+      "isActive": false,
+      "inactiveReason": "Outside the active Batangas-Calapan service area.",
+      "schedules": [],
+      "accommodationProfiles": []
+    },
+    {
+      "code": "SUR-MAS",
+      "origin": "SUR",
+      "destination": "MAS",
+      "durationMinutes": null,
+      "operators": [
+        "Montenegro Shipping Lines"
+      ],
+      "sources": [
+        {
+          "sourceId": "marina",
+          "page": 11
+        }
+      ],
+      "isActive": false,
+      "inactiveReason": "Outside the active Batangas-Calapan service area.",
+      "schedules": [],
+      "accommodationProfiles": []
+    },
+    {
+      "code": "TAB-VIR",
+      "origin": "TAB",
+      "destination": "VIR",
+      "durationMinutes": null,
+      "operators": [
+        "Montenegro Shipping Lines"
+      ],
+      "sources": [
+        {
+          "sourceId": "marina",
+          "page": 26
+        }
+      ],
+      "isActive": false,
+      "inactiveReason": "Outside the active Batangas-Calapan service area.",
+      "schedules": [],
+      "accommodationProfiles": []
+    },
+    {
+      "code": "TAY-COR",
+      "origin": "TAY",
+      "destination": "COR",
+      "durationMinutes": null,
+      "operators": [
+        "Montenegro Shipping Lines"
+      ],
+      "sources": [
+        {
+          "sourceId": "marina",
+          "page": 26
+        }
+      ],
+      "isActive": false,
+      "inactiveReason": "Outside the active Batangas-Calapan service area.",
+      "schedules": [],
+      "accommodationProfiles": []
+    },
+    {
+      "code": "TBL-ESC",
+      "origin": "TBL",
+      "destination": "ESC",
+      "durationMinutes": null,
+      "operators": [
+        "Montenegro Shipping Lines"
+      ],
+      "sources": [
+        {
+          "sourceId": "marina",
+          "page": 28
+        }
+      ],
+      "isActive": false,
+      "inactiveReason": "Outside the active Batangas-Calapan service area.",
+      "schedules": [],
+      "accommodationProfiles": []
+    },
+    {
+      "code": "TIN-MBN",
+      "origin": "TIN",
+      "destination": "MBN",
+      "durationMinutes": null,
+      "operators": [
+        "Montenegro Shipping Lines"
+      ],
+      "sources": [
+        {
+          "sourceId": "montenegro",
+          "page": null
+        },
+        {
+          "sourceId": "marina",
+          "page": 24
+        }
+      ],
+      "isActive": false,
+      "inactiveReason": "Outside the active Batangas-Calapan service area.",
+      "schedules": [],
+      "accommodationProfiles": []
+    },
+    {
+      "code": "UNI-ROX",
+      "origin": "UNI",
+      "destination": "ROX",
+      "durationMinutes": null,
+      "operators": [
+        "Montenegro Shipping Lines"
+      ],
+      "sources": [
+        {
+          "sourceId": "marina",
+          "page": 5
+        }
+      ],
+      "isActive": false,
+      "inactiveReason": "Outside the active Batangas-Calapan service area.",
+      "schedules": [],
+      "accommodationProfiles": []
+    },
+    {
+      "code": "VIR-TAB",
+      "origin": "VIR",
+      "destination": "TAB",
+      "durationMinutes": null,
+      "operators": [
+        "Montenegro Shipping Lines"
+      ],
+      "sources": [
+        {
+          "sourceId": "marina",
+          "page": 26
+        }
+      ],
+      "isActive": false,
+      "inactiveReason": "Outside the active Batangas-Calapan service area.",
+      "schedules": [],
+      "accommodationProfiles": []
+    },
+    {
+      "code": "ZAM-ISA",
+      "origin": "ZAM",
+      "destination": "ISA",
+      "durationMinutes": null,
+      "operators": [
+        "Montenegro Shipping Lines",
+        "FastCat"
+      ],
+      "sources": [
+        {
+          "sourceId": "montenegro",
+          "page": null
+        },
+        {
+          "sourceId": "marina",
+          "page": 39
+        },
+        {
+          "sourceId": "fastcatSchedules"
+        }
+      ],
+      "isActive": false,
+      "inactiveReason": "Outside the active Batangas-Calapan service area.",
+      "schedules": [],
+      "accommodationProfiles": []
+    },
+    {
+      "code": "ZAM-JOL",
+      "origin": "ZAM",
+      "destination": "JOL",
+      "durationMinutes": null,
+      "operators": [
+        "Montenegro Shipping Lines"
+      ],
+      "sources": [
+        {
+          "sourceId": "montenegro",
+          "page": null
+        },
+        {
+          "sourceId": "marina",
+          "page": 40
+        }
+      ],
+      "isActive": false,
+      "inactiveReason": "Outside the active Batangas-Calapan service area.",
+      "schedules": [],
+      "accommodationProfiles": []
+    },
+    {
+      "code": "ZAM-LAM",
+      "origin": "ZAM",
+      "destination": "LAM",
+      "durationMinutes": null,
+      "operators": [
+        "Montenegro Shipping Lines"
+      ],
+      "sources": [
+        {
+          "sourceId": "marina",
+          "page": 40
+        }
+      ],
+      "isActive": false,
+      "inactiveReason": "Outside the active Batangas-Calapan service area.",
+      "schedules": [],
+      "accommodationProfiles": []
+    },
+    {
+      "code": "BUL-CAT",
+      "origin": "BUL",
+      "destination": "CAT",
+      "isActive": false,
+      "inactiveReason": "Outside the active Batangas-Calapan service area.",
+      "operators": [
+        "FastCat"
+      ],
+      "sources": [
+        {
+          "sourceId": "marina",
+          "page": 5
+        },
+        {
+          "sourceId": "fastcatSchedules"
+        }
+      ],
+      "schedules": [
+        {
+          "operator": "FastCat",
+          "routeCode": "BUL-CAT",
+          "days": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6
+          ],
+          "departureTimes": [
+            "10:00",
+            "22:00"
+          ],
+          "durationMinutes": 210,
+          "timezone": "Asia/Manila",
+          "sourceId": "fastcatSchedules",
+          "published": "2026-08",
+          "status": "published-reference"
+        }
+      ],
+      "accommodationProfiles": [
+        {
+          "operator": "FastCat",
+          "routeCodes": [
+            "BTG-CAL",
+            "CAL-BTG",
+            "BUL-CAT",
+            "CAT-BUL"
+          ],
+          "classes": [
+            "Economy",
+            "Premium Economy",
+            "Business Class"
+          ],
+          "sourceId": "fastcatClasses",
+          "capacity": null,
+          "surcharge": null,
+          "status": "allocation-required",
+          "scope": "operator-route; availability depends on the assigned vessel"
+        }
+      ]
+    },
+    {
+      "code": "CAT-BUL",
+      "origin": "CAT",
+      "destination": "BUL",
+      "isActive": false,
+      "inactiveReason": "Outside the active Batangas-Calapan service area.",
+      "operators": [
+        "FastCat"
+      ],
+      "sources": [
+        {
+          "sourceId": "marina",
+          "page": 5
+        },
+        {
+          "sourceId": "fastcatSchedules"
+        }
+      ],
+      "schedules": [
+        {
+          "operator": "FastCat",
+          "routeCode": "CAT-BUL",
+          "days": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6
+          ],
+          "departureTimes": [
+            "03:00",
+            "15:00"
+          ],
+          "durationMinutes": 210,
+          "timezone": "Asia/Manila",
+          "sourceId": "fastcatSchedules",
+          "published": "2026-08",
+          "status": "published-reference"
+        }
+      ],
+      "accommodationProfiles": [
+        {
+          "operator": "FastCat",
+          "routeCodes": [
+            "BTG-CAL",
+            "CAL-BTG",
+            "BUL-CAT",
+            "CAT-BUL"
+          ],
+          "classes": [
+            "Economy",
+            "Premium Economy",
+            "Business Class"
+          ],
+          "sourceId": "fastcatClasses",
+          "capacity": null,
+          "surcharge": null,
+          "status": "allocation-required",
+          "scope": "operator-route; availability depends on the assigned vessel"
+        }
+      ]
+    },
+    {
+      "code": "DMG-BNG",
+      "origin": "DMG",
+      "destination": "BNG",
+      "isActive": false,
+      "inactiveReason": "Outside the active Batangas-Calapan service area.",
+      "operators": [
+        "FastCat"
+      ],
+      "sources": [
+        {
+          "sourceId": "fastcatSchedules"
+        }
+      ],
+      "schedules": [],
+      "accommodationProfiles": []
+    },
+    {
+      "code": "BNG-DMG",
+      "origin": "BNG",
+      "destination": "DMG",
+      "isActive": false,
+      "inactiveReason": "Outside the active Batangas-Calapan service area.",
+      "operators": [
+        "FastCat"
+      ],
+      "sources": [
+        {
+          "sourceId": "fastcatSchedules"
+        }
+      ],
+      "schedules": [],
+      "accommodationProfiles": []
+    },
+    {
+      "code": "SCA-TOL",
+      "origin": "SCA",
+      "destination": "TOL",
+      "isActive": false,
+      "inactiveReason": "Outside the active Batangas-Calapan service area.",
+      "operators": [
+        "FastCat"
+      ],
+      "sources": [
+        {
+          "sourceId": "fastcatSchedules"
+        }
+      ],
+      "schedules": [],
+      "accommodationProfiles": []
+    },
+    {
+      "code": "TOL-SCA",
+      "origin": "TOL",
+      "destination": "SCA",
+      "isActive": false,
+      "inactiveReason": "Outside the active Batangas-Calapan service area.",
+      "operators": [
+        "FastCat"
+      ],
+      "sources": [
+        {
+          "sourceId": "fastcatSchedules"
+        }
+      ],
+      "schedules": [],
+      "accommodationProfiles": []
+    },
+    {
+      "code": "CEB-TUB",
+      "origin": "CEB",
+      "destination": "TUB",
+      "isActive": false,
+      "inactiveReason": "Outside the active Batangas-Calapan service area.",
+      "operators": [
+        "FastCat"
+      ],
+      "sources": [
+        {
+          "sourceId": "fastcatSchedules"
+        }
+      ],
+      "schedules": [],
+      "accommodationProfiles": []
+    },
+    {
+      "code": "TUB-CEB",
+      "origin": "TUB",
+      "destination": "CEB",
+      "isActive": false,
+      "inactiveReason": "Outside the active Batangas-Calapan service area.",
+      "operators": [
+        "FastCat"
+      ],
+      "sources": [
+        {
+          "sourceId": "fastcatSchedules"
+        }
+      ],
+      "schedules": [],
+      "accommodationProfiles": []
+    },
+    {
+      "code": "MSN-SUR",
+      "origin": "MSN",
+      "destination": "SUR",
+      "isActive": false,
+      "inactiveReason": "Outside the active Batangas-Calapan service area.",
+      "operators": [
+        "FastCat"
+      ],
+      "sources": [
+        {
+          "sourceId": "fastcatSchedules"
+        }
+      ],
+      "schedules": [],
+      "accommodationProfiles": []
+    },
+    {
+      "code": "SUR-MSN",
+      "origin": "SUR",
+      "destination": "MSN",
+      "isActive": false,
+      "inactiveReason": "Outside the active Batangas-Calapan service area.",
+      "operators": [
+        "FastCat"
+      ],
+      "sources": [
+        {
+          "sourceId": "fastcatSchedules"
+        }
+      ],
+      "schedules": [],
+      "accommodationProfiles": []
+    }
+  ],
+  "vessels": [
+    {
+      "code": "MN-BINIBINING-CORON",
+      "name": "MV Binibining Coron",
+      "operator": "Montenegro Shipping Lines",
+      "passengerCapacity": 410,
+      "isActive": false,
+      "capacityStatus": "published reference capacity",
+      "publishedCapacities": [
+        410
+      ],
+      "routes": [
+        "ADI-BTG",
+        "BTG-ADI"
+      ],
+      "observations": [
+        {
+          "sourceId": "marina",
+          "page": 3,
+          "capacity": 410
+        }
+      ],
+      "accommodationProfiles": []
+    },
+    {
+      "code": "MN-CITY-OF-BACOLOD",
+      "name": "MV City of Bacolod",
+      "operator": "Montenegro Shipping Lines",
+      "passengerCapacity": null,
+      "isActive": false,
+      "capacityStatus": "conflicting published capacities",
+      "publishedCapacities": [
+        86,
+        92
+      ],
+      "routes": [
+        "BTG-PGA",
+        "CAT-CGN",
+        "CGN-CAT",
+        "PGA-BTG"
+      ],
+      "observations": [
+        {
+          "sourceId": "marina",
+          "page": 27,
+          "capacity": 86
+        },
+        {
+          "sourceId": "marina",
+          "page": 2,
+          "capacity": 92
+        }
+      ],
+      "accommodationProfiles": []
+    },
+    {
+      "code": "MN-CITY-OF-DAPITAN",
+      "name": "MV City of Dapitan",
+      "operator": "Montenegro Shipping Lines",
+      "passengerCapacity": 92,
+      "isActive": false,
+      "capacityStatus": "published reference capacity",
+      "publishedCapacities": [
+        92
+      ],
+      "routes": [
+        "BTG-PGA",
+        "PGA-BTG"
+      ],
+      "observations": [
+        {
+          "sourceId": "marina",
+          "page": 2,
+          "capacity": 92
+        }
+      ],
+      "accommodationProfiles": []
+    },
+    {
+      "code": "MN-CITY-OF-ESCALANTE",
+      "name": "MV City of Escalante",
+      "operator": "Montenegro Shipping Lines",
+      "passengerCapacity": null,
+      "isActive": false,
+      "capacityStatus": "capacity not published",
+      "publishedCapacities": [],
+      "routes": [
+        "MBN-TIN",
+        "TIN-MBN"
+      ],
+      "observations": [
+        {
+          "sourceId": "marina",
+          "page": 24,
+          "capacity": null
+        }
+      ],
+      "accommodationProfiles": []
+    },
+    {
+      "code": "MN-CITY-OF-HIMAMAYLAN",
+      "name": "MV City of Himamaylan",
+      "operator": "Montenegro Shipping Lines",
+      "passengerCapacity": null,
+      "isActive": false,
+      "capacityStatus": "capacity not published",
+      "publishedCapacities": [],
+      "routes": [
+        "MBN-TIN",
+        "TIN-MBN"
+      ],
+      "observations": [
+        {
+          "sourceId": "marina",
+          "page": 24,
+          "capacity": null
+        }
+      ],
+      "accommodationProfiles": []
+    },
+    {
+      "code": "MN-CITY-OF-ILOILO",
+      "name": "MV City of Iloilo",
+      "operator": "Montenegro Shipping Lines",
+      "passengerCapacity": null,
+      "isActive": false,
+      "capacityStatus": "capacity not published",
+      "publishedCapacities": [],
+      "routes": [
+        "TAB-VIR",
+        "VIR-TAB"
+      ],
+      "observations": [
+        {
+          "sourceId": "marina",
+          "page": 26,
+          "capacity": null
+        }
+      ],
+      "accommodationProfiles": []
+    },
+    {
+      "code": "MN-CITY-OF-MASBATE",
+      "name": "MV City of Masbate",
+      "operator": "Montenegro Shipping Lines",
+      "passengerCapacity": 144,
+      "isActive": false,
+      "capacityStatus": "published reference capacity",
+      "publishedCapacities": [
+        144
+      ],
+      "routes": [
+        "COR-CUL",
+        "CUL-COR"
+      ],
+      "observations": [
+        {
+          "sourceId": "marina",
+          "page": 26,
+          "capacity": 144
+        }
+      ],
+      "accommodationProfiles": []
+    },
+    {
+      "code": "MN-CITY-OF-NAGA",
+      "name": "MV City of Naga",
+      "operator": "Montenegro Shipping Lines",
+      "passengerCapacity": null,
+      "isActive": false,
+      "capacityStatus": "capacity not published",
+      "publishedCapacities": [],
+      "routes": [
+        "MBN-TIN",
+        "TIN-MBN"
+      ],
+      "observations": [
+        {
+          "sourceId": "marina",
+          "page": 24,
+          "capacity": null
+        }
+      ],
+      "accommodationProfiles": []
+    },
+    {
+      "code": "MN-CITY-OF-OZAMIS",
+      "name": "MV City of Ozamis",
+      "operator": "Montenegro Shipping Lines",
+      "passengerCapacity": null,
+      "isActive": false,
+      "capacityStatus": "capacity not published",
+      "publishedCapacities": [],
+      "routes": [
+        "MBN-TIN",
+        "TIN-MBN"
+      ],
+      "observations": [
+        {
+          "sourceId": "marina",
+          "page": 24,
+          "capacity": null
+        }
+      ],
+      "accommodationProfiles": []
+    },
+    {
+      "code": "MN-CITY-OF-ROXAS",
+      "name": "MV City of Roxas",
+      "operator": "Montenegro Shipping Lines",
+      "passengerCapacity": 198,
+      "isActive": false,
+      "capacityStatus": "published reference capacity",
+      "publishedCapacities": [
+        198
+      ],
+      "routes": [
+        "BTG-PGA",
+        "PGA-BTG"
+      ],
+      "observations": [
+        {
+          "sourceId": "marina",
+          "page": 2,
+          "capacity": 198
+        }
+      ],
+      "accommodationProfiles": []
+    },
+    {
+      "code": "MN-CITY-OF-SORSOGON",
+      "name": "MV City of Sorsogon",
+      "operator": "Montenegro Shipping Lines",
+      "passengerCapacity": null,
+      "isActive": false,
+      "capacityStatus": "capacity not published",
+      "publishedCapacities": [],
+      "routes": [
+        "COR-CUL",
+        "CUL-COR"
+      ],
+      "observations": [
+        {
+          "sourceId": "marina",
+          "page": 26,
+          "capacity": null
+        }
+      ],
+      "accommodationProfiles": []
+    },
+    {
+      "code": "MN-ISLAND-PEARL-1",
+      "name": "MV Island Pearl - 1",
+      "operator": "Montenegro Shipping Lines",
+      "passengerCapacity": null,
+      "isActive": false,
+      "capacityStatus": "capacity not published",
+      "publishedCapacities": [],
+      "routes": [
+        "MBN-TIN",
+        "TIN-MBN"
+      ],
+      "observations": [
+        {
+          "sourceId": "marina",
+          "page": 24,
+          "capacity": null
+        }
+      ],
+      "accommodationProfiles": []
+    },
+    {
+      "code": "MN-MARIA-ANGELA",
+      "name": "MV Maria Angela",
+      "operator": "Montenegro Shipping Lines",
+      "passengerCapacity": 263,
+      "isActive": false,
+      "capacityStatus": "published reference capacity",
+      "publishedCapacities": [
+        263
+      ],
+      "routes": [
+        "BOG-CTA",
+        "BTG-ROM",
+        "CTA-BOG",
+        "ESC-TBL",
+        "ROM-BTG",
+        "TBL-ESC"
+      ],
+      "observations": [
+        {
+          "sourceId": "marina",
+          "page": 4,
+          "capacity": null
+        },
+        {
+          "sourceId": "marina",
+          "page": 17,
+          "capacity": 263
+        },
+        {
+          "sourceId": "marina",
+          "page": 28,
+          "capacity": null
+        }
+      ],
+      "accommodationProfiles": []
+    },
+    {
+      "code": "MN-MARIA-BEATRIZ",
+      "name": "MV Maria Beatriz",
+      "operator": "Montenegro Shipping Lines",
+      "passengerCapacity": 302,
+      "isActive": false,
+      "capacityStatus": "published reference capacity",
+      "publishedCapacities": [
+        302
+      ],
+      "routes": [
+        "BAC-DMG",
+        "DMG-BAC"
+      ],
+      "observations": [
+        {
+          "sourceId": "marina",
+          "page": 6,
+          "capacity": 302
+        }
+      ],
+      "accommodationProfiles": []
+    },
+    {
+      "code": "MN-MARIA-DIANA",
+      "name": "MV Maria Diana",
+      "operator": "Montenegro Shipping Lines",
+      "passengerCapacity": 594,
+      "isActive": true,
+      "capacityStatus": "published reference capacity",
+      "publishedCapacities": [
+        594
+      ],
+      "routes": [
+        "BTG-CAL",
+        "CAL-BTG"
+      ],
+      "observations": [
+        {
+          "sourceId": "marina",
+          "page": 1,
+          "capacity": 594
+        }
+      ],
+      "accommodationProfiles": []
+    },
+    {
+      "code": "MN-MARIA-ERLINDA",
+      "name": "MV Maria Erlinda",
+      "operator": "Montenegro Shipping Lines",
+      "passengerCapacity": null,
+      "isActive": false,
+      "capacityStatus": "conflicting published capacities",
+      "publishedCapacities": [
+        655,
+        410
+      ],
+      "routes": [
+        "CUY-ILO",
+        "CUY-PPS",
+        "ILO-CUY",
+        "JOL-ZAM",
+        "PPS-CUY",
+        "ZAM-JOL"
+      ],
+      "observations": [
+        {
+          "sourceId": "marina",
+          "page": 26,
+          "capacity": 655
+        },
+        {
+          "sourceId": "marina",
+          "page": 40,
+          "capacity": 410
+        }
+      ],
+      "accommodationProfiles": []
+    },
+    {
+      "code": "MN-MARIA-FELISA",
+      "name": "MV Maria Felisa",
+      "operator": "Montenegro Shipping Lines",
+      "passengerCapacity": 398,
+      "isActive": false,
+      "capacityStatus": "published reference capacity",
+      "publishedCapacities": [
+        398
+      ],
+      "routes": [
+        "ADD-MTN",
+        "COR-SJM",
+        "COR-TAY",
+        "MTN-ADD",
+        "SJM-COR",
+        "TAY-COR"
+      ],
+      "observations": [
+        {
+          "sourceId": "marina",
+          "page": 10,
+          "capacity": 398
+        },
+        {
+          "sourceId": "marina",
+          "page": 26,
+          "capacity": 398
+        }
+      ],
+      "accommodationProfiles": []
+    },
+    {
+      "code": "MN-MARIA-GLORIA",
+      "name": "MV Maria Gloria",
+      "operator": "Montenegro Shipping Lines",
+      "passengerCapacity": null,
+      "isActive": false,
+      "capacityStatus": "conflicting published capacities",
+      "publishedCapacities": [
+        413,
+        389
+      ],
+      "routes": [
+        "BAL-LUC",
+        "BOG-CTA",
+        "CTA-BOG",
+        "CTA-NAV",
+        "DAP-DUM",
+        "DUM-DAP",
+        "DUM-LAR",
+        "LAR-DUM",
+        "LUC-BAL",
+        "NAV-CTA"
+      ],
+      "observations": [
+        {
+          "sourceId": "marina",
+          "page": 7,
+          "capacity": 413
+        },
+        {
+          "sourceId": "marina",
+          "page": 18,
+          "capacity": 413
+        },
+        {
+          "sourceId": "marina",
+          "page": 24,
+          "capacity": 413
+        },
+        {
+          "sourceId": "marina",
+          "page": 29,
+          "capacity": 389
+        }
+      ],
+      "accommodationProfiles": []
+    },
+    {
+      "code": "MN-MARIA-HELENA",
+      "name": "MV Maria Helena",
+      "operator": "Montenegro Shipping Lines",
+      "passengerCapacity": 327,
+      "isActive": false,
+      "capacityStatus": "published reference capacity",
+      "publishedCapacities": [
+        327
+      ],
+      "routes": [
+        "BTG-ODI",
+        "ODI-BTG",
+        "ODI-ROM",
+        "ROM-ODI"
+      ],
+      "observations": [
+        {
+          "sourceId": "marina",
+          "page": 4,
+          "capacity": 327
+        }
+      ],
+      "accommodationProfiles": []
+    },
+    {
+      "code": "MN-MARIA-ISABEL",
+      "name": "MV Maria Isabel",
+      "operator": "Montenegro Shipping Lines",
+      "passengerCapacity": 427,
+      "isActive": false,
+      "capacityStatus": "published reference capacity",
+      "publishedCapacities": [
+        427
+      ],
+      "routes": [
+        "CUY-ILO",
+        "ILO-CUY",
+        "LAR-OSL",
+        "OSL-LAR"
+      ],
+      "observations": [
+        {
+          "sourceId": "marina",
+          "page": 26,
+          "capacity": 427
+        },
+        {
+          "sourceId": "marina",
+          "page": 30,
+          "capacity": 427
+        }
+      ],
+      "accommodationProfiles": []
+    },
+    {
+      "code": "MN-MARIA-JOSEFA",
+      "name": "MV Maria Josefa",
+      "operator": "Montenegro Shipping Lines",
+      "passengerCapacity": 242,
+      "isActive": false,
+      "capacityStatus": "published reference capacity",
+      "publishedCapacities": [
+        242
+      ],
+      "routes": [
+        "DAP-DUM",
+        "DUM-DAP",
+        "DUM-SIQ",
+        "SIQ-DUM"
+      ],
+      "observations": [
+        {
+          "sourceId": "marina",
+          "page": 7,
+          "capacity": 242
+        },
+        {
+          "sourceId": "marina",
+          "page": 29,
+          "capacity": 242
+        }
+      ],
+      "accommodationProfiles": []
+    },
+    {
+      "code": "MN-MARIA-KRISTINA",
+      "name": "MV Maria Kristina",
+      "operator": "Montenegro Shipping Lines",
+      "passengerCapacity": 148,
+      "isActive": false,
+      "capacityStatus": "published reference capacity",
+      "publishedCapacities": [
+        148
+      ],
+      "routes": [
+        "COR-CUL",
+        "CUL-COR",
+        "MTN-SIS",
+        "SIS-MTN"
+      ],
+      "observations": [
+        {
+          "sourceId": "marina",
+          "page": 10,
+          "capacity": 148
+        },
+        {
+          "sourceId": "marina",
+          "page": 26,
+          "capacity": null
+        }
+      ],
+      "accommodationProfiles": []
+    },
+    {
+      "code": "MN-MARIA-LOLITA",
+      "name": "MV Maria Lolita",
+      "operator": "Montenegro Shipping Lines",
+      "passengerCapacity": 280,
+      "isActive": false,
+      "capacityStatus": "published reference capacity",
+      "publishedCapacities": [
+        280
+      ],
+      "routes": [
+        "BAC-DMG",
+        "DMG-BAC",
+        "DUM-LAR",
+        "LAR-DUM"
+      ],
+      "observations": [
+        {
+          "sourceId": "marina",
+          "page": 6,
+          "capacity": 280
+        },
+        {
+          "sourceId": "marina",
+          "page": 29,
+          "capacity": 280
+        }
+      ],
+      "accommodationProfiles": []
+    },
+    {
+      "code": "MN-MARIA-MATILDE",
+      "name": "MV Maria Matilde",
+      "operator": "Montenegro Shipping Lines",
+      "passengerCapacity": null,
+      "isActive": false,
+      "capacityStatus": "conflicting published capacities",
+      "publishedCapacities": [
+        675,
+        638
+      ],
+      "routes": [
+        "BTG-CAL",
+        "BTG-ROM",
+        "CAL-BTG",
+        "DUM-LAR",
+        "LAR-DUM",
+        "ROM-BTG"
+      ],
+      "observations": [
+        {
+          "sourceId": "marina",
+          "page": 1,
+          "capacity": 675
+        },
+        {
+          "sourceId": "marina",
+          "page": 29,
+          "capacity": 675
+        },
+        {
+          "sourceId": "marina",
+          "page": 4,
+          "capacity": 638
+        }
+      ],
+      "accommodationProfiles": []
+    },
+    {
+      "code": "MN-MARIA-OLIVA",
+      "name": "MV Maria Oliva",
+      "operator": "Montenegro Shipping Lines",
+      "passengerCapacity": 372,
+      "isActive": true,
+      "capacityStatus": "published reference capacity",
+      "publishedCapacities": [
+        372
+      ],
+      "routes": [
+        "BTG-CAL",
+        "CAL-BTG"
+      ],
+      "observations": [
+        {
+          "sourceId": "marina",
+          "page": 1,
+          "capacity": 372
+        }
+      ],
+      "accommodationProfiles": []
+    },
+    {
+      "code": "MN-MARIA-REBECCA",
+      "name": "MV Maria Rebecca",
+      "operator": "Montenegro Shipping Lines",
+      "passengerCapacity": 574,
+      "isActive": false,
+      "capacityStatus": "published reference capacity",
+      "publishedCapacities": [
+        574
+      ],
+      "routes": [
+        "JOL-ZAM",
+        "ZAM-JOL"
+      ],
+      "observations": [
+        {
+          "sourceId": "marina",
+          "page": 40,
+          "capacity": 574
+        }
+      ],
+      "accommodationProfiles": []
+    },
+    {
+      "code": "MN-MARIA-TERESA",
+      "name": "MV Maria Teresa",
+      "operator": "Montenegro Shipping Lines",
+      "passengerCapacity": 232,
+      "isActive": false,
+      "capacityStatus": "published reference capacity",
+      "publishedCapacities": [
+        232
+      ],
+      "routes": [
+        "BAC-DMG",
+        "DMG-BAC",
+        "LIP-SJL",
+        "MAS-PIO",
+        "MAS-SUR",
+        "ODI-ROM",
+        "PIO-MAS",
+        "ROM-ODI",
+        "SJL-LIP",
+        "SUR-MAS"
+      ],
+      "observations": [
+        {
+          "sourceId": "marina",
+          "page": 6,
+          "capacity": 232
+        },
+        {
+          "sourceId": "marina",
+          "page": 11,
+          "capacity": 232
+        },
+        {
+          "sourceId": "marina",
+          "page": 11,
+          "capacity": 232
+        },
+        {
+          "sourceId": "marina",
+          "page": 27,
+          "capacity": 232
+        }
+      ],
+      "accommodationProfiles": []
+    },
+    {
+      "code": "MN-MARIA-URSULA",
+      "name": "MV Maria Ursula",
+      "operator": "Montenegro Shipping Lines",
+      "passengerCapacity": 490,
+      "isActive": false,
+      "capacityStatus": "published reference capacity",
+      "publishedCapacities": [
+        490
+      ],
+      "routes": [
+        "CLR-ROM",
+        "CLR-ROX",
+        "MAG-ROM",
+        "ROM-CLR",
+        "ROM-MAG",
+        "ROX-CLR"
+      ],
+      "observations": [
+        {
+          "sourceId": "marina",
+          "page": 27,
+          "capacity": 490
+        }
+      ],
+      "accommodationProfiles": []
+    },
+    {
+      "code": "MN-MARIA-VANESSA",
+      "name": "MV Maria Vanessa",
+      "operator": "Montenegro Shipping Lines",
+      "passengerCapacity": 410,
+      "isActive": false,
+      "capacityStatus": "published reference capacity",
+      "publishedCapacities": [
+        410
+      ],
+      "routes": [
+        "DUM-LAR",
+        "LAR-DUM"
+      ],
+      "observations": [
+        {
+          "sourceId": "marina",
+          "page": 29,
+          "capacity": 410
+        }
+      ],
+      "accommodationProfiles": []
+    },
+    {
+      "code": "MN-MARIA-WYNONA",
+      "name": "MV Maria Wynona",
+      "operator": "Montenegro Shipping Lines",
+      "passengerCapacity": 660,
+      "isActive": true,
+      "capacityStatus": "published reference capacity",
+      "publishedCapacities": [
+        660
+      ],
+      "routes": [
+        "BTG-CAL",
+        "CAL-BTG"
+      ],
+      "observations": [
+        {
+          "sourceId": "marina",
+          "page": 1,
+          "capacity": 660
+        }
+      ],
+      "accommodationProfiles": []
+    },
+    {
+      "code": "MN-MARIA-XENIA",
+      "name": "MV Maria Xenia",
+      "operator": "Montenegro Shipping Lines",
+      "passengerCapacity": null,
+      "isActive": false,
+      "capacityStatus": "conflicting published capacities",
+      "publishedCapacities": [
+        660,
+        717
+      ],
+      "routes": [
+        "BTG-CAL",
+        "BTG-ROM",
+        "CAL-BTG",
+        "ROM-BTG"
+      ],
+      "observations": [
+        {
+          "sourceId": "marina",
+          "page": 1,
+          "capacity": 660
+        },
+        {
+          "sourceId": "marina",
+          "page": 4,
+          "capacity": 717
+        }
+      ],
+      "accommodationProfiles": []
+    },
+    {
+      "code": "MN-REINA-BANDERADA",
+      "name": "MV Reina Banderada",
+      "operator": "Montenegro Shipping Lines",
+      "passengerCapacity": null,
+      "isActive": false,
+      "capacityStatus": "capacity not published",
+      "publishedCapacities": [],
+      "routes": [
+        "ISA-ZAM",
+        "ZAM-ISA"
+      ],
+      "observations": [
+        {
+          "sourceId": "marina",
+          "page": 39,
+          "capacity": null
+        }
+      ],
+      "accommodationProfiles": []
+    },
+    {
+      "code": "MN-REINA-DE-LUNA",
+      "name": "MV Reina de Luna",
+      "operator": "Montenegro Shipping Lines",
+      "passengerCapacity": 204,
+      "isActive": false,
+      "capacityStatus": "published reference capacity",
+      "publishedCapacities": [
+        204
+      ],
+      "routes": [
+        "ESC-TBL",
+        "TBL-ESC"
+      ],
+      "observations": [
+        {
+          "sourceId": "marina",
+          "page": 28,
+          "capacity": 204
+        }
+      ],
+      "accommodationProfiles": []
+    },
+    {
+      "code": "MN-REINA-DEL-CIELO",
+      "name": "MV Reina del Cielo",
+      "operator": "Montenegro Shipping Lines",
+      "passengerCapacity": null,
+      "isActive": false,
+      "capacityStatus": "conflicting published capacities",
+      "publishedCapacities": [
+        779,
+        738
+      ],
+      "routes": [
+        "BTG-PGA",
+        "CAT-ROX",
+        "PGA-BTG",
+        "ROX-CAT",
+        "SEM-SJM",
+        "SJM-SEM"
+      ],
+      "observations": [
+        {
+          "sourceId": "marina",
+          "page": 2,
+          "capacity": 779
+        },
+        {
+          "sourceId": "marina",
+          "page": 5,
+          "capacity": 738
+        },
+        {
+          "sourceId": "marina",
+          "page": 27,
+          "capacity": 738
+        }
+      ],
+      "accommodationProfiles": []
+    },
+    {
+      "code": "MN-REINA-DEL-ROSARIO",
+      "name": "MV Reina del Rosario",
+      "operator": "Montenegro Shipping Lines",
+      "passengerCapacity": null,
+      "isActive": false,
+      "capacityStatus": "conflicting published capacities",
+      "publishedCapacities": [
+        1025,
+        930
+      ],
+      "routes": [
+        "BTG-ODI",
+        "BTG-ROM",
+        "LAG-MAS",
+        "MAS-LAG",
+        "ODI-BTG",
+        "ODI-ROM",
+        "ROM-BTG",
+        "ROM-ODI"
+      ],
+      "observations": [
+        {
+          "sourceId": "marina",
+          "page": 4,
+          "capacity": 1025
+        },
+        {
+          "sourceId": "marina",
+          "page": 27,
+          "capacity": 930
+        },
+        {
+          "sourceId": "marina",
+          "page": 4,
+          "capacity": 930
+        }
+      ],
+      "accommodationProfiles": []
+    },
+    {
+      "code": "MN-REINA-DELOS-FLORES",
+      "name": "MV Reina delos Flores",
+      "operator": "Montenegro Shipping Lines",
+      "passengerCapacity": 626,
+      "isActive": true,
+      "capacityStatus": "published reference capacity",
+      "publishedCapacities": [
+        626
+      ],
+      "routes": [
+        "BTG-CAL",
+        "BUR-ROX",
+        "CAL-BTG",
+        "ROX-BUR"
+      ],
+      "observations": [
+        {
+          "sourceId": "marina",
+          "page": 1,
+          "capacity": 626
+        },
+        {
+          "sourceId": "marina",
+          "page": 5,
+          "capacity": 626
+        }
+      ],
+      "accommodationProfiles": []
+    },
+    {
+      "code": "MN-REINA-FELISA",
+      "name": "MV Reina Felisa",
+      "operator": "Montenegro Shipping Lines",
+      "passengerCapacity": 230,
+      "isActive": false,
+      "capacityStatus": "published reference capacity",
+      "publishedCapacities": [
+        230
+      ],
+      "routes": [
+        "BEN-LIP",
+        "LIP-BEN"
+      ],
+      "observations": [
+        {
+          "sourceId": "marina",
+          "page": 11,
+          "capacity": 230
+        }
+      ],
+      "accommodationProfiles": []
+    },
+    {
+      "code": "MN-REINA-GENOVEVA",
+      "name": "MV Reina Genoveva",
+      "operator": "Montenegro Shipping Lines",
+      "passengerCapacity": 584,
+      "isActive": false,
+      "capacityStatus": "published reference capacity",
+      "publishedCapacities": [
+        584
+      ],
+      "routes": [
+        "ADI-BTG",
+        "BAN-CON",
+        "BTG-ADI",
+        "CAT-ODI",
+        "CON-BAN",
+        "CON-PIN",
+        "ODI-CAT",
+        "ODI-ROX",
+        "PIN-CON",
+        "ROX-ODI"
+      ],
+      "observations": [
+        {
+          "sourceId": "marina",
+          "page": 5,
+          "capacity": 584
+        },
+        {
+          "sourceId": "marina",
+          "page": 27,
+          "capacity": 584
+        },
+        {
+          "sourceId": "marina",
+          "page": 3,
+          "capacity": 584
+        }
+      ],
+      "accommodationProfiles": []
+    },
+    {
+      "code": "MN-REINA-HOSANNA",
+      "name": "MV Reina Hosanna",
+      "operator": "Montenegro Shipping Lines",
+      "passengerCapacity": 593,
+      "isActive": true,
+      "capacityStatus": "published reference capacity",
+      "publishedCapacities": [
+        593
+      ],
+      "routes": [
+        "BTG-CAL",
+        "CAL-BTG"
+      ],
+      "observations": [
+        {
+          "sourceId": "marina",
+          "page": 1,
+          "capacity": 593
+        }
+      ],
+      "accommodationProfiles": []
+    },
+    {
+      "code": "MN-REINA-IMMACULADA",
+      "name": "MV Reina Immaculada",
+      "operator": "Montenegro Shipping Lines",
+      "passengerCapacity": 780,
+      "isActive": true,
+      "capacityStatus": "published reference capacity",
+      "publishedCapacities": [
+        780
+      ],
+      "routes": [
+        "BTG-CAL",
+        "CAL-BTG"
+      ],
+      "observations": [
+        {
+          "sourceId": "marina",
+          "page": 1,
+          "capacity": 780
+        }
+      ],
+      "accommodationProfiles": []
+    },
+    {
+      "code": "MN-REINA-JUSTISYA",
+      "name": "MV Reina Justisya",
+      "operator": "Montenegro Shipping Lines",
+      "passengerCapacity": null,
+      "isActive": false,
+      "capacityStatus": "conflicting published capacities",
+      "publishedCapacities": [
+        320,
+        282
+      ],
+      "routes": [
+        "ARO-PIO",
+        "BTG-PGA",
+        "LAM-ZAM",
+        "PGA-BTG",
+        "PIO-ARO",
+        "ZAM-LAM"
+      ],
+      "observations": [
+        {
+          "sourceId": "marina",
+          "page": 2,
+          "capacity": 320
+        },
+        {
+          "sourceId": "marina",
+          "page": 16,
+          "capacity": 282
+        },
+        {
+          "sourceId": "marina",
+          "page": 40,
+          "capacity": null
+        }
+      ],
+      "accommodationProfiles": []
+    },
+    {
+      "code": "MN-REINA-KLEOPATRA",
+      "name": "MV Reina Kleopatra",
+      "operator": "Montenegro Shipping Lines",
+      "passengerCapacity": 335,
+      "isActive": false,
+      "capacityStatus": "published reference capacity",
+      "publishedCapacities": [
+        335
+      ],
+      "routes": [
+        "BAC-DMG",
+        "DMG-BAC",
+        "ISA-ZAM",
+        "ROX-UNI",
+        "UNI-ROX",
+        "ZAM-ISA"
+      ],
+      "observations": [
+        {
+          "sourceId": "marina",
+          "page": 5,
+          "capacity": 335
+        },
+        {
+          "sourceId": "marina",
+          "page": 6,
+          "capacity": 335
+        },
+        {
+          "sourceId": "marina",
+          "page": 39,
+          "capacity": null
+        }
+      ],
+      "accommodationProfiles": []
+    },
+    {
+      "code": "MN-REINA-MAGDALENA",
+      "name": "MV Reina Magdalena",
+      "operator": "Montenegro Shipping Lines",
+      "passengerCapacity": 265,
+      "isActive": false,
+      "capacityStatus": "published reference capacity",
+      "publishedCapacities": [
+        265
+      ],
+      "routes": [
+        "DPA-SUR",
+        "MAS-PIL",
+        "PIL-MAS",
+        "SUR-DPA"
+      ],
+      "observations": [
+        {
+          "sourceId": "marina",
+          "page": 16,
+          "capacity": 265
+        },
+        {
+          "sourceId": "marina",
+          "page": 36,
+          "capacity": null
+        }
+      ],
+      "accommodationProfiles": []
+    },
+    {
+      "code": "MN-REINA-NEPTUNA",
+      "name": "MV Reina Neptuna",
+      "operator": "Montenegro Shipping Lines",
+      "passengerCapacity": 308,
+      "isActive": false,
+      "capacityStatus": "published reference capacity",
+      "publishedCapacities": [
+        308
+      ],
+      "routes": [
+        "BUL-SEM",
+        "DAP-DUM",
+        "DUM-DAP",
+        "DUM-LAR",
+        "LAR-DUM",
+        "SEM-BUL",
+        "TAB-VIR",
+        "VIR-TAB"
+      ],
+      "observations": [
+        {
+          "sourceId": "marina",
+          "page": 7,
+          "capacity": 308
+        },
+        {
+          "sourceId": "marina",
+          "page": 26,
+          "capacity": null
+        },
+        {
+          "sourceId": "marina",
+          "page": 26,
+          "capacity": 308
+        },
+        {
+          "sourceId": "marina",
+          "page": 29,
+          "capacity": 308
+        }
+      ],
+      "accommodationProfiles": []
+    },
+    {
+      "code": "MN-REINA-OLYMPIA",
+      "name": "MV Reina Olympia",
+      "operator": "Montenegro Shipping Lines",
+      "passengerCapacity": 230,
+      "isActive": false,
+      "capacityStatus": "published reference capacity",
+      "publishedCapacities": [
+        230
+      ],
+      "routes": [
+        "ALN-MTN",
+        "BUL-SEM",
+        "BUR-SEM",
+        "MTN-ALN",
+        "SEM-BUL",
+        "SEM-BUR",
+        "SEM-STA",
+        "SJM-STA",
+        "STA-SEM",
+        "STA-SJM"
+      ],
+      "observations": [
+        {
+          "sourceId": "marina",
+          "page": 5,
+          "capacity": 230
+        },
+        {
+          "sourceId": "marina",
+          "page": 5,
+          "capacity": 230
+        },
+        {
+          "sourceId": "marina",
+          "page": 9,
+          "capacity": 230
+        }
+      ],
+      "accommodationProfiles": []
+    },
+    {
+      "code": "MN-REINA-SENTENCIADA",
+      "name": "MV Reina Sentenciada",
+      "operator": "Montenegro Shipping Lines",
+      "passengerCapacity": 318,
+      "isActive": false,
+      "capacityStatus": "published reference capacity",
+      "publishedCapacities": [
+        318
+      ],
+      "routes": [
+        "BUR-ROX",
+        "DIN-SUR",
+        "ROX-BUR",
+        "SUR-DIN"
+      ],
+      "observations": [
+        {
+          "sourceId": "marina",
+          "page": 5,
+          "capacity": 318
+        },
+        {
+          "sourceId": "marina",
+          "page": 36,
+          "capacity": null
+        }
+      ],
+      "accommodationProfiles": []
+    },
+    {
+      "code": "MN-REINA-URDUJA",
+      "name": "MV Reina Urduja",
+      "operator": "Montenegro Shipping Lines",
+      "passengerCapacity": null,
+      "isActive": false,
+      "capacityStatus": "conflicting published capacities",
+      "publishedCapacities": [
+        265,
+        538
+      ],
+      "routes": [
+        "BUR-ROX",
+        "CAT-ROX",
+        "ROX-BUR",
+        "ROX-CAT"
+      ],
+      "observations": [
+        {
+          "sourceId": "marina",
+          "page": 5,
+          "capacity": 265
+        },
+        {
+          "sourceId": "marina",
+          "page": 5,
+          "capacity": 538
+        }
+      ],
+      "accommodationProfiles": []
+    },
+    {
+      "code": "MN-REINA-VANESSA",
+      "name": "MV Reina Vanessa",
+      "operator": "Montenegro Shipping Lines",
+      "passengerCapacity": 265,
+      "isActive": false,
+      "capacityStatus": "published reference capacity",
+      "publishedCapacities": [
+        265
+      ],
+      "routes": [
+        "BEN-LIP",
+        "LIP-BEN"
+      ],
+      "observations": [
+        {
+          "sourceId": "marina",
+          "page": 11,
+          "capacity": 265
+        }
+      ],
+      "accommodationProfiles": []
+    },
+    {
+      "code": "MN-REINA-VERONICA",
+      "name": "MV Reina Veronica",
+      "operator": "Montenegro Shipping Lines",
+      "passengerCapacity": 265,
+      "isActive": false,
+      "capacityStatus": "published reference capacity",
+      "publishedCapacities": [
+        265
+      ],
+      "routes": [
+        "DPA-SUR",
+        "DUM-SIQ",
+        "SIQ-DUM",
+        "SUR-DPA"
+      ],
+      "observations": [
+        {
+          "sourceId": "marina",
+          "page": 29,
+          "capacity": 265
+        },
+        {
+          "sourceId": "marina",
+          "page": 36,
+          "capacity": null
+        }
+      ],
+      "accommodationProfiles": []
+    },
+    {
+      "code": "MN-SANTA-ALBERTA",
+      "name": "MV Santa Alberta",
+      "operator": "Montenegro Shipping Lines",
+      "passengerCapacity": 513,
+      "isActive": true,
+      "capacityStatus": "published reference capacity",
+      "publishedCapacities": [
+        513
+      ],
+      "routes": [
+        "BTG-CAL",
+        "CAL-BTG"
+      ],
+      "observations": [
+        {
+          "sourceId": "marina",
+          "page": 1,
+          "capacity": 513
+        }
+      ],
+      "accommodationProfiles": []
+    },
+    {
+      "code": "MN-SANTA-BRIGIDA",
+      "name": "MV Santa Brigida",
+      "operator": "Montenegro Shipping Lines",
+      "passengerCapacity": 396,
+      "isActive": true,
+      "capacityStatus": "published reference capacity",
+      "publishedCapacities": [
+        396
+      ],
+      "routes": [
+        "BTG-CAL",
+        "CAL-BTG"
+      ],
+      "observations": [
+        {
+          "sourceId": "marina",
+          "page": 1,
+          "capacity": 396
+        }
+      ],
+      "accommodationProfiles": []
+    },
+    {
+      "code": "MN-SANTA-CARMELITA",
+      "name": "MV Santa Carmelita",
+      "operator": "Montenegro Shipping Lines",
+      "passengerCapacity": 419,
+      "isActive": false,
+      "capacityStatus": "published reference capacity",
+      "publishedCapacities": [
+        419
+      ],
+      "routes": [
+        "ADI-BTG",
+        "BAC-DMG",
+        "BTG-ADI",
+        "DMG-BAC",
+        "MAG-ROM",
+        "ROM-MAG",
+        "ROM-SAG",
+        "SAG-ROM"
+      ],
+      "observations": [
+        {
+          "sourceId": "marina",
+          "page": 6,
+          "capacity": null
+        },
+        {
+          "sourceId": "marina",
+          "page": 27,
+          "capacity": null
+        },
+        {
+          "sourceId": "marina",
+          "page": 3,
+          "capacity": 419
+        }
+      ],
+      "accommodationProfiles": []
+    },
+    {
+      "code": "MN-SANTA-EDITHA",
+      "name": "MV Santa Editha",
+      "operator": "Montenegro Shipping Lines",
+      "passengerCapacity": 425,
+      "isActive": true,
+      "capacityStatus": "published reference capacity",
+      "publishedCapacities": [
+        425
+      ],
+      "routes": [
+        "BTG-CAL",
+        "CAL-BTG"
+      ],
+      "observations": [
+        {
+          "sourceId": "marina",
+          "page": 1,
+          "capacity": 425
+        }
+      ],
+      "accommodationProfiles": []
+    },
+    {
+      "code": "MN-SANTA-FAUSTINA",
+      "name": "MV Santa Faustina",
+      "operator": "Montenegro Shipping Lines",
+      "passengerCapacity": 1025,
+      "isActive": false,
+      "capacityStatus": "published reference capacity",
+      "publishedCapacities": [
+        1025
+      ],
+      "routes": [
+        "BTG-ODI",
+        "ODI-BTG",
+        "ODI-ROM",
+        "ROM-ODI"
+      ],
+      "observations": [
+        {
+          "sourceId": "marina",
+          "page": 4,
+          "capacity": 1025
+        }
+      ],
+      "accommodationProfiles": []
+    },
+    {
+      "code": "MN-SANTA-MARGARITA",
+      "name": "MV Santa Margarita",
+      "operator": "Montenegro Shipping Lines",
+      "passengerCapacity": 643,
+      "isActive": true,
+      "capacityStatus": "published reference capacity",
+      "publishedCapacities": [
+        643
+      ],
+      "routes": [
+        "BTG-CAL",
+        "CAL-BTG"
+      ],
+      "observations": [
+        {
+          "sourceId": "marina",
+          "page": 1,
+          "capacity": 643
+        }
+      ],
+      "accommodationProfiles": []
+    },
+    {
+      "code": "MN-SANTA-SOLEDAD",
+      "name": "MV Santa Soledad",
+      "operator": "Montenegro Shipping Lines",
+      "passengerCapacity": 410,
+      "isActive": false,
+      "capacityStatus": "published reference capacity",
+      "publishedCapacities": [
+        410
+      ],
+      "routes": [
+        "ADI-BTG",
+        "BTG-ADI"
+      ],
+      "observations": [
+        {
+          "sourceId": "marina",
+          "page": 3,
+          "capacity": 410
+        }
+      ],
+      "accommodationProfiles": []
+    },
+    {
+      "code": "SL-ANNAPOLIS",
+      "name": "MV Starlite Annapolis",
+      "operator": "Starlite Ferries",
+      "passengerCapacity": 712,
+      "isActive": true,
+      "capacityStatus": "published reference capacity",
+      "publishedCapacities": [
+        712
+      ],
+      "routes": [
+        "BTG-CAL",
+        "CAL-BTG"
+      ],
+      "observations": [
+        {
+          "sourceId": "starlite",
+          "page": null,
+          "capacity": null
+        },
+        {
+          "sourceId": "marina",
+          "page": 2,
+          "capacity": 712
+        }
+      ],
+      "accommodationProfiles": [
+        {
+          "operator": "Starlite Ferries",
+          "routeCodes": [
+            "BTG-CAL",
+            "CAL-BTG",
+            "ROX-CAT",
+            "CAT-ROX"
+          ],
+          "classes": [
+            "Economy",
+            "Tourist Class",
+            "Business Class"
+          ],
+          "sourceId": "starliteSchedules",
+          "capacity": null,
+          "surcharge": null,
+          "status": "allocation-required",
+          "scope": "operator-route; availability depends on the assigned vessel"
+        }
+      ]
+    },
+    {
+      "code": "SL-ARCHER",
+      "name": "MV Starlite Archer",
+      "operator": "Starlite Ferries",
+      "passengerCapacity": null,
+      "isActive": false,
+      "capacityStatus": "capacity not published",
+      "publishedCapacities": [],
+      "routes": [
+        "ALN-MTN",
+        "CEB-NAS",
+        "CEB-SUR",
+        "MTN-ALN",
+        "NAS-CEB",
+        "SUR-CEB"
+      ],
+      "observations": [
+        {
+          "sourceId": "starlite",
+          "page": null,
+          "capacity": null
+        },
+        {
+          "sourceId": "starlite",
+          "page": null,
+          "capacity": null
+        },
+        {
+          "sourceId": "marina",
+          "page": 9,
+          "capacity": null
+        }
+      ],
+      "accommodationProfiles": []
+    },
+    {
+      "code": "SL-EAGLE",
+      "name": "MV Starlite Eagle",
+      "operator": "Starlite Ferries",
+      "passengerCapacity": null,
+      "isActive": false,
+      "capacityStatus": "conflicting published capacities",
+      "publishedCapacities": [
+        737,
+        711
+      ],
+      "routes": [
+        "CAT-ROX",
+        "ODI-ROX",
+        "ROX-CAT",
+        "ROX-ODI"
+      ],
+      "observations": [
+        {
+          "sourceId": "starlite",
+          "page": null,
+          "capacity": null
+        },
+        {
+          "sourceId": "marina",
+          "page": 5,
+          "capacity": 737
+        },
+        {
+          "sourceId": "marina",
+          "page": 27,
+          "capacity": 711
+        }
+      ],
+      "accommodationProfiles": [
+        {
+          "operator": "Starlite Ferries",
+          "routeCodes": [
+            "BTG-CAL",
+            "CAL-BTG",
+            "ROX-CAT",
+            "CAT-ROX"
+          ],
+          "classes": [
+            "Economy",
+            "Tourist Class",
+            "Business Class"
+          ],
+          "sourceId": "starliteSchedules",
+          "capacity": null,
+          "surcharge": null,
+          "status": "allocation-required",
+          "scope": "operator-route; availability depends on the assigned vessel"
+        }
+      ]
+    },
+    {
+      "code": "SL-JUPITER",
+      "name": "MV Starlite Jupiter",
+      "operator": "Starlite Ferries",
+      "passengerCapacity": 307,
+      "isActive": true,
+      "capacityStatus": "published reference capacity",
+      "publishedCapacities": [
+        307
+      ],
+      "routes": [
+        "BTG-CAL",
+        "CAL-BTG"
+      ],
+      "observations": [
+        {
+          "sourceId": "starlite",
+          "page": null,
+          "capacity": null
+        },
+        {
+          "sourceId": "marina",
+          "page": 2,
+          "capacity": 307
+        }
+      ],
+      "accommodationProfiles": [
+        {
+          "operator": "Starlite Ferries",
+          "routeCodes": [
+            "BTG-CAL",
+            "CAL-BTG",
+            "ROX-CAT",
+            "CAT-ROX"
+          ],
+          "classes": [
+            "Economy",
+            "Tourist Class",
+            "Business Class"
+          ],
+          "sourceId": "starliteSchedules",
+          "capacity": null,
+          "surcharge": null,
+          "status": "allocation-required",
+          "scope": "operator-route; availability depends on the assigned vessel"
+        }
+      ]
+    },
+    {
+      "code": "SL-NAVIGATOR",
+      "name": "MV Starlite Navigator",
+      "operator": "Starlite Ferries",
+      "passengerCapacity": null,
+      "isActive": false,
+      "capacityStatus": "capacity not published",
+      "publishedCapacities": [],
+      "routes": [
+        "BTG-CAL",
+        "CAL-BTG"
+      ],
+      "observations": [
+        {
+          "sourceId": "marina",
+          "page": 2,
+          "capacity": null
+        }
+      ],
+      "accommodationProfiles": [
+        {
+          "operator": "Starlite Ferries",
+          "routeCodes": [
+            "BTG-CAL",
+            "CAL-BTG",
+            "ROX-CAT",
+            "CAT-ROX"
+          ],
+          "classes": [
+            "Economy",
+            "Tourist Class",
+            "Business Class"
+          ],
+          "sourceId": "starliteSchedules",
+          "capacity": null,
+          "surcharge": null,
+          "status": "allocation-required",
+          "scope": "operator-route; availability depends on the assigned vessel"
+        }
+      ]
+    },
+    {
+      "code": "SL-PACIFIC",
+      "name": "MV Starlite Pacific",
+      "operator": "Starlite Ferries",
+      "passengerCapacity": 350,
+      "isActive": true,
+      "capacityStatus": "published reference capacity",
+      "publishedCapacities": [
+        350
+      ],
+      "routes": [
+        "BTG-CAL",
+        "CAL-BTG"
+      ],
+      "observations": [
+        {
+          "sourceId": "starlite",
+          "page": null,
+          "capacity": null
+        },
+        {
+          "sourceId": "marina",
+          "page": 2,
+          "capacity": 350
+        }
+      ],
+      "accommodationProfiles": [
+        {
+          "operator": "Starlite Ferries",
+          "routeCodes": [
+            "BTG-CAL",
+            "CAL-BTG",
+            "ROX-CAT",
+            "CAT-ROX"
+          ],
+          "classes": [
+            "Economy",
+            "Tourist Class",
+            "Business Class"
+          ],
+          "sourceId": "starliteSchedules",
+          "capacity": null,
+          "surcharge": null,
+          "status": "allocation-required",
+          "scope": "operator-route; availability depends on the assigned vessel"
+        }
+      ]
+    },
+    {
+      "code": "SL-PHOENIX",
+      "name": "MV Starlite Phoenix",
+      "operator": "Starlite Ferries",
+      "passengerCapacity": 690,
+      "isActive": false,
+      "capacityStatus": "published reference capacity",
+      "publishedCapacities": [
+        690
+      ],
+      "routes": [
+        "BOG-EST",
+        "BOG-RXS",
+        "BTG-CAT",
+        "BTG-EST",
+        "BTG-RXS",
+        "CAT-BTG",
+        "EST-BOG",
+        "EST-BTG",
+        "RXS-BOG",
+        "RXS-BTG"
+      ],
+      "observations": [
+        {
+          "sourceId": "starlite",
+          "page": null,
+          "capacity": null
+        },
+        {
+          "sourceId": "marina",
+          "page": 4,
+          "capacity": null
+        },
+        {
+          "sourceId": "marina",
+          "page": 4,
+          "capacity": 690
+        },
+        {
+          "sourceId": "marina",
+          "page": 24,
+          "capacity": 690
+        }
+      ],
+      "accommodationProfiles": []
+    },
+    {
+      "code": "SL-PIONEER",
+      "name": "MV Starlite Pioneer",
+      "operator": "Starlite Ferries",
+      "passengerCapacity": null,
+      "isActive": false,
+      "capacityStatus": "capacity not published",
+      "publishedCapacities": [],
+      "routes": [
+        "CAT-ROX",
+        "CEB-DAP",
+        "CEB-NAS",
+        "CEB-SUR",
+        "DAP-CEB",
+        "NAS-CEB",
+        "ROX-CAT",
+        "SUR-CEB"
+      ],
+      "observations": [
+        {
+          "sourceId": "starlite",
+          "page": null,
+          "capacity": null
+        },
+        {
+          "sourceId": "starlite",
+          "page": null,
+          "capacity": null
+        },
+        {
+          "sourceId": "starlite",
+          "page": null,
+          "capacity": null
+        },
+        {
+          "sourceId": "marina",
+          "page": 5,
+          "capacity": null
+        }
+      ],
+      "accommodationProfiles": [
+        {
+          "operator": "Starlite Ferries",
+          "routeCodes": [
+            "BTG-CAL",
+            "CAL-BTG",
+            "ROX-CAT",
+            "CAT-ROX"
+          ],
+          "classes": [
+            "Economy",
+            "Tourist Class",
+            "Business Class"
+          ],
+          "sourceId": "starliteSchedules",
+          "capacity": null,
+          "surcharge": null,
+          "status": "allocation-required",
+          "scope": "operator-route; availability depends on the assigned vessel"
+        }
+      ]
+    },
+    {
+      "code": "SL-POLARIS",
+      "name": "MV Starlite Polaris",
+      "operator": "Starlite Ferries",
+      "passengerCapacity": 192,
+      "isActive": false,
+      "capacityStatus": "published reference capacity",
+      "publishedCapacities": [
+        192
+      ],
+      "routes": [
+        "BTG-PGA",
+        "PGA-BTG"
+      ],
+      "observations": [
+        {
+          "sourceId": "marina",
+          "page": 2,
+          "capacity": 192
+        }
+      ],
+      "accommodationProfiles": []
+    },
+    {
+      "code": "SL-RELIANCE",
+      "name": "MV Starlite Reliance",
+      "operator": "Starlite Ferries",
+      "passengerCapacity": null,
+      "isActive": false,
+      "capacityStatus": "conflicting published capacities",
+      "publishedCapacities": [
+        711,
+        741
+      ],
+      "routes": [
+        "CAT-ROX",
+        "ODI-ROX",
+        "ROX-CAT",
+        "ROX-ODI"
+      ],
+      "observations": [
+        {
+          "sourceId": "starlite",
+          "page": null,
+          "capacity": null
+        },
+        {
+          "sourceId": "marina",
+          "page": 5,
+          "capacity": 711
+        },
+        {
+          "sourceId": "marina",
+          "page": 5,
+          "capacity": null
+        },
+        {
+          "sourceId": "marina",
+          "page": 27,
+          "capacity": 741
+        }
+      ],
+      "accommodationProfiles": [
+        {
+          "operator": "Starlite Ferries",
+          "routeCodes": [
+            "BTG-CAL",
+            "CAL-BTG",
+            "ROX-CAT",
+            "CAT-ROX"
+          ],
+          "classes": [
+            "Economy",
+            "Tourist Class",
+            "Business Class"
+          ],
+          "sourceId": "starliteSchedules",
+          "capacity": null,
+          "surcharge": null,
+          "status": "allocation-required",
+          "scope": "operator-route; availability depends on the assigned vessel"
+        }
+      ]
+    },
+    {
+      "code": "SL-RESILIENCE",
+      "name": "MV Starlite Resilience",
+      "operator": "Starlite Ferries",
+      "passengerCapacity": null,
+      "isActive": false,
+      "capacityStatus": "capacity not published",
+      "publishedCapacities": [],
+      "routes": [
+        "BTG-ODI",
+        "BTG-ROM",
+        "CAT-ODI",
+        "CAT-ROX",
+        "MAG-ROM",
+        "MAG-RXS",
+        "ODI-BTG",
+        "ODI-CAT",
+        "ROM-BTG",
+        "ROM-MAG",
+        "ROX-CAT",
+        "RXS-MAG"
+      ],
+      "observations": [
+        {
+          "sourceId": "marina",
+          "page": 27,
+          "capacity": null
+        }
+      ],
+      "accommodationProfiles": [
+        {
+          "operator": "Starlite Ferries",
+          "routeCodes": [
+            "BTG-CAL",
+            "CAL-BTG",
+            "ROX-CAT",
+            "CAT-ROX"
+          ],
+          "classes": [
+            "Economy",
+            "Tourist Class",
+            "Business Class"
+          ],
+          "sourceId": "starliteSchedules",
+          "capacity": null,
+          "surcharge": null,
+          "status": "allocation-required",
+          "scope": "operator-route; availability depends on the assigned vessel"
+        }
+      ]
+    },
+    {
+      "code": "SL-SATURN",
+      "name": "MV Starlite Saturn",
+      "operator": "Starlite Ferries",
+      "passengerCapacity": null,
+      "isActive": false,
+      "capacityStatus": "conflicting published capacities",
+      "publishedCapacities": [
+        685,
+        394
+      ],
+      "routes": [
+        "BTG-CAL",
+        "BTG-CAT",
+        "BTG-MAG",
+        "BTG-ODI",
+        "CAL-BTG",
+        "CAT-BTG",
+        "CAT-ODI",
+        "MAG-BTG",
+        "MAG-ROM",
+        "MAG-RXS",
+        "ODI-BTG",
+        "ODI-CAT",
+        "ROM-MAG",
+        "RXS-MAG"
+      ],
+      "observations": [
+        {
+          "sourceId": "starlite",
+          "page": null,
+          "capacity": null
+        },
+        {
+          "sourceId": "starlite",
+          "page": null,
+          "capacity": null
+        },
+        {
+          "sourceId": "starlite",
+          "page": null,
+          "capacity": null
+        },
+        {
+          "sourceId": "marina",
+          "page": 2,
+          "capacity": 685
+        },
+        {
+          "sourceId": "marina",
+          "page": 4,
+          "capacity": 394
+        }
+      ],
+      "accommodationProfiles": [
+        {
+          "operator": "Starlite Ferries",
+          "routeCodes": [
+            "BTG-CAL",
+            "CAL-BTG",
+            "ROX-CAT",
+            "CAT-ROX"
+          ],
+          "classes": [
+            "Economy",
+            "Tourist Class",
+            "Business Class"
+          ],
+          "sourceId": "starliteSchedules",
+          "capacity": null,
+          "surcharge": null,
+          "status": "allocation-required",
+          "scope": "operator-route; availability depends on the assigned vessel"
+        }
+      ]
+    },
+    {
+      "code": "SL-SPRINT-1",
+      "name": "MV Starlite Sprint 1",
+      "operator": "Starlite Ferries",
+      "passengerCapacity": 182,
+      "isActive": true,
+      "capacityStatus": "published reference capacity",
+      "publishedCapacities": [
+        182
+      ],
+      "routes": [
+        "BTG-CAL",
+        "CAL-BTG"
+      ],
+      "observations": [
+        {
+          "sourceId": "starlite",
+          "page": null,
+          "capacity": null
+        },
+        {
+          "sourceId": "marina",
+          "page": 2,
+          "capacity": 182
+        }
+      ],
+      "accommodationProfiles": [
+        {
+          "operator": "Starlite Ferries",
+          "routeCodes": [
+            "BTG-CAL",
+            "CAL-BTG",
+            "ROX-CAT",
+            "CAT-ROX"
+          ],
+          "classes": [
+            "Economy",
+            "Tourist Class",
+            "Business Class"
+          ],
+          "sourceId": "starliteSchedules",
+          "capacity": null,
+          "surcharge": null,
+          "status": "allocation-required",
+          "scope": "operator-route; availability depends on the assigned vessel"
+        }
+      ]
+    },
+    {
+      "code": "SL-VENUS",
+      "name": "MV Starlite Venus",
+      "operator": "Starlite Ferries",
+      "passengerCapacity": null,
+      "isActive": false,
+      "capacityStatus": "conflicting published capacities",
+      "publishedCapacities": [
+        742,
+        403
+      ],
+      "routes": [
+        "ANT-BTG",
+        "ANT-ILO",
+        "BAC-BTG",
+        "BAC-EST",
+        "BAC-ILO",
+        "BTG-ANT",
+        "BTG-BAC",
+        "BTG-CAT",
+        "BTG-ILO",
+        "CAT-BTG",
+        "EST-BAC",
+        "ILO-ANT",
+        "ILO-BAC",
+        "ILO-BTG"
+      ],
+      "observations": [
+        {
+          "sourceId": "starlite",
+          "page": null,
+          "capacity": null
+        },
+        {
+          "sourceId": "marina",
+          "page": 4,
+          "capacity": 742
+        },
+        {
+          "sourceId": "marina",
+          "page": 4,
+          "capacity": 403
+        },
+        {
+          "sourceId": "marina",
+          "page": 4,
+          "capacity": 403
+        }
+      ],
+      "accommodationProfiles": []
+    },
+    {
+      "code": "SL-SWM-SALVE-REGINA",
+      "name": "MV SWM Salve Regina",
+      "operator": "Starlite Ferries",
+      "passengerCapacity": 558,
+      "isActive": false,
+      "capacityStatus": "published reference capacity",
+      "publishedCapacities": [
+        558
+      ],
+      "routes": [
+        "BTG-CAT",
+        "BTG-MAG",
+        "CAT-BTG",
+        "MAG-BTG",
+        "MAG-ROM",
+        "MAG-RXS",
+        "ROM-MAG",
+        "ROM-RXS",
+        "RXS-MAG",
+        "RXS-ROM"
+      ],
+      "observations": [
+        {
+          "sourceId": "starlite",
+          "page": null,
+          "capacity": null
+        },
+        {
+          "sourceId": "starlite",
+          "page": null,
+          "capacity": null
+        },
+        {
+          "sourceId": "starlite",
+          "page": null,
+          "capacity": null
+        },
+        {
+          "sourceId": "starlite",
+          "page": null,
+          "capacity": null
+        },
+        {
+          "sourceId": "marina",
+          "page": 4,
+          "capacity": 558
+        }
+      ],
+      "accommodationProfiles": []
+    },
+    {
+      "code": "SL-SWM-STELLA-DEL-MAR",
+      "name": "MV SWM Stella del Mar",
+      "operator": "Starlite Ferries",
+      "passengerCapacity": 977,
+      "isActive": true,
+      "capacityStatus": "published reference capacity",
+      "publishedCapacities": [
+        977
+      ],
+      "routes": [
+        "BTG-CAL",
+        "CAL-BTG",
+        "CAT-ROX",
+        "ROX-CAT"
+      ],
+      "observations": [
+        {
+          "sourceId": "starlite",
+          "page": null,
+          "capacity": null
+        },
+        {
+          "sourceId": "starlite",
+          "page": null,
+          "capacity": null
+        },
+        {
+          "sourceId": "marina",
+          "page": 2,
+          "capacity": null
+        },
+        {
+          "sourceId": "marina",
+          "page": 5,
+          "capacity": 977
+        }
+      ],
+      "accommodationProfiles": [
+        {
+          "operator": "Starlite Ferries",
+          "routeCodes": [
+            "BTG-CAL",
+            "CAL-BTG",
+            "ROX-CAT",
+            "CAT-ROX"
+          ],
+          "classes": [
+            "Economy",
+            "Tourist Class",
+            "Business Class"
+          ],
+          "sourceId": "starliteSchedules",
+          "capacity": null,
+          "surcharge": null,
+          "status": "allocation-required",
+          "scope": "operator-route; availability depends on the assigned vessel"
+        }
+      ]
+    },
+    {
+      "code": "SL-SWM-STELLA-MARIS",
+      "name": "MV SWM Stella Maris",
+      "operator": "Starlite Ferries",
+      "passengerCapacity": null,
+      "isActive": false,
+      "capacityStatus": "capacity not published",
+      "publishedCapacities": [],
+      "routes": [
+        "MAG-ROM",
+        "MAG-RXS",
+        "ROM-MAG",
+        "RXS-MAG"
+      ],
+      "observations": [
+        {
+          "sourceId": "starlite",
+          "page": null,
+          "capacity": null
+        },
+        {
+          "sourceId": "starlite",
+          "page": null,
+          "capacity": null
+        }
+      ],
+      "accommodationProfiles": []
+    },
+    {
+      "code": "FC-M5",
+      "name": "MV Fast Cat M5",
+      "operator": "FastCat",
+      "passengerCapacity": 289,
+      "isActive": true,
+      "capacityStatus": "published reference capacity",
+      "publishedCapacities": [
+        289
+      ],
+      "routes": [
+        "BTG-CAL",
+        "CAL-BTG"
+      ],
+      "observations": [
+        {
+          "sourceId": "marina",
+          "page": 1,
+          "capacity": 289,
+          "route": "BTG-CAL"
+        }
+      ],
+      "accommodationProfiles": [
+        {
+          "operator": "FastCat",
+          "routeCodes": [
+            "BTG-CAL",
+            "CAL-BTG",
+            "BUL-CAT",
+            "CAT-BUL"
+          ],
+          "classes": [
+            "Economy",
+            "Premium Economy",
+            "Business Class"
+          ],
+          "sourceId": "fastcatClasses",
+          "capacity": null,
+          "surcharge": null,
+          "status": "allocation-required",
+          "scope": "operator-route; availability depends on the assigned vessel"
+        }
+      ]
+    },
+    {
+      "code": "FC-M15",
+      "name": "MV Fast Cat M15",
+      "operator": "FastCat",
+      "passengerCapacity": 330,
+      "isActive": true,
+      "capacityStatus": "published reference capacity",
+      "publishedCapacities": [
+        330
+      ],
+      "routes": [
+        "BTG-CAL",
+        "CAL-BTG"
+      ],
+      "observations": [
+        {
+          "sourceId": "marina",
+          "page": 1,
+          "capacity": 330,
+          "route": "BTG-CAL"
+        }
+      ],
+      "accommodationProfiles": [
+        {
+          "operator": "FastCat",
+          "routeCodes": [
+            "BTG-CAL",
+            "CAL-BTG",
+            "BUL-CAT",
+            "CAT-BUL"
+          ],
+          "classes": [
+            "Economy",
+            "Premium Economy",
+            "Business Class"
+          ],
+          "sourceId": "fastcatClasses",
+          "capacity": null,
+          "surcharge": null,
+          "status": "allocation-required",
+          "scope": "operator-route; availability depends on the assigned vessel"
+        }
+      ]
+    },
+    {
+      "code": "FC-M12",
+      "name": "MV Fast Cat M12",
+      "operator": "FastCat",
+      "passengerCapacity": 350,
+      "isActive": true,
+      "capacityStatus": "published reference capacity",
+      "publishedCapacities": [
+        350
+      ],
+      "routes": [
+        "BTG-CAL",
+        "CAL-BTG"
+      ],
+      "observations": [
+        {
+          "sourceId": "marina",
+          "page": 1,
+          "capacity": 350,
+          "route": "BTG-CAL"
+        }
+      ],
+      "accommodationProfiles": [
+        {
+          "operator": "FastCat",
+          "routeCodes": [
+            "BTG-CAL",
+            "CAL-BTG",
+            "BUL-CAT",
+            "CAT-BUL"
+          ],
+          "classes": [
+            "Economy",
+            "Premium Economy",
+            "Business Class"
+          ],
+          "sourceId": "fastcatClasses",
+          "capacity": null,
+          "surcharge": null,
+          "status": "allocation-required",
+          "scope": "operator-route; availability depends on the assigned vessel"
+        }
+      ]
+    },
+    {
+      "code": "FC-M8",
+      "name": "MV Fast Cat M8",
+      "operator": "FastCat",
+      "passengerCapacity": 275,
+      "isActive": false,
+      "capacityStatus": "published reference capacity",
+      "publishedCapacities": [
+        275
+      ],
+      "routes": [
+        "BUL-CAT",
+        "CAT-BUL"
+      ],
+      "observations": [
+        {
+          "sourceId": "marina",
+          "page": 5,
+          "capacity": 275,
+          "route": "BUL-CAT"
+        }
+      ],
+      "accommodationProfiles": [
+        {
+          "operator": "FastCat",
+          "routeCodes": [
+            "BTG-CAL",
+            "CAL-BTG",
+            "BUL-CAT",
+            "CAT-BUL"
+          ],
+          "classes": [
+            "Economy",
+            "Premium Economy",
+            "Business Class"
+          ],
+          "sourceId": "fastcatClasses",
+          "capacity": null,
+          "surcharge": null,
+          "status": "allocation-required",
+          "scope": "operator-route; availability depends on the assigned vessel"
+        }
+      ]
+    },
+    {
+      "code": "OJ-3",
+      "name": "MV Ocean Jet 3",
+      "operator": "OceanJet",
+      "passengerCapacity": 323,
+      "isActive": false,
+      "capacityStatus": "published reference capacity",
+      "publishedCapacities": [
+        323
+      ],
+      "routes": [
+        "BTG-CAL",
+        "CAL-BTG"
+      ],
+      "observations": [
+        {
+          "sourceId": "marina",
+          "page": 2,
+          "capacity": 323,
+          "route": "BTG-CAL"
+        }
+      ],
+      "serviceNote": "Under preventive maintenance in the March 2026 MARINA matrix; confirm return to service.",
+      "accommodationProfiles": [
+        {
+          "operator": "OceanJet",
+          "routeCodes": [
+            "BTG-CAL",
+            "CAL-BTG"
+          ],
+          "classes": [
+            "Open Air",
+            "Tourist Class",
+            "Business Class"
+          ],
+          "sourceId": "oceanjetClasses",
+          "capacity": null,
+          "surcharge": null,
+          "status": "allocation-required",
+          "scope": "operator-route; availability depends on the assigned vessel"
+        }
+      ]
+    },
+    {
+      "code": "OJ-5",
+      "name": "MV Ocean Jet 5",
+      "operator": "OceanJet",
+      "passengerCapacity": 319,
+      "isActive": true,
+      "capacityStatus": "published reference capacity",
+      "publishedCapacities": [
+        319
+      ],
+      "routes": [
+        "BTG-CAL",
+        "CAL-BTG"
+      ],
+      "observations": [
+        {
+          "sourceId": "marina",
+          "page": 2,
+          "capacity": 319,
+          "route": "BTG-CAL"
+        }
+      ],
+      "accommodationProfiles": [
+        {
+          "operator": "OceanJet",
+          "routeCodes": [
+            "BTG-CAL",
+            "CAL-BTG"
+          ],
+          "classes": [
+            "Open Air",
+            "Tourist Class",
+            "Business Class"
+          ],
+          "sourceId": "oceanjetClasses",
+          "capacity": null,
+          "surcharge": null,
+          "status": "allocation-required",
+          "scope": "operator-route; availability depends on the assigned vessel"
+        }
+      ]
+    },
+    {
+      "code": "SC-ST-URIEL",
+      "name": "MV St. Uriel",
+      "operator": "SuperCat",
+      "passengerCapacity": 292,
+      "isActive": true,
+      "capacityStatus": "published reference capacity",
+      "publishedCapacities": [
+        292
+      ],
+      "routes": [
+        "BTG-CAL",
+        "CAL-BTG"
+      ],
+      "observations": [
+        {
+          "sourceId": "marina",
+          "page": 2,
+          "capacity": 292,
+          "route": "BTG-CAL"
+        }
+      ],
+      "accommodationProfiles": [
+        {
+          "operator": "SuperCat",
+          "routeCodes": [
+            "BTG-CAL",
+            "CAL-BTG"
+          ],
+          "classes": [
+            "Economy (Open Air)",
+            "Tourist Class",
+            "Business Class"
+          ],
+          "sourceId": "supercatSchedules",
+          "capacity": null,
+          "surcharge": null,
+          "status": "allocation-required",
+          "scope": "operator-route; availability depends on the assigned vessel"
+        }
+      ]
+    },
+    {
+      "code": "SC-ST-BRAQUIEL",
+      "name": "MV St. Braquiel",
+      "operator": "SuperCat",
+      "passengerCapacity": 247,
+      "isActive": true,
+      "capacityStatus": "published reference capacity",
+      "publishedCapacities": [
+        247
+      ],
+      "routes": [
+        "BTG-CAL",
+        "CAL-BTG"
+      ],
+      "observations": [
+        {
+          "sourceId": "marina",
+          "page": 2,
+          "capacity": 247,
+          "route": "BTG-CAL"
+        }
+      ],
+      "accommodationProfiles": [
+        {
+          "operator": "SuperCat",
+          "routeCodes": [
+            "BTG-CAL",
+            "CAL-BTG"
+          ],
+          "classes": [
+            "Economy (Open Air)",
+            "Tourist Class",
+            "Business Class"
+          ],
+          "sourceId": "supercatSchedules",
+          "capacity": null,
+          "surcharge": null,
+          "status": "allocation-required",
+          "scope": "operator-route; availability depends on the assigned vessel"
+        }
+      ]
+    },
+    {
+      "code": "BESTA-BALENO",
+      "name": "MV Baleno",
+      "operator": "Besta Shipping Lines",
+      "passengerCapacity": null,
+      "isActive": false,
+      "capacityStatus": "conflicting published capacities",
+      "publishedCapacities": [
+        820,
+        498
+      ],
+      "routes": [
+        "BTG-CAL",
+        "CAL-BTG",
+        "BTG-ADI",
+        "ADI-BTG"
+      ],
+      "observations": [
+        {
+          "sourceId": "marina",
+          "page": 1,
+          "capacity": null,
+          "route": "BTG-CAL"
+        },
+        {
+          "sourceId": "marina",
+          "page": 3,
+          "capacity": null,
+          "route": "BTG-ADI"
+        }
+      ],
+      "accommodationProfiles": []
+    },
+    {
+      "code": "BESTA-FIVE",
+      "name": "MV Baleno Five",
+      "operator": "Besta Shipping Lines",
+      "passengerCapacity": 288,
+      "isActive": true,
+      "capacityStatus": "published reference capacity",
+      "publishedCapacities": [
+        288
+      ],
+      "routes": [
+        "BTG-CAL",
+        "CAL-BTG",
+        "BTG-ADI",
+        "ADI-BTG"
+      ],
+      "observations": [
+        {
+          "sourceId": "marina",
+          "page": 1,
+          "capacity": 288,
+          "route": "BTG-CAL"
+        },
+        {
+          "sourceId": "marina",
+          "page": 3,
+          "capacity": 288,
+          "route": "BTG-ADI"
+        }
+      ],
+      "accommodationProfiles": []
+    },
+    {
+      "code": "BESTA-OTSO",
+      "name": "MV Baleno Otso",
+      "operator": "Besta Shipping Lines",
+      "passengerCapacity": 288,
+      "isActive": true,
+      "capacityStatus": "published reference capacity",
+      "publishedCapacities": [
+        288
+      ],
+      "routes": [
+        "BTG-CAL",
+        "CAL-BTG",
+        "BTG-ADI",
+        "ADI-BTG"
+      ],
+      "observations": [
+        {
+          "sourceId": "marina",
+          "page": 1,
+          "capacity": 288,
+          "route": "BTG-CAL"
+        },
+        {
+          "sourceId": "marina",
+          "page": 3,
+          "capacity": 288,
+          "route": "BTG-ADI"
+        }
+      ],
+      "accommodationProfiles": []
+    },
+    {
+      "code": "ORANGE-RORO-MASTER-2",
+      "name": "MV RORO Master 2",
+      "operator": "Orange Navigation",
+      "passengerCapacity": 800,
+      "isActive": false,
+      "capacityStatus": "published reference capacity",
+      "publishedCapacities": [
+        800
+      ],
+      "routes": [
+        "BTG-ADI",
+        "ADI-BTG"
+      ],
+      "observations": [
+        {
+          "sourceId": "marina",
+          "page": 3,
+          "capacity": 800,
+          "route": "BTG-ADI"
+        }
+      ],
+      "accommodationProfiles": []
+    },
+    {
+      "code": "ORANGE-RORO-MASTER-3",
+      "name": "MV RORO Master 3",
+      "operator": "Orange Navigation",
+      "passengerCapacity": 800,
+      "isActive": false,
+      "capacityStatus": "published reference capacity",
+      "publishedCapacities": [
+        800
+      ],
+      "routes": [
+        "BTG-ADI",
+        "ADI-BTG"
+      ],
+      "observations": [
+        {
+          "sourceId": "marina",
+          "page": 3,
+          "capacity": 800,
+          "route": "BTG-ADI"
+        }
+      ],
+      "accommodationProfiles": []
+    },
+    {
+      "code": "ATZ-STAR-SAN-CARLOS",
+      "name": "MV Star San Carlos",
+      "operator": "Atienza Inter-Island Ferries",
+      "passengerCapacity": 182,
+      "isActive": false,
+      "capacityStatus": "published reference capacity",
+      "publishedCapacities": [
+        182
+      ],
+      "routes": [
+        "BTG-PGA",
+        "PGA-BTG"
+      ],
+      "observations": [
+        {
+          "sourceId": "marina",
+          "page": 2,
+          "capacity": 182,
+          "route": "BTG-PGA"
+        }
+      ],
+      "accommodationProfiles": []
+    },
+    {
+      "code": "ATZ-MAY-LILIES",
+      "name": "MV May Lilies",
+      "operator": "Atienza Inter-Island Ferries",
+      "passengerCapacity": 278,
+      "isActive": false,
+      "capacityStatus": "published reference capacity",
+      "publishedCapacities": [
+        278
+      ],
+      "routes": [
+        "BTG-PGA",
+        "PGA-BTG"
+      ],
+      "observations": [
+        {
+          "sourceId": "marina",
+          "page": 2,
+          "capacity": 278,
+          "route": "BTG-PGA"
+        }
+      ],
+      "accommodationProfiles": []
+    }
+  ],
+  "schedules": [
+    {
+      "operator": "FastCat",
+      "routeCode": "BTG-CAL",
+      "days": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6
+      ],
+      "departureTimes": [
+        "01:00",
+        "06:00",
+        "09:00",
+        "13:00",
+        "15:00",
+        "21:00"
+      ],
+      "durationMinutes": 120,
+      "timezone": "Asia/Manila",
+      "sourceId": "fastcatSchedules",
+      "published": "2026-08",
+      "status": "published-reference"
+    },
+    {
+      "operator": "FastCat",
+      "routeCode": "CAL-BTG",
+      "days": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6
+      ],
+      "departureTimes": [
+        "00:00",
+        "04:00",
+        "10:00",
+        "12:00",
+        "16:00",
+        "21:00"
+      ],
+      "durationMinutes": 120,
+      "timezone": "Asia/Manila",
+      "sourceId": "fastcatSchedules",
+      "published": "2026-08",
+      "status": "published-reference"
+    },
+    {
+      "operator": "FastCat",
+      "routeCode": "BUL-CAT",
+      "days": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6
+      ],
+      "departureTimes": [
+        "10:00",
+        "22:00"
+      ],
+      "durationMinutes": 210,
+      "timezone": "Asia/Manila",
+      "sourceId": "fastcatSchedules",
+      "published": "2026-08",
+      "status": "published-reference"
+    },
+    {
+      "operator": "FastCat",
+      "routeCode": "CAT-BUL",
+      "days": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6
+      ],
+      "departureTimes": [
+        "03:00",
+        "15:00"
+      ],
+      "durationMinutes": 210,
+      "timezone": "Asia/Manila",
+      "sourceId": "fastcatSchedules",
+      "published": "2026-08",
+      "status": "published-reference"
+    },
+    {
+      "operator": "Starlite Ferries",
+      "routeCode": "BTG-CAL",
+      "days": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6
+      ],
+      "departureTimes": [
+        "01:00",
+        "03:00",
+        "05:00",
+        "07:00",
+        "09:00",
+        "11:00",
+        "13:00",
+        "15:00",
+        "17:00",
+        "19:00",
+        "21:00",
+        "23:00"
+      ],
+      "durationMinutes": null,
+      "timezone": "Asia/Manila",
+      "sourceId": "starliteSchedules",
+      "published": "2025",
+      "status": "published-reference"
+    },
+    {
+      "operator": "Starlite Ferries",
+      "routeCode": "CAL-BTG",
+      "days": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6
+      ],
+      "departureTimes": [
+        "01:00",
+        "03:00",
+        "05:00",
+        "07:00",
+        "09:00",
+        "11:00",
+        "13:00",
+        "15:00",
+        "17:00",
+        "19:00",
+        "21:00",
+        "23:00"
+      ],
+      "durationMinutes": null,
+      "timezone": "Asia/Manila",
+      "sourceId": "starliteSchedules",
+      "published": "2025",
+      "status": "published-reference"
+    },
+    {
+      "operator": "SuperCat",
+      "routeCode": "BTG-CAL",
+      "days": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6
+      ],
+      "departureTimes": [
+        "09:30",
+        "13:30",
+        "17:30"
+      ],
+      "durationMinutes": null,
+      "timezone": "Asia/Manila",
+      "sourceId": "supercatSchedules",
+      "published": null,
+      "status": "published-reference"
+    },
+    {
+      "operator": "SuperCat",
+      "routeCode": "CAL-BTG",
+      "days": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6
+      ],
+      "departureTimes": [
+        "07:30",
+        "11:30",
+        "17:30"
+      ],
+      "durationMinutes": null,
+      "timezone": "Asia/Manila",
+      "sourceId": "supercatSchedules",
+      "published": null,
+      "status": "published-reference"
+    },
+    {
+      "operator": "Starlite Ferries",
+      "routeCode": "ROX-CAT",
+      "days": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6
+      ],
+      "departureTimes": [
+        "02:00",
+        "06:00",
+        "11:00",
+        "14:00",
+        "18:00",
+        "23:00"
+      ],
+      "durationMinutes": null,
+      "timezone": "Asia/Manila",
+      "sourceId": "starliteSchedules",
+      "published": "2025",
+      "status": "published-reference"
+    },
+    {
+      "operator": "Starlite Ferries",
+      "routeCode": "CAT-ROX",
+      "days": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6
+      ],
+      "departureTimes": [
+        "01:00",
+        "05:00",
+        "09:00",
+        "12:00",
+        "16:00",
+        "20:00"
+      ],
+      "durationMinutes": null,
+      "timezone": "Asia/Manila",
+      "sourceId": "starliteSchedules",
+      "published": "2025",
+      "status": "published-reference"
+    }
+  ],
+  "scheduleNotes": {
+    "FastCat": "Arrival estimates use the published 2-hour duration. The source’s 09:00 AM → 11:00 PM entry is inconsistent and is not copied as an arrival time.",
+    "Starlite Ferries": "The official page is labelled 2025. Reconfirm these published departures before operating a trip.",
+    "SuperCat": "Published operator departures are subject to change; confirm vessel assignment and travel time.",
+    "Montenegro Shipping Lines": "Schedules are date-specific in the official booking lookup. No fixed daily times were verified.",
+    "OceanJet": "No current fixed daily Batangas–Calapan timetable was verified. Ocean Jet 3 is marked under maintenance in the MARINA matrix."
+  },
+  "accommodationProfiles": [
+    {
+      "operator": "FastCat",
+      "routeCodes": [
+        "BTG-CAL",
+        "CAL-BTG",
+        "BUL-CAT",
+        "CAT-BUL"
+      ],
+      "classes": [
+        "Economy",
+        "Premium Economy",
+        "Business Class"
+      ],
+      "sourceId": "fastcatClasses",
+      "capacity": null,
+      "surcharge": null,
+      "status": "allocation-required",
+      "scope": "operator-route; availability depends on the assigned vessel"
+    },
+    {
+      "operator": "Starlite Ferries",
+      "routeCodes": [
+        "BTG-CAL",
+        "CAL-BTG",
+        "ROX-CAT",
+        "CAT-ROX"
+      ],
+      "classes": [
+        "Economy",
+        "Tourist Class",
+        "Business Class"
+      ],
+      "sourceId": "starliteSchedules",
+      "capacity": null,
+      "surcharge": null,
+      "status": "allocation-required",
+      "scope": "operator-route; availability depends on the assigned vessel"
+    },
+    {
+      "operator": "SuperCat",
+      "routeCodes": [
+        "BTG-CAL",
+        "CAL-BTG"
+      ],
+      "classes": [
+        "Economy (Open Air)",
+        "Tourist Class",
+        "Business Class"
+      ],
+      "sourceId": "supercatSchedules",
+      "capacity": null,
+      "surcharge": null,
+      "status": "allocation-required",
+      "scope": "operator-route; availability depends on the assigned vessel"
+    },
+    {
+      "operator": "OceanJet",
+      "routeCodes": [
+        "BTG-CAL",
+        "CAL-BTG"
+      ],
+      "classes": [
+        "Open Air",
+        "Tourist Class",
+        "Business Class"
+      ],
+      "sourceId": "oceanjetClasses",
+      "capacity": null,
+      "surcharge": null,
+      "status": "allocation-required",
+      "scope": "operator-route; availability depends on the assigned vessel"
+    }
+  ]
+}

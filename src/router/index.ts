@@ -7,6 +7,7 @@ import { resolveAccountRole, roleDestination } from "../data/sessionRole";
 import { databaseRequestError } from "../data/databaseErrors";
 
 const routes: Array<RouteRecordRaw> = [
+  { path: '/port-display', component: () => import('../views/public/PortDisplayPage.vue') },
   { path: '/verify-email', component: () => import('../views/auth/VerifyEmailPage.vue') },
   {
     path: "/travelers",
@@ -278,13 +279,22 @@ router.beforeEach(async (to) => {
     return role || protectedPassenger.includes(path)
       ? { path: "/login", query: { redirect: to.fullPath } }
       : true;
+  if (path === '/login' || path === '/register') {
+    await auth.ready();
+    if (!auth.currentUser) return true;
+    try {
+      const token = await auth.currentUser.getRoleSession(true);
+      return roleDestination(resolveAccountRole(token.claims.role));
+    } catch {
+      // Keep the sign-in screen available to explain an invalid/expired session.
+      return true;
+    }
+  }
   if (
-    path === "/login" ||
-    path === "/register" ||
     path === "/" ||
     path === "/reset-password" ||
     path === "/verify-email" ||
-    path === "/privacy" || path === "/trips" || path === "/help"
+    path === "/privacy" || path === "/trips" || path === "/help" || path === "/port-display"
   )
     return true;
   const authInstance = auth;

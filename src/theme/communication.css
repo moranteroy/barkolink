@@ -19,7 +19,7 @@
 .communication-dialog { display:flex; flex-direction:column; height:auto; max-height:calc(100dvh - 32px); overflow:hidden; background:var(--surface); color:var(--ink); gap:0; }
 .communication-dialog-heading { display:flex; align-items:center; justify-content:space-between; gap:18px; padding:22px; border-bottom:1px solid var(--line); flex:none; }
 .communication-dialog-heading > button { display:grid; place-items:center; width:36px; height:36px; padding:0; flex:none; background:var(--surface-soft); border:1px solid var(--line); border-radius:10px; color:var(--muted); cursor:pointer; }
-.communication-dialog-heading ion-icon { font-size:20px; }
+.communication-dialog-heading .app-icon { font-size:20px; }
 .communication-form { display:flex; flex-direction:column; flex:1; min-height:0; overflow:hidden; margin:0; }
 .communication-scroll { flex:1; min-height:0; overflow-y:auto; overscroll-behavior:contain; padding:22px; }
 .communication-scroll fieldset { border:0; padding:0; margin:0; min-width:0; display:grid; gap:18px; }

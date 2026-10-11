@@ -106,8 +106,8 @@ try {
       assert.equal(await page.evaluate(() => document.documentElement.dataset.theme), 'light')
       assert.equal(await page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--page-background').trim()), 'hsl(220 29% 97%)')
       if (['/admin/audit-logs','/staff/ticketing','/staff/boarding','/home'].includes(path)) {
-        const selector=role==='ADMIN' ? '.sidebar nav ion-icon' : role==='PASSENGER' ? '.bottom-nav ion-icon' : '.staff-navigation ion-icon'
-        const icons=await page.locator(selector).evaluateAll(nodes=>nodes.map(node=>node.icon))
+        const selector=role==='ADMIN' ? '.sidebar nav a svg.app-icon' : role==='PASSENGER' ? '.bottom-nav a svg.app-icon' : '.staff-navigation svg.app-icon'
+        const icons=await page.locator(selector).evaluateAll(nodes=>nodes.map(node=>node.innerHTML))
         assert.ok(icons.length>0,`${role}: navigation icons rendered`)
         assert.equal(new Set(icons).size,icons.length,`${role}: each navigation destination has a distinct icon`)
         const brand=role==='PASSENGER' ? '.passenger-header .brand-mark' : 'aside .brand-mark'
@@ -238,7 +238,7 @@ try {
       }
       if (path === '/admin/staff-ports') {
         const panel = page.locator('.staff-port-assignments')
-        const navIcons = await Promise.all(['staff-ports', 'ports', 'vouchers', 'fares'].map(key => page.locator(`.sidebar a[href="/admin/${key}"] ion-icon`).evaluate(el => el.icon)))
+        const navIcons = await Promise.all(['staff-ports', 'ports', 'vouchers', 'fares'].map(key => page.locator(`.sidebar a[href="/admin/${key}"] svg.app-icon`).evaluate(el => el.innerHTML)))
         assert.equal(new Set(navIcons).size, 4, 'Assignment, port, voucher and fare icons must be distinct')
         await panel.getByLabel('Assigned port for Anna User', { exact: true }).waitFor()
         assert.equal(await panel.getByText('zelda@example.invalid', { exact: true }).count(),0)

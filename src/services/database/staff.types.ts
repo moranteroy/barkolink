@@ -3,6 +3,7 @@ import type {
   CustomDiscountFare,
 } from "../../data/fareSettings";
 import type { Accommodation } from "./workspaces";
+import type { ReferenceMetadata, VesselRouteReference } from '../../data/ferryReferences';
 // Application data contracts retained during the PostgreSQL migration.
 export type TimestampString = string;
 export type UUIDString = string;
@@ -70,6 +71,8 @@ export interface AdminCreateSailingData {
 }
 
 export interface AdminCreateSailingVariables {
+  boardingAt?: TimestampString;
+  boardingTimeSource?: string;
   code: string;
   originPortId: UUIDString;
   destinationPortId: UUIDString;
@@ -219,6 +222,7 @@ export interface AdminPassengerRecordsData {
 
 export interface AdminPortsData {
   ports: ({
+    referenceMetadata?: ReferenceMetadata | null;
     id: UUIDString;
     code: string;
     name: string;
@@ -250,6 +254,8 @@ export interface AdminRescheduleSailingData {
 }
 
 export interface AdminRescheduleSailingVariables {
+  boardingAt?: TimestampString;
+  boardingTimeSource?: string;
   code: string;
   departureAt: TimestampString;
   arrivalAt: TimestampString;
@@ -272,6 +278,8 @@ export interface AdminSailingBookingsVariables {
 export interface AdminSailingsData {
   totalCount?: number;
   sailings: ({
+    boardingAt?: TimestampString | null;
+    boardingTimeSource?: string | null;
     code: string;
     departureAt: TimestampString;
     arrivalAt: TimestampString;
@@ -376,6 +384,8 @@ export interface AdminUpdateUnbookedSailingData {
 }
 
 export interface AdminUpdateUnbookedSailingVariables {
+  boardingAt?: TimestampString;
+  boardingTimeSource?: string;
   code: string;
   originPortId: UUIDString;
   destinationPortId: UUIDString;
@@ -420,10 +430,12 @@ export interface AdminUsersData {
 
 export interface AdminVesselsData {
   vessels: ({
+    referenceMetadata?: ReferenceMetadata | null;
+    routes?: VesselRouteReference[];
     id: UUIDString;
     code: string;
     name: string;
-    passengerCapacity: number;
+    passengerCapacity: number | null;
     isActive: boolean;
   } & Vessel_Key)[];
 }

@@ -1,6 +1,7 @@
 import fs from 'node:fs'
 import { fixtureChecks } from './test-data-database.mjs'
 import { demoPassengerDetailsSql } from './demo-passenger-details.mjs'
+import { referenceCatalogSql } from './reference-catalog.mjs'
 
 export const codes = {
   'TEST-BOARDING': 'TRP2026-1006001', 'TEST-PAYMENT': 'TRP2026-1006002', 'TEST-DELAYED': 'TRP2026-1006003',
@@ -91,7 +92,7 @@ export function buildDemoSeed() {
 ` + sql.slice(savedEnd)
   sql = remapCodes(sql)
   sql = sql.replace("'dataset','TEST'", "'dataset','BARKOLINK-DEMO'")
-  return sql + '\n' + demoPassengerDetailsSql
+  return sql + '\n' + demoPassengerDetailsSql + '\n' + referenceCatalogSql()
 }
 
 if (process.argv[2] === 'generate') {

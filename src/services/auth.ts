@@ -60,43 +60,67 @@ export function requireAuth() {
   return auth;
 }
 
+// Serialize account creation/sign-in across tabs before checking shared storage.
+// The SDK's own lock only protects its individual storage operations.
+let accountAccess = Promise.resolve();
+async function withAccountAccess<T>(action: () => Promise<T>): Promise<T> {
+  if (navigator.locks) return await navigator.locks.request('barkolink-account-access', action);
+  const next = accountAccess.then(action, action);
+  accountAccess = next.then(() => undefined, () => undefined);
+  return next;
+}
+async function requireSignedOut() {
+  const { data, error } = await requireSupabase().auth.getSession();
+  if (error) throw error;
+  if (data.session) {
+    current.value = accountUser(data.session.user);
+    throw Object.assign(new Error('This browser is already signed in. Log out of the current account before signing in or registering another account.'), { code: 'browser_already_signed_in' });
+  }
+}
+
 export async function registerAccount(
   _auth: NonNullable<typeof auth>,
   email: string,
   password: string,
   fullName: string,
 ) {
-  const { data, error } = await requireSupabase().auth.signUp({
-    email: email.trim(),
-    password,
-    options: {
-      data: { fullName },
-      emailRedirectTo: `${location.origin}/login`,
-    },
+  return withAccountAccess(async () => {
+    await requireSignedOut();
+    const { data, error } = await requireSupabase().auth.signUp({
+      email: email.trim(),
+      password,
+      options: {
+        data: { fullName },
+        emailRedirectTo: `${location.origin}/login`,
+      },
+    });
+    if (error) throw error;
+    if (!data.user) throw new Error("Could not register the account.");
+    if (!data.session && data.user.identities?.length === 0) {
+      throw Object.assign(new Error('An account already uses this email. Sign in or use Forgot password.'), { code: 'user_already_exists' });
+    }
+    current.value = data.session ? accountUser(data.user) : null;
+    return { user: accountUser(data.user), session: data.session };
   });
-  if (error) throw error;
-  if (!data.user) throw new Error("Could not register the account.");
-  if (!data.session && data.user.identities?.length === 0) {
-    throw Object.assign(new Error('An account already uses this email. Sign in or use Forgot password.'), { code: 'user_already_exists' });
-  }
-  current.value = data.session ? accountUser(data.user) : null;
-  return { user: accountUser(data.user), session: data.session };
 }
 export async function signInWithPassword(
   _auth: NonNullable<typeof auth>,
   email: string,
   password: string,
 ) {
-  const { data, error } = await requireSupabase().auth.signInWithPassword({
-    email: email.trim(),
-    password,
+  return withAccountAccess(async () => {
+    await requireSignedOut();
+    const { data, error } = await requireSupabase().auth.signInWithPassword({
+      email: email.trim(),
+      password,
+    });
+    if (error) throw error;
+    current.value = accountUser(data.user);
+    return { user: current.value };
   });
-  if (error) throw error;
-  current.value = accountUser(data.user);
-  return { user: current.value };
 }
 export async function signOut(_auth: NonNullable<typeof auth>) {
-  const { error } = await requireSupabase().auth.signOut();
+  const { error } = await requireSupabase().auth.signOut({ scope: 'local' });
   if (error) throw error;
   current.value = null;
 }
@@ -164,7 +188,9 @@ export async function reauthenticateWithCredential(
     if (error || data.user?.id !== user.uid)
       throw error || new Error("Current password is incorrect.");
   } finally {
-    await isolated.auth.signOut();
+    // End only the password-check session; the default global scope also
+    // revokes the user's active sessions on this and other devices.
+    await isolated.auth.signOut({ scope: 'local' });
   }
 }
 export async function updatePassword(_user: AccountUser, password: string) {

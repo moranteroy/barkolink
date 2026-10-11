@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 import { mount, flushPromises } from '@vue/test-utils'
-import { googleMapDirections, googleMapEmbed, portCoordinates } from '../../src/data/portMaps'
+import { googleMapDirections, googleMapEmbed, googleMapSearch, portCoordinates } from '../../src/data/portMaps'
 import PortLocationMap from '../../src/components/shared/PortLocationMap.vue'
 
 vi.mock('@ionic/vue', () => ({ IonIcon: { template: '<span />' } }))
@@ -15,6 +15,12 @@ const ports = [
   { id: 'b', name: 'Calapan Port', city: 'Calapan' },
 ]
 describe('Port map integration', () => {
+  it('opens the Maps search endpoint with the encoded terminal query', () => {
+    const url = new URL(googleMapSearch({ id: 'x', name: 'Port & Wharf #1', city: 'City' }))
+    expect(url.pathname).toBe('/maps/search/')
+    expect(url.searchParams.get('api')).toBe('1')
+    expect(url.searchParams.get('query')).toBe('Port & Wharf #1, City, Philippines')
+  })
   it('provides a keyless embed and directions without requesting a current location', () => {
     const embed = new URL(googleMapEmbed(ports[0]))
     expect(embed.hostname).toBe('maps.google.com')

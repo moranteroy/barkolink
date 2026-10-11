@@ -12,7 +12,7 @@
           <StaffWorkspaceHeader navigation :menu-open="menuOpen" @toggle-menu="menuOpen = !menuOpen" />
           <main class="walk-in-page">
         <router-link class="back-to-ticketing" to="/staff/ticketing">
-          <ion-icon :icon="gridOutline" aria-hidden="true" />
+          <AppIcon :icon="gridOutline" aria-hidden="true" />
           Back to ticketing
         </router-link>
 
@@ -28,7 +28,7 @@
               }}
             </p>
           </div>
-          <router-link class="return-to-queue" to="/staff/ticketing/bookings"><ion-icon :icon="ticketOutline" aria-hidden="true" /> Booking queue</router-link>
+          <router-link class="return-to-queue" to="/staff/ticketing/bookings"><AppIcon :icon="ticketOutline" aria-hidden="true" /> Booking queue</router-link>
         </section>
 
         <StaffPortRequired v-if="portBlocked" />
@@ -36,7 +36,7 @@
         <div v-if="issued" class="receipt" aria-live="polite">
           <div class="receipt-top">
             <span class="success-icon"
-              ><ion-icon :icon="checkmarkCircleOutline"
+              ><AppIcon :icon="checkmarkCircleOutline"
             /></span>
             <div>
               <p class="eyebrow">COUNTER SALE COMPLETE</p>
@@ -46,11 +46,11 @@
           </div>
           <div class="receipt-body">
             <div class="receipt-route">
-              <span class="route-icon"><ion-icon :icon="boatOutline" /></span>
+              <span class="route-icon"><AppIcon :icon="boatOutline" /></span>
               <div>
                 <small>SAILING</small
                 ><strong
-                  >{{ issued.from }} <ion-icon :icon="arrowForwardOutline" />
+                  >{{ issued.from }} <AppIcon :icon="arrowForwardOutline" />
                   {{ issued.to }}</strong
                 ><span>{{ issued.departure }}</span>
               </div>
@@ -74,17 +74,17 @@
               </div>
             </dl>
             <p class="receipt-note">
-              <ion-icon :icon="informationCircleOutline" /> Show this receipt
+              <AppIcon :icon="informationCircleOutline" /> Show this receipt
               and a valid ID to boarding staff.
             </p>
           </div>
           <div class="receipt-actions">
-            <button type="button" class="print-button" @click="printReceipt">
-              <ion-icon :icon="printOutline" /> Print receipt</button
+            <button data-slot="button" data-variant="outline" data-size="default" type="button" class="print-button" @click="printReceipt">
+              <AppIcon :icon="printOutline" /> Print receipt</button
             ><button type="button" class="secondary-button" @click="newTicket">
               Issue another ticket</button
             ><router-link to="/staff/ticketing#queue"
-              ><ion-icon :icon="ticketOutline" aria-hidden="true" /> Back to booking queue</router-link
+              ><AppIcon :icon="ticketOutline" aria-hidden="true" /> Back to booking queue</router-link
             >
           </div>
         </div>
@@ -113,7 +113,7 @@
               <div class="form-section">
                 <div class="card-heading">
                   <span class="step-number"
-                    ><ion-icon :icon="boatOutline"
+                    ><AppIcon :icon="boatOutline"
                   /></span>
                   <div>
                     <small>STEP 01</small>
@@ -154,7 +154,7 @@
                   :passenger-count="1"
                 />
                 <div v-if="selectedSailing" class="selected-sailing">
-                  <ion-icon :icon="checkmarkCircleOutline" />
+                  <AppIcon :icon="checkmarkCircleOutline" />
                   <div>
                     <strong
                       >{{ selectedSailing.origin.name }} to
@@ -170,7 +170,7 @@
               <div class="form-section passenger-section">
                 <div class="card-heading">
                   <span class="step-number"
-                    ><ion-icon :icon="personOutline"
+                    ><AppIcon :icon="personOutline"
                   /></span>
                   <div>
                     <small>STEP 02</small>
@@ -256,14 +256,14 @@
                 <p v-if="errorMessage" class="error" role="alert">
                   {{ errorMessage }}
                 </p>
-                <button
+                <button data-slot="button" data-variant="default" data-size="default"
                   class="issue-button"
                   type="submit"
                   :disabled="
                     busy || !selectedSailing || !form.passengerName.trim()
                   "
                 >
-                  <ion-icon :icon="cashOutline" />
+                  <AppIcon :icon="cashOutline" />
                   {{ busy ? "Issuing ticket…" : "Review cash payment" }}
                   </button
                 ><span>Ticket is issued only after you confirm payment.</span>
@@ -274,7 +274,7 @@
             <aside class="summary-card fare-summary">
               <div class="summary-heading">
                 <span class="summary-icon"
-                  ><ion-icon :icon="receiptOutline"
+                  ><AppIcon :icon="receiptOutline"
                 /></span>
                 <div>
                   <p class="eyebrow">COUNTER SUMMARY</p>
@@ -316,7 +316,7 @@
                 ><strong>PHP {{ payable.toLocaleString() }}</strong>
               </div>
               <p class="summary-note">
-                <ion-icon :icon="informationCircleOutline" /> Confirm the cash
+                <AppIcon :icon="informationCircleOutline" /> Confirm the cash
                 amount before issuing the ticket.
               </p>
             </aside>
@@ -329,7 +329,7 @@
             class="confirmation-card"
             @close-auto-focus="restoreConfirmationFocus"
           >
-            <span class="confirm-icon"><ion-icon :icon="cashOutline" /></span>
+            <span class="confirm-icon"><AppIcon :icon="cashOutline" /></span>
             <p class="eyebrow">FINAL CHECK</p>
             <DialogTitle as-child><h2>Confirm cash payment</h2></DialogTitle>
             <DialogDescription as-child><p>
@@ -355,7 +355,7 @@
                 @click="confirming = false"
               >
                 Go back</button
-              ><button
+              ><button data-slot="button" data-variant="default" data-size="default"
                 type="button"
                 class="issue-button"
                 :disabled="busy"
@@ -376,6 +376,7 @@
 </template>
 
 <script setup lang="ts">
+import { bookingReference } from '@/data/recordCodes';
 import StaffPortRequired from '../../../components/staff/StaffPortRequired.vue';
 import { useStaffPortGate } from '../../../composables/staffPortGate';
 const { portBlocked } = useStaffPortGate(loadSailings);
@@ -394,7 +395,8 @@ import { databaseRequestError } from "../../../data/databaseErrors";
 import { computed, reactive, ref, watch } from "vue";
 import { philippineDateKey, validBirthDate } from "../../../data/travelDate";
 import { DialogRoot, DialogOverlay, DialogContent, DialogTitle, DialogDescription } from "reka-ui";
-import { IonContent, IonIcon, IonPage, onIonViewWillEnter } from "@ionic/vue";
+import { IonContent, IonPage, onIonViewWillEnter } from "@ionic/vue";
+import AppIcon from "@/components/ui/icon/AppIcon.vue";
 import {
   arrowForwardOutline,
   boatOutline,
@@ -636,7 +638,7 @@ async function issueTicket() {
   confirming.value = false;
   busy.value = true;
   errorMessage.value = "";
-  const reference = `BL-${new Date().getFullYear()}-${crypto.randomUUID().slice(0, 8).toUpperCase()}`;
+  const reference = bookingReference();
   const guestUid = `walkin:${crypto.randomUUID()}`;
   const ticketCode = crypto.randomUUID();
   try {
@@ -750,7 +752,7 @@ function printReceipt() {
   text-transform: uppercase;
   letter-spacing: 0.05em;
 }
-.staff-label ion-icon {
+.staff-label .app-icon {
   font-size: 14px;
 }
 .queue-link {
@@ -762,7 +764,7 @@ function printReceipt() {
   font-weight: 800;
   text-decoration: none;
 }
-.queue-link ion-icon {
+.queue-link .app-icon {
   font-size: 14px;
 }
 .page-intro {
@@ -947,7 +949,7 @@ function printReceipt() {
   border-radius: 10px;
   background: var(--light-blue);
 }
-.selected-sailing > ion-icon {
+.selected-sailing > .app-icon {
   flex: none;
   margin-top: 1px;
   color: var(--ocean);
@@ -989,11 +991,11 @@ function printReceipt() {
   font-weight: 800;
   cursor: pointer;
 }
-.issue-button ion-icon,
-.print-button ion-icon {
+.issue-button .app-icon,
+.print-button .app-icon {
   font-size: 17px;
 }
-.issue-button ion-icon:last-child {
+.issue-button .app-icon:last-child {
   margin-left: auto;
 }
 .issue-button:disabled {
@@ -1101,7 +1103,7 @@ function printReceipt() {
   font-size: 10px;
   line-height: 1.45;
 }
-.summary-note ion-icon {
+.summary-note .app-icon {
   flex: none;
   color: var(--ocean);
   font-size: 15px;
@@ -1157,7 +1159,7 @@ function printReceipt() {
   background: var(--light-blue);
   color: var(--ocean);
 }
-.route-icon ion-icon {
+.route-icon .app-icon {
   width: 24px;
   height: 24px;
 }
@@ -1176,7 +1178,7 @@ function printReceipt() {
   margin: 5px 0;
   font-size: 17px;
 }
-.receipt-route strong ion-icon {
+.receipt-route strong .app-icon {
   margin: 0 5px;
   color: var(--ocean);
   font-size: 13px;
@@ -1213,7 +1215,7 @@ function printReceipt() {
   color: var(--muted);
   font-size: 11px;
 }
-.receipt-note ion-icon {
+.receipt-note .app-icon {
   color: var(--ocean);
   font-size: 16px;
 }
@@ -1443,7 +1445,7 @@ function printReceipt() {
 .page-intro { margin: 24px 0 16px; gap: 12px; }
 .page-intro h1 { font-size: 28px; margin: 5px 0; line-height: 1.3; }
 .return-to-queue { display: inline-flex; align-items: center; justify-content: center; gap: 7px; flex: none; min-height: 42px; padding: 8px 12px; border: 1px solid var(--line); border-radius: 9px; background: var(--surface); color: var(--ocean); font-size: 12px; text-decoration: none; }
-.return-to-queue ion-icon { font-size: 17px; }
+.return-to-queue .app-icon { font-size: 17px; }
 .flow-strip { margin-bottom: 16px; padding: 10px 16px; gap: 16px; border-radius: 10px; font-size: 11px; font-weight: 500; }
 .flow-strip span.active { color: var(--ocean); font-weight: 650; }
 .flow-strip span.active b { color: white; background: var(--ocean); }
@@ -1461,7 +1463,7 @@ function printReceipt() {
 .selected-sailing { padding: 9px 12px; margin-top: 10px; }
 .form-footer { padding: 16px 20px; gap: 10px; }
 .form-footer .issue-button { justify-content: center; min-height: 44px; font-size: 13px; }
-.form-footer .issue-button ion-icon { margin: 0; }
+.form-footer .issue-button .app-icon { margin: 0; }
 .fare-summary { top: 18px; }
 .summary-heading { padding: 16px; gap: 10px; }
 .summary-heading h2 { font-size: 17px; }
@@ -1475,7 +1477,7 @@ function printReceipt() {
 .summary-note { margin: 0 16px 16px; background: transparent; padding: 0; font-size: 11px; line-height: 1.6; }
 .mobile-fare { display: none; }
 .back-to-ticketing { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; margin-top: 12px; padding: 8px 12px; border: 1px solid var(--line); border-radius: 9px; background: var(--surface); color: var(--ocean); font-size: 12px; font-weight: 500; text-decoration: none; }
-.back-to-ticketing ion-icon { font-size: 17px; }
+.back-to-ticketing .app-icon { font-size: 17px; }
 .back-to-ticketing:hover { background: var(--surface-soft); }
 .back-to-ticketing + .page-intro { margin-top: 14px; }
 .confirmation-overlay { overflow-y: auto; }
