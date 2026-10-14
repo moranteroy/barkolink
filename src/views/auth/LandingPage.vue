@@ -21,6 +21,7 @@
   </IonPage>
 </template>
 <script setup lang="ts">
+import { notifyError } from '@/composables/toast';
 import { computed, onMounted, ref } from 'vue';
 import { IonContent, IonPage } from '@ionic/vue';
 import { RouterLink, useRouter } from 'vue-router';
@@ -52,7 +53,7 @@ async function loadCatalog() {
   try {
     if (!database) throw new Error('Unavailable');
     sailings.value = (await browseSailings(database)).data.sailings;
-  } catch { catalogError.value = 'Could not load upcoming routes. Please try again.'; }
+  } catch { catalogError.value = notifyError('Could not load upcoming routes. Please try again.'); }
   finally { loading.value = false; }
 }
 async function loadPorts() {
@@ -60,7 +61,7 @@ async function loadPorts() {
   try {
     if (!database) throw new Error('Unavailable');
     mapPorts.value = (await browseActivePorts(database)).data.ports;
-  } catch { portError.value = 'Port locations are temporarily unavailable.'; }
+  } catch { portError.value = notifyError('Port locations are temporarily unavailable.'); }
 }
 function scrollTo(id: string) {
   const element = document.getElementById(id);

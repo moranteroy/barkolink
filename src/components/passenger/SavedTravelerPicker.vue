@@ -48,7 +48,7 @@ function select(event: Event) {
   display: grid;
   gap: 6px;
   margin: 12px 0;
-  font-size: 12px;
+  font-size: var(--text-label);
   font-weight: 700;
   color: var(--ocean);
 }

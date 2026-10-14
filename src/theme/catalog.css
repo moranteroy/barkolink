@@ -11,7 +11,7 @@
 }
 .catalog-tools p {
   color: var(--muted);
-  font-size: 12px;
+  font-size: var(--text-label);
   line-height: 1.7;
   margin: 0;
   max-width: 700px;
@@ -23,7 +23,7 @@
   background: var(--surface);
   color: var(--ocean);
   font-weight: 600;
-  font-size: 12px;
+  font-size: var(--text-label);
   cursor: pointer;
 }
 .catalog-panel button:disabled {
@@ -50,7 +50,7 @@
 .catalog-form label {
   display: grid;
   gap: 8px;
-  font-size: 12px;
+  font-size: var(--text-label);
   font-weight: 600;
   min-width: 0;
 }
@@ -65,7 +65,7 @@
   border-radius: 9px;
   background: var(--surface-soft);
   color: var(--ink);
-  font-size: 12px;
+  font-size: var(--text-label);
 }
 .catalog-form small {
   color: var(--muted);
@@ -95,23 +95,23 @@
 .catalog-table td {
   padding: 16px;
   border-bottom: 1px solid var(--line);
-  font-size: 12px;
+  font-size: var(--text-label);
   vertical-align: top;
 }
 .catalog-table th {
-  font-size: 10px;
+  font-size: var(--text-caption);
   color: var(--muted);
   background: var(--surface-soft);
   text-transform: uppercase;
 }
 .catalog-error {
   color: #c23e4b;
-  font-size: 12px;
+  font-size: var(--text-label);
 }
 .catalog-picker {
   display: grid;
   gap: 8px;
-  font-size: 12px;
+  font-size: var(--text-label);
   font-weight: 600;
 }
 .catalog-picker select {
@@ -127,7 +127,7 @@
   border: 1px solid var(--line);
   padding: 5px 9px;
   border-radius: 999px;
-  font-size: 10px;
+  font-size: var(--text-caption);
   background: var(--light-blue);
   color: var(--ocean);
 }
@@ -165,7 +165,7 @@
   .catalog-table td:before {
     content: attr(data-label);
     color: var(--muted);
-    font-size: 10px;
+    font-size: var(--text-caption);
     min-width: 65px;
     text-align: left;
   }

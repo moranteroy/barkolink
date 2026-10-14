@@ -90,7 +90,7 @@ withDefaults(
   min-width: 0;
 }
 .welcome-eyebrow {
-  font-size: 10px !important;
+  font-size: var(--text-caption) !important;
   font-weight: 750;
   letter-spacing: 0.16em;
   color: #aee6ee !important;
@@ -124,7 +124,7 @@ withDefaults(
   padding: 10px 14px;
   border-radius: 9px;
   text-decoration: none;
-  font-size: 12px;
+  font-size: var(--text-label);
   font-weight: 650;
 }
 .welcome-links a:hover {
@@ -192,13 +192,13 @@ withDefaults(
     max-width: 100%;
   }
   .welcome-copy > p {
-    font-size: 12px;
+    font-size: var(--text-label);
   }
   .welcome-links {
     gap: 8px;
   }
   .welcome-links a {
-    font-size: 11px;
+    font-size: var(--text-caption);
     padding: 10px 12px;
   }
   .welcome-copy h2 {

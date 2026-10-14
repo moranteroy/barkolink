@@ -1,5 +1,5 @@
 import { createClient } from 'npm:@supabase/supabase-js@2';
-import { normalizeWeather, departureForecast, type WeatherPayload } from './shared.ts';
+import { normalizeOpenMeteo, openMeteoUrl, weatherCoordinates, departureForecast, type WeatherPayload } from './shared.ts';
 const cors={'Access-Control-Allow-Origin':'*','Access-Control-Allow-Headers':'authorization, x-client-info, apikey, content-type','Access-Control-Allow-Methods':'POST, OPTIONS'};
 const reply=(status:number,body:object)=>new Response(JSON.stringify(body),{status,headers:{...cors,'Content-Type':'application/json'}});
 const inflight=new Map<string,Promise<WeatherPayload>>();
@@ -17,7 +17,7 @@ Deno.serve(async request=>{
     let trip:any=null, ports:any[]=[];
     if(portMode){
       if(typeof portId!=='string' || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(portId))return reply(400,{error:'Choose a valid port.'});
-      const {data:port,error}=await admin.from('port').select('id,name,city').eq('id',portId).maybeSingle();
+      const {data:port,error}=await admin.from('port').select('id,code,name,city').eq('id',portId).maybeSingle();
       if(error || !port)return reply(404,{error:'Port was not found.'});
       ports=[port];
     }else{
@@ -25,32 +25,24 @@ Deno.serve(async request=>{
       const {data,error}=await admin.from('sailing').select('origin_port_id,destination_port_id,departure_at').eq('code',sailingCode).maybeSingle();
       if(error || !data)return reply(404,{error:'Trip was not found.'});
       trip=data;
-      const {data:rows,error:portError}=await admin.from('port').select('id,name,city').in('id',[trip.origin_port_id,trip.destination_port_id]);
+      const {data:rows,error:portError}=await admin.from('port').select('id,code,name,city').in('id',[trip.origin_port_id,trip.destination_port_id]);
       if(portError || !rows)throw new Error('Ports unavailable.');
       ports=rows;
     }
-    const key=Deno.env.get('WEATHERAPI_KEY');
-    if(!key)return reply(200,{configured:false,ports:[],departureAt:trip?.departure_at});
     const load=async(port:any)=>{
       const base={id:port.id,name:port.name,city:port.city,role:portMode?'Departure port':port.id===trip.origin_port_id?'Departure port':'Arrival port'};
+      const point=weatherCoordinates(port);
+      if(!point)return {...base,available:false};
       const {data:cache}=await admin.from('port_weather_cache').select('payload,fetched_at,expires_at').eq('port_id',port.id).maybeSingle();
-      let payload=cache?.payload as WeatherPayload | undefined, fetchedAt=cache?.fetched_at, stale=false;
+      let payload=(cache?.payload?.provider === 'open-meteo' ? cache.payload : undefined) as WeatherPayload | undefined, fetchedAt=cache?.fetched_at, stale=false;
       if(!payload || !payload.days || new Date(cache!.expires_at).getTime()<=Date.now()){
         try{
           let pending=inflight.get(port.id);
           if(!pending){
             pending=(async()=>{
-              const url=new URL('https://api.weatherapi.com/v1/forecast.json');
-              url.searchParams.set('key',key);url.searchParams.set('q',`${port.city}, Philippines`);
-              url.searchParams.set('days','7');url.searchParams.set('aqi','no');url.searchParams.set('alerts','no');
-              let response=await fetch(url,{signal:AbortSignal.timeout(10000)});
-              // Some plans reject a longer forecast instead of returning fewer days.
-              if(!response.ok && (await response.clone().json().catch(()=>null))?.error?.code===2009){
-                url.searchParams.set('days','3');
-                response=await fetch(url,{signal:AbortSignal.timeout(10000)});
-              }
+              const response=await fetch(openMeteoUrl(point),{signal:AbortSignal.timeout(10000)});
               if(!response.ok)throw new Error('Weather provider unavailable.');
-              const result=normalizeWeather(await response.json());
+              const result=normalizeOpenMeteo(await response.json());
               await admin.from('port_weather_cache').upsert({port_id:port.id,payload:result,fetched_at:new Date().toISOString(),expires_at:new Date(Date.now()+1800000).toISOString()});
               return result;
             })();

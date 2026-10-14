@@ -27,6 +27,7 @@
   </section>
 </template>
 <script setup lang="ts">
+import { notifyError } from '@/composables/toast';
 import { computed, ref, watch, onBeforeUnmount } from 'vue';
 import AppIcon from "@/components/ui/icon/AppIcon.vue";
 import { openOutline } from 'ionicons/icons';
@@ -98,39 +99,39 @@ watch([mapElement, locatedPorts], async () => {
     }
     if (props.journey && locatedPorts.value.length > 1) L.polyline(locatedPorts.value.map(p => p.point), { color: '#297bc1', weight: 3, dashArray: '7 9', interactive: false }).addTo(layers);
     ready.value = true; showAll();
-  } catch { if (current === generation) { destroyMap(); mapError.value = 'The map could not open. Use Get directions below.'; } }
+  } catch { if (current === generation) { destroyMap(); mapError.value = notifyError('The map could not open. Use Get directions below.'); } }
 }, { flush: 'post' });
 onBeforeUnmount(() => { generation++; destroyMap(); });
 </script>
 <style scoped>
 .port-map { overflow: hidden; border: 1px solid var(--line); border-radius: 24px; background: var(--surface); color: var(--ink); box-shadow: var(--card-shadow); text-align: left; }
 .map-heading { padding: 24px 24px 18px; }
-.map-eyebrow { color: var(--ocean); font-size: 10px; font-weight: 800; letter-spacing: .14em; }
+.map-eyebrow { color: var(--ocean); font-size: var(--text-caption); font-weight: 800; letter-spacing: .14em; }
 .map-heading h2 { margin: 0 0 8px; font-size: clamp(21px,3vw,28px); letter-spacing: -.04em; }
 .map-heading p:not(.map-eyebrow) { margin: 0; color: var(--muted); font-size: 13px; }
 .port-tabs { display: flex; gap: 9px; overflow-x: auto; padding: 0 24px 18px; }
-.port-tabs button { display: flex; align-items: center; gap: 10px; flex-shrink: 0; min-height: 48px; padding: 10px 14px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface-soft); color: var(--ink); font: inherit; font-size: 12px; font-weight: 700; text-align: left; cursor: pointer; }
+.port-tabs button { display: flex; align-items: center; gap: 10px; flex-shrink: 0; min-height: 48px; padding: 10px 14px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface-soft); color: var(--ink); font: inherit; font-size: var(--text-label); font-weight: 700; text-align: left; cursor: pointer; }
 .port-tabs button.selected { border-color: var(--ocean); background: var(--light-blue); }
-.port-tabs small,.map-footer small { display: block; color: var(--muted); font-size: 11px; font-weight: 500; margin: 2px 0; }
+.port-tabs small,.map-footer small { display: block; color: var(--muted); font-size: var(--text-caption); font-weight: 500; margin: 2px 0; }
 .port-letter { display: grid; place-items: center; width: 28px; height: 28px; border-radius: 9px; background: #216cb0; color: white; }
 .port-letter.arrival { background: #15796c; }
 .map-window { height: 330px; position: relative; isolation: isolate; z-index: 0; background: var(--surface-soft); border-block: 1px solid var(--line); }
 .leaflet-map { width: 100%; height: 100%; }
-.show-ports { position: absolute; z-index: 1000; top: 12px; right: 12px; min-height: 44px; padding: 10px 14px; border: 1px solid #c8d6e3; border-radius: 10px; background: white; color: #164168; font: inherit; font-size: 12px; font-weight: 700; cursor: pointer; box-shadow: 0 2px 10px #162b4520; }
+.show-ports { position: absolute; z-index: 1000; top: 12px; right: 12px; min-height: 44px; padding: 10px 14px; border: 1px solid #c8d6e3; border-radius: 10px; background: white; color: #164168; font: inherit; font-size: var(--text-label); font-weight: 700; cursor: pointer; box-shadow: 0 2px 10px #162b4520; }
 .map-empty { position: absolute; inset: 0; display: grid; place-content: center; margin: 0; padding: 28px; text-align: center; color: var(--muted); font-size: 13px; line-height: 1.6; }
-.map-footer { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 14px; padding: 18px 24px; font-size: 12px; }
+.map-footer { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 14px; padding: 18px 24px; font-size: var(--text-label); }
 .map-footer a { display: flex; align-items: center; gap: 8px; min-height: 44px; padding: 10px 14px; border-radius: 10px; background: var(--action); color: white; font-weight: 800; text-decoration: none; }
-.map-note,.map-status { margin: 0; padding: 0 24px 20px; color: var(--muted); font-size: 11px; line-height: 1.6; }
+.map-note,.map-status { margin: 0; padding: 0 24px 20px; color: var(--muted); font-size: var(--text-caption); line-height: 1.6; }
 .map-status { padding-top: 14px; }
 .admin-map { border-radius: 14px; box-shadow: none; }
 .admin-map .map-heading { padding: 16px 18px 12px; }
 .admin-map .map-heading h2 { font-size: 17px; margin-bottom: 5px; letter-spacing: -.02em; }
-.admin-map .map-heading p:not(.map-eyebrow) { font-size: 12px; }
+.admin-map .map-heading p:not(.map-eyebrow) { font-size: var(--text-label); }
 .admin-map .port-tabs { padding: 0 18px 14px; gap: 8px; }
 .admin-map .port-tabs button { min-height: 42px; padding: 7px 10px; border-radius: 8px; }
 .admin-map .map-window { height: 260px; }
 .admin-map .map-footer { padding: 12px 18px; }
-.admin-map .map-footer a { min-height: 36px; padding: 8px 12px; border-radius: 8px; font-size: 11px; }
+.admin-map .map-footer a { min-height: 36px; padding: 8px 12px; border-radius: 8px; font-size: var(--text-caption); }
 .admin-map .map-note, .admin-map .map-status { padding-inline: 18px; padding-bottom: 14px; }
 .map-status button { min-height: 44px; border: 0; background: transparent; color: var(--ocean); font: inherit; text-decoration: underline; cursor: pointer; }
 :deep(.port-pin) { background: transparent; border: 0; }

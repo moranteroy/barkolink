@@ -2,7 +2,7 @@
   <IonPage><IonContent><main class="verification-page">
     <RouterLink to="/" class="brand"><BrandMark /></RouterLink>
     <section class="verification-card">
-      <RouterLink :to="purpose === 'signup' ? '/register' : '/login'" class="back">Back to {{ purpose === 'signup' ? 'create account' : 'sign in' }}</RouterLink>
+      <RouterLink :to="purpose === 'signup' ? '/register' : '/login'" class="back"><BackIcon /> Back to {{ purpose === 'signup' ? 'create account' : 'sign in' }}</RouterLink>
       <span class="mail-icon"><AppIcon :icon="mailOutline" aria-hidden="true" /></span>
       <h1>{{ purpose === 'signup' ? 'Verify your email' : 'Check your email' }}</h1>
       <p v-if="email">{{ purpose === 'signup' ? 'Enter the code sent to' : 'If an account exists, a reset code was sent to' }} <strong>{{ email }}</strong>.</p>
@@ -19,6 +19,8 @@
   </main></IonContent></IonPage>
 </template>
 <script setup lang="ts">
+import { notifyError, notifySuccess } from '@/composables/toast';
+import BackIcon from "@/components/ui/icon/BackIcon.vue";
 import { computed, onBeforeUnmount, ref } from 'vue';
 import { IonPage, IonContent, IonButton, onIonViewWillEnter } from '@ionic/vue';
 import AppIcon from "@/components/ui/icon/AppIcon.vue";
@@ -54,14 +56,14 @@ async function verify() {
     sessionStorage.removeItem('barkolink-pending-email');
     await router.replace({ path: '/login', query: { ...(typeof route.query.redirect === 'string' ? { redirect: route.query.redirect } : {}), verified: '1' } });
   } catch (failure) {
-    error.value = verified.value ? (failure as Error).message : 'The code is invalid or expired. Check your email or request a new code.';
+    error.value = notifyError(verified.value ? (failure as Error).message : 'The code is invalid or expired. Check your email or request a new code.');
   } finally { busy.value = false; }
 }
 async function resend() {
   if (busy.value || remaining.value > 0) return;
   busy.value = true; error.value = ''; notice.value = '';
-  try { await resendEmailCode(email.value, purpose.value); remaining.value = 60; code.value = ''; notice.value = 'A new code was requested. Check your inbox and Spam folder.'; }
-  catch { error.value = 'Could not resend the code. Wait a moment and try again.'; }
+  try { await resendEmailCode(email.value, purpose.value); remaining.value = 60; code.value = ''; notice.value = notifySuccess('A new code was requested. Check your inbox and Spam folder.'); }
+  catch { error.value = notifyError('Could not resend the code. Wait a moment and try again.'); }
   finally { busy.value = false; }
 }
 </script>
@@ -69,13 +71,13 @@ async function resend() {
 .verification-page { max-width: 480px; margin: 40px auto; padding: 20px; color: var(--ink); }
 .brand { display: inline-flex; margin-bottom: 24px; text-decoration: none; }
 .verification-card { padding: 28px; border: 1px solid var(--line); border-radius: 20px; background: var(--surface); }
-.back { display: inline-flex; min-height: 44px; color: var(--muted); font-size: 13px; text-decoration: none; }
+.back { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; color: var(--muted); font-size: 13px; text-decoration: none; }
 .mail-icon { display: grid; place-items: center; width: 48px; height: 48px; margin-top: 12px; border-radius: 14px; background: var(--light-blue); color: var(--ocean); font-size: 24px; }
 h1 { margin: 20px 0 10px; font-size: 28px; } p { color: var(--muted); font-size: 14px; line-height: 1.7; overflow-wrap: anywhere; }
 form { display: grid; gap: 12px; margin-top: 24px; } label { font-size: 13px; font-weight: 650; }
 input { width: 100%; min-width: 0; height: 52px; padding: 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface-soft); color: var(--ink); font-size: 18px; }
 ion-button { margin: 0; height: 48px; --border-radius: var(--button-radius); text-transform: none; } .error { color: var(--danger, #c43c47); }
-.resend { display: grid; gap: 8px; margin-top: 24px; text-align: center; color: var(--muted); font-size: 12px; }
+.resend { display: grid; gap: 8px; margin-top: 24px; text-align: center; color: var(--muted); font-size: var(--text-label); }
 button { min-height: 44px; border: 0; border-radius: 8px; background: var(--light-blue); color: var(--ocean); font: inherit; font-size: 13px; cursor: pointer; } button:disabled { opacity: .6; cursor: default; }
 @media (max-width: 480px) { .verification-page { margin-top: 12px; } .verification-card { padding: 22px 18px; } }
 </style>

@@ -36,6 +36,7 @@
   </section>
 </template>
 <script setup lang="ts">
+import { notifySuccess, notifyError, notify } from '@/composables/toast';
 import { onBeforeUnmount, ref, watch } from "vue";
 import { FileText, Download } from "@lucide/vue";
 import {
@@ -103,7 +104,7 @@ async function exportManifest() {
     }
     if (!passengers.length) {
       notice.value =
-        "No paid, confirmed passengers to export for this sailing.";
+        notify("No paid, confirmed passengers to export for this sailing.");
       return;
     }
     const dateTime = (value: string) =>
@@ -140,13 +141,13 @@ async function exportManifest() {
     link.download = `manifest-${code}.csv`;
     link.click();
     URL.revokeObjectURL(url);
-    notice.value = `Exported ${passengers.length} passengers for ${code}.`;
+    notice.value = notifySuccess(`Exported ${passengers.length} passengers for ${code}.`);
   } catch (e) {
     if (version === request)
-      error.value = ticketRequestError(
+      error.value = notifyError(ticketRequestError(
         e,
         "Could not export the manifest. Try again.",
-      );
+      ));
   } finally {
     if (version === request) exporting.value = false;
   }
@@ -164,13 +165,13 @@ async function exportManifest() {
 .workspace-export .export-heading { margin: 0; }
 .workspace-export h2 { font-size: 15px; }
 .workspace-export > p { grid-column: 1 / -1; margin: 0; }
-.workspace-export button { font-size: 12px; min-height: 40px; padding: 10px 14px; }
+.workspace-export button { font-size: var(--text-label); min-height: 40px; padding: 10px 14px; }
 h2 {
   font-size: 17px;
   margin: 0 0 10px;
 }
 p {
-  font-size: 12px;
+  font-size: var(--text-label);
   line-height: 1.6;
   color: var(--muted);
   margin: 0 0 12px;
@@ -183,7 +184,7 @@ p {
 label {
   display: grid;
   gap: 8px;
-  font-size: 12px;
+  font-size: var(--text-label);
   font-weight: 600;
   flex: 1;
   min-width: 0;
@@ -197,7 +198,7 @@ select {
   color: var(--ink);
   min-height: 40px;
   font: inherit;
-  font-size: 12px;
+  font-size: var(--text-label);
   background: var(--surface-soft);
 }
 button {
@@ -229,7 +230,7 @@ button:disabled {
 .export-heading p:last-child { margin-bottom: 0; }
 .export-symbol { display: grid; place-items: center; width: 36px; height: 36px; flex: none; border-radius: 10px; background: var(--light-blue); color: var(--ocean); }
 .export-symbol svg { width: 23px; height: 23px; }
-.export-heading .eyebrow { margin: 0 0 6px; color: var(--ocean); font-size: 10px; font-weight: 800; letter-spacing: .1em; }
+.export-heading .eyebrow { margin: 0 0 6px; color: var(--ocean); font-size: var(--text-caption); font-weight: 800; letter-spacing: .1em; }
 .export-heading h2 { margin-bottom: 6px; }
 button svg { width: 16px; height: 16px; }
 button:focus-visible, select:focus-visible { outline: 2px solid var(--ocean); outline-offset: 3px; }

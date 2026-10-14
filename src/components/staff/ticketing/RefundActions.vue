@@ -20,6 +20,7 @@
   </form>
 </template>
 <script setup lang="ts">
+import { notifyError, notifySuccess } from '@/composables/toast';
 import { confirmAction } from "../../../composables/confirmation";
 import { ref } from "vue";
 import { staffDatabase } from "../../../services/session";
@@ -47,9 +48,10 @@ async function refund() {
   error.value = "";
   try {
     await refundBooking(staffDatabase, props.bookingId, note.value);
+    notifySuccess('Cash refund recorded.');
     emit("refunded");
   } catch (cause) {
-    error.value = databaseRequestError(cause, "Could not record refund.");
+    error.value = notifyError(databaseRequestError(cause, "Could not record refund."));
   } finally {
     busy.value = false;
   }

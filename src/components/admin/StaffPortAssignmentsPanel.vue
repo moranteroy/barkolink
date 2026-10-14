@@ -24,6 +24,7 @@
 </template>
 
 <script setup lang="ts">
+import { notifyError, notifySuccess } from '@/composables/toast';
 import { computed, onMounted, reactive, ref } from 'vue';
 import AppIcon from "@/components/ui/icon/AppIcon.vue";
 import { idCardOutline, globeOutline, searchOutline, navigateOutline, ticketOutline, boatOutline, saveOutline } from 'ionicons/icons';
@@ -57,7 +58,7 @@ async function load() {
     const result = await executeDatabase<Directory>(staffDatabase, 'AdminStaffPortAssignments', { search: search.value, role: role.value, page: page.value, pageSize });
     staff.value = result.data.staff; ports.value = result.data.ports; total.value = result.data.totalCount;
     for (const user of staff.value) drafts[user.uid] = user.assignedPortId || '';
-  } catch (cause) { error.value = databaseRequestError(cause, 'Could not load staff port assignments.'); }
+  } catch (cause) { error.value = notifyError(databaseRequestError(cause, 'Could not load staff port assignments.')); }
   finally { loading.value = false; }
 }
 async function save(user: Staff) {
@@ -68,8 +69,8 @@ async function save(user: Staff) {
     await executeDatabase(staffDatabase, 'AdminAssignStaffPort', { uid: user.uid, portId });
     user = staff.value.find(current => current.uid === user.uid) || user;
     user.assignedPortId = portId; user.assignedPort = ports.value.find(p => p.id === portId) || null;
-    notice.value = `${user.fullName} is assigned to ${user.assignedPort?.name}.`;
-  } catch (cause) { error.value = databaseRequestError(cause, 'Could not save the staff port assignment.'); }
+    notice.value = notifySuccess(`${user.fullName} is assigned to ${user.assignedPort?.name}.`);
+  } catch (cause) { error.value = notifyError(databaseRequestError(cause, 'Could not save the staff port assignment.')); }
   finally { busy.value = ''; }
 }
 onMounted(load);
@@ -79,29 +80,29 @@ onMounted(load);
 .staff-port-assignments { display: grid; gap: 16px; }
 .access-note { display: flex; align-items: center; gap: 12px; padding: 14px 16px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); color: var(--ink); }
 .access-symbol { display: grid; place-items: center; width: 38px; height: 38px; flex: none; border-radius: 10px; background: var(--light-blue); color: var(--ocean); font-size: 22px; }
-.access-note strong { font-size: 13px; font-weight: 650; }.access-note p { margin: 4px 0 0; color: var(--muted); font-size: 12px; line-height: 1.5; }
-.passenger-access { display: inline-flex; align-items: center; gap: 6px; flex: none; margin-left: auto; padding: 7px 10px; border-radius: 8px; background: var(--surface-soft); color: var(--muted); font-size: 11px; }
+.access-note strong { font-size: 13px; font-weight: 650; }.access-note p { margin: 4px 0 0; color: var(--muted); font-size: var(--text-label); line-height: 1.5; }
+.passenger-access { display: inline-flex; align-items: center; gap: 6px; flex: none; margin-left: auto; padding: 7px 10px; border-radius: 8px; background: var(--surface-soft); color: var(--muted); font-size: var(--text-caption); }
 .passenger-access .app-icon { color: var(--ocean); font-size: 16px; }
 .assignment-directory { border: 1px solid var(--line); border-radius: 14px; background: var(--surface); overflow: hidden; }
 .directory-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 16px; border-bottom: 1px solid var(--line); }
 .directory-title { display: flex; align-items: center; gap: 9px; }.directory-title .app-icon { color: var(--ocean); font-size: 21px; } h2 { margin: 0; font-size: 16px; }
-.staff-count { border: 1px solid var(--line); padding: 5px 9px; border-radius: 20px; color: var(--muted); font-size: 11px; white-space: nowrap; }
+.staff-count { border: 1px solid var(--line); padding: 5px 9px; border-radius: 20px; color: var(--muted); font-size: var(--text-caption); white-space: nowrap; }
 .assignment-filters { display: grid; grid-template-columns: minmax(0, 1fr) 180px auto; gap: 12px; align-items: end; padding: 14px 16px; border-bottom: 1px solid var(--line); background: var(--surface-soft); }
-.assignment-filters label { display: grid; gap: 7px; color: var(--muted); font-size: 11px; font-weight: 600; }
-input, select { box-sizing: border-box; width: 100%; min-width: 0; min-height: 38px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); color: var(--ink); font: inherit; font-size: 12px; }
+.assignment-filters label { display: grid; gap: 7px; color: var(--muted); font-size: var(--text-caption); font-weight: 600; }
+input, select { box-sizing: border-box; width: 100%; min-width: 0; min-height: 38px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); color: var(--ink); font: inherit; font-size: var(--text-label); }
 .search-control, .port-control { position: relative; min-width: 0; }.search-control > .app-icon, .port-control > .app-icon { position: absolute; left: 11px; top: 50%; transform: translateY(-50%); pointer-events: none; color: var(--muted); font-size: 16px; }.search-control input, .port-control select { padding-left: 34px; }
 .assignment-filters > button { min-height: 38px; }
-:deep(.staff-identity) { display: flex; align-items: center; gap: 10px; min-width: 0; padding-block: 7px; }:deep(.staff-identity > div) { display: grid; gap: 4px; min-width: 0; }:deep(.staff-identity strong) { font-weight: 650; font-size: 12px; overflow-wrap: anywhere; }
-:deep(.staff-avatar) { display: grid; place-items: center; flex: none; width: 34px; height: 34px; border-radius: 10px; color: var(--ocean); background: var(--light-blue); font-size: 11px; font-weight: 700; }
-:deep(.staff-role) { display: inline-flex; align-items: center; gap: 5px; font-size: 10px; padding: 5px 8px; white-space: nowrap; }:deep(.staff-role .app-icon) { font-size: 13px; }:deep(.staff-role.boarding) { background: var(--surface-soft); color: var(--ink); border: 1px solid var(--line); }
-:deep(.port-field) { display: grid; gap: 5px; padding-block: 6px; min-width: 0; }:deep(.port-control) { position: relative; min-width: 0; }:deep(.port-control > .app-icon) { position: absolute; left: 11px; top: 50%; transform: translateY(-50%); pointer-events: none; color: var(--ocean); font-size: 16px; }:deep(.port-control select) { box-sizing: border-box; width: 100%; min-width: 0; min-height: 38px; padding: 8px 28px 8px 34px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); color: var(--ink); font: inherit; font-size: 12px; }
-small { color: var(--muted); font-size: 10px; line-height: 1.5; overflow-wrap: anywhere; }
+:deep(.staff-identity) { display: flex; align-items: center; gap: 10px; min-width: 0; padding-block: 7px; }:deep(.staff-identity > div) { display: grid; gap: 4px; min-width: 0; }:deep(.staff-identity strong) { font-weight: 650; font-size: var(--text-label); overflow-wrap: anywhere; }
+:deep(.staff-avatar) { display: grid; place-items: center; flex: none; width: 34px; height: 34px; border-radius: 10px; color: var(--ocean); background: var(--light-blue); font-size: var(--text-caption); font-weight: 700; }
+:deep(.staff-role) { display: inline-flex; align-items: center; gap: 5px; font-size: var(--text-caption); padding: 5px 8px; white-space: nowrap; }:deep(.staff-role .app-icon) { font-size: 13px; }:deep(.staff-role.boarding) { background: var(--surface-soft); color: var(--ink); border: 1px solid var(--line); }
+:deep(.port-field) { display: grid; gap: 5px; padding-block: 6px; min-width: 0; }:deep(.port-control) { position: relative; min-width: 0; }:deep(.port-control > .app-icon) { position: absolute; left: 11px; top: 50%; transform: translateY(-50%); pointer-events: none; color: var(--ocean); font-size: 16px; }:deep(.port-control select) { box-sizing: border-box; width: 100%; min-width: 0; min-height: 38px; padding: 8px 28px 8px 34px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); color: var(--ink); font: inherit; font-size: var(--text-label); }
+small { color: var(--muted); font-size: var(--text-caption); line-height: 1.5; overflow-wrap: anywhere; }
 .assignment-directory :deep(.port-field .port-control select) { padding-left: 34px; }
-:deep(.staff-identity small), :deep(.assignment-state) { color: var(--muted); font-size: 10px; line-height: 1.5; overflow-wrap: anywhere; }
+:deep(.staff-identity small), :deep(.assignment-state) { color: var(--muted); font-size: var(--text-caption); line-height: 1.5; overflow-wrap: anywhere; }
 :deep(.assignment-state) { display: inline-flex; align-items: center; gap: 5px; }:deep(.assignment-state i) { width: 5px; height: 5px; border-radius: 50%; background: currentColor; }:deep(.assignment-state.unassigned) { color: var(--muted); }:deep(.assignment-state.pending) { color: var(--ocean); }:deep(.assignment-state.assigned) { color: var(--success, #45a38a); }
-:deep(.save-assignment) { gap: 5px; min-height: 34px; padding-inline: 10px; font-size: 11px; }:deep(.save-assignment .app-icon) { font-size: 14px; }
-.assignment-error { color: var(--danger); }.assignment-notice { margin: 0; color: var(--ink); background: var(--light-blue); padding: 12px 16px; border-radius: 8px; font-size: 12px; }
-:deep(.grid-tools) { padding: 8px 16px; gap: 10px; border-bottom: 1px solid var(--line); }:deep(.grid-tools button) { min-height: 32px; font-size: 11px; padding: 6px 9px; }:deep(.grid-summary > span) { font-size: 10px; }:deep(.desktop-grid) { padding: 8px; }:deep(.grid-cell-content) { font-size: 12px; }
+:deep(.save-assignment) { gap: 5px; min-height: 34px; padding-inline: 10px; font-size: var(--text-caption); }:deep(.save-assignment .app-icon) { font-size: 14px; }
+.assignment-error { color: var(--danger); }.assignment-notice { margin: 0; color: var(--ink); background: var(--light-blue); padding: 12px 16px; border-radius: 8px; font-size: var(--text-label); }
+:deep(.grid-tools) { padding: 8px 16px; gap: 10px; border-bottom: 1px solid var(--line); }:deep(.grid-tools button) { min-height: 32px; font-size: var(--text-caption); padding: 6px 9px; }:deep(.grid-summary > span) { font-size: var(--text-caption); }:deep(.desktop-grid) { padding: 8px; }:deep(.grid-cell-content) { font-size: var(--text-label); }
 @media(max-width:700px) { .access-note { flex-wrap: wrap; }.passenger-access { margin-left: 50px; }.assignment-filters { grid-template-columns: minmax(0, 1fr) 150px; }.assignment-filters > button { grid-column: 1 / -1; justify-self: end; } }
 @media(max-width:600px) { .assignment-filters { grid-template-columns: 1fr; gap: 12px; }.assignment-filters > button { width: 100%; }.directory-heading { padding: 14px 12px; } h2 { font-size: 14px; }.access-note { padding: 12px; }.access-note > div { flex: 1; min-width: 0; } input, select, :deep(.port-control select) { min-height: 44px; font-size: 16px; }:deep(.save-assignment) { min-height: 40px; }:deep(.mobile-field > div) { min-width: 0; }:deep(.mobile-field .port-field) { width: 100%; }:deep(.grid-summary > span) { display: none; } }
 </style>

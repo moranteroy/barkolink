@@ -97,7 +97,7 @@ const items = computed(() =>
 }
 .staff-navigation p {
   margin: 16px 12px 6px;
-  font-size: 9px;
+  font-size: var(--text-caption);
   letter-spacing: 0.1em;
   color: #8199b0;
   font-weight: 700;
@@ -111,7 +111,7 @@ const items = computed(() =>
   border-radius: 9px;
   color: #b7c9d9;
   text-decoration: none;
-  font-size: 12px;
+  font-size: var(--text-label);
   font-weight: 550;
 }
 .staff-navigation a .app-icon {

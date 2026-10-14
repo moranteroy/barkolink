@@ -32,9 +32,9 @@ button { width: 100%; padding: 10px; border: 0; background: transparent; text-al
 .preview-canvas > i { width: 18%; background: #2375c4; border-radius: 4px; }
 .preview-canvas > span { flex: 1; display: grid; gap: 6px; }
 .preview-canvas > span i { background: #8a9bab66; border-radius: 3px; }
-.preview-label { display: flex; align-items: center; gap: 5px; margin-top: 12px; font-size: 12px; font-weight: 650; }
+.preview-label { display: flex; align-items: center; gap: 5px; margin-top: 12px; font-size: var(--text-label); font-weight: 650; }
 .preview-label svg { width: 14px; height: 14px; }
 .preview-label svg:last-child:not(:first-child) { margin-left: auto; color: var(--ocean); }
-small { display: block; color: var(--muted); font-size: 10px; margin-top: 6px; line-height: 1.5; }
-.resolved-theme { color: var(--muted); font-size: 12px; margin-top: 14px; }
+small { display: block; color: var(--muted); font-size: var(--text-caption); margin-top: 6px; line-height: 1.5; }
+.resolved-theme { color: var(--muted); font-size: var(--text-label); margin-top: 14px; }
 </style>

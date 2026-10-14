@@ -24,7 +24,7 @@
         <section class="auth-form">
           <div class="form-inner">
             <RouterLink class="mobile-back" to="/" aria-label="Back to home"
-              ><AppIcon :icon="homeOutline" aria-hidden="true" /> Back to
+              ><BackIcon /> Back to
               home</RouterLink
             >
             <div class="auth-mobile-brand"><BrandMark /></div>
@@ -187,20 +187,13 @@
 </template>
 
 <script setup lang="ts">
+import { notifyError, notifySuccess } from '@/composables/toast';
+import BackIcon from "@/components/ui/icon/BackIcon.vue";
 import { computed, ref, watch } from "vue";
 import { RouterLink, useRoute, useRouter } from "vue-router";
 import { IonButton, IonContent, IonPage } from "@ionic/vue";
 import AppIcon from "@/components/ui/icon/AppIcon.vue";
-import {
-  homeOutline,
-  personAddOutline,
-  logInOutline,
-  shieldCheckmarkOutline,
-  eyeOffOutline,
-  eyeOutline,
-  searchOutline,
-  ticketOutline,
-} from "ionicons/icons";
+import { personAddOutline, logInOutline, shieldCheckmarkOutline, eyeOffOutline, eyeOutline, searchOutline, ticketOutline } from "ionicons/icons";
 import {
   registerAccount,
   sendPasswordResetEmail,
@@ -273,8 +266,8 @@ async function resetPassword() {
     await router.replace({ path: '/verify-email', query: { purpose: 'recovery' } });
   } catch (error) {
     errorMessage.value =
-      (error as { message?: string }).message ||
-      "Could not send password reset email.";
+      notifyError((error as { message?: string }).message ||
+      "Could not send password reset email.");
   } finally {
     resetting.value = false;
   }
@@ -363,7 +356,7 @@ async function submit() {
         sessionStorage.setItem('barkolink-pending-email', JSON.stringify({ email: email.value.trim(), purpose: 'signup' }));
         await router.replace({ path: '/verify-email', query: { ...authLocation('/register').query, purpose: 'signup' } });
       } catch {
-        errorMessage.value = 'Your email still needs verification, but a new code could not be sent. Wait a minute and try signing in again.';
+        errorMessage.value = notifySuccess('Your email still needs verification, but a new code could not be sent. Wait a minute and try signing in again.');
       }
       return;
     }
@@ -386,7 +379,7 @@ async function submit() {
         "Too many email requests. Wait a moment and try again.",
     };
     errorMessage.value =
-      (code && errors[code]) ||
+      notifyError((code && errors[code]) ||
       databaseRequestError(error, "") ||
       (message?.includes("Supabase is not configured")
         ? "Supabase is not configured yet. Add the project URL and publishable key to .env.local to enable sign in."
@@ -396,7 +389,7 @@ async function submit() {
             ? "Supabase sign-in succeeded, but your passenger profile could not be loaded. Please try again."
             : stage === "navigation"
               ? "Sign-in succeeded, but the destination page could not be opened. Please try again."
-              : "We could not complete sign in. Please check your email and password.");
+              : "We could not complete sign in. Please check your email and password."));
   } finally {
     submitting.value = false;
   }
@@ -411,7 +404,7 @@ async function submit() {
 .auth-art :deep(.brand-copy strong), .auth-art :deep(.brand-copy b) { color: #fff; }
 .auth-art :deep(.brand-copy small) { color: #d0e6f2; }
 .art-copy { position: relative; z-index: 1; margin-top: auto; padding-top: 36px; max-width: 440px; }
-.auth-brand-tag { display: inline-block; padding: 7px 12px; border: 1px solid #ffffff38; border-radius: 30px; color: #daefff; font-size: 10px; font-weight: 700; letter-spacing: .08em; }
+.auth-brand-tag { display: inline-block; padding: 7px 12px; border: 1px solid #ffffff38; border-radius: 30px; color: #daefff; font-size: var(--text-caption); font-weight: 700; letter-spacing: .08em; }
 .art-copy h2 { margin: 22px 0 18px; font-size: clamp(40px, 4.2vw, 60px); font-weight: 800; letter-spacing: -.045em; line-height: 1.1; }
 .art-copy em { color: #b7eef5; font-style: normal; }
 .art-copy p { max-width: 370px; margin: 0; color: #deedf4; font-size: 16px; line-height: 1.8; }
@@ -456,7 +449,7 @@ input:focus { outline: none; border-color: var(--ocean); box-shadow: 0 0 0 3px c
 .prototype-box { display: flex; align-items: center; gap: 12px; padding-top: 18px; border-top: 1px solid var(--line); }
 .prototype-icon { display: grid; place-items: center; flex: none; width: 38px; height: 38px; border-radius: 10px; background: var(--light-blue); color: var(--ocean); font-size: 21px; }
 .prototype-box strong { font-size: 13px; font-weight: 650; }
-.prototype-box p { margin: 3px 0 0; color: var(--muted); font-size: 12px; line-height: 1.7; }
+.prototype-box p { margin: 3px 0 0; color: var(--muted); font-size: var(--text-label); line-height: 1.7; }
 .auth-page :is(a, button):focus-visible { outline: 3px solid var(--ocean); outline-offset: 3px; }
 .auth-art a:focus-visible { outline-color: #b7eef5; }
 :global(:root[data-theme='dark']) .auth-page { --surface: #132439; --surface-soft: #0e1c2e; --line: #2b4056; --muted: #b2c3d3; --light-blue: #183752; }

@@ -53,7 +53,7 @@ h2 {
   margin: 0 0 8px;
 }
 p {
-  font-size: 11px;
+  font-size: var(--text-caption);
   line-height: 1.6;
   color: var(--muted);
 }
@@ -96,11 +96,11 @@ strong {
 small {
   display: block;
   color: var(--muted);
-  font-size: 10px;
+  font-size: var(--text-caption);
   margin-top: 5px;
 }
 b {
-  font-size: 11px;
+  font-size: var(--text-caption);
   color: #1676c5;
   white-space: nowrap;
 }
@@ -110,7 +110,7 @@ label:hover:not(.unavailable) { border-color: var(--ocean); }
 label:focus-within { outline: 2px solid var(--ocean); outline-offset: 3px; }
 .seat-icon { display: grid; place-items: center; width: 36px; height: 36px; border-radius: 10px; background: var(--light-blue); color: var(--ocean); font-size: 20px; }
 strong { font-size: 14px; }
-small { font-size: 11px; line-height: 1.5; }
+small { font-size: var(--text-caption); line-height: 1.5; }
 b { color: var(--ocean); padding: 5px 7px; border-radius: 6px; background: var(--light-blue); }
 @container passenger (max-width: 380px) { label { grid-template-columns: 18px 30px minmax(0, 1fr); padding: 14px; gap: 8px; } .seat-icon { width: 30px; height: 30px; } b { grid-column: 3; justify-self: start; } }
 </style>

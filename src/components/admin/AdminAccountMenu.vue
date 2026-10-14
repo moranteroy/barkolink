@@ -18,6 +18,7 @@
   </DropdownMenu>
 </template>
 <script setup lang="ts">
+import { notifyError } from '@/composables/toast';
 import { computed, ref } from 'vue';
 import { RouterLink, useRouter } from 'vue-router';
 import AppIcon from "@/components/ui/icon/AppIcon.vue";
@@ -40,7 +41,7 @@ async function logout() {
     open.value = false;
     await router.replace('/login');
     clearSessionViews();
-  } catch { error.value = 'Could not sign out. Please try again.'; }
+  } catch { error.value = notifyError('Could not sign out. Please try again.'); }
   finally { signingOut.value = false; }
 }
 </script>
@@ -49,22 +50,22 @@ async function logout() {
 .admin-account-trigger:hover, .admin-account-trigger[data-state="open"] { background: var(--surface-soft); border-color: var(--line); }
 .admin-account-trigger > .app-icon:first-child { font-size: 31px; color: var(--ocean); flex: none; }
 .account-copy { display: grid; gap: 3px; min-width: 0; text-align: left; }
-.account-copy strong { font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.account-copy small { font-size: 10px; color: var(--muted); }
+.account-copy strong { font-size: var(--text-label); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.account-copy small { font-size: var(--text-caption); color: var(--muted); }
 .account-chevron { font-size: 14px; color: var(--muted); flex: none; }
 .admin-account-trigger:focus-visible { outline: 2px solid var(--ocean); outline-offset: 3px; }
 :global(.admin-account-menu) { width: 260px; max-width: calc(100vw - 24px); padding: 6px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); color: var(--ink); z-index: 20000; box-shadow: 0 12px 32px #061a3530; }
 .account-identity { display: flex; align-items: center; gap: 9px; padding: 10px; }
 .account-identity > .app-icon { font-size: 30px; color: var(--ocean); flex: none; }
 .account-identity span { display: grid; gap: 4px; min-width: 0; }
-.account-identity strong { font-size: 12px; overflow-wrap: anywhere; }
-.account-identity small { font-size: 11px; color: var(--muted); overflow-wrap: anywhere; }
+.account-identity strong { font-size: var(--text-label); overflow-wrap: anywhere; }
+.account-identity small { font-size: var(--text-caption); color: var(--muted); overflow-wrap: anywhere; }
 .account-divider { height: 1px; margin: 4px 0; background: var(--line); }
-.account-item { display: flex; align-items: center; gap: 10px; min-height: 44px; padding: 9px 10px; border-radius: 8px; outline: none; color: var(--ink); font-size: 12px; text-decoration: none; cursor: pointer; }
+.account-item { display: flex; align-items: center; gap: 10px; min-height: 44px; padding: 9px 10px; border-radius: 8px; outline: none; color: var(--ink); font-size: var(--text-label); text-decoration: none; cursor: pointer; }
 .account-item .app-icon { font-size: 18px; flex: none; }
 .account-item[data-highlighted] { background: var(--light-blue); }
 .account-item[data-disabled] { opacity: .5; cursor: wait; }
 .account-logout { color: var(--danger, #e56873); }
-.account-error { margin: 8px 10px; font-size: 11px; line-height: 1.6; color: var(--danger, #e56873); }
+.account-error { margin: 8px 10px; font-size: var(--text-caption); line-height: 1.6; color: var(--danger, #e56873); }
 @media (max-width: 480px) { .account-copy, .account-chevron { display: none; }.admin-account-trigger { width: 40px; padding: 4px; justify-content: center; } }
 </style>

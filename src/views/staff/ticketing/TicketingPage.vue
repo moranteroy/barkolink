@@ -45,6 +45,7 @@
                 {{ loading ? "Refreshing..." : "Refresh" }}
               </button>
             </div>
+            <QueueFreshness v-if="!portBlocked" :updated-at="queueUpdatedAt" :loading="loading" :error="loadError" />
             <StaffPortRequired v-if="portBlocked" />
             <template v-else>
             <p v-if="loadError" class="staff-note error" role="alert">
@@ -153,7 +154,7 @@
                         (isBoarding ? item.name : item.reference)
                       "
                       :title="queueActionLabel(item)"
-                      :disabled="isQueueItemComplete(item) || busy"
+                      :disabled="isQueueItemComplete(item) || busy || loading || !!loadError"
                       @click="processItem(item)"
                     >
                       {{ !isBoarding ? 'Review booking' : queueActionLabel(item) }}<AppIcon v-if="!isBoarding" :icon="arrowForwardOutline" aria-hidden="true" />
@@ -470,6 +471,8 @@
   </ion-page>
 </template>
 <script setup lang="ts">
+import { notifyError, notifySuccess } from '@/composables/toast';
+import QueueFreshness from "../../../components/shared/QueueFreshness.vue";
 import StaffPortRequired from '../../../components/staff/StaffPortRequired.vue';
 import { useStaffPortGate } from '../../../composables/staffPortGate';
 const { portBlocked } = useStaffPortGate(refreshQueues);
@@ -818,9 +821,13 @@ onIonViewDidEnter(() => {
   if (route.hash) void scrollToSection(route.hash.slice(1));
 });
 let refreshToken = 0;
+const queueUpdatedAt = ref<number | null>(null);
+let queueSnapshotKey = "";
 async function refreshQueues() {
   if (!isWorkspaceRoute.value) return;
   const requestId = ++refreshToken;
+  const snapshotKey = `${route.path}:${queuePage.value}:${searchText.value}:${statusFilter.value}`;
+  if (snapshotKey !== queueSnapshotKey) { ticketingQueue.value = []; queueUpdatedAt.value = null; }
   loading.value = true;
   loadError.value = "";
   if (!staffDatabase) {
@@ -911,12 +918,13 @@ async function refreshQueues() {
           result.data.bookings.find((b) => b.id === selectedBooking.value.id) ||
           null;
     }
+    if (requestId === refreshToken) { queueUpdatedAt.value = Date.now(); queueSnapshotKey = snapshotKey; }
   } catch (error) {
     if (requestId === refreshToken) {
-      loadError.value = databaseRequestError(
+      loadError.value = notifyError(databaseRequestError(
         error,
         "Could not load operations. Try refreshing again.",
-      );
+      ));
     }
   } finally {
     if (requestId === refreshToken) loading.value = false;
@@ -968,6 +976,7 @@ function queueActionLabel(item: QueueItem) {
     : "Details";
 }
 async function processItem(item: QueueItem) {
+  if (loading.value || loadError.value) return;
   if (!isBoarding.value) {
     selectedBooking.value = item;
     return;
@@ -989,12 +998,13 @@ async function processItem(item: QueueItem) {
     if (item.status === "ISSUED")
       await checkInTicket(staffDatabase, { passengerId: item.passengerId });
     else await boardTicket(staffDatabase, { passengerId: item.passengerId });
+    notifySuccess(item.status === 'ISSUED' ? 'Passenger checked in.' : 'Passenger marked as boarded.');
     await refreshQueues();
   } catch (error) {
-    loadError.value = databaseRequestError(
+    loadError.value = notifyError(databaseRequestError(
       error,
       "Could not update ticket status.",
-    );
+    ));
   } finally {
     busy.value = false;
   }
@@ -1006,7 +1016,7 @@ async function lookupTicket() {
   try{
     const {data}=await verifyTicketQr(staffDatabase,raw,code);
     if(code===activeSailing.value && showScanner.value && raw===ticketLookup.value)scannedTicket.value=data.passenger;
-  }catch(cause){scanError.value=databaseRequestError(cause,'Could not verify this ticket. Check your connection and try again.');}
+  }catch(cause){scanError.value=notifyError(databaseRequestError(cause,'Could not verify this ticket. Check your connection and try again.'));}
   finally{scanBusy.value=false;}
 }
 async function confirmScannedTicket(){
@@ -1066,10 +1076,10 @@ async function startCamera() {
     scanFrame = requestAnimationFrame(scan);
   } catch (error) {
     stopCamera();
-    scanError.value = databaseRequestError(
+    scanError.value = notifyError(databaseRequestError(
       error,
       "Could not start camera. Enter the ticket code instead.",
-    );
+    ));
   }
 }
 onBeforeUnmount(() => {
@@ -1077,6 +1087,7 @@ onBeforeUnmount(() => {
   if (searchTimer) clearTimeout(searchTimer);
 });
 async function collectPayment() {
+  if (loading.value || loadError.value) return;
   if (
     !staffDatabase ||
     !selectedBookingCanPay.value ||
@@ -1100,24 +1111,27 @@ async function collectPayment() {
       bookingId: selectedBooking.value.id,
       method: paymentMethod.value,
     });
+    notifySuccess('Cash payment recorded. Ticket issued.');
     selectedBooking.value = null;
     await refreshQueues();
   } catch (error) {
-    loadError.value = databaseRequestError(error, "Could not record payment.");
+    loadError.value = notifyError(databaseRequestError(error, "Could not record payment."));
   } finally {
     busy.value = false;
   }
 }
 async function verifyPayment() {
+  if (loading.value || loadError.value) return;
   if (!selectedBookingNeedsVerification.value || busy.value || selectedBookingDeparted.value) return;
   const booking = selectedBooking.value;
   if (!(await confirmAction({ title: 'Verify online payment?', message: `Verify ${paymentMethodLabel(booking)} payment of PHP ${Number(booking.total).toLocaleString()} for ${booking.reference}? This issues the passenger e-ticket.`, confirmText: 'Verify and issue ticket', danger: false }))) return;
   busy.value = true; loadError.value = '';
   try {
     await verifyOnlinePayment(booking.id);
+    notifySuccess('Online payment verified. Ticket issued.');
     selectedBooking.value = null;
     await refreshQueues();
-  } catch (cause) { loadError.value = databaseRequestError(cause, 'Could not verify payment.'); }
+  } catch (cause) { loadError.value = notifyError(databaseRequestError(cause, 'Could not verify payment.')); }
   finally { busy.value = false; }
 }
 function initialsFor(name: string) {
@@ -1147,7 +1161,7 @@ async function scrollToSection(id: string) {
 
 </script>
 <style scoped>
-.transaction-reference { overflow-wrap: anywhere; font-size: 12px; color: var(--muted); }
+.transaction-reference { overflow-wrap: anywhere; font-size: var(--text-label); color: var(--muted); }
 .staff-shell {
   display: flex;
   min-height: 100vh;
@@ -1190,7 +1204,7 @@ async function scrollToSection(id: string) {
   border-radius: 50%;
   background: #d9edf8;
   color: var(--ocean);
-  font-size: 10px;
+  font-size: var(--text-caption);
   font-weight: 800;
 }
 .role-card > div {
@@ -1204,12 +1218,12 @@ async function scrollToSection(id: string) {
 }
 .role-card strong {
   margin-top: 4px;
-  font-size: 11px;
+  font-size: var(--text-caption);
 }
 .role-card em {
   margin-top: 3px;
   color: #7cc4e5;
-  font-size: 9px;
+  font-size: var(--text-caption);
   font-style: normal;
 }
 nav {
@@ -1219,7 +1233,7 @@ nav {
 nav p {
   margin: 16px 8px 5px;
   color: #6e8b9d;
-  font-size: 9px;
+  font-size: var(--text-caption);
   font-weight: 800;
   letter-spacing: 0.1em;
 }
@@ -1232,7 +1246,7 @@ nav a,
   border-radius: 8px;
   color: #a8c0cf;
   text-decoration: none;
-  font-size: 11px;
+  font-size: var(--text-caption);
 }
 nav a .app-icon,
 .logout .app-icon {
@@ -1260,7 +1274,7 @@ nav a:hover {
   border-bottom: 1px solid var(--line);
   background: var(--surface);
   color: var(--muted);
-  font-size: 12px;
+  font-size: var(--text-label);
 }
 .breadcrumbs span {
   padding: 0 8px;
@@ -1277,7 +1291,7 @@ nav a:hover {
   font-size: 18px;
 }
 .mini-avatar {
-  font-size: 10px;
+  font-size: var(--text-caption);
 }
 .content {
   padding: 40px 35px;
@@ -1296,12 +1310,12 @@ nav a:hover {
 .heading p:last-child {
   margin: 0;
   color: var(--muted);
-  font-size: 12px;
+  font-size: var(--text-label);
 }
 .kicker {
   margin: 0;
   color: var(--ocean);
-  font-size: 10px;
+  font-size: var(--text-caption);
   font-weight: 800;
   letter-spacing: 0.11em;
 }
@@ -1358,7 +1372,7 @@ nav a:hover {
 }
 .metric-grid small {
   color: var(--muted);
-  font-size: 10px;
+  font-size: var(--text-caption);
 }
 .metric-grid strong {
   margin: 4px 0 2px;
@@ -1366,7 +1380,7 @@ nav a:hover {
 }
 .metric-grid em {
   color: #078a72;
-  font-size: 9px;
+  font-size: var(--text-caption);
   font-style: normal;
 }
 .workspace-grid {
@@ -1397,7 +1411,7 @@ nav a:hover {
   padding: 7px 9px;
   background: var(--surface-soft);
   color: var(--muted);
-  font-size: 10px;
+  font-size: var(--text-caption);
 }
 .queue-item {
   display: flex;
@@ -1413,7 +1427,7 @@ nav a:hover {
   width: 34px;
   height: 34px;
   border-radius: 50%;
-  font-size: 10px;
+  font-size: var(--text-caption);
   font-weight: 800;
 }
 .person-avatar.blue {
@@ -1432,12 +1446,12 @@ nav a:hover {
   flex: 1;
 }
 .queue-item strong {
-  font-size: 12px;
+  font-size: var(--text-label);
 }
 .queue-item p {
   margin: 4px 0 0;
   color: var(--muted);
-  font-size: 10px;
+  font-size: var(--text-caption);
 }
 .queue-item > .app-icon {
   color: var(--muted);
@@ -1474,7 +1488,7 @@ nav a:hover {
 }
 .shift-time span {
   color: var(--muted);
-  font-size: 10px;
+  font-size: var(--text-caption);
 }
 .shift-line {
   display: flex;
@@ -1495,7 +1509,7 @@ nav a:hover {
 .shift-panel .muted {
   margin: 13px 0 18px;
   color: var(--muted);
-  font-size: 10px;
+  font-size: var(--text-caption);
 }
 .shift-panel ion-button {
   --color: var(--ocean);
@@ -1510,7 +1524,7 @@ nav a:hover {
   gap: 7px;
   margin-top: 20px;
   color: var(--muted);
-  font-size: 10px;
+  font-size: var(--text-caption);
 }
 .staff-note .app-icon {
   color: var(--ocean);
@@ -1555,7 +1569,7 @@ nav a:hover {
   margin-top: 14px;
   color: var(--ink);
   text-align: left;
-  font-size: 11px;
+  font-size: var(--text-caption);
   font-weight: 700;
 }
 .modal-field input,
@@ -1573,7 +1587,7 @@ nav a:hover {
   width: auto;
   min-width: 68px;
   padding: 0 9px;
-  font-size: 9px;
+  font-size: var(--text-caption);
   font-weight: 800;
   white-space: nowrap;
 }
@@ -1583,7 +1597,7 @@ nav a:hover {
 }
 .modal-card p {
   color: var(--muted);
-  font-size: 12px;
+  font-size: var(--text-label);
   line-height: 1.5;
 }
 .scan-box {
@@ -1595,7 +1609,7 @@ nav a:hover {
   border: 1px dashed #9fcbe2;
   border-radius: 12px;
   color: var(--ocean);
-  font-size: 11px;
+  font-size: var(--text-caption);
 }
 .scan-box .app-icon {
   font-size: 38px;
@@ -1633,7 +1647,7 @@ nav a:hover {
   border-radius: 20px;
   background: var(--light-blue);
   color: var(--ocean);
-  font-size: 9px;
+  font-size: var(--text-caption);
   font-weight: 800;
 }
 .activity-list {
@@ -1663,17 +1677,17 @@ nav a:hover {
   min-width: 0;
 }
 .activity-item strong {
-  font-size: 11px;
+  font-size: var(--text-caption);
 }
 .activity-item p {
   margin: 3px 0 0;
   color: var(--muted);
-  font-size: 10px;
+  font-size: var(--text-caption);
   overflow-wrap: anywhere;
 }
 .activity-item > small {
   color: var(--muted);
-  font-size: 9px;
+  font-size: var(--text-caption);
   white-space: nowrap;
 }
 #overview,
@@ -1719,7 +1733,7 @@ nav a:hover {
     gap: 8px;
   }
   .queue-item p {
-    font-size: 9px;
+    font-size: var(--text-caption);
   }
 }
 .staff-sidebar {
@@ -1780,7 +1794,7 @@ nav a:hover {
   gap: 2px;
 }
 .staff-profile-copy strong {
-  font-size: 10px;
+  font-size: var(--text-caption);
 }
 .staff-profile-copy small {
   color: var(--muted);
@@ -1816,7 +1830,7 @@ nav a:hover {
   padding: 4px 8px;
   border-radius: 6px;
   background: var(--light-blue);
-  font-size: 9px;
+  font-size: var(--text-caption);
 }
 .queue-item {
   transition: background-color 0.15s ease;
@@ -2010,7 +2024,7 @@ nav a:hover {
 }
 .shift-modal-time span {
   color: var(--muted);
-  font-size: 11px;
+  font-size: var(--text-caption);
 }
 .shift-modal-location {
   display: flex;
@@ -2033,12 +2047,12 @@ nav a:hover {
 }
 .shift-modal-location strong {
   color: var(--ink);
-  font-size: 12px;
+  font-size: var(--text-label);
 }
 .shift-modal-location small {
   margin-top: 3px;
   color: var(--muted);
-  font-size: 10px;
+  font-size: var(--text-caption);
 }
 .shift-modal > ion-button {
   margin-top: 5px;
@@ -2117,7 +2131,7 @@ ion-modal.shift-detail-modal::part(content) {
 .shift-modal-date {
   margin: 5px 0 0;
   color: var(--muted);
-  font-size: 11px;
+  font-size: var(--text-caption);
   line-height: 1.45;
 }
 .shift-modal-time {
@@ -2196,12 +2210,12 @@ ion-modal.shift-detail-modal::part(content) {
 }
 .shift-modal-location strong {
   margin-top: 4px;
-  font-size: 12px;
+  font-size: var(--text-label);
 }
 .shift-modal-location > div > span {
   margin-top: 2px;
   color: var(--muted);
-  font-size: 10px;
+  font-size: var(--text-caption);
 }
 .location-trailing {
   color: var(--ocean);
@@ -2213,7 +2227,7 @@ ion-modal.shift-detail-modal::part(content) {
   gap: 7px;
   margin-top: 13px;
   color: var(--muted);
-  font-size: 10px;
+  font-size: var(--text-caption);
   line-height: 1.45;
 }
 .shift-modal-note .app-icon {
@@ -2253,7 +2267,7 @@ ion-modal.shift-detail-modal::part(content) {
     font-size: 7px;
   }
   .shift-modal-note {
-    font-size: 9px;
+    font-size: var(--text-caption);
   }
   .shift-modal .shift-done {
     margin-top: 16px;
@@ -2281,7 +2295,7 @@ ion-modal.shift-detail-modal::part(content) {
   background: var(--surface-soft);
   color: var(--ink);
   font: inherit;
-  font-size: 11px;
+  font-size: var(--text-caption);
 }
 .queue-search::placeholder {
   color: var(--muted);
@@ -2310,22 +2324,22 @@ ion-modal.shift-detail-modal::part(content) {
   min-width: 0;
 }
 .ticket-record strong {
-  font-size: 12px;
+  font-size: var(--text-label);
 }
 .ticket-record small {
   color: var(--muted);
-  font-size: 10px;
+  font-size: var(--text-caption);
 }
 .ticket-record code {
   max-width: 56%;
   overflow-wrap: anywhere;
   color: var(--ocean);
-  font-size: 10px;
+  font-size: var(--text-caption);
 }
 .empty-state {
   padding: 18px 0;
   color: var(--muted);
-  font-size: 12px;
+  font-size: var(--text-label);
   text-align: center;
 }
 @media (max-width: 600px) {
@@ -2410,7 +2424,7 @@ ion-modal.shift-detail-modal::part(content) {
   background: var(--light-blue);
   color: var(--ocean);
   font: inherit;
-  font-size: 12px;
+  font-size: var(--text-label);
   font-weight: 800;
   cursor: pointer;
 }
@@ -2425,7 +2439,7 @@ ion-modal.shift-detail-modal::part(content) {
   background: var(--surface);
   color: var(--ocean);
   font: inherit;
-  font-size: 12px;
+  font-size: var(--text-label);
   font-weight: 800;
   cursor: pointer;
 }
@@ -2445,7 +2459,7 @@ ion-modal.shift-detail-modal::part(content) {
   margin: 4px 0 24px;
   padding-left: 20px;
   color: var(--muted);
-  font-size: 11px;
+  font-size: var(--text-caption);
   line-height: 1.55;
 }
 .ticketing-guide li::marker {
@@ -2463,7 +2477,7 @@ ion-modal.shift-detail-modal::part(content) {
   border-radius: 9px;
   background: var(--ocean);
   color: #fff;
-  font-size: 11px;
+  font-size: var(--text-caption);
   font-weight: 800;
   text-decoration: none;
 }
@@ -2513,32 +2527,32 @@ ion-modal.shift-detail-modal::part(content) {
 .ticketing-workspace .metric-grid { gap: 16px; margin-bottom: 24px; }
 .ticketing-workspace .metric-grid article { min-width: 0; min-height: 116px; padding: 20px; border-radius: 14px; background: var(--surface); }
 .ticketing-workspace .metric-grid article > span { width: 42px; height: 42px; border-radius: 12px; flex: none; }
-.ticketing-workspace .metric-grid small { font-size: 12px; line-height: 1.6; }
+.ticketing-workspace .metric-grid small { font-size: var(--text-label); line-height: 1.6; }
 .ticketing-workspace .metric-grid strong { font-size: 28px; line-height: 1.3; margin: 4px 0; }
-.ticketing-workspace .metric-grid em { color: var(--muted); font-size: 11px; font-style: normal; line-height: 1.6; }
+.ticketing-workspace .metric-grid em { color: var(--muted); font-size: var(--text-caption); font-style: normal; line-height: 1.6; }
 .ticketing-workspace .workspace-grid { grid-template-columns: minmax(0, 1fr) 290px; align-items: start; gap: 20px; }
 .ticketing-workspace .queue-panel { min-width: 0; padding: 22px; border-radius: 15px; background: var(--surface); }
 .ticketing-workspace .queue-panel .panel-heading { display: block; margin: 0; }
 .ticketing-workspace .queue-panel h2 { margin: 7px 0 0; font-size: 20px; line-height: 1.4; }
 .ticketing-workspace .queue-filters { display: grid; grid-template-columns: minmax(0, 1fr) 180px; align-items: end; gap: 12px; margin-top: 18px; }
-.ticketing-workspace .queue-filters label { display: grid; gap: 7px; min-width: 0; color: var(--muted); font-size: 11px; font-weight: 500; }
-.ticketing-workspace .queue-filters input, .ticketing-workspace .queue-filters select { width: 100%; min-width: 0; height: 44px; padding: 0 12px; border: 1px solid var(--line); border-radius: 9px; background: var(--surface-soft); color: var(--ink); font-size: 12px; font-weight: 400; }
-.ticketing-workspace .queue-search::placeholder { font-size: 11px; }
-.ticketing-workspace .queue-result-count { margin: 14px 0; color: var(--muted); font-size: 11px; line-height: 1.7; }
+.ticketing-workspace .queue-filters label { display: grid; gap: 7px; min-width: 0; color: var(--muted); font-size: var(--text-caption); font-weight: 500; }
+.ticketing-workspace .queue-filters input, .ticketing-workspace .queue-filters select { width: 100%; min-width: 0; height: 44px; padding: 0 12px; border: 1px solid var(--line); border-radius: 9px; background: var(--surface-soft); color: var(--ink); font-size: var(--text-label); font-weight: 400; }
+.ticketing-workspace .queue-search::placeholder { font-size: var(--text-caption); }
+.ticketing-workspace .queue-result-count { margin: 14px 0; color: var(--muted); font-size: var(--text-caption); line-height: 1.7; }
 .ticketing-workspace .queue-list { display: grid; gap: 10px; }
 .ticketing-workspace .queue-item { display: grid; grid-template-columns: 36px minmax(0, 1fr) auto; gap: 10px 12px; align-items: start; padding: 16px; border: 1px solid var(--line); border-radius: 11px; background: var(--surface-soft); }
-.ticketing-workspace .person-avatar { grid-column: 1; grid-row: 1 / 3; width: 36px; height: 36px; font-size: 11px; }
+.ticketing-workspace .person-avatar { grid-column: 1; grid-row: 1 / 3; width: 36px; height: 36px; font-size: var(--text-caption); }
 .ticketing-workspace .queue-person { grid-column: 2; grid-row: 1 / 3; min-width: 0; }
 .ticketing-workspace .queue-person strong { font-size: 14px; line-height: 1.6; overflow-wrap: anywhere; }
-.ticketing-workspace .queue-reference { display: block; margin-top: 3px; color: var(--muted); font-size: 10px; line-height: 1.6; overflow-wrap: anywhere; }
-.ticketing-workspace .queue-person .queue-route { margin: 5px 0 0; color: var(--ink); font-size: 12px; line-height: 1.7; overflow-wrap: anywhere; }
-.ticketing-workspace .queue-person .queue-departure { display: flex; align-items: flex-start; gap: 5px; margin: 5px 0 0; color: var(--muted); font-size: 11px; line-height: 1.7; }
+.ticketing-workspace .queue-reference { display: block; margin-top: 3px; color: var(--muted); font-size: var(--text-caption); line-height: 1.6; overflow-wrap: anywhere; }
+.ticketing-workspace .queue-person .queue-route { margin: 5px 0 0; color: var(--ink); font-size: var(--text-label); line-height: 1.7; overflow-wrap: anywhere; }
+.ticketing-workspace .queue-person .queue-departure { display: flex; align-items: flex-start; gap: 5px; margin: 5px 0 0; color: var(--muted); font-size: var(--text-caption); line-height: 1.7; }
 .ticketing-workspace .queue-departure .app-icon { flex: none; margin-top: 3px; color: var(--ocean); font-size: 13px; }
-.ticketing-workspace .queue-item .status { grid-column: 3; grid-row: 1; justify-self: end; margin: 0; max-width: 120px; padding: 5px 8px; border-radius: 7px; font-size: 9px; line-height: 1.5; text-align: center; white-space: normal; }
+.ticketing-workspace .queue-item .status { grid-column: 3; grid-row: 1; justify-self: end; margin: 0; max-width: 120px; padding: 5px 8px; border-radius: 7px; font-size: var(--text-caption); line-height: 1.5; text-align: center; white-space: normal; }
 .ticketing-workspace .queue-item .status.awaiting-payment, .ticketing-workspace .queue-item .status.refund-pending { color: #8a5100; background: #fff0d5; }
 .ticketing-workspace .queue-item .status.paid { color: #167252; background: #e0f4eb; }
 .ticketing-workspace .queue-item .status.cancelled, .ticketing-workspace .queue-item .status.expired, .ticketing-workspace .queue-item .status.refunded { color: var(--muted); background: var(--surface); }
-.ticketing-workspace .queue-update { grid-column: 3; grid-row: 2; justify-self: end; min-height: 40px; min-width: 80px; margin: 0; padding: 8px 12px; font-size: 11px; font-weight: 600; border-radius: 8px; }
+.ticketing-workspace .queue-update { grid-column: 3; grid-row: 2; justify-self: end; min-height: 40px; min-width: 80px; margin: 0; padding: 8px 12px; font-size: var(--text-caption); font-weight: 600; border-radius: 8px; }
 @media (max-width: 1199px) {
   .ticketing-workspace .workspace-grid { grid-template-columns: minmax(0, 1fr); }
   .ticketing-workspace .queue-filters { grid-template-columns: minmax(0, 1fr) minmax(150px, .6fr); }
@@ -2565,10 +2579,10 @@ ion-modal.shift-detail-modal::part(content) {
 .ticketing-workspace .person-avatar { width: 30px; height: 30px; grid-row: 1; }
 .ticketing-workspace .queue-person { grid-row: 1; }
 .ticketing-workspace .queue-person strong { display: inline; font-size: 13px; line-height: 1.5; }
-.ticketing-workspace .queue-reference { display: inline; margin: 0 0 0 8px; font-size: 10px; }
-.ticketing-workspace .queue-person .queue-route { margin: 2px 0 0; font-size: 11px; line-height: 1.5; }
-.ticketing-workspace .queue-person .queue-departure { margin: 2px 0 0; font-size: 10px; line-height: 1.5; }
-.ticketing-workspace .queue-departure .app-icon { margin-top: 1px; font-size: 12px; }
+.ticketing-workspace .queue-reference { display: inline; margin: 0 0 0 8px; font-size: var(--text-caption); }
+.ticketing-workspace .queue-person .queue-route { margin: 2px 0 0; font-size: var(--text-caption); line-height: 1.5; }
+.ticketing-workspace .queue-person .queue-departure { margin: 2px 0 0; font-size: var(--text-caption); line-height: 1.5; }
+.ticketing-workspace .queue-departure .app-icon { margin-top: 1px; font-size: var(--text-label); }
 .ticketing-workspace .queue-item .status { grid-column: 3; grid-row: 1; }
 .ticketing-workspace .queue-update { grid-column: 4; grid-row: 1; min-width: 0; width: 70px; min-height: 40px; padding: 8px; }
 .booking-payment-modal { --width: min(660px, calc(100vw - 32px)); --height: min(820px, 90vh); --border-radius: 18px; }
@@ -2579,21 +2593,21 @@ ion-modal.shift-detail-modal::part(content) {
 .booking-dialog-heading h2 { margin: 0; font-size: 21px; line-height: 1.4; }
 .booking-dialog-heading .close { position: static; order: 2; flex: none; display: grid; place-items: center; width: 40px; height: 40px; margin: 0; padding: 0; border: 1px solid var(--line); border-radius: 10px; background: var(--surface-soft); color: var(--ink); }
 .booking-dialog .booking-dialog-body { display: grid; gap: 14px; padding: 22px 24px; }
-.booking-dialog-body > p { margin: 0; color: var(--muted); font-size: 12px; line-height: 1.7; }
+.booking-dialog-body > p { margin: 0; color: var(--muted); font-size: var(--text-label); line-height: 1.7; }
 .booking-dialog .booking-amount { display: grid; grid-template-columns: 1fr auto; gap: 5px 12px; padding: 16px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface-soft); }
-.booking-amount > span { font-size: 12px; color: var(--muted); }
+.booking-amount > span { font-size: var(--text-label); color: var(--muted); }
 .booking-amount > strong { grid-column: 1; font-size: 27px; line-height: 1.3; }
-.booking-amount > b { grid-column: 2; grid-row: 1 / 3; align-self: center; max-width: 130px; padding: 7px 10px; border-radius: 8px; background: var(--light-blue); color: var(--ocean); font-size: 11px; text-align: center; }
+.booking-amount > b { grid-column: 2; grid-row: 1 / 3; align-self: center; max-width: 130px; padding: 7px 10px; border-radius: 8px; background: var(--light-blue); color: var(--ocean); font-size: var(--text-caption); text-align: center; }
 .dialog-sailing h3 { margin: 0 0 8px; font-size: 17px; line-height: 1.5; }
-.dialog-sailing p { display: flex; align-items: center; gap: 8px; margin: 5px 0; color: var(--muted); font-size: 12px; line-height: 1.6; }
+.dialog-sailing p { display: flex; align-items: center; gap: 8px; margin: 5px 0; color: var(--muted); font-size: var(--text-label); line-height: 1.6; }
 .dialog-sailing .app-icon { color: var(--ocean); flex: none; font-size: 16px; }
 .booking-dialog .dialog-section-title { margin: 3px 0 0; font-size: 14px; }
 .booking-dialog .ticket-record { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 6px 12px; margin: 0; padding: 12px 14px; border-radius: 10px; background: var(--surface-soft); }
 .booking-dialog .ticket-record > div { min-width: 0; }
 .booking-dialog .ticket-record strong { font-size: 13px; line-height: 1.5; overflow-wrap: anywhere; }
-.booking-dialog .ticket-record small { display: block; font-size: 10px; line-height: 1.7; color: var(--muted); }
+.booking-dialog .ticket-record small { display: block; font-size: var(--text-caption); line-height: 1.7; color: var(--muted); }
 .booking-dialog .ticket-record > small, .booking-dialog .ticket-record > code, .booking-dialog .ticket-record > div:not(:first-child) { grid-column: 1 / -1; overflow-wrap: anywhere; }
-.dialog-person-fare { font-size: 12px; font-weight: 600; align-self: start; white-space: nowrap; }
+.dialog-person-fare { font-size: var(--text-label); font-weight: 600; align-self: start; white-space: nowrap; }
 .booking-dialog .payment-actions { margin-top: 0; padding-top: 18px; }
 .booking-dialog .payment-actions ion-button { margin: 0; min-height: 46px; font-size: 13px; letter-spacing: 0; }
 @media (max-width: 600px) {
@@ -2613,14 +2627,14 @@ ion-modal.shift-detail-modal::part(content) {
 
 
 .ticketing-bookings .workspace-grid { grid-template-columns: minmax(0, 1fr); }
-.ticketing-workspace .all-bookings-link { display: inline-flex; align-items: center; gap: 7px; margin-top: 12px; min-height: 40px; padding: 8px 12px; border: 1px solid var(--line); border-radius: 8px; color: var(--ocean); text-decoration: none; font-size: 12px; }
+.ticketing-workspace .all-bookings-link { display: inline-flex; align-items: center; gap: 7px; margin-top: 12px; min-height: 40px; padding: 8px 12px; border: 1px solid var(--line); border-radius: 8px; color: var(--ocean); text-decoration: none; font-size: var(--text-label); }
 .all-bookings-link .app-icon { font-size: 16px; }
 
 .booking-payment-details { display: grid; gap: 12px; margin: 16px 0; padding: 14px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface-soft); }
 .booking-payment-details div { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px; }
-.booking-payment-details dt { color: var(--muted); font-size: 12px; }
-.booking-payment-details dd { margin: 0; color: var(--ink); font-size: 12px; font-weight: 600; text-align: right; overflow-wrap: anywhere; }
-.queue-person .queue-payment { font-size: 11px; color: var(--muted); }
+.booking-payment-details dt { color: var(--muted); font-size: var(--text-label); }
+.booking-payment-details dd { margin: 0; color: var(--ink); font-size: var(--text-label); font-weight: 600; text-align: right; overflow-wrap: anywhere; }
+.queue-person .queue-payment { font-size: var(--text-caption); color: var(--muted); }
 .queue-payment strong { color: var(--ink); font-size: inherit; }
 </style>
 
@@ -2628,38 +2642,38 @@ ion-modal.shift-detail-modal::part(content) {
 .ticketing-dashboard .heading { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 24px; }
 .ticketing-dashboard .heading > div { flex: 1; min-width: 240px; }
 .ticketing-dashboard .heading h1 { font-size: 30px; }
-.ticketing-dashboard .dashboard-walk-in { display: inline-flex; justify-content: center; align-items: center; gap: 8px; min-height: 44px; padding: 10px 14px; border-radius: 10px; background: var(--action); color: #fff; font-size: 12px; font-weight: 600; text-decoration: none; }
+.ticketing-dashboard .dashboard-walk-in { display: inline-flex; justify-content: center; align-items: center; gap: 8px; min-height: 44px; padding: 10px 14px; border-radius: 10px; background: var(--action); color: #fff; font-size: var(--text-label); font-weight: 600; text-decoration: none; }
 .ticketing-dashboard .dashboard-walk-in .app-icon { font-size: 18px; }
 .ticketing-dashboard .staff-refresh { margin: 0; min-height: 44px; }
 .ticketing-dashboard .metric-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; margin-bottom: 24px; }
 .ticketing-dashboard .metric-grid article { display: grid; grid-template-columns: 40px minmax(0, 1fr); gap: 12px; align-items: start; padding: 20px 16px; min-width: 0; border-radius: 16px; box-shadow: none; }
 .ticketing-dashboard .metric-grid article > span { margin-top: 3px; }
-.ticketing-dashboard .metric-grid small { font-size: 12px; line-height: 1.5; }
+.ticketing-dashboard .metric-grid small { font-size: var(--text-label); line-height: 1.5; }
 .ticketing-dashboard .metric-grid strong { font-size: 30px; line-height: 1.3; margin: 6px 0; }
-.ticketing-dashboard .metric-grid em { font-size: 11px; line-height: 1.7; overflow-wrap: anywhere; }
+.ticketing-dashboard .metric-grid em { font-size: var(--text-caption); line-height: 1.7; overflow-wrap: anywhere; }
 .ticketing-dashboard .workspace-grid { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 20px; align-items: start; }
 .ticketing-dashboard .queue-panel { padding: 22px; border-radius: 18px; }
 .ticketing-dashboard .panel-heading { display: flex; flex-direction: row; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; }
 .ticketing-dashboard .panel-heading h2 { font-size: 21px; line-height: 1.5; }
 .ticketing-dashboard .panel-heading .kicker { background: transparent; padding: 0; margin-bottom: 6px; }
-.ticketing-dashboard .all-bookings-link { min-height: 44px; background: var(--surface-soft); padding: 9px 12px; border-radius: 9px; font-size: 11px; }
-.ticketing-dashboard .queue-result-count { margin: 14px 0; font-size: 11px; color: var(--muted); }
+.ticketing-dashboard .all-bookings-link { min-height: 44px; background: var(--surface-soft); padding: 9px 12px; border-radius: 9px; font-size: var(--text-caption); }
+.ticketing-dashboard .queue-result-count { margin: 14px 0; font-size: var(--text-caption); color: var(--muted); }
 .ticketing-dashboard .queue-list { display: grid; gap: 12px; }
 .ticketing-dashboard .queue-item { display: grid; grid-template-columns: 38px minmax(0, 1fr) auto; gap: 10px 12px; align-items: start; padding: 18px; border-radius: 14px; background: var(--surface-soft); border: 1px solid var(--line); }
-.ticketing-dashboard .person-avatar { grid-column: 1; grid-row: 1 / 3; width: 38px; height: 38px; font-size: 12px; border-radius: 11px; }
+.ticketing-dashboard .person-avatar { grid-column: 1; grid-row: 1 / 3; width: 38px; height: 38px; font-size: var(--text-label); border-radius: 11px; }
 .ticketing-dashboard .queue-person { grid-column: 2; grid-row: 1 / 3; min-width: 0; }
 .ticketing-dashboard .queue-person > strong { display: block; font-size: 14px; line-height: 1.5; }
-.ticketing-dashboard .queue-person .queue-reference { display: block; margin: 4px 0 8px; font-size: 10px; }
-.ticketing-dashboard .queue-person .queue-route { font-size: 12px; line-height: 1.7; color: var(--ink); }
-.ticketing-dashboard .queue-person .queue-departure { display: flex; align-items: center; gap: 5px; font-size: 11px; margin-top: 6px; line-height: 1.7; }
+.ticketing-dashboard .queue-person .queue-reference { display: block; margin: 4px 0 8px; font-size: var(--text-caption); }
+.ticketing-dashboard .queue-person .queue-route { font-size: var(--text-label); line-height: 1.7; color: var(--ink); }
+.ticketing-dashboard .queue-person .queue-departure { display: flex; align-items: center; gap: 5px; font-size: var(--text-caption); margin-top: 6px; line-height: 1.7; }
 .ticketing-dashboard .queue-person .queue-departure .app-icon { flex: none; color: var(--ocean); }
 .ticketing-dashboard .dashboard-queue-facts { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; margin: 10px 0 8px; }
-.ticketing-dashboard .dashboard-queue-facts span { display: inline-flex; align-items: center; gap: 5px; font-size: 11px; }
+.ticketing-dashboard .dashboard-queue-facts span { display: inline-flex; align-items: center; gap: 5px; font-size: var(--text-caption); }
 .ticketing-dashboard .dashboard-queue-facts strong { font-size: 14px; }
-.ticketing-dashboard .queue-person .queue-payment { margin-top: 8px; font-size: 11px; line-height: 1.7; }
-.ticketing-dashboard .queue-item .status { grid-column: 3; display: inline-flex; align-items: center; gap: 5px; justify-self: end; text-transform: none; white-space: normal; max-width: 180px; padding: 6px 9px; font-size: 10px; line-height: 1.6; border-radius: 7px; }
+.ticketing-dashboard .queue-person .queue-payment { margin-top: 8px; font-size: var(--text-caption); line-height: 1.7; }
+.ticketing-dashboard .queue-item .status { grid-column: 3; display: inline-flex; align-items: center; gap: 5px; justify-self: end; text-transform: none; white-space: normal; max-width: 180px; padding: 6px 9px; font-size: var(--text-caption); line-height: 1.6; border-radius: 7px; }
 .ticketing-dashboard .queue-item .status .app-icon { flex: none; font-size: 14px; }
-.ticketing-dashboard .queue-update { grid-column: 3; grid-row: 2; display: inline-flex; justify-content: center; align-items: center; gap: 8px; width: auto; min-width: 0; max-width: 100%; white-space: normal; min-height: 44px; margin: 0; padding: 10px 12px; border-radius: 9px; background: var(--light-blue); color: var(--ocean); font-size: 11px; justify-self: end; }
+.ticketing-dashboard .queue-update { grid-column: 3; grid-row: 2; display: inline-flex; justify-content: center; align-items: center; gap: 8px; width: auto; min-width: 0; max-width: 100%; white-space: normal; min-height: 44px; margin: 0; padding: 10px 12px; border-radius: 9px; background: var(--light-blue); color: var(--ocean); font-size: var(--text-caption); justify-self: end; }
 .ticketing-dashboard .queue-update .app-icon { flex: none; font-size: 16px; }
 .ticketing-dashboard .queue-panel .panel-heading { display: flex; flex-direction: row; align-items: center; }
 .ticketing-dashboard .queue-item .status.awaiting-staff { background: #fff0d5; color: #8a5100; }
@@ -2667,8 +2681,8 @@ ion-modal.shift-detail-modal::part(content) {
 .ticketing-dashboard .dashboard-empty { display: grid; justify-items: center; padding: 32px 20px; text-align: center; background: var(--surface-soft); border: 1px dashed var(--line); border-radius: 14px; }
 .ticketing-dashboard .dashboard-empty > .app-icon { font-size: 30px; color: var(--ocean); padding: 12px; border-radius: 14px; background: var(--light-blue); }
 .ticketing-dashboard .dashboard-empty h3 { margin: 16px 0 8px; font-size: 17px; }
-.ticketing-dashboard .dashboard-empty p { margin: 0; max-width: 330px; font-size: 12px; line-height: 1.8; color: var(--muted); }
-.ticketing-dashboard .dashboard-empty a { display: inline-flex; align-items: center; min-height: 44px; margin-top: 10px; color: var(--ocean); font-size: 12px; }
+.ticketing-dashboard .dashboard-empty p { margin: 0; max-width: 330px; font-size: var(--text-label); line-height: 1.8; color: var(--muted); }
+.ticketing-dashboard .dashboard-empty a { display: inline-flex; align-items: center; min-height: 44px; margin-top: 10px; color: var(--ocean); font-size: var(--text-label); }
 .ticketing-dashboard a:focus-visible, .ticketing-dashboard button:focus-visible { outline: 2px solid var(--ocean); outline-offset: 3px; }
 @media (max-width: 1200px) {
   .ticketing-dashboard .metric-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -2698,41 +2712,41 @@ ion-modal.shift-detail-modal::part(content) {
 .ticketing-bookings .panel-heading h2 { font-size: 21px; margin: 8px 0 20px; }
 .ticketing-bookings .panel-heading .kicker { padding: 0; background: transparent; }
 .ticketing-bookings .queue-filters { display: grid; grid-template-columns: minmax(0, 1fr) minmax(240px, .4fr); gap: 16px; width: 100%; margin: 0; padding: 18px; border: 1px solid var(--line); border-radius: 14px; background: var(--surface-soft); }
-.ticketing-bookings .queue-filters label { min-width: 0; display: grid; gap: 9px; font-size: 12px; font-weight: 500; }
+.ticketing-bookings .queue-filters label { min-width: 0; display: grid; gap: 9px; font-size: var(--text-label); font-weight: 500; }
 .ticketing-bookings .queue-filters label > span { display: flex; align-items: center; gap: 7px; }
 .ticketing-bookings .queue-filters label .app-icon { color: var(--ocean); font-size: 16px; }
 .ticketing-bookings .queue-filters input, .ticketing-bookings .queue-filters select { min-width: 0; min-height: 46px; background-color: var(--surface); border-radius: 10px; font-size: 13px; }
-.ticketing-bookings .queue-filters input::placeholder { font-size: 12px; }
+.ticketing-bookings .queue-filters input::placeholder { font-size: var(--text-label); }
 .ticketing-bookings .reservation-tools { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin: 12px 0; }
-.ticketing-bookings .reservation-tools > span { display: flex; align-items: center; gap: 6px; color: var(--muted); font-size: 11px; }
+.ticketing-bookings .reservation-tools > span { display: flex; align-items: center; gap: 6px; color: var(--muted); font-size: var(--text-caption); }
 .ticketing-bookings .reservation-tools .app-icon { color: var(--ocean); font-size: 14px; flex: none; }
-.ticketing-bookings .reservation-tools button { min-height: 40px; padding: 7px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--light-blue); color: var(--ocean); font: inherit; font-size: 11px; }
-.ticketing-bookings .queue-result-count { margin: 16px 0 12px; font-size: 12px; }
+.ticketing-bookings .reservation-tools button { min-height: 40px; padding: 7px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--light-blue); color: var(--ocean); font: inherit; font-size: var(--text-caption); }
+.ticketing-bookings .queue-result-count { margin: 16px 0 12px; font-size: var(--text-label); }
 .ticketing-bookings .queue-list { gap: 12px; }
 .ticketing-bookings .queue-item { display: grid; grid-template-columns: 40px minmax(0, 1fr) minmax(180px, .32fr); align-items: start; gap: 10px 14px; padding: 18px; border-radius: 14px; background: var(--surface-soft); }
-.ticketing-bookings .person-avatar { grid-column: 1; grid-row: 1 / 3; width: 40px; height: 40px; border-radius: 11px; font-size: 12px; }
+.ticketing-bookings .person-avatar { grid-column: 1; grid-row: 1 / 3; width: 40px; height: 40px; border-radius: 11px; font-size: var(--text-label); }
 .ticketing-bookings .queue-person { grid-column: 2; grid-row: 1 / 3; min-width: 0; }
 .ticketing-bookings .queue-person > strong { display: block; font-size: 14px; line-height: 1.6; }
-.ticketing-bookings .queue-person .queue-reference { display: block; margin: 3px 0 8px; font-size: 10px; color: var(--muted); }
+.ticketing-bookings .queue-person .queue-reference { display: block; margin: 3px 0 8px; font-size: var(--text-caption); color: var(--muted); }
 .ticketing-bookings .queue-person .queue-route { margin-top: 6px; font-size: 13px; line-height: 1.7; color: var(--ink); }
-.ticketing-bookings .queue-person .queue-departure { display: flex; align-items: center; gap: 6px; font-size: 11px; line-height: 1.7; margin-top: 6px; }
+.ticketing-bookings .queue-person .queue-departure { display: flex; align-items: center; gap: 6px; font-size: var(--text-caption); line-height: 1.7; margin-top: 6px; }
 .ticketing-bookings .queue-departure .app-icon { color: var(--ocean); flex: none; font-size: 14px; }
 .ticketing-bookings .dashboard-queue-facts { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 16px; margin: 10px 0 8px; }
-.ticketing-bookings .dashboard-queue-facts span { display: inline-flex; align-items: center; gap: 5px; font-size: 11px; }
+.ticketing-bookings .dashboard-queue-facts span { display: inline-flex; align-items: center; gap: 5px; font-size: var(--text-caption); }
 .ticketing-bookings .dashboard-queue-facts strong { font-size: 15px; color: var(--ink); }
-.ticketing-bookings .queue-person .reservation-channel { display: inline-block; margin: 0; padding: 3px 6px; border: 1px solid var(--line); border-radius: 5px; background: var(--surface); font-size: 10px; color: var(--muted); }
-.ticketing-bookings .queue-person .queue-payment { margin: 7px 0 0; font-size: 11px; line-height: 1.7; }
+.ticketing-bookings .queue-person .reservation-channel { display: inline-block; margin: 0; padding: 3px 6px; border: 1px solid var(--line); border-radius: 5px; background: var(--surface); font-size: var(--text-caption); color: var(--muted); }
+.ticketing-bookings .queue-person .queue-payment { margin: 7px 0 0; font-size: var(--text-caption); line-height: 1.7; }
 .ticketing-bookings .queue-person .queue-payment strong { font-size: inherit; }
-.ticketing-bookings .queue-item .status { grid-column: 3; grid-row: 1; display: inline-flex; align-items: center; gap: 5px; justify-self: end; max-width: 100%; text-transform: none; white-space: normal; text-align: left; border-radius: 7px; padding: 6px 9px; font-size: 11px; line-height: 1.6; }
+.ticketing-bookings .queue-item .status { grid-column: 3; grid-row: 1; display: inline-flex; align-items: center; gap: 5px; justify-self: end; max-width: 100%; text-transform: none; white-space: normal; text-align: left; border-radius: 7px; padding: 6px 9px; font-size: var(--text-caption); line-height: 1.6; }
 .ticketing-bookings .queue-item .status .app-icon { flex: none; font-size: 14px; }
 .ticketing-bookings .queue-item .status.awaiting-staff { color: #8a5100; background: #fff0d5; }
-.ticketing-bookings .queue-update { grid-column: 3; grid-row: 2; display: inline-flex; justify-self: end; align-items: center; justify-content: center; gap: 7px; width: auto; max-width: 100%; min-width: 0; min-height: 44px; padding: 10px 12px; margin: 0; white-space: normal; background: var(--light-blue); color: var(--ocean); border-radius: 9px; font-size: 12px; }
+.ticketing-bookings .queue-update { grid-column: 3; grid-row: 2; display: inline-flex; justify-self: end; align-items: center; justify-content: center; gap: 7px; width: auto; max-width: 100%; min-width: 0; min-height: 44px; padding: 10px 12px; margin: 0; white-space: normal; background: var(--light-blue); color: var(--ocean); border-radius: 9px; font-size: var(--text-label); }
 .ticketing-bookings .queue-update .app-icon { font-size: 16px; flex: none; }
 .ticketing-bookings .reservation-empty { display: grid; justify-items: center; text-align: center; padding: 36px 20px; background: var(--surface-soft); border: 1px dashed var(--line); border-radius: 14px; }
 .ticketing-bookings .reservation-empty > .app-icon { padding: 12px; border-radius: 14px; background: var(--light-blue); color: var(--ocean); font-size: 28px; }
 .ticketing-bookings .reservation-empty h3 { font-size: 18px; margin: 16px 0 8px; }
-.ticketing-bookings .reservation-empty p { margin: 0; max-width: 360px; font-size: 12px; line-height: 1.8; color: var(--muted); }
-.ticketing-bookings .reservation-empty button { min-height: 44px; margin-top: 16px; padding: 10px 14px; border: 1px solid var(--line); border-radius: 9px; background: var(--light-blue); color: var(--ocean); font: inherit; font-size: 12px; }
+.ticketing-bookings .reservation-empty p { margin: 0; max-width: 360px; font-size: var(--text-label); line-height: 1.8; color: var(--muted); }
+.ticketing-bookings .reservation-empty button { min-height: 44px; margin-top: 16px; padding: 10px 14px; border: 1px solid var(--line); border-radius: 9px; background: var(--light-blue); color: var(--ocean); font: inherit; font-size: var(--text-label); }
 .ticketing-bookings :deep(.workspace-pagination) { margin-top: 18px; padding: 18px 0 0; gap: 12px; background: transparent; }
 .ticketing-bookings :deep(.pagination-controls) { gap: 10px; }
 .ticketing-bookings :deep(.workspace-pagination button) { min-height: 44px; border-radius: 9px; }
@@ -2751,8 +2765,8 @@ ion-modal.shift-detail-modal::part(content) {
   .ticketing-bookings .queue-item .status { grid-column: 2; grid-row: 2; justify-self: start; }
   .ticketing-bookings .queue-update { grid-column: 2; grid-row: 3; width: 100%; justify-self: stretch; }
   .ticketing-bookings :deep(.pagination-controls) { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 8px; width: 100%; }
-  .ticketing-bookings :deep(.workspace-pagination button) { padding: 9px 10px; font-size: 11px; }
-  .ticketing-bookings :deep(.pagination-position) { text-align: center; font-size: 10px; }
+  .ticketing-bookings :deep(.workspace-pagination button) { padding: 9px 10px; font-size: var(--text-caption); }
+  .ticketing-bookings :deep(.pagination-position) { text-align: center; font-size: var(--text-caption); }
 }
 </style>
 
@@ -2760,19 +2774,19 @@ ion-modal.shift-detail-modal::part(content) {
 /* Dense reservation rows keep names and payment actions easy to scan. */
 .ticketing-workspace .queue-list { gap: 6px; }
 .ticketing-workspace .queue-item { grid-template-columns: 30px minmax(0, 1fr) auto; align-items: center; padding: 10px 12px; gap: 4px 10px; border-radius: 9px; }
-.ticketing-workspace .person-avatar { width: 30px; height: 30px; border-radius: 8px; font-size: 10px; grid-row: 1 / 3; }
+.ticketing-workspace .person-avatar { width: 30px; height: 30px; border-radius: 8px; font-size: var(--text-caption); grid-row: 1 / 3; }
 .ticketing-workspace .queue-person { display: flex; flex-wrap: wrap; align-items: center; gap: 3px 10px; grid-row: 1 / 3; }
 .ticketing-workspace .queue-person > strong { display: inline; font-size: 13px; line-height: 1.5; }
-.ticketing-workspace .queue-person .queue-reference { display: inline; margin: 0; font-size: 10px; overflow-wrap: anywhere; }
-.ticketing-workspace .queue-person .queue-route { flex-basis: 100%; margin: 0; font-size: 12px; line-height: 1.5; }
-.ticketing-workspace .queue-person .queue-departure { display: inline-flex; margin: 0; font-size: 10px; line-height: 1.5; }
+.ticketing-workspace .queue-person .queue-reference { display: inline; margin: 0; font-size: var(--text-caption); overflow-wrap: anywhere; }
+.ticketing-workspace .queue-person .queue-route { flex-basis: 100%; margin: 0; font-size: var(--text-label); line-height: 1.5; }
+.ticketing-workspace .queue-person .queue-departure { display: inline-flex; margin: 0; font-size: var(--text-caption); line-height: 1.5; }
 .ticketing-workspace .dashboard-queue-facts { display: inline-flex; margin: 0; gap: 8px; }
-.ticketing-workspace .dashboard-queue-facts span { font-size: 10px; }
-.ticketing-workspace .dashboard-queue-facts strong { font-size: 12px; }
-.ticketing-workspace .queue-person .queue-payment { margin: 0; font-size: 10px; line-height: 1.5; }
-.ticketing-workspace .queue-person .reservation-channel { padding: 0; border: 0; background: transparent; font-size: 10px; }
-.ticketing-workspace .queue-item .status { grid-column: 3; grid-row: 1; font-size: 10px; padding: 3px 7px; line-height: 1.5; max-width: 170px; }
-.ticketing-workspace .queue-update { grid-column: 3; grid-row: 2; min-height: 36px; padding: 6px 9px; font-size: 11px; }
+.ticketing-workspace .dashboard-queue-facts span { font-size: var(--text-caption); }
+.ticketing-workspace .dashboard-queue-facts strong { font-size: var(--text-label); }
+.ticketing-workspace .queue-person .queue-payment { margin: 0; font-size: var(--text-caption); line-height: 1.5; }
+.ticketing-workspace .queue-person .reservation-channel { padding: 0; border: 0; background: transparent; font-size: var(--text-caption); }
+.ticketing-workspace .queue-item .status { grid-column: 3; grid-row: 1; font-size: var(--text-caption); padding: 3px 7px; line-height: 1.5; max-width: 170px; }
+.ticketing-workspace .queue-update { grid-column: 3; grid-row: 2; min-height: 36px; padding: 6px 9px; font-size: var(--text-caption); }
 .ticketing-dashboard .metric-grid article { padding: 12px 14px; gap: 10px; border-radius: 12px; }
 .ticketing-dashboard .metric-grid strong { font-size: 26px; margin: 2px 0; }
 .ticketing-dashboard .metric-grid em { line-height: 1.4; }

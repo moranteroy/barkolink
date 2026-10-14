@@ -50,7 +50,7 @@
                   v-if="!portBlocked && pageMode !== 'manifest'"
                   class="primary-button"
                   type="button"
-                  :disabled="!selectedSailingCode || loading || busy"
+                  :disabled="!selectedSailingCode || loading || busy || !!error"
                   @click="pageMode === 'dashboard' ? router.push(operationPath('check-in')) : openScanner()"
                 >
                   <AppIcon :icon="scanOutline" />{{ pageMode === 'boarding' ? 'Find boarding ticket' : 'Find ticket' }}
@@ -58,6 +58,7 @@
               </div>
             </div>
 
+            <QueueFreshness v-if="!portBlocked" :updated-at="queueUpdatedAt" :loading="loading" :error="error" />
             <StaffPortRequired v-if="portBlocked" />
             <template v-else>
             <div v-if="error" class="notice error" role="alert">
@@ -271,7 +272,7 @@
                     class="passenger-row"
                     :class="{ selected: selectedPassengerId === person.id }"
                     :aria-pressed="selectedPassengerId === person.id"
-                    :disabled="busy || loading || pageMode === 'manifest'"
+                    :disabled="busy || loading || !!error || pageMode === 'manifest'"
                     type="button"
                     @click="selectPassenger(person)"
                   >
@@ -397,7 +398,7 @@
                     <button
                       class="secondary-button"
                       type="button"
-                      :disabled="!selectedSailingCode || loading || busy"
+                      :disabled="!selectedSailingCode || loading || busy || !!error"
                       @click="openScanner"
                     >
                       <AppIcon :icon="scanOutline" /> Find ticket
@@ -502,6 +503,8 @@
 </template>
 
 <script setup lang="ts">
+import { notifyError, notifySuccess } from '@/composables/toast';
+import QueueFreshness from "../../../components/shared/QueueFreshness.vue";
 import StaffPortRequired from '../../../components/staff/StaffPortRequired.vue';
 import { useStaffPortGate } from '../../../composables/staffPortGate';
 const { portBlocked } = useStaffPortGate(loadData);
@@ -682,6 +685,8 @@ async function revealReview() {
   reviewRef.value?.focus({ preventScroll: true });
 }
 
+const queueUpdatedAt = ref<number | null>(null);
+let loadedSailingCode = "";
 async function loadData() {
   const request = ++requestNumber;
   if (!staffDatabase) {
@@ -702,10 +707,13 @@ async function loadData() {
     if (!sailings.value.some((item) => item.code === selectedSailingCode.value))
       selectedSailingCode.value = sailings.value[0]?.code || "";
     const code = selectedSailingCode.value;
+    if (loadedSailingCode !== code) { passengers.value = []; events.value = []; queueUpdatedAt.value = null; }
     if (!code) {
       passengers.value = [];
       events.value = [];
       selectedPassengerId.value = null;
+      queueUpdatedAt.value = Date.now();
+      loadedSailingCode = "";
       return;
     }
     const [manifest, activity] = await Promise.all([
@@ -735,16 +743,16 @@ async function loadData() {
       })),
     );
     events.value = activity.data.boardingEvents;
+    queueUpdatedAt.value = Date.now();
+    loadedSailingCode = code;
     if (!passengers.value.some((item) => item.id === selectedPassengerId.value))
       selectedPassengerId.value = null;
   } catch (cause) {
     if (request === requestNumber) {
-      error.value = databaseRequestError(
+      error.value = notifyError(databaseRequestError(
         cause,
         "Could not load boarding records.",
-      );
-      passengers.value = [];
-      events.value = [];
+      ));
     }
   } finally {
     if (request === requestNumber) loading.value = false;
@@ -798,6 +806,7 @@ onBeforeUnmount(() => {
 });
 
 async function updateSelectedTicket() {
+  if (loading.value || error.value) return;
   const person = selectedPassenger.value;
   if (!person || !staffDatabase || busy.value) return;
   if (person.status !== "ISSUED" && person.status !== "CHECKED_IN") return;
@@ -826,12 +835,12 @@ async function updateSelectedTicket() {
       await checkInTicket(staffDatabase, { passengerId: person.id });
     else await boardTicket(staffDatabase, { passengerId: person.id });
     await loadData();
-    success.value = `${person.name} ${person.status === "ISSUED" ? "checked in" : "marked as boarded"}.`;
+    success.value = notifySuccess(`${person.name} ${person.status === "ISSUED" ? "checked in" : "marked as boarded"}.`);
   } catch (cause) {
-    error.value = databaseRequestError(
+    error.value = notifyError(databaseRequestError(
       cause,
       "Could not update this ticket. Refresh and try again.",
-    );
+    ));
   } finally {
     busy.value = false;
   }
@@ -861,7 +870,7 @@ async function findTicket() {
     const index=passengers.value.findIndex(item=>item.id===person.id);
     if(index<0)passengers.value.push(person);else passengers.value[index]=person;
     selectPassenger(person);statusFilter.value='ALL';search.value='';closeScanner();void revealReview();
-  }catch(cause){scanError.value=databaseRequestError(cause,'Could not verify this ticket. Check your connection and try again.');}
+  }catch(cause){scanError.value=notifyError(databaseRequestError(cause,'Could not verify this ticket. Check your connection and try again.'));}
   finally{scanBusy.value=false;}
 }
 function stopCamera() {
@@ -923,12 +932,12 @@ async function startCamera() {
     stopCamera();
     const cameraError = cause as DOMException;
     scanError.value =
-      cameraError.name === "NotAllowedError"
+      notifyError(cameraError.name === "NotAllowedError"
         ? "Camera permission was denied. Allow camera access in your browser and try again."
         : cameraError.name === "NotFoundError"
           ? "No camera was found on this device. Enter the ticket code instead."
           : cameraError.message ||
-            "Could not start camera. Enter the ticket code instead.";
+            "Could not start camera. Enter the ticket code instead.");
   }
 }
 
@@ -967,7 +976,7 @@ async function startCamera() {
 .nav-caption {
   margin: 20px 10px 8px;
   color: #7896a9;
-  font-size: 10px;
+  font-size: var(--text-caption);
   font-weight: 800;
   letter-spacing: 0.1em;
 }
@@ -1002,7 +1011,7 @@ async function startCamera() {
   text-decoration: none;
   text-align: left;
   font-family: inherit;
-  font-size: 12px;
+  font-size: var(--text-label);
   font-weight: 700;
   cursor: pointer;
 }
@@ -1048,7 +1057,7 @@ async function startCamera() {
   align-items: center;
   gap: 8px;
   color: var(--muted);
-  font-size: 12px;
+  font-size: var(--text-label);
 }
 .breadcrumb .app-icon {
   color: var(--ocean);
@@ -1083,11 +1092,11 @@ async function startCamera() {
   gap: 2px;
 }
 .staff-chip strong {
-  font-size: 11px;
+  font-size: var(--text-caption);
 }
 .staff-chip small {
   color: var(--muted);
-  font-size: 9px;
+  font-size: var(--text-caption);
 }
 .menu-button,
 .scrim {
@@ -1108,7 +1117,7 @@ async function startCamera() {
 .eyebrow {
   margin: 0;
   color: var(--ocean);
-  font-size: 10px;
+  font-size: var(--text-caption);
   font-weight: 800;
   letter-spacing: 0.11em;
 }
@@ -1171,7 +1180,7 @@ button:disabled {
   padding: 11px 13px;
   border: 1px solid;
   border-radius: 10px;
-  font-size: 12px;
+  font-size: var(--text-label);
 }
 .notice .app-icon {
   flex: none;
@@ -1243,7 +1252,7 @@ button:disabled {
 .sailing-copy p:last-child {
   margin: 0;
   color: var(--muted);
-  font-size: 11px;
+  font-size: var(--text-caption);
 }
 .sailing-control {
   display: flex;
@@ -1253,7 +1262,7 @@ button:disabled {
 }
 .sailing-control label {
   color: var(--muted);
-  font-size: 11px;
+  font-size: var(--text-caption);
   font-weight: 700;
 }
 .sailing-control select {
@@ -1275,7 +1284,7 @@ button:disabled {
   border-radius: 6px;
   background: #e8f0f7;
   color: #35627a;
-  font-size: 10px;
+  font-size: var(--text-caption);
   font-weight: 800;
   white-space: nowrap;
 }
@@ -1298,7 +1307,7 @@ button:disabled {
   border-radius: 10px;
   background: var(--surface-soft);
   color: var(--muted);
-  font-size: 11px;
+  font-size: var(--text-caption);
 }
 .gate-note .app-icon {
   flex: none;
@@ -1345,7 +1354,7 @@ button:disabled {
 }
 .stats small {
   color: var(--muted);
-  font-size: 10px;
+  font-size: var(--text-caption);
   font-weight: 800;
   letter-spacing: 0.04em;
 }
@@ -1357,7 +1366,7 @@ button:disabled {
 .stats p {
   margin: 0;
   color: var(--muted);
-  font-size: 10px;
+  font-size: var(--text-caption);
 }
 .workspace-grid {
   display: grid;
@@ -1382,14 +1391,14 @@ button:disabled {
 .panel-heading p:last-child {
   margin: 0;
   color: var(--muted);
-  font-size: 11px;
+  font-size: var(--text-caption);
 }
 .count-pill {
   padding: 6px 9px;
   border-radius: 999px;
   background: var(--light-blue);
   color: var(--ocean);
-  font-size: 10px;
+  font-size: var(--text-caption);
   font-weight: 800;
   white-space: nowrap;
 }
@@ -1439,7 +1448,7 @@ button:disabled {
   background: transparent;
   color: var(--muted);
   font-family: inherit;
-  font-size: 10px;
+  font-size: var(--text-caption);
   font-weight: 700;
   cursor: pointer;
   white-space: nowrap;
@@ -1483,7 +1492,7 @@ button:disabled {
   border-radius: 50%;
   background: var(--light-blue);
   color: var(--ocean);
-  font-size: 11px;
+  font-size: var(--text-caption);
   font-weight: 800;
 }
 .passenger-main {
@@ -1496,12 +1505,12 @@ button:disabled {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-size: 12px;
+  font-size: var(--text-label);
 }
 .passenger-main small {
   overflow: hidden;
   color: var(--muted);
-  font-size: 10px;
+  font-size: var(--text-caption);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -1513,7 +1522,7 @@ button:disabled {
   padding: 30px 12px;
   color: var(--muted);
   text-align: center;
-  font-size: 12px;
+  font-size: var(--text-label);
 }
 .review-icon {
   display: grid;
@@ -1548,7 +1557,7 @@ button:disabled {
 }
 .review-identity small {
   color: var(--muted);
-  font-size: 10px;
+  font-size: var(--text-caption);
 }
 .details {
   margin: 0;
@@ -1562,25 +1571,25 @@ button:disabled {
 }
 .details dt {
   color: var(--muted);
-  font-size: 11px;
+  font-size: var(--text-caption);
 }
 .details dd {
   max-width: 62%;
   margin: 0;
   text-align: right;
-  font-size: 11px;
+  font-size: var(--text-caption);
   font-weight: 700;
   overflow-wrap: anywhere;
 }
 .details dd.code {
   color: var(--ocean);
   font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
-  font-size: 10px;
+  font-size: var(--text-caption);
 }
 .review-help {
   margin: 18px 0 13px;
   color: var(--muted);
-  font-size: 11px;
+  font-size: var(--text-caption);
   line-height: 1.6;
 }
 .review-action {
@@ -1595,7 +1604,7 @@ button:disabled {
   border-radius: 9px;
   background: #e3f6ed;
   color: #147854;
-  font-size: 11px;
+  font-size: var(--text-caption);
   font-weight: 800;
 }
 .review-placeholder {
@@ -1622,7 +1631,7 @@ button:disabled {
   max-width: 280px;
   margin: 0 0 18px;
   color: var(--muted);
-  font-size: 11px;
+  font-size: var(--text-caption);
   line-height: 1.6;
 }
 .activity-panel {
@@ -1654,16 +1663,16 @@ button:disabled {
   min-width: 0;
 }
 .activity-list strong {
-  font-size: 11px;
+  font-size: var(--text-caption);
 }
 .activity-list p {
   margin: 3px 0 0;
   color: var(--muted);
-  font-size: 10px;
+  font-size: var(--text-caption);
 }
 .activity-list time {
   color: var(--muted);
-  font-size: 10px;
+  font-size: var(--text-caption);
   white-space: nowrap;
 }
 .scanner-modal {
@@ -1705,7 +1714,7 @@ button:disabled {
 }
 .scanner-modal > p:not(.eyebrow):not(.scan-error) {
   color: var(--muted);
-  font-size: 12px;
+  font-size: var(--text-label);
   line-height: 1.6;
 }
 .scanner-video {
@@ -1724,7 +1733,7 @@ button:disabled {
 }
 .scan-error {
   color: #af3a43;
-  font-size: 11px;
+  font-size: var(--text-caption);
 }
 .scanner-modal form {
   display: grid;
@@ -1732,7 +1741,7 @@ button:disabled {
   margin-top: 17px;
 }
 .scanner-modal form label {
-  font-size: 11px;
+  font-size: var(--text-caption);
   font-weight: 800;
 }
 .scanner-modal form input {
@@ -1871,7 +1880,7 @@ button:disabled {
     font-size: 21px;
   }
   .stats p {
-    font-size: 9px;
+    font-size: var(--text-caption);
   }
   .panel {
     padding: 16px;
@@ -1884,13 +1893,13 @@ button:disabled {
     max-width: 100%;
   }
   .activity-list time {
-    font-size: 9px;
+    font-size: var(--text-caption);
   }
   .staff-chip div {
     display: none;
   }
   .breadcrumb {
-    font-size: 11px;
+    font-size: var(--text-caption);
   }
 }
 .scanner-video {
@@ -1913,17 +1922,17 @@ button:disabled {
 .logout,
 .primary-button,
 .secondary-button {
-  font-size: 12px;
+  font-size: var(--text-label);
   font-weight: 800;
 }
 .sailing-control select,
 .search-field input,
 .scanner-modal form input {
-  font-size: 11px;
+  font-size: var(--text-caption);
   font-weight: 600;
 }
 .status-tabs button {
-  font-size: 10px;
+  font-size: var(--text-caption);
   font-weight: 700;
 }
 .sidebar nav a,
@@ -1931,14 +1940,14 @@ button:disabled {
 .logout {
   min-height: 39px;
   padding: 10px;
-  font-size: 11px;
+  font-size: var(--text-caption);
   font-weight: 600;
   transition:
     background-color 0.16s ease,
     color 0.16s ease;
 }
 .sidebar .nav-caption {
-  font-size: 9px;
+  font-size: var(--text-caption);
   font-weight: 800;
   letter-spacing: 0.12em;
 }
@@ -2000,7 +2009,7 @@ button:disabled {
 }
 .sailing-control label {
   grid-column: 1/-1;
-  font-size: 10px;
+  font-size: var(--text-caption);
 }
 .sailing-control select {
   width: 100%;
@@ -2025,7 +2034,7 @@ button:disabled {
   align-items: center;
   gap: 18px;
   margin: 14px 2px 0;
-  font-size: 11px;
+  font-size: var(--text-caption);
   color: var(--muted);
 }
 .boarding-progress > span {
@@ -2035,7 +2044,7 @@ button:disabled {
 }
 .boarding-progress strong {
   color: var(--ink);
-  font-size: 11px;
+  font-size: var(--text-caption);
 }
 .progress-track {
   flex: 1;
@@ -2059,7 +2068,7 @@ button:disabled {
   font-size: 27px;
 }
 .stats small {
-  font-size: 9px;
+  font-size: var(--text-caption);
 }
 .stat-icon {
   width: 39px;
@@ -2076,7 +2085,7 @@ button:disabled {
   gap: 20px;
 }
 .panel-heading .eyebrow {
-  font-size: 9px;
+  font-size: var(--text-caption);
 }
 .panel-heading h2 {
   font-size: 18px;
@@ -2103,11 +2112,11 @@ button:disabled {
 }
 .search-field input {
   height: 42px;
-  font-size: 12px;
+  font-size: var(--text-label);
 }
 .status-tabs button {
   min-height: 34px;
-  font-size: 11px;
+  font-size: var(--text-caption);
 }
 .status-tabs button.active {
   background: var(--light-blue);
@@ -2130,7 +2139,7 @@ button:disabled {
   opacity: 0.7;
 }
 .passenger-row .ticket-status {
-  font-size: 9px;
+  font-size: var(--text-caption);
 }
 .review-identity strong {
   overflow-wrap: anywhere;
@@ -2267,7 +2276,7 @@ input:focus-visible {
     font-size: 16px;
   }
   .boarding-progress > span {
-    font-size: 10px;
+    font-size: var(--text-caption);
     gap: 8px;
   }
   .boarding-progress {
@@ -2281,13 +2290,13 @@ input:focus-visible {
     padding: 12px 6px;
   }
   .passenger-main strong {
-    font-size: 11px;
+    font-size: var(--text-caption);
   }
   .passenger-main small {
-    font-size: 9px;
+    font-size: var(--text-caption);
   }
   .ticket-status {
-    font-size: 9px;
+    font-size: var(--text-caption);
   }
   .activity-list article {
     flex-wrap: wrap;
@@ -2302,7 +2311,7 @@ input:focus-visible {
     padding: 22px;
   }
   .status-tabs button {
-    font-size: 10px;
+    font-size: var(--text-caption);
     padding: 0 5px;
   }
 }
@@ -2333,7 +2342,7 @@ input:focus-visible {
 .boarding-shell .page-heading { gap: 14px; margin-bottom: 18px; }
 .boarding-shell .page-heading h1 { font-size: 27px; margin: 5px 0; }
 .boarding-shell .heading-actions { gap: 9px; }
-.boarding-shell .heading-actions button { min-height: 44px; padding: 10px 14px; border-radius: 9px; font-size: 12px; }
+.boarding-shell .heading-actions button { min-height: 44px; padding: 10px 14px; border-radius: 9px; font-size: var(--text-label); }
 .boarding-shell .sailing-card { padding: 16px 18px; gap: 18px; border-radius: 12px; }
 .boarding-shell .sailing-icon { width: 36px; height: 36px; border-radius: 10px; font-size: 20px; }
 .boarding-shell .sailing-copy h2 { font-size: 17px; }
@@ -2347,14 +2356,14 @@ input:focus-visible {
 .boarding-shell .panel-heading h2 { font-size: 18px; margin: 4px 0; }
 .boarding-shell .manifest-tools { gap: 10px; margin: 16px 0; }
 .boarding-shell .status-tabs { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px; padding: 4px; border: 1px solid var(--line); border-radius: 9px; background: var(--surface-soft); }
-.boarding-shell .status-tabs button { width: 100%; min-height: 38px; padding: 7px 5px; border-radius: 7px; font-size: 10px; white-space: normal; }
+.boarding-shell .status-tabs button { width: 100%; min-height: 38px; padding: 7px 5px; border-radius: 7px; font-size: var(--text-caption); white-space: normal; }
 .boarding-shell .passenger-list { gap: 6px; }
 .boarding-shell .passenger-row { display: grid; grid-template-columns: 30px minmax(0, 1fr) auto 18px; align-items: center; gap: 9px; padding: 10px 12px; min-height: 60px; border-radius: 9px; }
-.boarding-shell .passenger-row .avatar { width: 30px; height: 30px; border-radius: 9px; font-size: 10px; }
+.boarding-shell .passenger-row .avatar { width: 30px; height: 30px; border-radius: 9px; font-size: var(--text-caption); }
 .boarding-shell .passenger-main { min-width: 0; }
 .boarding-shell .passenger-main strong { font-size: 13px; overflow-wrap: anywhere; }
-.boarding-shell .passenger-main small { font-size: 10px; line-height: 1.6; overflow-wrap: anywhere; }
-.boarding-shell .ticket-status { font-size: 9px; padding: 5px 7px; white-space: normal; text-align: center; }
+.boarding-shell .passenger-main small { font-size: var(--text-caption); line-height: 1.6; overflow-wrap: anywhere; }
+.boarding-shell .ticket-status { font-size: var(--text-caption); padding: 5px 7px; white-space: normal; text-align: center; }
 .boarding-shell .passenger-row > .app-icon { color: var(--ocean); font-size: 17px; }
 @media (max-width: 1199px) { .boarding-shell .workspace-grid { grid-template-columns: minmax(0, 1fr); } .boarding-shell .review-panel { position: static; } }
 @media (max-width: 800px) {
@@ -2376,7 +2385,7 @@ input:focus-visible {
 .boarding-shortcuts a { display: grid; grid-template-columns: 32px minmax(0, 1fr); gap: 7px 12px; padding: 18px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); text-decoration: none; color: var(--ink); }
 .boarding-shortcuts .app-icon { grid-row: 1 / 3; color: var(--ocean); font-size: 25px; }
 .boarding-shortcuts strong { font-size: 15px; }
-.boarding-shortcuts span { color: var(--muted); font-size: 12px; line-height: 1.6; }
+.boarding-shortcuts span { color: var(--muted); font-size: var(--text-label); line-height: 1.6; }
 .boarding-manifest .workspace-grid { grid-template-columns: minmax(0, 1fr); }
 .boarding-manifest .passenger-row:disabled { opacity: 1; cursor: default; }
 .boarding-manifest .passenger-row > .app-icon { display: none; }
@@ -2388,8 +2397,8 @@ input:focus-visible {
 .stage-icon { display: grid; place-items: center; width: 42px; height: 42px; border-radius: 11px; background: var(--light-blue); color: var(--ocean); font-size: 24px; flex: none; }
 .gate-stage > div { flex: 1; min-width: 0; }
 .gate-stage h2 { font-size: 18px; line-height: 1.4; margin: 5px 0 7px; }
-.gate-stage > div > p:last-child { font-size: 12px; line-height: 1.7; margin: 0; color: var(--muted); }
-.gate-stage a { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; font-size: 12px; color: var(--ocean); text-decoration: none; white-space: nowrap; }
+.gate-stage > div > p:last-child { font-size: var(--text-label); line-height: 1.7; margin: 0; color: var(--muted); }
+.gate-stage a { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; font-size: var(--text-label); color: var(--ocean); text-decoration: none; white-space: nowrap; }
 .boarding-boarding .gate-stage { border-left-color: #a78bfa; }
 .boarding-boarding .stage-icon { color: #7c3aed; background: #f3edff; }
 :global(:root[data-theme="dark"]) .boarding-boarding .stage-icon { color: #c4b5fd; background: #30234e; }
@@ -2397,15 +2406,15 @@ input:focus-visible {
 .boarding-boarding .panel, .boarding-manifest .panel { padding: 20px; border-radius: 14px; }
 .boarding-boarding .manifest-tools { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; margin: 20px 0 16px; }
 .boarding-boarding .status-tabs { width: 100%; max-width: none; }
-.boarding-boarding .status-tabs button, .boarding-manifest .status-tabs button { display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 42px; font-size: 12px; }
+.boarding-boarding .status-tabs button, .boarding-manifest .status-tabs button { display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 42px; font-size: var(--text-label); }
 .boarding-boarding .search-field input, .boarding-manifest .search-field input { height: 46px; font-size: 13px; }
 .boarding-boarding .passenger-row { min-height: 78px; padding: 14px; gap: 12px; border: 1px solid var(--line); background: var(--surface-soft); }
 .boarding-boarding .passenger-row.selected, .boarding-boarding .passenger-row:hover { border-color: var(--ocean); background: var(--light-blue); }
 .boarding-boarding .passenger-main strong { font-size: 14px; }
-.boarding-boarding .passenger-main small { font-size: 11px; margin-top: 4px; }
+.boarding-boarding .passenger-main small { font-size: var(--text-caption); margin-top: 4px; }
 .boarding-boarding .review-panel { position: sticky; top: 20px; }
 .boarding-boarding .review-placeholder { min-height: 280px; padding: 24px 8px; }
-.boarding-boarding .review-placeholder .eyebrow { color: var(--ocean); margin: 18px 0 8px; font-size: 10px; }
+.boarding-boarding .review-placeholder .eyebrow { color: var(--ocean); margin: 18px 0 8px; font-size: var(--text-caption); }
 .boarding-boarding .review-placeholder p:not(.eyebrow), .boarding-boarding .review-help { font-size: 13px; line-height: 1.7; }
 .boarding-boarding .details dd { font-size: 13px; line-height: 1.6; overflow-wrap: anywhere; }
 .review-action { text-decoration: none; }
@@ -2416,16 +2425,16 @@ input:focus-visible {
 :global(:root[data-theme="dark"]) .boarding-shell .ticket-status.checked-in { color: #c4b5fd; background: #30234e; }
 :global(:root[data-theme="dark"]) .boarding-shell .ticket-status.boarded { color: #86efac; background: #18382b; }
 .manifest-table-scroll { max-height: 540px; overflow: auto; margin-top: 18px; border: 1px solid var(--line); border-radius: 10px; scrollbar-width: thin; }
-.manifest-table { width: 100%; border-collapse: separate; border-spacing: 0; text-align: left; font-size: 12px; }
-.manifest-table th { position: sticky; top: 0; background: var(--surface-soft); border-bottom: 1px solid var(--line); padding: 12px 14px; font-size: 10px; color: var(--muted); letter-spacing: .5px; text-transform: uppercase; white-space: nowrap; }
+.manifest-table { width: 100%; border-collapse: separate; border-spacing: 0; text-align: left; font-size: var(--text-label); }
+.manifest-table th { position: sticky; top: 0; background: var(--surface-soft); border-bottom: 1px solid var(--line); padding: 12px 14px; font-size: var(--text-caption); color: var(--muted); letter-spacing: .5px; text-transform: uppercase; white-space: nowrap; }
 .manifest-table td { padding: 16px 14px; border-bottom: 1px solid var(--line); line-height: 1.6; vertical-align: middle; }
 .manifest-table tr:last-child td { border-bottom: 0; }
 .manifest-table tbody tr:hover { background: var(--surface-soft); }
 .manifest-table td > strong { font-size: 13px; }
-.manifest-table small, .manifest-table time { display: block; font-size: 11px; color: var(--muted); margin-top: 4px; }
+.manifest-table small, .manifest-table time { display: block; font-size: var(--text-caption); color: var(--muted); margin-top: 4px; }
 .manifest-ticket-code { overflow-wrap: anywhere; max-width: 180px; }
 .attendance-pending { color: var(--muted); }
-.manifest-table .ticket-status { font-size: 11px; white-space: nowrap; }
+.manifest-table .ticket-status { font-size: var(--text-caption); white-space: nowrap; }
 .manifest-table-scroll:focus-visible, .gate-stage a:focus-visible { outline: 2px solid var(--ocean); outline-offset: 3px; }
 @media (max-width: 1100px) { .boarding-boarding .workspace-grid { grid-template-columns: minmax(0, 1fr); }.boarding-boarding .review-panel { position: static; } }
 @media (max-width: 700px) {
@@ -2435,7 +2444,7 @@ input:focus-visible {
   .manifest-table thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
   .manifest-table tr { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; padding: 16px; border-bottom: 1px solid var(--line); }
   .manifest-table td { display: block; border: 0; padding: 0; min-width: 0; overflow-wrap: anywhere; }
-  .manifest-table td::before { content: attr(data-label); display: block; color: var(--muted); font-size: 10px; margin-bottom: 4px; }
+  .manifest-table td::before { content: attr(data-label); display: block; color: var(--muted); font-size: var(--text-caption); margin-bottom: 4px; }
   .manifest-table td:first-child { grid-column: 1 / -1; }
   .boarding-manifest .status-tabs { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
@@ -2443,39 +2452,39 @@ input:focus-visible {
 /* Check-in keeps ticket selection and review together. */
 .boarding-check-in .sailing-card { display: grid; grid-template-columns: minmax(0, 1fr) minmax(280px, .85fr); gap: 20px 24px; padding: 22px; }
 .boarding-check-in .sailing-copy h2 { font-size: 20px; flex-wrap: wrap; line-height: 1.4; }
-.boarding-check-in .sailing-copy p:last-child { font-size: 12px; line-height: 1.6; }
+.boarding-check-in .sailing-copy p:last-child { font-size: var(--text-label); line-height: 1.6; }
 .boarding-check-in .sailing-control { min-width: 0; max-width: none; width: 100%; grid-template-columns: minmax(0, 1fr) auto; }
-.boarding-check-in .sailing-control select { min-height: 44px; font-size: 12px; }
-.boarding-shell .sailing-card > .boarding-progress { flex-basis: 100%; grid-column: 1 / -1; margin: 0; padding-top: 16px; border-top: 1px solid var(--line); font-size: 12px; }
+.boarding-check-in .sailing-control select { min-height: 44px; font-size: var(--text-label); }
+.boarding-shell .sailing-card > .boarding-progress { flex-basis: 100%; grid-column: 1 / -1; margin: 0; padding-top: 16px; border-top: 1px solid var(--line); font-size: var(--text-label); }
 .boarding-boarding .sailing-card, .boarding-manifest .sailing-card { flex-wrap: wrap; }
 .boarding-check-in .workspace-grid { grid-template-columns: minmax(0, 1.45fr) minmax(300px, 1fr); gap: 20px; margin-top: 20px; align-items: start; }
 .boarding-check-in .panel { padding: 20px; border-radius: 14px; }
 .boarding-check-in .panel-heading h2 { font-size: 19px; line-height: 1.4; }
-.boarding-check-in .panel-heading p:last-child { font-size: 12px; }
+.boarding-check-in .panel-heading p:last-child { font-size: var(--text-label); }
 .boarding-check-in .manifest-tools { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; margin: 20px 0 16px; }
 .boarding-check-in .search-field input { height: 46px; font-size: 13px; }
 .boarding-check-in .status-tabs { max-width: none; width: 100%; }
-.boarding-check-in .status-tabs button { display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 42px; font-size: 12px; }
-.tab-count { display: inline-grid; place-items: center; min-width: 22px; min-height: 22px; padding: 0 5px; border-radius: 6px; background: var(--surface); color: var(--muted); font-size: 11px; font-variant-numeric: tabular-nums; }
+.boarding-check-in .status-tabs button { display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 42px; font-size: var(--text-label); }
+.tab-count { display: inline-grid; place-items: center; min-width: 22px; min-height: 22px; padding: 0 5px; border-radius: 6px; background: var(--surface); color: var(--muted); font-size: var(--text-caption); font-variant-numeric: tabular-nums; }
 .boarding-check-in .status-tabs button.active .tab-count { color: var(--ocean); }
 .boarding-check-in .passenger-list { gap: 10px; }
 .boarding-check-in .passenger-row { grid-template-columns: 38px minmax(0, 1fr) auto 18px; min-height: 78px; padding: 14px; gap: 12px; border: 1px solid var(--line); background: var(--surface-soft); }
 .boarding-check-in .passenger-row.selected, .boarding-check-in .passenger-row:hover { border-color: var(--ocean); background: var(--light-blue); }
-.boarding-check-in .passenger-row .avatar { width: 38px; height: 38px; font-size: 12px; }
+.boarding-check-in .passenger-row .avatar { width: 38px; height: 38px; font-size: var(--text-label); }
 .boarding-check-in .passenger-main strong { font-size: 14px; line-height: 1.5; }
-.boarding-check-in .passenger-main small { font-size: 11px; margin-top: 4px; }
-.boarding-check-in .ticket-status { font-size: 11px; padding: 5px 8px; }
+.boarding-check-in .passenger-main small { font-size: var(--text-caption); margin-top: 4px; }
+.boarding-check-in .ticket-status { font-size: var(--text-caption); padding: 5px 8px; }
 .boarding-check-in .ticket-status.issued { background: var(--light-blue); color: var(--ocean); }
 .boarding-check-in .review-panel { position: sticky; top: 20px; }
 .boarding-check-in .review-placeholder { min-height: 280px; padding: 24px 8px; }
-.boarding-check-in .review-placeholder .eyebrow { color: var(--ocean); margin: 18px 0 8px; font-size: 10px; }
+.boarding-check-in .review-placeholder .eyebrow { color: var(--ocean); margin: 18px 0 8px; font-size: var(--text-caption); }
 .boarding-check-in .review-placeholder h2 { font-size: 20px; margin: 0 0 10px; }
 .boarding-check-in .review-placeholder p:not(.eyebrow) { max-width: 290px; font-size: 13px; line-height: 1.7; }
 .boarding-check-in .review-identity strong { font-size: 16px; line-height: 1.5; }
 .boarding-check-in .details { margin: 20px 0; }
-.boarding-check-in .details dt { font-size: 11px; }
+.boarding-check-in .details dt { font-size: var(--text-caption); }
 .boarding-check-in .details dd { font-size: 13px; line-height: 1.6; overflow-wrap: anywhere; }
-.boarding-check-in .review-help { font-size: 12px; line-height: 1.7; }
+.boarding-check-in .review-help { font-size: var(--text-label); line-height: 1.7; }
 .ticket-lookup-modal { --width: 480px; --height: auto; --max-height: calc(100dvh - 40px); --border-radius: 16px; --background: var(--surface); --backdrop-opacity: .55; }
 .ticket-lookup-modal .scanner-modal { width: 100%; max-height: calc(100dvh - 40px); box-sizing: border-box; margin: 0; padding: 28px; border-radius: 0; box-shadow: none; }
 .ticket-lookup-modal .modal-close { display: grid; place-items: center; width: 36px; height: 36px; border-radius: 8px; }
@@ -2483,12 +2492,12 @@ input:focus-visible {
 .ticket-lookup-modal .scanner-modal h2 { font-size: 22px; line-height: 1.4; margin: 8px 0 10px; }
 .ticket-lookup-modal .scanner-modal > p:not(.eyebrow):not(.scan-error) { font-size: 13px; line-height: 1.7; margin-bottom: 20px; }
 .ticket-lookup-modal .camera-button, .ticket-lookup-modal .scanner-modal form button { min-height: 46px; font-size: 13px; }
-.lookup-divider { display: flex; align-items: center; gap: 12px; margin: 20px 0; color: var(--muted); font-size: 11px; }
+.lookup-divider { display: flex; align-items: center; gap: 12px; margin: 20px 0; color: var(--muted); font-size: var(--text-caption); }
 .lookup-divider::before, .lookup-divider::after { content: ''; flex: 1; height: 1px; background: var(--line); }
 .ticket-lookup-modal .scanner-modal form { margin: 0; gap: 10px; }
-.ticket-lookup-modal .scanner-modal form label { font-size: 12px; }
+.ticket-lookup-modal .scanner-modal form label { font-size: var(--text-label); }
 .ticket-lookup-modal .scanner-modal form input { min-height: 46px; font-family: inherit; font-size: 14px; font-weight: 400; }
-.ticket-lookup-modal .scan-error { padding: 12px; border: 1px solid var(--line); border-radius: 8px; color: var(--ink); background: var(--surface-soft); font-size: 12px; line-height: 1.6; }
+.ticket-lookup-modal .scan-error { padding: 12px; border: 1px solid var(--line); border-radius: 8px; color: var(--ink); background: var(--surface-soft); font-size: var(--text-label); line-height: 1.6; }
 @media (max-width: 1100px) {
   .boarding-check-in .sailing-card { grid-template-columns: minmax(0, 1fr); }
   .boarding-check-in .workspace-grid { grid-template-columns: minmax(0, 1fr); }
@@ -2501,7 +2510,7 @@ input:focus-visible {
   .boarding-check-in .passenger-row .avatar { width: 32px; height: 32px; grid-row: 1 / 3; }
   .boarding-check-in .passenger-row .ticket-status { grid-column: 2; justify-self: start; }
   .boarding-check-in .passenger-row > .app-icon { grid-column: 3; grid-row: 1 / 3; }
-  .boarding-check-in .status-tabs button { font-size: 11px; gap: 5px; }
+  .boarding-check-in .status-tabs button { font-size: var(--text-caption); gap: 5px; }
   .ticket-lookup-modal { --width: calc(100vw - 24px); --max-height: calc(100dvh - 24px); }
   .ticket-lookup-modal .scanner-modal { padding: 24px 20px; max-height: calc(100dvh - 24px); }
 }
@@ -2514,16 +2523,16 @@ input:focus-visible {
 .boarding-dashboard .sailing-card { display: grid; grid-template-columns: minmax(0, 1fr) minmax(280px, .85fr); gap: 20px 24px; padding: 22px; border-radius: 14px; }
 .boarding-dashboard .sailing-icon { width: 44px; height: 44px; font-size: 24px; }
 .boarding-dashboard .sailing-copy h2 { font-size: 20px; line-height: 1.4; flex-wrap: wrap; }
-.boarding-dashboard .sailing-copy p:last-child { font-size: 12px; line-height: 1.6; }
+.boarding-dashboard .sailing-copy p:last-child { font-size: var(--text-label); line-height: 1.6; }
 .boarding-dashboard .sailing-control { width: 100%; min-width: 0; max-width: none; grid-template-columns: minmax(0, 1fr) auto; }
-.boarding-dashboard .sailing-control label { font-size: 12px; }
-.boarding-dashboard .sailing-control select { min-height: 44px; font-family: inherit; font-size: 12px; }
-.boarding-dashboard .sailing-card > .boarding-progress { grid-column: 1 / -1; margin: 0; padding-top: 18px; border-top: 1px solid var(--line); font-size: 12px; }
+.boarding-dashboard .sailing-control label { font-size: var(--text-label); }
+.boarding-dashboard .sailing-control select { min-height: 44px; font-family: inherit; font-size: var(--text-label); }
+.boarding-dashboard .sailing-card > .boarding-progress { grid-column: 1 / -1; margin: 0; padding-top: 18px; border-top: 1px solid var(--line); font-size: var(--text-label); }
 .boarding-dashboard .stats { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
 .boarding-dashboard .stats article { min-height: 106px; padding: 18px 16px; align-items: center; gap: 12px; }
 .boarding-dashboard .stats strong { font-size: 30px; line-height: 1.2; margin: 5px 0; }
-.boarding-dashboard .stats small { font-size: 10px; letter-spacing: .6px; line-height: 1.5; }
-.boarding-dashboard .stats p { display: block; font-size: 11px; line-height: 1.5; }
+.boarding-dashboard .stats small { font-size: var(--text-caption); letter-spacing: .6px; line-height: 1.5; }
+.boarding-dashboard .stats p { display: block; font-size: var(--text-caption); line-height: 1.5; }
 .boarding-dashboard .stat-icon { width: 38px; height: 38px; font-size: 21px; }
 .boarding-dashboard .gate-actions-panel { grid-column: 1; padding: 20px; }
 .boarding-dashboard .activity-panel { grid-column: 2; padding: 20px; }
@@ -2534,14 +2543,14 @@ input:focus-visible {
 .boarding-dashboard .boarding-shortcuts a:focus-visible, .boarding-dashboard .activity-list:focus-visible { outline: 2px solid var(--ocean); outline-offset: 3px; }
 .boarding-dashboard .boarding-shortcuts .app-icon { font-size: 23px; grid-column: 1; grid-row: 1 / 3; }
 .boarding-dashboard .boarding-shortcuts strong { grid-column: 2; font-size: 14px; line-height: 1.4; }
-.boarding-dashboard .boarding-shortcuts span { grid-column: 2; font-size: 12px; line-height: 1.5; }
+.boarding-dashboard .boarding-shortcuts span { grid-column: 2; font-size: var(--text-label); line-height: 1.5; }
 .boarding-dashboard .boarding-shortcuts .shortcut-arrow { grid-column: 3; grid-row: 1 / 3; font-size: 17px; color: var(--muted); }
 .boarding-dashboard .activity-list { max-height: 350px; overflow-y: auto; margin-top: 18px; scrollbar-width: thin; scrollbar-color: var(--line) transparent; }
 .boarding-dashboard .activity-list article { display: grid; grid-template-columns: 36px minmax(0, 1fr) auto; gap: 12px; padding: 14px 0; }
 .boarding-dashboard .activity-list article:first-child { margin-top: 0; }
 .boarding-dashboard .activity-list strong { font-size: 13px; line-height: 1.5; overflow-wrap: anywhere; }
-.boarding-dashboard .activity-list p { display: flex; flex-wrap: wrap; align-items: center; gap: 7px; font-size: 11px; line-height: 1.5; margin-top: 5px; }
-.boarding-dashboard .activity-list time { font-size: 11px; line-height: 1.5; text-align: right; }
+.boarding-dashboard .activity-list p { display: flex; flex-wrap: wrap; align-items: center; gap: 7px; font-size: var(--text-caption); line-height: 1.5; margin-top: 5px; }
+.boarding-dashboard .activity-list time { font-size: var(--text-caption); line-height: 1.5; text-align: right; }
 .boarding-dashboard .activity-event { color: var(--ocean); background: var(--light-blue); border-radius: 5px; padding: 2px 6px; font-weight: 600; }
 .boarding-dashboard .activity-icon.boarded, .boarding-dashboard .activity-event.boarded { color: #146f53; background: #e8f6ef; }
 :global(:root[data-theme="dark"]) .boarding-dashboard .activity-icon.boarded,
@@ -2565,4 +2574,8 @@ input:focus-visible {
   .boarding-dashboard .activity-list time { grid-column: 2; text-align: left; white-space: normal; }
 }
 
+</style>
+
+<style scoped>
+.gate-stage { padding:12px 16px; display:flex; align-items:center; flex-wrap:wrap; gap:12px; }.gate-stage > div { flex:1; min-width:180px; }.gate-stage > div > h2 { font-size:17px; }.gate-stage > div > p { margin:4px 0 0; }.gate-stage .eyebrow { display:none; }
 </style>

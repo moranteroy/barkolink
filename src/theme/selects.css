@@ -77,7 +77,7 @@
   :root body select option:checked { background:var(--light-blue); color:var(--ocean); font-weight:700; }
   :root body select option::checkmark { color:var(--ocean); order:1; margin-left:auto; }
   :root body select option:disabled { color:var(--muted); opacity:.6; cursor:not-allowed; }
-  :root body select optgroup { color:var(--muted); font-weight:700; font-size:11px; padding:6px; }
+  :root body select optgroup { color:var(--muted); font-weight:700; font-size: var(--text-caption); padding:6px; }
 }
 @media(max-width:600px) { :root body select:not([multiple]):not([size]) { font-size:16px; } }
 @media(prefers-reduced-motion:reduce) { :root body select,:root body select::picker-icon { transition:none; } }

@@ -31,6 +31,7 @@
   </section>
 </template>
 <script setup lang="ts">
+import { notifyError } from '@/composables/toast';
 import { onMounted, ref, watch } from "vue";
 import { onIonViewWillEnter } from "@ionic/vue";
 import AppIcon from "@/components/ui/icon/AppIcon.vue";
@@ -60,10 +61,10 @@ async function load() {
   } catch (cause) {
     if (token === request) {
       items.value = [];
-      error.value = databaseRequestError(
+      error.value = notifyError(databaseRequestError(
         cause,
         "Travel advisories are unavailable.",
-      );
+      ));
     }
   } finally { if (token === request) loading.value = false; }
 }
@@ -81,8 +82,8 @@ watch(() => props.sailingCode, load);
 .advisory-heading .app-icon { font-size: 17px; }
 .advisory-empty { display:flex; align-items:center; gap:12px; padding:15px; border:1px solid var(--line); border-radius:13px; background:var(--surface); }
 .advisory-empty > span { display:grid; place-items:center; width:34px; height:34px; flex-shrink:0; border-radius:10px; background:color-mix(in srgb,#299e91 12%,var(--surface)); color:#299e91; }
-.advisory-empty strong { color:var(--ink); font-size:12px; font-weight:650; }
-.advisory-empty p { margin-top:4px; font-size:11px; }
+.advisory-empty strong { color:var(--ink); font-size: var(--text-label); font-weight:650; }
+.advisory-empty p { margin-top:4px; font-size: var(--text-caption); }
 .advisories article {
   display: flex;
   align-items: flex-start;
@@ -102,7 +103,7 @@ watch(() => props.sailingCode, load);
   flex: none;
 }
 .advisories small {
-  font-size: 9px;
+  font-size: var(--text-caption);
   font-weight: 800;
   letter-spacing: 0.08em;
   color: var(--muted);
@@ -113,7 +114,7 @@ watch(() => props.sailingCode, load);
 }
 .advisories p {
   margin: 0;
-  font-size: 12px;
+  font-size: var(--text-label);
   line-height: 1.6;
   color: var(--muted);
   white-space: pre-wrap;

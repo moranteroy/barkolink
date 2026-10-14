@@ -53,6 +53,7 @@
   </section>
 </template>
 <script setup lang="ts">
+import { notifyError, notifySuccess } from '@/composables/toast';
 import { computed, onMounted, reactive, ref } from 'vue';
 import { Button } from '@/components/ui/button';
 import AppIcon from '@/components/ui/icon/AppIcon.vue';
@@ -88,14 +89,14 @@ async function load() {
   if (!staffDatabase) return;
   loading.value = true; error.value = '';
   try { policies.value = (await sailingStatusPolicies(staffDatabase)).data.policies; operator.value ||= policies.value[0]?.operator || ''; selectPolicy(); loaded.value = true; }
-  catch (e) { error.value = databaseRequestError(e, 'Could not load sailing status settings.'); }
+  catch (e) { error.value = notifyError(databaseRequestError(e, 'Could not load sailing status settings.')); }
   finally { loading.value = false; }
 }
 async function save() {
   if (!staffDatabase || !canSave.value) return;
   error.value = ''; notice.value = ''; saving.value = true;
-  try { policies.value = (await saveSailingStatusPolicy(staffDatabase, { operator: operator.value, boardingLeadMinutes: form.autoBoarding ? form.minutes : null, boardingTimeSource: form.autoBoarding ? form.source.trim() : null, autoComplete: form.autoComplete })).data.policies; selectPolicy(); notice.value = 'Sailing status configuration saved.'; }
-  catch (e) { error.value = databaseRequestError(e, 'Could not save status configuration.'); }
+  try { policies.value = (await saveSailingStatusPolicy(staffDatabase, { operator: operator.value, boardingLeadMinutes: form.autoBoarding ? form.minutes : null, boardingTimeSource: form.autoBoarding ? form.source.trim() : null, autoComplete: form.autoComplete })).data.policies; selectPolicy(); notice.value = notifySuccess('Sailing status configuration saved.'); }
+  catch (e) { error.value = notifyError(databaseRequestError(e, 'Could not save status configuration.')); }
   finally { saving.value = false; }
 }
 onMounted(load);
@@ -109,25 +110,25 @@ onMounted(load);
 .operator-picker .card-heading { margin-bottom: 0; }
 .card-icon { display: grid; place-items: center; flex: 0 0 36px; height: 36px; border-radius: 10px; background: var(--light-blue); color: var(--ocean); font-size: 19px; }
 h2,h3,p { margin: 0; }h2 { font-size: 17px; }h3 { font-size: 15px; letter-spacing: -.02em; }
-p,small { color: var(--muted); font-size: 12px; line-height: 1.6; }
+p,small { color: var(--muted); font-size: var(--text-label); line-height: 1.6; }
 .card-heading p:not(.eyebrow),.preview-heading > p:last-child { margin-top: 6px; }
-.eyebrow { font-size: 10px; font-weight: 700; letter-spacing: .08em; margin-bottom: 6px; }
-label { display: grid; gap: 7px; font-size: 12px; font-weight: 700; }small { font-size: 11px; font-weight: 400; }
+.eyebrow { font-size: var(--text-caption); font-weight: 700; letter-spacing: .08em; margin-bottom: 6px; }
+label { display: grid; gap: 7px; font-size: var(--text-label); font-weight: 700; }small { font-size: var(--text-caption); font-weight: 400; }
 select,input:not([type=checkbox]) { width: 100%; box-sizing: border-box; min-height: 44px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface-soft); color: var(--ink); font: inherit; font-size: 13px; }
-.operator-control { display: grid; gap: 8px; }.config-status { color: var(--ocean); font-size: 11px; }.config-status.pending { color: var(--muted); }
+.operator-control { display: grid; gap: 8px; }.config-status { color: var(--ocean); font-size: var(--text-caption); }.config-status.pending { color: var(--muted); }
 fieldset { border: 0; padding: 0; margin: 0; }
 .settings-layout { display: grid; grid-template-columns: minmax(0,1.8fr) minmax(250px,1fr); gap: 16px; align-items: start; }
 .settings-editor { display: grid; gap: 16px; }.toggle { display: flex; align-items: center; gap: 9px; font-weight: 500; line-height: 1.5; }
 input[type=checkbox] { accent-color: var(--ocean); flex: none; }.fields { display: grid; grid-template-columns: minmax(150px,.75fr) minmax(0,1fr); gap: 16px; margin-top: 20px; }
-.unit-field { display: flex; align-items: center; border: 1px solid var(--line); border-radius: 10px; background: var(--surface-soft); }.unit-field input { flex: 1; width: 0; border: 0; background: transparent; font-size: 22px; font-weight: 700; }.unit-field > span { flex: none; white-space: nowrap; padding-right: 14px; color: var(--muted); font-size: 12px; }
-.field-hint { margin-top: 12px; font-size: 11px; }.card-note { display: flex; align-items: flex-start; gap: 9px; margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--line); font-size: 11px; }.card-note .app-icon { flex: none; font-size: 17px; color: var(--ocean); }
-.preview-heading { margin-bottom: 14px; }.preview-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 0; border-bottom: 1px solid var(--line); }.preview-row > span { font-size: 12px; font-weight: 700; }.preview-row small { display: block; margin-top: 3px; }.preview-row > strong { font-size: 12px; flex-shrink: 0; }.preview-automatic { background: var(--light-blue); padding: 12px; border: 0; border-radius: 10px; }.preview-automatic strong { color: var(--ocean); }.preview-example { margin-top: 14px; font-size: 11px; }
-.manual-guide { border-top: 1px solid var(--line); margin-top: 18px; padding-top: 16px; }.manual-guide > strong { font-size: 12px; }.manual-guide p { margin: 8px 0 12px; font-size: 11px; }.manual-guide a { color: var(--ocean); font-size: 12px; }
-.save-bar { display: flex; align-items: center; justify-content: space-between; gap: 20px; margin-top: 16px; padding: 16px 20px; }.save-bar strong { font-size: 12px; }.save-bar p { font-size: 11px; margin-top: 5px; }.save-bar :deep(button) { flex-shrink: 0; }
+.unit-field { display: flex; align-items: center; border: 1px solid var(--line); border-radius: 10px; background: var(--surface-soft); }.unit-field input { flex: 1; width: 0; border: 0; background: transparent; font-size: 22px; font-weight: 700; }.unit-field > span { flex: none; white-space: nowrap; padding-right: 14px; color: var(--muted); font-size: var(--text-label); }
+.field-hint { margin-top: 12px; font-size: var(--text-caption); }.card-note { display: flex; align-items: flex-start; gap: 9px; margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--line); font-size: var(--text-caption); }.card-note .app-icon { flex: none; font-size: 17px; color: var(--ocean); }
+.preview-heading { margin-bottom: 14px; }.preview-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 0; border-bottom: 1px solid var(--line); }.preview-row > span { font-size: var(--text-label); font-weight: 700; }.preview-row small { display: block; margin-top: 3px; }.preview-row > strong { font-size: var(--text-label); flex-shrink: 0; }.preview-automatic { background: var(--light-blue); padding: 12px; border: 0; border-radius: 10px; }.preview-automatic strong { color: var(--ocean); }.preview-example { margin-top: 14px; font-size: var(--text-caption); }
+.manual-guide { border-top: 1px solid var(--line); margin-top: 18px; padding-top: 16px; }.manual-guide > strong { font-size: var(--text-label); }.manual-guide p { margin: 8px 0 12px; font-size: var(--text-caption); }.manual-guide a { color: var(--ocean); font-size: var(--text-label); }
+.save-bar { display: flex; align-items: center; justify-content: space-between; gap: 20px; margin-top: 16px; padding: 16px 20px; }.save-bar strong { font-size: var(--text-label); }.save-bar p { font-size: var(--text-caption); margin-top: 5px; }.save-bar :deep(button) { flex-shrink: 0; }
 .feedback { padding: 12px 16px; border: 1px solid var(--line); border-radius: 10px; }.feedback.error { color: var(--danger); }.feedback.success { display: flex; align-items: center; gap: 8px; color: var(--ocean); }
 .confirmation-field { grid-column: 1 / -1; display: grid; gap: 8px; }
 .confirmation-field > label { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-.required-label { color: var(--muted); font-size: 10px; font-weight: 400; }
+.required-label { color: var(--muted); font-size: var(--text-caption); font-weight: 400; }
 .confirmation-field textarea { width: 100%; box-sizing: border-box; min-height: 92px; padding: 12px; border: 1px solid var(--line); border-radius: 10px; resize: vertical; background: var(--surface-soft); color: var(--ink); font: inherit; font-size: 13px; font-weight: 400; line-height: 1.6; }
 .confirmation-field textarea::placeholder { color: var(--muted); opacity: 1; }
 select:focus-visible,input:focus-visible,textarea:focus-visible { outline: 2px solid var(--ocean); outline-offset: 2px; }

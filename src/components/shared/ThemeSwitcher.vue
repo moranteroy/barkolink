@@ -53,7 +53,7 @@ function selectMode(value: unknown) {
   background: transparent;
   color: var(--muted);
   font: inherit;
-  font-size: 12px;
+  font-size: var(--text-label);
   font-weight: 600;
   cursor: pointer;
 }

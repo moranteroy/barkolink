@@ -20,10 +20,10 @@ function move(delta: number) {
 }
 </script>
 <style scoped>
-.workspace-pagination { border-top:1px solid var(--line); padding:18px 22px; display:flex; justify-content:space-between; gap:16px; flex-wrap:wrap; align-items:center; font-size:11px; color:var(--muted); background:var(--surface); }
+.workspace-pagination { border-top:1px solid var(--line); padding:18px 22px; display:flex; justify-content:space-between; gap:16px; flex-wrap:wrap; align-items:center; font-size: var(--text-caption); color:var(--muted); background:var(--surface); }
 .pagination-controls { display:flex; align-items:center; gap:12px; }
 .pagination-position { white-space:nowrap; font-variant-numeric:tabular-nums; }
-.workspace-pagination button { display:inline-flex; align-items:center; justify-content:center; min-height:40px; padding:9px 14px; border:1px solid var(--line); border-radius:10px; background:var(--surface); color:var(--ink); font:inherit; font-size:12px; font-weight:600; margin:0; }
+.workspace-pagination button { display:inline-flex; align-items:center; justify-content:center; min-height:40px; padding:9px 14px; border:1px solid var(--line); border-radius:10px; background:var(--surface); color:var(--ink); font:inherit; font-size: var(--text-label); font-weight:600; margin:0; }
 .workspace-pagination button:disabled { opacity:.5; cursor:default; }
 @media(max-width:600px) { .workspace-pagination { padding:16px; } .pagination-controls { width:100%; justify-content:space-between; gap:8px; } }
 </style>

@@ -10,6 +10,6 @@ const query = defineModel<string>('query', { default: '' });
 const sort = defineModel<string>('sort', { default: '' });
 </script>
 <style scoped>
-label { display: grid; gap: 6px; font-size: 12px; }
+label { display: grid; gap: 6px; font-size: var(--text-label); }
 input, select { min-height: 44px; max-width: 100%; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); color: var(--ink); padding: 8px; }
 </style>

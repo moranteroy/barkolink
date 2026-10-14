@@ -52,6 +52,8 @@ async function load(section = 'trips') {
   const wrapper = mount(AdminWorkspacePage, { global: { stubs: { RecordsGrid:recordsGridStub, RouterLink: { template: '<a><slot /></a>' } } } })
   mocks.enter.mock.calls.at(-1)![0]()
   await flushPromises()
+  await vi.dynamicImportSettled()
+  await flushPromises()
   return wrapper
 }
 beforeEach(() => {
@@ -75,8 +77,8 @@ beforeEach(() => {
 describe('admin navigation accordion', () => {
   it('groups pricing separately, matches the page category and toggles one accessible panel at a time', async () => {
     const wrapper = await load('fares')
-    const pricing = wrapper.findAll('.nav-group').find(group => group.find('.nav-group-toggle').text() === 'PRICING & PROMOS')!
-    const fleet = wrapper.findAll('.nav-group').find(group => group.find('.nav-group-toggle').text() === 'FLEET SETUP')!
+    const pricing = wrapper.findAll('.nav-group').find(group => group.find('.nav-group-toggle').exists() && group.find('.nav-group-toggle').text() === 'PRICING & PROMOS')!
+    const fleet = wrapper.findAll('.nav-group').find(group => group.find('.nav-group-toggle').exists() && group.find('.nav-group-toggle').text() === 'FLEET SETUP')!
     expect(pricing.findAll('a').map(link => link.text())).toEqual(['Fares & discounts', 'Vouchers'])
     expect(fleet.findAll('a').map(link => link.text())).toEqual(['Ports', 'Routes', 'Vessels', 'Accommodation'])
     expect(pricing.find('.nav-group-toggle').attributes('aria-expanded')).toBe('true')
@@ -124,7 +126,7 @@ describe('port directory filters', () => {
     await wrapper.findAll('button').find(button => button.text() === 'Reset filters')!.trigger('click')
     expect(wrapper.findAll('.records-grid tbody tr')).toHaveLength(2)
     expect((wrapper.find('#directory-search').element as HTMLInputElement).value).toBe('')
-    expect((wrapper.find('#directory-status').element as HTMLSelectElement).value).toBe('ALL')
+    expect((wrapper.find('#directory-status').element as HTMLSelectElement).value).toBe('ACTIVE')
     wrapper.unmount()
   })
 })

@@ -98,26 +98,26 @@ const props = defineProps<{
 .vessel > div { min-width: 0; }
 .vessel-icon { display: grid; place-items: center; flex: none; width: 34px; height: 34px; border-radius: 10px; background: var(--light-blue); color: var(--ocean); font-size: 19px; }
 .vessel strong { display: block; font-size: 14px; line-height: 1.5; overflow-wrap: anywhere; }
-.vessel small { display: block; margin-top: 3px; color: var(--muted); font-size: 10px; line-height: 1.5; overflow-wrap: anywhere; }
-.status { flex: none; padding: 5px 8px; border-radius: 7px; font-size: 9px; font-weight: 650; letter-spacing: .02em; }
-.sailing-date { margin: 14px 0 0; color: var(--muted); font-size: 10px; line-height: 1.6; font-weight: 400; }
+.vessel small { display: block; margin-top: 3px; color: var(--muted); font-size: var(--text-caption); line-height: 1.5; overflow-wrap: anywhere; }
+.status { flex: none; padding: 5px 8px; border-radius: 7px; font-size: var(--text-caption); font-weight: 650; letter-spacing: .02em; }
+.sailing-date { margin: 14px 0 0; color: var(--muted); font-size: var(--text-caption); line-height: 1.6; font-weight: 400; }
 .journey { display: grid; grid-template-columns: minmax(0, 1fr) 64px minmax(0, 1fr); align-items: center; gap: 8px; padding: 16px 0; margin: 8px 0 0; }
 .journey > div { min-width: 0; }
-.journey small { display: block; color: var(--muted); font-size: 10px; }
+.journey small { display: block; color: var(--muted); font-size: var(--text-caption); }
 .journey strong { display: block; margin: 5px 0; color: var(--ink); font-size: 22px; line-height: 1.3; letter-spacing: -.5px; }
-.journey span { display: block; color: var(--muted); font-size: 11px; line-height: 1.6; overflow-wrap: anywhere; }
+.journey span { display: block; color: var(--muted); font-size: var(--text-caption); line-height: 1.6; overflow-wrap: anywhere; }
 .journey-line { display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 5px; }
 .journey-line .app-icon { color: var(--ocean); font-size: 20px; }
-.journey-line span { font-size: 10px; text-align: center; }
+.journey-line span { font-size: var(--text-caption); text-align: center; }
 .arrival { text-align: right; }
 .trip-bottom { padding-top: 14px; border-top: 1px solid var(--line); }
-.trip-bottom > span { display: flex; align-items: center; gap: 6px; color: var(--muted); font-size: 11px; }
+.trip-bottom > span { display: flex; align-items: center; gap: 6px; color: var(--muted); font-size: var(--text-caption); }
 .trip-bottom > span .app-icon { color: var(--ocean); font-size: 16px; }
 .fare-actions { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 14px; }
 .fare-copy { min-width: 0; }
 .fare-copy strong { display: block; color: var(--ink); font-size: 20px; line-height: 1.5; }
-.fare-copy small { display: block; color: var(--muted); font-size: 10px; line-height: 1.5; }
-.fare-actions [data-slot="button"] { display: inline-flex; align-items: center; justify-content: center; gap: 6px; flex: none; min-height: 44px; padding: 10px 12px; border-radius: 9px; background: var(--action); color: #fff; font-size: 11px; font-weight: 600; white-space: normal; text-transform: none; }
+.fare-copy small { display: block; color: var(--muted); font-size: var(--text-caption); line-height: 1.5; }
+.fare-actions [data-slot="button"] { display: inline-flex; align-items: center; justify-content: center; gap: 6px; flex: none; min-height: 44px; padding: 10px 12px; border-radius: 9px; background: var(--action); color: #fff; font-size: var(--text-caption); font-weight: 600; white-space: normal; text-transform: none; }
 .fare-actions .app-icon { font-size: 17px; flex: none; }
 @container passenger (max-width: 380px) {
   .trip-card { padding: 16px; }

@@ -13,7 +13,7 @@ describe('trip weather display',()=>{
     const wrapper=mount(TripWeather,{props:{sailingCode:'TRIP-1'}});await flushPromises();
     expect(wrapper.text()).toContain('Forecast at departure');
     expect(wrapper.text()).toContain('75%');
-    expect(wrapper.text()).toContain('Powered by WeatherAPI.com');
+    expect(wrapper.text()).toContain('Powered by Open-Meteo');
     expect(wrapper.text()).toContain('They do not confirm sailing safety');
     wrapper.unmount();
   });

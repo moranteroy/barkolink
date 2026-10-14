@@ -12,7 +12,7 @@
           <StaffWorkspaceHeader navigation :menu-open="menuOpen" @toggle-menu="menuOpen = !menuOpen" />
           <main class="walk-in-page">
         <router-link class="back-to-ticketing" to="/staff/ticketing">
-          <AppIcon :icon="gridOutline" aria-hidden="true" />
+          <BackIcon />
           Back to ticketing
         </router-link>
 
@@ -84,7 +84,7 @@
             ><button type="button" class="secondary-button" @click="newTicket">
               Issue another ticket</button
             ><router-link to="/staff/ticketing#queue"
-              ><AppIcon :icon="ticketOutline" aria-hidden="true" /> Back to booking queue</router-link
+              ><BackIcon /> Back to booking queue</router-link
             >
           </div>
         </div>
@@ -354,7 +354,7 @@
                 class="secondary-button"
                 @click="confirming = false"
               >
-                Go back</button
+                <BackIcon /> Go back</button
               ><button data-slot="button" data-variant="default" data-size="default"
                 type="button"
                 class="issue-button"
@@ -376,6 +376,8 @@
 </template>
 
 <script setup lang="ts">
+import { notifyError, notifySuccess } from '@/composables/toast';
+import BackIcon from "@/components/ui/icon/BackIcon.vue";
 import { bookingReference } from '@/data/recordCodes';
 import StaffPortRequired from '../../../components/staff/StaffPortRequired.vue';
 import { useStaffPortGate } from '../../../composables/staffPortGate';
@@ -397,18 +399,7 @@ import { philippineDateKey, validBirthDate } from "../../../data/travelDate";
 import { DialogRoot, DialogOverlay, DialogContent, DialogTitle, DialogDescription } from "reka-ui";
 import { IonContent, IonPage, onIonViewWillEnter } from "@ionic/vue";
 import AppIcon from "@/components/ui/icon/AppIcon.vue";
-import {
-  arrowForwardOutline,
-  boatOutline,
-  cashOutline,
-  checkmarkCircleOutline,
-  gridOutline,
-  informationCircleOutline,
-  personOutline,
-  printOutline,
-  receiptOutline,
-  ticketOutline,
-} from "ionicons/icons";
+import { arrowForwardOutline, boatOutline, cashOutline, checkmarkCircleOutline, informationCircleOutline, personOutline, printOutline, receiptOutline, ticketOutline } from "ionicons/icons";
 import {
   ticketingCreateGuestWalkIn,
   ticketingSailings,
@@ -483,12 +474,14 @@ async function retrySale() {
     const saved = (await staffBookings(staffDatabase!, { search: intent.args.reference, pageSize: 100 })).data.bookings.find(b => b.reference === intent.args.reference && b.status === "CONFIRMED" && b.paymentStatus === "PAID");
     if (!saved) return false;
     issued.value = { ...intent.receipt, fare: saved.total };
+    notifySuccess('Walk-in ticket issued. Cash payment recorded.');
     return true;
   };
   try {
     if (!(await recover())) {
       await ticketingCreateGuestWalkIn(staffDatabase, intent.args);
       issued.value = intent.receipt;
+      notifySuccess('Walk-in ticket issued. Cash payment recorded.');
       try { await recover(); } catch { /* The successful mutation already confirmed issuance. */ }
     }
     pendingSale.value = null;
@@ -497,7 +490,7 @@ async function retrySale() {
     try {
       if (await recover()) { pendingSale.value = null; sessionStorage.removeItem(saleKey); return; }
     } catch { /* Keep the original intent while the result is uncertain. */ }
-    errorMessage.value = `${databaseRequestError(error, "Could not confirm this sale.")} Retry this same sale when the connection is restored. Do not collect cash again.`;
+    errorMessage.value = notifyError(`${databaseRequestError(error, "Could not confirm this sale.")} Retry this same sale when the connection is restored. Do not collect cash again.`);
   } finally { busy.value = false; }
 }
 const selectedSailing = computed(() =>
@@ -579,10 +572,10 @@ async function loadSailings() {
     });
     sailings.value = result.data.sailings;
   } catch (error) {
-    errorMessage.value = databaseRequestError(
+    errorMessage.value = notifyError(databaseRequestError(
       error,
       "Could not load sailings.",
-    );
+    ));
   } finally {
     loadingSailings.value = false;
   }
@@ -673,10 +666,10 @@ async function issueTicket() {
     busy.value = false;
     await retrySale();
   } catch (error) {
-    errorMessage.value = databaseRequestError(
+    errorMessage.value = notifyError(databaseRequestError(
       error,
       "Could not issue the ticket.",
-    );
+    ));
   } finally {
     busy.value = false;
   }
@@ -747,7 +740,7 @@ function printReceipt() {
   border-radius: 999px;
   background: var(--surface);
   color: var(--ocean);
-  font-size: 10px;
+  font-size: var(--text-caption);
   font-weight: 800;
   text-transform: uppercase;
   letter-spacing: 0.05em;
@@ -760,7 +753,7 @@ function printReceipt() {
   align-items: center;
   gap: 4px;
   color: var(--muted);
-  font-size: 11px;
+  font-size: var(--text-caption);
   font-weight: 800;
   text-decoration: none;
 }
@@ -777,7 +770,7 @@ function printReceipt() {
 .eyebrow {
   margin: 0;
   color: var(--ocean);
-  font-size: 10px;
+  font-size: var(--text-caption);
   font-weight: 800;
   letter-spacing: 0.1em;
 }
@@ -789,7 +782,7 @@ function printReceipt() {
 .page-intro p:last-child {
   margin: 0;
   color: var(--muted);
-  font-size: 12px;
+  font-size: var(--text-label);
   line-height: 1.5;
 }
 .intro-icon {
@@ -813,7 +806,7 @@ function printReceipt() {
   border-radius: 13px;
   background: var(--surface);
   color: var(--muted);
-  font-size: 10px;
+  font-size: var(--text-caption);
   font-weight: 800;
 }
 .flow-strip span {
@@ -830,7 +823,7 @@ function printReceipt() {
   border-radius: 7px;
   background: var(--light-blue);
   color: var(--ocean);
-  font-size: 10px;
+  font-size: var(--text-caption);
 }
 .flow-strip i {
   width: 28px;
@@ -879,7 +872,7 @@ function printReceipt() {
 }
 .card-heading small {
   color: var(--ocean);
-  font-size: 9px;
+  font-size: var(--text-caption);
   font-weight: 800;
   letter-spacing: 0.09em;
 }
@@ -891,7 +884,7 @@ function printReceipt() {
 .card-heading p {
   margin: 0;
   color: var(--muted);
-  font-size: 11px;
+  font-size: var(--text-caption);
   line-height: 1.5;
 }
 .form-grid {
@@ -906,7 +899,7 @@ function printReceipt() {
   display: block;
   min-width: 0;
   color: var(--ink);
-  font-size: 11px;
+  font-size: var(--text-caption);
   font-weight: 800;
 }
 .optional {
@@ -925,7 +918,7 @@ function printReceipt() {
   background: var(--surface-soft);
   color: var(--ink);
   font: inherit;
-  font-size: 12px;
+  font-size: var(--text-label);
 }
 .field :is(input, select):focus {
   outline: 2px solid var(--ocean);
@@ -937,7 +930,7 @@ function printReceipt() {
 .empty-sailings {
   margin: 12px 0 0;
   color: var(--muted);
-  font-size: 11px;
+  font-size: var(--text-caption);
 }
 .selected-sailing {
   display: flex;
@@ -960,12 +953,12 @@ function printReceipt() {
   display: block;
 }
 .selected-sailing strong {
-  font-size: 11px;
+  font-size: var(--text-caption);
 }
 .selected-sailing span {
   margin-top: 4px;
   color: var(--muted);
-  font-size: 10px;
+  font-size: var(--text-caption);
 }
 .form-footer {
   display: grid;
@@ -987,7 +980,7 @@ function printReceipt() {
   background: var(--ocean);
   color: #fff;
   font: inherit;
-  font-size: 12px;
+  font-size: var(--text-label);
   font-weight: 800;
   cursor: pointer;
 }
@@ -1004,7 +997,7 @@ function printReceipt() {
 }
 .form-footer > span {
   color: var(--muted);
-  font-size: 10px;
+  font-size: var(--text-caption);
   text-align: center;
 }
 .error {
@@ -1013,7 +1006,7 @@ function printReceipt() {
   border-radius: 9px;
   background: #fff0ee;
   color: #a53e35;
-  font-size: 11px;
+  font-size: var(--text-caption);
 }
 .summary-card {
   position: sticky;
@@ -1052,7 +1045,7 @@ function printReceipt() {
 }
 .summary-route small {
   color: var(--ocean);
-  font-size: 9px;
+  font-size: var(--text-caption);
   font-weight: 800;
   letter-spacing: 0.08em;
 }
@@ -1061,7 +1054,7 @@ function printReceipt() {
 }
 .summary-route span {
   color: var(--muted);
-  font-size: 11px;
+  font-size: var(--text-caption);
 }
 .summary-row,
 .summary-total {
@@ -1072,7 +1065,7 @@ function printReceipt() {
   padding: 11px 0;
   border-bottom: 1px solid var(--line);
   color: var(--muted);
-  font-size: 11px;
+  font-size: var(--text-caption);
 }
 .summary-row strong {
   max-width: 55%;
@@ -1100,7 +1093,7 @@ function printReceipt() {
   border-radius: 9px;
   background: var(--light-blue);
   color: var(--muted);
-  font-size: 10px;
+  font-size: var(--text-caption);
   line-height: 1.45;
 }
 .summary-note .app-icon {
@@ -1137,7 +1130,7 @@ function printReceipt() {
 }
 .receipt-top span:last-child {
   color: var(--muted);
-  font-size: 11px;
+  font-size: var(--text-caption);
 }
 .receipt-body {
   padding: 23px 25px;
@@ -1166,7 +1159,7 @@ function printReceipt() {
 .receipt-route small,
 .receipt-grid dt {
   color: var(--muted);
-  font-size: 10px;
+  font-size: var(--text-caption);
   font-weight: 800;
   letter-spacing: 0.06em;
 }
@@ -1185,7 +1178,7 @@ function printReceipt() {
 }
 .receipt-route > div > span {
   color: var(--muted);
-  font-size: 11px;
+  font-size: var(--text-caption);
 }
 .receipt-grid {
   display: grid;
@@ -1213,7 +1206,7 @@ function printReceipt() {
   border-radius: 9px;
   background: var(--surface-soft);
   color: var(--muted);
-  font-size: 11px;
+  font-size: var(--text-caption);
 }
 .receipt-note .app-icon {
   color: var(--ocean);
@@ -1232,6 +1225,7 @@ function printReceipt() {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  gap: 8px;
   min-height: 42px;
   padding: 0 14px;
   border: 1px solid var(--line);
@@ -1239,7 +1233,7 @@ function printReceipt() {
   background: var(--surface-soft);
   color: var(--ocean);
   font: inherit;
-  font-size: 11px;
+  font-size: var(--text-caption);
   font-weight: 800;
   text-decoration: none;
   cursor: pointer;
@@ -1279,7 +1273,7 @@ function printReceipt() {
 .confirmation-card > p:not(.eyebrow) {
   margin: 0;
   color: var(--muted);
-  font-size: 12px;
+  font-size: var(--text-label);
   line-height: 1.55;
 }
 .confirmation-card > p strong {
@@ -1293,7 +1287,7 @@ function printReceipt() {
   border: 1px solid var(--line);
   border-radius: 10px;
   background: var(--surface-soft);
-  font-size: 11px;
+  font-size: var(--text-caption);
 }
 .confirm-details strong {
   color: var(--muted);
@@ -1305,7 +1299,7 @@ function printReceipt() {
   gap: 10px;
 }
 .confirm-actions .issue-button {
-  font-size: 11px;
+  font-size: var(--text-caption);
 }
 .walk-in-page :is(button, a):focus-visible {
   outline: 2px solid var(--ocean);
@@ -1341,12 +1335,12 @@ function printReceipt() {
     gap: 0;
   }
   .queue-link {
-    font-size: 10px;
+    font-size: var(--text-caption);
   }
   .flow-strip {
     gap: 7px;
     padding: 10px;
-    font-size: 9px;
+    font-size: var(--text-caption);
   }
   .flow-strip i {
     width: 12px;
@@ -1444,9 +1438,9 @@ function printReceipt() {
 .walk-in-page > :deep(.staff-workspace-header) { border: 1px solid var(--line); border-radius: 12px; min-height: 64px; }
 .page-intro { margin: 24px 0 16px; gap: 12px; }
 .page-intro h1 { font-size: 28px; margin: 5px 0; line-height: 1.3; }
-.return-to-queue { display: inline-flex; align-items: center; justify-content: center; gap: 7px; flex: none; min-height: 42px; padding: 8px 12px; border: 1px solid var(--line); border-radius: 9px; background: var(--surface); color: var(--ocean); font-size: 12px; text-decoration: none; }
+.return-to-queue { display: inline-flex; align-items: center; justify-content: center; gap: 7px; flex: none; min-height: 42px; padding: 8px 12px; border: 1px solid var(--line); border-radius: 9px; background: var(--surface); color: var(--ocean); font-size: var(--text-label); text-decoration: none; }
 .return-to-queue .app-icon { font-size: 17px; }
-.flow-strip { margin-bottom: 16px; padding: 10px 16px; gap: 16px; border-radius: 10px; font-size: 11px; font-weight: 500; }
+.flow-strip { margin-bottom: 16px; padding: 10px 16px; gap: 16px; border-radius: 10px; font-size: var(--text-caption); font-weight: 500; }
 .flow-strip span.active { color: var(--ocean); font-weight: 650; }
 .flow-strip span.active b { color: white; background: var(--ocean); }
 .flow-strip span.complete { color: var(--ocean); }
@@ -1456,8 +1450,8 @@ function printReceipt() {
 .card-heading { gap: 10px; margin-bottom: 14px; }
 .step-number { width: 32px; height: 32px; border-radius: 9px; font-size: 18px; }
 .card-heading h2 { font-size: 17px; margin: 2px 0 3px; }
-.card-heading p { font-size: 12px; font-weight: 400; }
-.field { font-size: 12px; font-weight: 500; }
+.card-heading p { font-size: var(--text-label); font-weight: 400; }
+.field { font-size: var(--text-label); font-weight: 500; }
 .field input, .field select { box-sizing: border-box; height: 42px; margin-top: 6px; font-weight: 400; font-size: 13px; }
 .form-grid { gap: 12px 14px; }
 .selected-sailing { padding: 9px 12px; margin-top: 10px; }
@@ -1471,12 +1465,12 @@ function printReceipt() {
 .summary-route { margin: 16px; padding: 12px; gap: 6px; }
 .summary-route strong { line-height: 1.5; overflow-wrap: anywhere; }
 .summary-route span { line-height: 1.6; }
-.summary-row { margin: 0 16px; padding: 10px 0; font-size: 12px; }
-.summary-total { margin: 16px; padding: 14px 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--light-blue); font-size: 12px; }
+.summary-row { margin: 0 16px; padding: 10px 0; font-size: var(--text-label); }
+.summary-total { margin: 16px; padding: 14px 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--light-blue); font-size: var(--text-label); }
 .summary-total strong { font-size: 23px; white-space: nowrap; }
-.summary-note { margin: 0 16px 16px; background: transparent; padding: 0; font-size: 11px; line-height: 1.6; }
+.summary-note { margin: 0 16px 16px; background: transparent; padding: 0; font-size: var(--text-caption); line-height: 1.6; }
 .mobile-fare { display: none; }
-.back-to-ticketing { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; margin-top: 12px; padding: 8px 12px; border: 1px solid var(--line); border-radius: 9px; background: var(--surface); color: var(--ocean); font-size: 12px; font-weight: 500; text-decoration: none; }
+.back-to-ticketing { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; margin-top: 12px; padding: 8px 12px; border: 1px solid var(--line); border-radius: 9px; background: var(--surface); color: var(--ocean); font-size: var(--text-label); font-weight: 500; text-decoration: none; }
 .back-to-ticketing .app-icon { font-size: 17px; }
 .back-to-ticketing:hover { background: var(--surface-soft); }
 .back-to-ticketing + .page-intro { margin-top: 14px; }
@@ -1490,11 +1484,11 @@ function printReceipt() {
  .walk-in-layout { grid-template-columns: minmax(0, 1fr); }
  .walk-in-page { padding: 12px 16px 32px; }
  .page-intro { margin-top: 20px; flex-wrap: wrap; }
- .mobile-fare { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 14px; padding: 12px 14px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); font-size: 12px; }
- .mobile-fare small { display: block; margin-top: 4px; color: var(--muted); font-size: 10px; }
+ .mobile-fare { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 14px; padding: 12px 14px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); font-size: var(--text-label); }
+ .mobile-fare small { display: block; margin-top: 4px; color: var(--muted); font-size: var(--text-caption); }
  .mobile-fare strong { color: var(--ocean); font-size: 20px; white-space: nowrap; }
  .fare-summary { position: static; }
- .flow-strip { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); align-items: start; gap: 8px; padding: 12px; font-size: 10px; }
+ .flow-strip { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); align-items: start; gap: 8px; padding: 12px; font-size: var(--text-caption); }
  .flow-strip i { display: none; }
  .flow-strip span { align-items: flex-start; white-space: normal; line-height: 1.5; }
  .flow-strip b { flex: none; }

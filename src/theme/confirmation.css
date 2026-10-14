@@ -74,7 +74,7 @@ ion-alert.barkolink-confirmation .alert-button-group .alert-button {
   margin: 0;
   text-transform: none;
   font: inherit;
-  font-size: 12px;
+  font-size: var(--text-label);
   font-weight: 600;
   letter-spacing: normal;
   overflow: hidden;

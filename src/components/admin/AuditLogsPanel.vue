@@ -81,6 +81,7 @@
   </section>
 </template>
 <script setup lang="ts">
+import { notifyError } from '@/composables/toast';
 import WorkspacePagination from "../shared/WorkspacePagination.vue";
 import { computed, onMounted, ref, watch } from "vue";
 import { useRoute } from "vue-router";
@@ -172,7 +173,7 @@ async function load() {
     total.value = result.data.totalCount;
     actions.value = result.data.actions;
   } catch (cause) {
-    error.value = databaseRequestError(cause, "Could not load audit records.");
+    error.value = notifyError(databaseRequestError(cause, "Could not load audit records."));
     total.value = 0;
   } finally {
     loading.value = false;
@@ -222,44 +223,44 @@ onMounted(load);
 .audit-directory { overflow:hidden; }
 .audit-filters { display:grid; grid-template-columns:minmax(200px,2fr) repeat(4,minmax(120px,1fr)); gap:10px 12px; padding:14px 16px; }
 .filter-heading { grid-column:1/-1; display:flex; justify-content:space-between; align-items:center; gap:14px; padding-bottom:10px; border-bottom:1px solid var(--line); }
-.filter-heading > span { font-size:11px; color:var(--muted); }
-label { display:grid; align-content:start; gap:8px; font-size:12px; font-weight:600; min-width:0; color:var(--muted); }
-input,select { width:100%; min-width:0; height:40px; padding:0 12px; border:1px solid var(--line); border-radius:9px; background:var(--surface-soft); color:var(--ink); font:inherit; font-size:12px; }
+.filter-heading > span { font-size: var(--text-caption); color:var(--muted); }
+label { display:grid; align-content:start; gap:8px; font-size: var(--text-label); font-weight:600; min-width:0; color:var(--muted); }
+input,select { width:100%; min-width:0; height:40px; padding:0 12px; border:1px solid var(--line); border-radius:9px; background:var(--surface-soft); color:var(--ink); font:inherit; font-size: var(--text-label); }
 .search-field { position:relative; }
 .search-field input { padding-left:36px; }
 .search-field .app-icon { position:absolute; left:12px; top:13px; font-size:16px; pointer-events:none; color:var(--muted); }
 .filter-actions { display:flex; gap:8px; justify-content:flex-end; margin-left:auto; }
 .audit-summary { display:flex; justify-content:space-between; align-items:center; gap:10px 12px; padding:14px 16px; border-bottom:1px solid var(--line); }
-.eyebrow { font-size:10px; letter-spacing:.1em; font-weight:800; color:var(--ocean); margin:0 0 7px; }
+.eyebrow { font-size: var(--text-caption); letter-spacing:.1em; font-weight:800; color:var(--ocean); margin:0 0 7px; }
 h2 { margin:0; font-size:17px; color:var(--ink); }
-.directory-note { font-size:12px; line-height:1.6; color:var(--muted); margin:7px 0 0; }
-.muted { font-size:11px; color:var(--muted); }
+.directory-note { font-size: var(--text-label); line-height:1.6; color:var(--muted); margin:7px 0 0; }
+.muted { font-size: var(--text-caption); color:var(--muted); }
 .actor { display:flex; align-items:center; gap:10px; }
 .actor-info { display:grid; gap:2px; min-width:0; }
 .actor-info strong { font-weight:600; color:var(--ink); }
-.actor-role { margin:0; font-size:10px; color:var(--muted); }
+.actor-role { margin:0; font-size: var(--text-caption); color:var(--muted); }
 .actor-avatar { display:grid; place-items:center; width:28px; height:28px; flex:none; border-radius:50%; background:var(--light-blue); color:var(--ocean); font-weight:700; }
 .audit-record { display:grid; gap:2px; min-width:0; }
-.audit-record small { color:var(--muted); font-size:10px; overflow-wrap:anywhere; }
-time { font-size:11px; }
-.audit-empty { text-align:center; padding:24px 16px; color:var(--muted); font-size:12px; }
+.audit-record small { color:var(--muted); font-size: var(--text-caption); overflow-wrap:anywhere; }
+time { font-size: var(--text-caption); }
+.audit-empty { text-align:center; padding:24px 16px; color:var(--muted); font-size: var(--text-label); }
 .audit-empty > .app-icon { font-size:30px; color:var(--ocean); }
 .audit-empty h3 { color:var(--ink); margin:12px 0 8px; }
-.audit-error { display:flex; align-items:center; gap:12px; padding:16px 20px; color:#bd3b45; border:1px solid #bd3b4533; background:var(--surface); border-radius:12px; font-size:12px; }
+.audit-error { display:flex; align-items:center; gap:12px; padding:16px 20px; color:#bd3b45; border:1px solid #bd3b4533; background:var(--surface); border-radius:12px; font-size: var(--text-label); }
 .audit-error p { flex:1; margin:0; }
 .audit-error .app-icon { font-size:22px; flex:none; }
 .legacy-role-help { margin:10px 16px; padding:10px 12px; border:1px solid var(--line); border-radius:10px; background:var(--surface-soft); }
-.legacy-role-help summary { cursor:pointer; font-size:11px; color:var(--muted); }
-.legacy-role-help p,.legacy-note { max-width:650px; font-size:12px; line-height:1.6; color:var(--muted); margin:10px 0 0; }
+.legacy-role-help summary { cursor:pointer; font-size: var(--text-caption); color:var(--muted); }
+.legacy-role-help p,.legacy-note { max-width:650px; font-size: var(--text-label); line-height:1.6; color:var(--muted); margin:10px 0 0; }
 .audit-details-modal { --width:min(600px, calc(100vw - 32px)); --height:auto; --max-height:calc(100dvh - 32px); --border-radius:16px; --background:var(--surface); }
 .audit-dialog { display:flex; flex-direction:column; max-height:calc(100dvh - 32px); overflow:hidden; background:var(--surface); color:var(--ink); }
 .audit-dialog header { display:flex; align-items:center; justify-content:space-between; gap:10px 12px; padding:14px 16px; border-bottom:1px solid var(--line); flex:none; }
 .audit-dialog-scroll { padding:14px 20px; scrollbar-width:thin; overflow-y:auto; min-height:0; flex:1; overscroll-behavior:contain; }
 .entry-context { display:grid; grid-template-columns:1fr 1fr; gap:12px; padding:12px 14px; margin:0 0 14px; border:1px solid var(--line); border-radius:12px; background:var(--surface-soft); }
 .entry-context > div:last-child { grid-column:1/-1; }
-.entry-context dt { color:var(--muted); font-size:11px; margin-bottom:6px; }
-.entry-context dd { margin:0; font-size:12px; overflow-wrap:anywhere; }
-.entry-context small { display:block; color:var(--muted); font-size:11px; margin-top:5px; }
+.entry-context dt { color:var(--muted); font-size: var(--text-caption); margin-bottom:6px; }
+.entry-context dd { margin:0; font-size: var(--text-label); overflow-wrap:anywhere; }
+.entry-context small { display:block; color:var(--muted); font-size: var(--text-caption); margin-top:5px; }
 .audit-dialog h3 { font-size:14px; margin:14px 0 0; }
 .audit-dialog :deep(.readable-changes) { max-width:none; }
 .audit-dialog footer { display:flex; justify-content:flex-end; padding:12px 20px; background:var(--surface-soft); border-top:1px solid var(--line); flex:none; }
@@ -268,10 +269,10 @@ time { font-size:11px; }
 .audit-directory :deep(.grid-tools) { padding:8px 16px; border-bottom:1px solid var(--line); }
 .audit-directory :deep(.grid-tools button) { min-height:34px; padding:6px 8px; }
 .audit-directory :deep(.desktop-grid) { padding:8px; }
-.audit-directory :deep(.grid-cell-content) { font-size:12px; line-height:1.5; padding:7px 0; }
+.audit-directory :deep(.grid-cell-content) { font-size: var(--text-label); line-height:1.5; padding:7px 0; }
 .audit-directory :deep(.workspace-pagination) { padding:12px 16px; }
 .audit-directory :deep(.workspace-pagination button) { min-height:34px; }
-.audit-directory .view-changes { min-height:32px; padding:5px 8px; font-size:11px; }
+.audit-directory .view-changes { min-height:32px; padding:5px 8px; font-size: var(--text-caption); }
 .audit-dialog { font-family:var(--ion-font-family); }
 .audit-dialog header > button { width:44px; height:44px; padding:0; flex:none; }
 .audit-dialog header > button .app-icon { font-size:20px; }

@@ -8,16 +8,15 @@
         <small>{{ port.role }}</small><h3>{{ port.name }}</h3>
         <p v-if="!port.available" class="weather-message">Weather unavailable for this port.</p>
         <template v-else>
-          <div class="weather-conditions"><span class="condition-icon"><WeatherSymbol :kind="weatherPresentation((port.forecast || port.current)?.condition || '').kind" active /></span><strong>{{ format((port.forecast || port.current)?.temperatureC) }}<span>°C</span></strong><div class="condition-copy"><b>{{ (port.forecast || port.current)?.condition }}</b><small>{{ port.forecast ? 'Forecast at departure time' : 'Current weather' }}</small></div></div>
-          <dl><div><dt>Wind</dt><dd>{{ format((port.forecast || port.current)?.windKph) }} km/h</dd></div><div><dt>Visibility</dt><dd>{{ format((port.forecast || port.current)?.visibilityKm) }} km</dd></div><div v-if="port.forecast"><dt>Chance of rain</dt><dd>{{ format(port.forecast.rainChance) }}%</dd></div></dl>
+          <SmartWeatherCard v-if="port.forecast || port.current" :reading="(port.forecast || port.current)!" :label="port.forecast ? 'Forecast at departure time' : 'Current weather'" />
           <p v-if="!port.forecast" class="forecast-notice">Departure forecast is not available yet. Check again closer to your trip.</p>
           <p class="weather-updated">{{ port.stale ? 'Saved weather · update delayed' : 'Last updated' }} · {{ timestamp(port.current?.at) }}</p>
         </template>
       </article>
     </div>
-    <div v-if="!compact" class="weather-footer"><a href="https://www.weatherapi.com/" target="_blank" rel="noopener noreferrer">Powered by WeatherAPI.com</a><p>Weather estimates are for travel planning and may change. They do not confirm sailing safety. Follow official advisories and your operator’s trip status.</p></div>
+    <div v-if="!compact" class="weather-footer"><a href="https://open-meteo.com/" target="_blank" rel="noopener noreferrer">Powered by Open-Meteo</a><p>Weather estimates are for travel planning and may change. They do not confirm sailing safety. Follow official advisories and your operator’s trip status.</p></div>
     <p v-if="compact && data?.configured" class="compact-weather-hint">Swipe to view both ports</p>
-    <details v-if="compact" class="compact-weather-details"><summary>Forecast info &amp; source</summary><p>Weather estimates are for travel planning and may change. They do not confirm sailing safety. Follow official advisories and your operator's trip status.</p><a href="https://www.weatherapi.com/" target="_blank" rel="noopener noreferrer">Powered by WeatherAPI.com</a></details>
+    <details v-if="compact" class="compact-weather-details"><summary>Forecast info &amp; source</summary><p>Weather estimates are for travel planning and may change. They do not confirm sailing safety. Follow official advisories and your operator's trip status.</p><a href="https://open-meteo.com/" target="_blank" rel="noopener noreferrer">Powered by Open-Meteo</a></details>
   </section>
 </template>
 <script setup lang="ts">
@@ -25,8 +24,8 @@ import { ref,watch } from 'vue';
 import AppIcon from "@/components/ui/icon/AppIcon.vue";
 import { partlySunnyOutline } from 'ionicons/icons';
 import { tripWeather,type TripWeatherData } from '../../services/weather';
-import WeatherSymbol from './WeatherSymbol.vue';
-import { weatherPresentation } from '../../data/weatherPresentation';
+import SmartWeatherCard from './SmartWeatherCard.vue';
+
 const props=withDefaults(defineProps<{sailingCode:string;compact?:boolean}>(), {compact:false});
 const data=ref<TripWeatherData|null>(null),loading=ref(false),error=ref(false);
 let requestId=0;
@@ -39,31 +38,30 @@ async function load(){
   finally{if(id===requestId)loading.value=false;}
 }
 watch(()=>props.sailingCode,load,{immediate:true});
-const format=(value:number|null|undefined)=>value==null?'—':Math.round(value).toString();
 const timestamp=(at?:string)=>at?new Date(at).toLocaleString('en-PH',{timeZone:'Asia/Manila',month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}):'Unavailable';
 </script>
 <style scoped>
 .trip-weather { margin: 20px 0; padding: 20px; border: 1px solid var(--line); border-radius: 16px; background: var(--surface); color: var(--ink); min-width: 0; }
 .weather-heading { display: flex; justify-content: space-between; gap: 12px; align-items: center; margin-bottom: 16px; }
-.weather-heading small { font-size: 9px; letter-spacing: .1em; color: var(--ocean); font-weight: 700; }
+.weather-heading small { font-size: var(--text-caption); letter-spacing: .1em; color: var(--ocean); font-weight: 700; }
 .weather-heading h2 { display: flex; gap: 8px; align-items: center; font-size: 19px; margin: 6px 0 0; }
 .weather-heading .app-icon { color: var(--ocean); }
-.weather-heading button { border: 1px solid var(--line); border-radius: 8px; padding: 10px; color: var(--ocean); background: var(--surface-soft); font: inherit; font-size: 12px; cursor: pointer; }
+.weather-heading button { border: 1px solid var(--line); border-radius: 8px; padding: 10px; color: var(--ocean); background: var(--surface-soft); font: inherit; font-size: var(--text-label); cursor: pointer; }
 .weather-ports { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 12px; }
 .weather-port { min-width: 0; padding: 16px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface-soft); }
-.weather-port > small { color: var(--muted); font-size: 10px; }
+.weather-port > small { color: var(--muted); font-size: var(--text-caption); }
 .weather-port h3 { font-size: 14px; line-height: 1.5; margin: 5px 0 16px; overflow-wrap: anywhere; }
 .weather-conditions { display: flex; align-items: center; gap: 12px; }
 .weather-conditions strong { font-size: 32px; white-space: nowrap; }
 .weather-conditions strong span { font-size: 16px; font-weight: 500; }
-.weather-conditions b { display: block; font-size: 12px; line-height: 1.5; }
-.weather-conditions small { display: block; color: var(--muted); font-size: 10px; margin-top: 4px; }
+.weather-conditions b { display: block; font-size: var(--text-label); line-height: 1.5; }
+.weather-conditions small { display: block; color: var(--muted); font-size: var(--text-caption); margin-top: 4px; }
 dl { display: flex; flex-wrap: wrap; gap: 16px; border-top: 1px solid var(--line); padding-top: 14px; margin: 16px 0 0; }
-dt { font-size: 10px; color: var(--muted); } dd { margin: 5px 0 0; font-size: 12px; font-weight: 600; }
-.forecast-notice,.weather-updated,.weather-message,.weather-footer p { color: var(--muted); font-size: 11px; line-height: 1.7; margin: 12px 0 0; }
+dt { font-size: var(--text-caption); color: var(--muted); } dd { margin: 5px 0 0; font-size: var(--text-label); font-weight: 600; }
+.forecast-notice,.weather-updated,.weather-message,.weather-footer p { color: var(--muted); font-size: var(--text-caption); line-height: 1.7; margin: 12px 0 0; }
 .forecast-notice { padding: 9px; border-radius: 7px; background: var(--surface); }
 .weather-footer { margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--line); }
-.weather-footer a { font-size: 10px; color: var(--ocean); text-decoration: none; }
+.weather-footer a { font-size: var(--text-caption); color: var(--ocean); text-decoration: none; }
 .weather-footer p { margin-top: 6px; }
 @media(max-width:600px){.weather-ports{grid-template-columns:minmax(0,1fr)}.trip-weather{padding:16px}}
 .trip-weather { font-family: var(--ion-font-family); }
@@ -81,14 +79,14 @@ dl { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 8px; }
 </style>
 
 <style scoped>
-.compact-weather-hint { display: none; margin: 5px 0 0; color: var(--muted); font-size: 9px; }
+.compact-weather-hint { display: none; margin: 5px 0 0; color: var(--muted); font-size: var(--text-caption); }
 .compact-weather .weather-ports { gap: 8px; }
 .compact-weather .weather-port { padding: 10px; border-radius: 9px; background: var(--surface-soft); }
-.compact-weather .weather-port > small { padding: 0; background: transparent; border-radius: 0; font-size: 9px; }
-.compact-weather .weather-port h3 { font-size: 12px; margin: 3px 0 7px; line-height: 1.4; }
+.compact-weather .weather-port > small { padding: 0; background: transparent; border-radius: 0; font-size: var(--text-caption); }
+.compact-weather .weather-port h3 { font-size: var(--text-label); margin: 3px 0 7px; line-height: 1.4; }
 .compact-weather .weather-conditions { grid-template-columns: 28px auto minmax(0, 1fr); gap: 7px; }.compact-weather .condition-icon { width: 28px; height: 28px; padding: 3px; border-radius: 8px; }
-.compact-weather .weather-conditions strong { font-size: 22px; }.compact-weather .weather-conditions strong span { font-size: 12px; }.compact-weather .weather-conditions b { font-size: 10px; line-height: 1.4; }.compact-weather .weather-conditions small { font-size: 9px; margin-top: 2px; }
-.compact-weather dl { gap: 6px; padding-top: 7px; margin-top: 7px; }.compact-weather dt { font-size: 9px; }.compact-weather dd { font-size: 10px; margin-top: 3px; }
-.compact-weather .weather-updated { font-size: 9px; margin: 5px 0 0; line-height: 1.4; }.compact-weather .forecast-notice { padding: 6px; font-size: 10px; margin-top: 6px; }
-.compact-weather-details { margin-top: 7px; color: var(--muted); font-size: 10px; }.compact-weather-details summary { display: flex; align-items: center; min-height: 28px; gap: 5px; cursor: pointer; color: var(--ocean); }.compact-weather-details summary::before { content: '+'; font-size: 13px; }.compact-weather-details[open] summary::before { content: '-'; }.compact-weather-details summary:focus-visible { outline: 2px solid var(--ocean); outline-offset: 2px; }.compact-weather-details p { font-size: 10px; line-height: 1.6; margin: 4px 0; }.compact-weather-details a { color: var(--ocean); }
+.compact-weather .weather-conditions strong { font-size: 22px; }.compact-weather .weather-conditions strong span { font-size: var(--text-label); }.compact-weather .weather-conditions b { font-size: var(--text-caption); line-height: 1.4; }.compact-weather .weather-conditions small { font-size: var(--text-caption); margin-top: 2px; }
+.compact-weather dl { gap: 6px; padding-top: 7px; margin-top: 7px; }.compact-weather dt { font-size: var(--text-caption); }.compact-weather dd { font-size: var(--text-caption); margin-top: 3px; }
+.compact-weather .weather-updated { font-size: var(--text-caption); margin: 5px 0 0; line-height: 1.4; }.compact-weather .forecast-notice { padding: 6px; font-size: var(--text-caption); margin-top: 6px; }
+.compact-weather-details { margin-top: 7px; color: var(--muted); font-size: var(--text-caption); }.compact-weather-details summary { display: flex; align-items: center; min-height: 28px; gap: 5px; cursor: pointer; color: var(--ocean); }.compact-weather-details summary::before { content: '+'; font-size: 13px; }.compact-weather-details[open] summary::before { content: '-'; }.compact-weather-details summary:focus-visible { outline: 2px solid var(--ocean); outline-offset: 2px; }.compact-weather-details p { font-size: var(--text-caption); line-height: 1.6; margin: 4px 0; }.compact-weather-details a { color: var(--ocean); }
 </style>

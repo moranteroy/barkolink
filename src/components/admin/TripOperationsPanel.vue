@@ -261,6 +261,7 @@
   </section>
 </template>
 <script setup lang="ts">
+import { notifyError, notifySuccess } from '@/composables/toast';
 import { confirmAction, requestReason } from "../../composables/confirmation";
 import { Badge } from "@/components/ui/badge";
 defineProps<{ embedded?: boolean }>();
@@ -318,7 +319,7 @@ async function loadMoreSailings() {
     sailingPage.value++;
     sailingTotal.value = result.data.totalCount || sailings.value.length;
   } catch (cause) {
-    error.value = databaseRequestError(cause, "Could not load more sailings.");
+    error.value = notifyError(databaseRequestError(cause, "Could not load more sailings."));
   } finally {
     moreLoading.value = false;
   }
@@ -452,8 +453,8 @@ async function setTripStatus(status: 'DELAYED' | 'CANCELLED') {
   try {
     await adminUpdateSailingStatus(staffDatabase, { code: trip.code, status, reason });
     await load();
-    notice.value = status === 'CANCELLED' ? 'Trip cancelled. Review paid bookings for refunds.' : 'Trip marked Delayed. Automatic status changes are paused until the schedule is updated and resumed.';
-  } catch (cause) { error.value = databaseRequestError(cause, 'Could not update trip status.'); }
+    notice.value = notifySuccess(status === 'CANCELLED' ? 'Trip cancelled. Review paid bookings for refunds.' : 'Trip marked Delayed. Automatic status changes are paused until the schedule is updated and resumed.');
+  } catch (cause) { error.value = notifyError(databaseRequestError(cause, 'Could not update trip status.')); }
   finally { busy.value = false; }
 }
 const filteredBookings = computed(() => (data.value?.bookings || []).filter(b => matchesSearch(b.reference)));
@@ -471,10 +472,10 @@ async function load() {
         sailings.value.push(data.value.sailing);
     }
   } catch (cause) {
-    error.value = databaseRequestError(
+    error.value = notifyError(databaseRequestError(
       cause,
       "Could not load trip operations.",
-    );
+    ));
   } finally {
     loading.value = false;
   }
@@ -505,9 +506,9 @@ async function reconcile() {
   try {
     const result = await reconcileNoShows(staffDatabase, code.value);
     await load();
-    notice.value = `${result.data.marked} no-show records added.`;
+    notice.value = notifySuccess(`${result.data.marked} no-show records added.`);
   } catch (cause) {
-    error.value = databaseRequestError(cause, "Could not reconcile no-shows.");
+    error.value = notifyError(databaseRequestError(cause, "Could not reconcile no-shows."));
   } finally {
     busy.value = false;
   }
@@ -521,7 +522,7 @@ onMounted(async () => {
     sailingPage.value = 0;
     sailingTotal.value = result.data.totalCount || sailings.value.length;
   } catch (cause) {
-    error.value = databaseRequestError(cause, "Could not load sailings.");
+    error.value = notifyError(databaseRequestError(cause, "Could not load sailings."));
   } finally {
     loading.value = false;
   }
@@ -531,19 +532,19 @@ onMounted(async () => {
 <style scoped>
 .sailing-status-controls { display: grid; gap: 12px; padding: 16px; margin: 16px 0; border: 1px solid var(--line); border-radius: 12px; background: var(--surface-soft); }
 .sailing-status-controls strong { font-size: 13px; }
-.sailing-status-controls p { margin-top: 6px; font-size: 12px; line-height: 1.6; color: var(--muted); }
+.sailing-status-controls p { margin-top: 6px; font-size: var(--text-label); line-height: 1.6; color: var(--muted); }
 .status-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
 .status-actions button { min-height: 40px; padding: 8px 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); color: var(--ink); cursor: pointer; }
 .status-actions .cancel-trip { color: var(--danger); border-color: var(--danger); }
-.status-actions a { color: var(--ocean); font-size: 12px; }
+.status-actions a { color: var(--ocean); font-size: var(--text-label); }
 .trip-operations { display: grid; gap: 14px; color: var(--ink); }
 .trip-operations, .trip-operations > *, .picker { min-width: 0; }
 header, .trip-header, .content-heading, .picker-heading, .sailing-identity, .reconcile { display: flex; align-items: center; justify-content: space-between; gap: 14px; }
 h2, h3, p { margin: 0; }
 h3 { font-size: 16px; font-weight: 700; }
-p, small { color: var(--muted); font-size: 12px; line-height: 1.6; }
-.eyebrow { color: var(--ocean); font-size: 9px; font-weight: 800; letter-spacing: .1em; margin-bottom: 4px; }
-button, select, input { font: inherit; font-size: 12px; }
+p, small { color: var(--muted); font-size: var(--text-label); line-height: 1.6; }
+.eyebrow { color: var(--ocean); font-size: var(--text-caption); font-weight: 800; letter-spacing: .1em; margin-bottom: 4px; }
+button, select, input { font: inherit; font-size: var(--text-label); }
 button, select, .schedule-link, .trip-header > a { min-height: 38px; border: 1px solid var(--line); border-radius: 8px; padding: 9px 12px; }
 select, input { color: var(--ink); background: var(--surface-soft); min-width: 0; }
 button { color: var(--ocean); background: var(--light-blue); cursor: pointer; font-weight: 600; }
@@ -556,7 +557,7 @@ button:focus-visible, select:focus-visible, input:focus-visible, a:focus-visible
 .picker-heading h3 { font-size: 14px; }
 .workspace-symbol, .empty-symbol, .event-icon { display: grid; place-items: center; flex: none; color: var(--ocean); background: var(--light-blue); border-radius: 10px; }
 .workspace-symbol { width: 38px; height: 38px; font-size: 22px; }
-.picker { display: grid; gap: 5px; color: var(--muted); font-size: 10px; font-weight: 600; }
+.picker { display: grid; gap: 5px; color: var(--muted); font-size: var(--text-caption); font-weight: 600; }
 .picker select { width: 100%; min-height: 40px; }
 .workspace-empty { padding: 24px; }
 .empty-heading { display: flex; align-items: center; gap: 16px; }
@@ -565,31 +566,31 @@ button:focus-visible, select:focus-visible, input:focus-visible, a:focus-visible
 .workspace-features { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; margin-top: 24px; padding-top: 20px; border-top: 1px solid var(--line); }
 .workspace-features > div { display: grid; grid-template-columns: 24px 1fr; gap: 3px 10px; }
 .workspace-features .app-icon { grid-row: span 2; color: var(--ocean); font-size: 21px; }
-.workspace-features strong { font-size: 12px; }
-.workspace-features small { font-size: 11px; }
-.schedule-link { display: inline-flex; align-items: center; gap: 8px; margin-top: 16px; color: var(--ocean); text-decoration: none; font-size: 12px; }
+.workspace-features strong { font-size: var(--text-label); }
+.workspace-features small { font-size: var(--text-caption); }
+.schedule-link { display: inline-flex; align-items: center; gap: 8px; margin-top: 16px; color: var(--ocean); text-decoration: none; font-size: var(--text-label); }
 .trip-header { padding: 18px; }
 .sailing-identity { justify-content: flex-start; gap: 10px; }
-.sailing-identity small { font-size: 11px; color: var(--ocean); font-weight: 700; }
+.sailing-identity small { font-size: var(--text-caption); color: var(--ocean); font-weight: 700; }
 .trip-header h3 { margin: 8px 0 6px; font-size: 20px; line-height: 1.4; }
 .route-arrow { color: var(--ocean); }
 .trip-header p { display: flex; flex-wrap: wrap; gap: 6px; }
-.trip-header p small { font-size: 10px; }
-.trip-header > a { display: inline-flex; align-items: center; gap: 7px; color: var(--ocean); background: var(--surface-soft); text-decoration: none; font-size: 11px; flex: none; }
+.trip-header p small { font-size: var(--text-caption); }
+.trip-header > a { display: inline-flex; align-items: center; gap: 7px; color: var(--ocean); background: var(--surface-soft); text-decoration: none; font-size: var(--text-caption); flex: none; }
 .trip-header > a .app-icon { font-size: 16px; }
 .metrics { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); border-top: 1px solid var(--line); padding: 14px 4px; background: var(--surface-soft); border-radius: 0 0 12px 12px; }
 .metrics article { display: grid; gap: 5px; padding: 0 14px; border-right: 1px solid var(--line); }
 .metrics article:last-child { border-right: 0; }
-.metrics small { font-size: 10px; }
+.metrics small { font-size: var(--text-caption); }
 .metrics strong { font-size: 23px; font-variant-numeric: tabular-nums; line-height: 1.1; }
 nav { display: flex; gap: 3px; overflow-x: auto; border-bottom: 1px solid var(--line); padding-bottom: 5px; }
-nav button { white-space: nowrap; display: inline-flex; align-items: center; gap: 6px; border: 0; background: transparent; color: var(--muted); font-size: 11px; min-height: 38px; padding: 9px 11px; }
+nav button { white-space: nowrap; display: inline-flex; align-items: center; gap: 6px; border: 0; background: transparent; color: var(--muted); font-size: var(--text-caption); min-height: 38px; padding: 9px 11px; }
 nav button:hover { color: var(--ink); background: var(--surface-soft); }
 nav button.active { color: var(--ocean); background: var(--light-blue); }
-nav button span { font-size: 9px; padding: 1px 5px; border-radius: 5px; background: var(--surface-soft); color: var(--muted); font-variant-numeric: tabular-nums; }
+nav button span { font-size: var(--text-caption); padding: 1px 5px; border-radius: 5px; background: var(--surface-soft); color: var(--muted); font-variant-numeric: tabular-nums; }
 .overview { padding: 18px; }
 .progress-value { color: var(--ocean); font-size: 25px; font-variant-numeric: tabular-nums; }
-.progress-value small { font-size: 10px; margin-left: 4px; }
+.progress-value small { font-size: var(--text-caption); margin-left: 4px; }
 progress { display: block; width: 100%; height: 8px; appearance: none; margin: 16px 0 8px; border: 0; border-radius: 8px; overflow: hidden; background: var(--line); }
 progress::-webkit-progress-bar { background: var(--line); border-radius: 8px; }
 progress::-webkit-progress-value { background: var(--ocean); border-radius: 8px; }
@@ -602,43 +603,43 @@ progress::-moz-progress-bar { background: var(--ocean); border-radius: 8px; }
 .links a { display: flex; align-items: center; gap: 10px; text-decoration: none; border: 1px solid var(--line); border-radius: 8px; padding: 12px; color: var(--ocean); }
 .links a:hover { background: var(--surface-soft); }
 .links .app-icon { flex: none; font-size: 22px; }
-.links strong, .links small { display: block; font-size: 11px; }
-.links small { margin-top: 4px; font-size: 10px; }
-.footnote { margin-top: 14px; font-size: 10px; }
+.links strong, .links small { display: block; font-size: var(--text-caption); }
+.links small { margin-top: 4px; font-size: var(--text-caption); }
+.footnote { margin-top: 14px; font-size: var(--text-caption); }
 .content-heading { padding: 16px 18px; }
 .overview > .content-heading { padding: 0; }
-.content-heading p:not(.eyebrow) { margin-top: 5px; font-size: 11px; }
-.record-count { color: var(--ocean); background: var(--light-blue); padding: 4px 8px; border-radius: 6px; font-size: 10px; white-space: nowrap; }
+.content-heading p:not(.eyebrow) { margin-top: 5px; font-size: var(--text-caption); }
+.record-count { color: var(--ocean); background: var(--light-blue); padding: 4px 8px; border-radius: 6px; font-size: var(--text-caption); white-space: nowrap; }
 .record-search { display: flex; align-items: center; gap: 8px; margin: 0 18px 14px; padding: 0 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface-soft); }
 .record-search .app-icon { color: var(--muted); font-size: 17px; flex: none; }
 .record-search input { width: 100%; min-height: 38px; background: transparent; border: 0; }
 .table-wrap { overflow: auto; max-height: 420px; border-top: 1px solid var(--line); border-radius: 0 0 12px 12px; }
 table { width: 100%; border-collapse: separate; border-spacing: 0; }
-th, td { text-align: left; padding: 12px 16px; border-bottom: 1px solid var(--line); font-size: 12px; }
-th { position: sticky; top: 0; z-index: 1; background: var(--surface-soft); color: var(--muted); font-size: 9px; letter-spacing: .04em; text-transform: uppercase; padding-block: 13px; }
+th, td { text-align: left; padding: 12px 16px; border-bottom: 1px solid var(--line); font-size: var(--text-label); }
+th { position: sticky; top: 0; z-index: 1; background: var(--surface-soft); color: var(--muted); font-size: var(--text-caption); letter-spacing: .04em; text-transform: uppercase; padding-block: 13px; }
 tbody tr:last-child td { border-bottom: 0; }
 tbody tr:hover { background: var(--surface-soft); }
-td strong { font-size: 12px; font-weight: 600; }
+td strong { font-size: var(--text-label); font-weight: 600; }
 .numeric { font-variant-numeric: tabular-nums; white-space: nowrap; }
-.attendance { color: var(--muted); font-size: 11px; }
+.attendance { color: var(--muted); font-size: var(--text-caption); }
 .attendance.recorded { color: var(--ocean); }
 .attendance.absent { color: var(--danger); }
-.attendance-time { display: block; font-size: 10px; margin-top: 3px; }
+.attendance-time { display: block; font-size: var(--text-caption); margin-top: 3px; }
 .record-empty { display: grid; justify-items: center; text-align: center; padding: 30px 18px; gap: 8px; border-top: 1px solid var(--line); }
 .record-empty > .app-icon { color: var(--ocean); font-size: 27px; margin-bottom: 2px; }
 .record-empty strong { font-size: 14px; }
-.record-empty p { max-width: 460px; font-size: 11px; }
+.record-empty p { max-width: 460px; font-size: var(--text-caption); }
 .reconcile { padding: 18px; }
-.reconcile p:not(.eyebrow) { margin: 7px 0; max-width: 630px; font-size: 11px; }
-.reconcile small { font-size: 10px; }
+.reconcile p:not(.eyebrow) { margin: 7px 0; max-width: 630px; font-size: var(--text-caption); }
+.reconcile small { font-size: var(--text-caption); }
 .reconcile > button { flex: none; }
 .activity-list { max-height: 420px; overflow: auto; border-top: 1px solid var(--line); }
 .activity article { display: flex; align-items: center; gap: 12px; padding: 13px 18px; border-bottom: 1px solid var(--line); }
 .activity article:last-child { border-bottom: 0; }
 .event-icon { width: 32px; height: 32px; font-size: 18px; border-radius: 8px; }
-.activity article strong { font-size: 12px; }
-.activity article small { display: block; font-size: 10px; margin-top: 3px; }
-.activity time { margin-left: auto; color: var(--muted); font-size: 10px; text-align: right; }
+.activity article strong { font-size: var(--text-label); }
+.activity article small { display: block; font-size: var(--text-caption); margin-top: 3px; }
+.activity time { margin-left: auto; color: var(--muted); font-size: var(--text-caption); text-align: right; }
 .message, .loading-state { padding: 12px 16px; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; }
 .error { color: var(--danger); }
 .status-blue { color: #246fba; background: #e8f2fc; border-color: #b7d7f7; }
@@ -649,8 +650,8 @@ td strong { font-size: 12px; font-weight: 600; }
 @media (max-width: 700px) {
   .workspace-empty { padding: 18px; } .workspace-features, .links { grid-template-columns: 1fr; gap: 14px; } .trip-header { flex-direction: column; padding: 16px; } .trip-header h3 { font-size: 18px; }
   .metrics { grid-template-columns: repeat(3, 1fr); gap: 16px 0; } .metrics article:nth-child(3) { border-right: 0; } .metrics strong { font-size: 21px; }
-  .stage-grid { gap: 6px; } .stage-grid > div { flex-direction: column; align-items: flex-start; padding: 10px; } .stage-grid small { font-size: 10px; }
+  .stage-grid { gap: 6px; } .stage-grid > div { flex-direction: column; align-items: flex-start; padding: 10px; } .stage-grid small { font-size: var(--text-caption); }
   .content-heading { align-items: flex-start; padding: 14px; } .record-search { margin-inline: 14px; } .reconcile { flex-direction: column; align-items: stretch; padding: 16px; } .activity time { max-width: 100px; }
-  table, tbody, tr, td { display: block; } thead { display: none; } tr { padding: 10px 14px; border-bottom: 1px solid var(--line); } td { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 5px 12px; padding: 6px 0; border: 0; overflow-wrap: anywhere; } td::before { content: attr(data-label); font-size: 10px; color: var(--muted); margin-right: auto; } .attendance-time { width: 100%; text-align: right; }
+  table, tbody, tr, td { display: block; } thead { display: none; } tr { padding: 10px 14px; border-bottom: 1px solid var(--line); } td { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 5px 12px; padding: 6px 0; border: 0; overflow-wrap: anywhere; } td::before { content: attr(data-label); font-size: var(--text-caption); color: var(--muted); margin-right: auto; } .attendance-time { width: 100%; text-align: right; }
 }
 </style>

@@ -250,6 +250,7 @@
 </template>
 
 <script setup lang="ts">
+import { notifyError } from '@/composables/toast';
 import { computed, onBeforeUnmount, ref, watch } from "vue";
 import AppIcon from "@/components/ui/icon/AppIcon.vue";
 import { alertCircleOutline, barChartOutline, boatOutline, cashOutline, downloadOutline, informationCircleOutline, peopleOutline, refreshOutline, scanOutline, searchOutline, ticketOutline, timeOutline, trendingUpOutline } from 'ionicons/icons';
@@ -517,10 +518,10 @@ async function loadReports() {
     ready.value = true;
   } catch (e) {
     if (version === request)
-      error.value = ticketRequestError(
+      error.value = notifyError(ticketRequestError(
         e,
         "Unable to load reports. Try Refresh.",
-      );
+      ));
   } finally {
     if (version === request) {
       loading.value = false;
@@ -571,16 +572,16 @@ onBeforeUnmount(() => {
 .card { background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:14px 16px; color:var(--ink); min-width:0; }
 .card h2 { display:flex; align-items:center; gap:10px; font-size:16px; margin:0 0 8px; }
 .card h2 .app-icon { color:var(--ocean); font-size:21px; flex:none; }
-.card p,.report-metrics span,.report-metrics small { color:var(--muted); font-size:12px; line-height:1.6; }
+.card p,.report-metrics span,.report-metrics small { color:var(--muted); font-size: var(--text-label); line-height:1.6; }
 .card p { margin:0 0 12px; }
-.card .eyebrow { margin:0 0 6px; color:var(--ocean); font-size:10px; font-weight:800; letter-spacing:.1em; }
+.card .eyebrow { margin:0 0 6px; color:var(--ocean); font-size: var(--text-caption); font-weight:800; letter-spacing:.1em; }
 .filters { display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:10px 12px; }
 .filter-heading { grid-column:1/-1; display:flex; align-items:center; justify-content:space-between; gap:16px; padding-bottom:10px; border-bottom:1px solid var(--line); }
 .filter-heading h2 { margin:0; }
-.filters label { display:grid; gap:8px; min-width:0; font-size:12px; font-weight:600; color:var(--muted); }
+.filters label { display:grid; gap:8px; min-width:0; font-size: var(--text-label); font-weight:600; color:var(--muted); }
 .filters .filter-note { display:flex; align-items:center; gap:8px; grid-column:1/-1; margin:0; }
 .filter-note .app-icon { flex:none; font-size:17px; color:var(--ocean); }
-.reports input,.reports select { width:100%; min-height:40px; border:1px solid var(--line); background:var(--surface-soft); color:var(--ink); border-radius:9px; padding:8px 12px; min-width:0; font:inherit; font-size:12px; }
+.reports input,.reports select { width:100%; min-height:40px; border:1px solid var(--line); background:var(--surface-soft); color:var(--ink); border-radius:9px; padding:8px 12px; min-width:0; font:inherit; font-size: var(--text-label); }
 .report-metrics { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px; }
 .reports .report-metrics article.card { display:flex; flex-direction:column; gap:4px; padding:12px 14px; }
 .metric-top { display:flex; align-items:center; justify-content:space-between; gap:14px; }
@@ -593,28 +594,28 @@ onBeforeUnmount(() => {
 .reports .report-metrics strong { font-size:24px; line-height:1.2; letter-spacing:-.03em; font-variant-numeric:tabular-nums; }
 .charts { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:14px; align-items:start; }
 .card-head { display:flex; align-items:center; justify-content:space-between; gap:16px; }
-.trend-scale { display:flex; justify-content:space-between; gap:12px; padding-top:14px; border-top:1px solid var(--line); color:var(--muted); font-size:11px; }
+.trend-scale { display:flex; justify-content:space-between; gap:12px; padding-top:14px; border-top:1px solid var(--line); color:var(--muted); font-size: var(--text-caption); }
 .trend-scale span:first-child { color:var(--ink); font-weight:600; }
 .chart-scroll { overflow-x:auto; }
 .bars { height:164px; display:flex; gap:8px; padding:12px 8px 0; }
 .bar-column { flex:1; min-width:12px; height:124px; display:flex; align-items:center; justify-content:flex-end; flex-direction:column; position:relative; padding:0 1px; border-bottom:1px solid var(--line); }
 .bar-column > div { width:100%; max-width:38px; background:var(--ocean); border-radius:5px 5px 0 0; min-height:2px; }
-.bar-column small { position:absolute; top:132px; white-space:nowrap; font-size:10px; color:var(--muted); }
-.chart-foot { display:flex; flex-wrap:wrap; gap:12px; justify-content:space-between; font-size:12px; margin-top:12px; border-top:1px solid var(--line); padding-top:14px; }
+.bar-column small { position:absolute; top:132px; white-space:nowrap; font-size: var(--text-caption); color:var(--muted); }
+.chart-foot { display:flex; flex-wrap:wrap; gap:12px; justify-content:space-between; font-size: var(--text-label); margin-top:12px; border-top:1px solid var(--line); padding-top:14px; }
 .collection-data { flex-basis:100%; overflow-x:auto; }
 .collection-data summary { cursor:pointer; color:var(--ocean); padding-bottom:6px; }
 .distribution { margin:12px 0; }
-.distribution > div:first-child { display:flex; justify-content:space-between; gap:12px; font-size:12px; margin-bottom:5px; }
+.distribution > div:first-child { display:flex; justify-content:space-between; gap:12px; font-size: var(--text-label); margin-bottom:5px; }
 .distribution small { font-weight:400; color:var(--muted); }
 .track { height:6px; border-radius:6px; background:var(--line); overflow:hidden; }
 .track i { height:100%; display:block; background:var(--ocean); border-radius:6px; }
 .channel,.statuses,.refund-summary { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; border-top:1px solid var(--line); padding-top:10px; }
-.channel span,.refund-summary span { color:var(--muted); font-size:11px; }
+.channel span,.refund-summary span { color:var(--muted); font-size: var(--text-caption); }
 .channel strong,.statuses strong,.refund-summary strong { display:block; color:var(--ink); font-size:18px; margin-top:4px; font-variant-numeric:tabular-nums; }
 .refund-summary { margin-top:10px; grid-template-columns:repeat(3,minmax(0,1fr)); }
 .refund-summary strong { font-size:15px; }
 .statuses { grid-template-columns:repeat(3,minmax(0,1fr)); margin-bottom:16px; border:0; }
-.statuses span { background:var(--surface-soft); border:1px solid var(--line); border-radius:8px; padding:8px 10px; font-size:10px; color:var(--muted); text-transform:capitalize; }
+.statuses span { background:var(--surface-soft); border:1px solid var(--line); border-radius:8px; padding:8px 10px; font-size: var(--text-caption); color:var(--muted); text-transform:capitalize; }
 .statuses .completed strong { color:#26b99a; }
 .statuses .delayed strong { color:#e3ab4c; }
 .statuses .cancelled strong { color:#e77b88; }
@@ -625,7 +626,7 @@ onBeforeUnmount(() => {
 .report-table .card-head p:not(.eyebrow) { margin:7px 0 0; }
 .table-toolbar { display:flex; justify-content:space-between; align-items:center; gap:16px; padding:12px 16px; flex-wrap:wrap; }
 .tabs { display:flex; gap:4px; flex-wrap:wrap; padding:4px; background:var(--surface-soft); border:1px solid var(--line); border-radius:11px; }
-.tabs button { border:0; background:transparent; color:var(--muted); padding:7px 10px; border-radius:8px; font:inherit; font-size:12px; cursor:pointer; }
+.tabs button { border:0; background:transparent; color:var(--muted); padding:7px 10px; border-radius:8px; font:inherit; font-size: var(--text-label); cursor:pointer; }
 .tabs button[aria-pressed="true"] { background:var(--light-blue); color:var(--ocean); font-weight:700; }
 .report-search { display:flex; align-items:center; position:relative; flex:1; max-width:280px; }
 .report-search .app-icon { position:absolute; left:12px; color:var(--muted); font-size:17px; pointer-events:none; }
@@ -633,9 +634,9 @@ onBeforeUnmount(() => {
 .report-table :deep(.grid-tools) { padding:8px 16px; border-top:1px solid var(--line); border-bottom:1px solid var(--line); }
 .report-table :deep(.grid-tools button) { min-height:34px; padding:6px 8px; }
 .report-table :deep(.desktop-grid) { padding:8px; }
-.report-table :deep(.grid-cell-content) { font-size:12px; line-height:1.5; padding:7px 0; }
+.report-table :deep(.grid-cell-content) { font-size: var(--text-label); line-height:1.5; padding:7px 0; }
 .numeric { font-variant-numeric:tabular-nums; font-weight:600; }
-.collection-data table { width:100%; border-collapse:collapse; font-size:12px; }
+.collection-data table { width:100%; border-collapse:collapse; font-size: var(--text-label); }
 .collection-data th, .collection-data td { text-align:left; padding:8px; border-bottom:1px solid var(--line); }
 .collection-data td { text-align:right; }
 .reports :deep(.manifest-export) { padding:14px 16px; border-radius:14px; }
@@ -643,11 +644,11 @@ onBeforeUnmount(() => {
 .reports :deep(.manifest-export > p) { grid-column:1 / -1; margin:0; }
 .reports :deep(.export-heading) { margin:0; }
 .reports :deep(.export-heading h2) { font-size:16px; }
-.reports :deep(.export-heading p:last-child) { font-size:12px; }
+.reports :deep(.export-heading p:last-child) { font-size: var(--text-label); }
 .reports :deep(.export-controls) { min-width:0; }
 .reports :deep(.export-controls label) { min-width:0; }
 .reports :deep(.export-controls select) { min-width:0; width:100%; }
-.card .table-note { margin:0; padding:12px 16px; font-size:11px; }
+.card .table-note { margin:0; padding:12px 16px; font-size: var(--text-caption); }
 .report-state { display:flex; align-items:center; gap:16px; }
 .report-state > .app-icon { font-size:30px; color:var(--ocean); flex:none; }
 .report-state h3 { margin:0 0 5px; font-size:16px; }

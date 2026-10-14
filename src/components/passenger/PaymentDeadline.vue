@@ -87,14 +87,14 @@ onUnmounted(() => clearInterval(timer));
   flex: 1;
 }
 .deadline strong {
-  font-size: 12px;
+  font-size: var(--text-label);
 }
 .deadline small {
-  font-size: 11px;
+  font-size: var(--text-caption);
   color: var(--muted);
 }
 .deadline b {
-  font-size: 12px;
+  font-size: var(--text-label);
   white-space: nowrap;
   font-variant-numeric: tabular-nums;
 }

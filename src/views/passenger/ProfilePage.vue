@@ -67,6 +67,7 @@
   ></ion-page>
 </template>
 <script setup lang="ts">
+import { notifyError } from '@/composables/toast';
 import { computed, onMounted, reactive, ref } from "vue";
 import { useRouter } from "vue-router";
 import { IonPage, IonContent, onIonViewWillEnter, useIonRouter } from "@ionic/vue";
@@ -201,7 +202,7 @@ async function load() {
     });
   } catch (cause) {
     if (token === request)
-      error.value = databaseRequestError(cause, "Could not load your profile.");
+      error.value = notifyError(databaseRequestError(cause, "Could not load your profile."));
   } finally {
     if (token === request) loading.value = false;
   }
@@ -217,7 +218,7 @@ async function logout() {
     clearSessionViews();
     await router.replace("/login");
   } catch (cause) {
-    error.value = databaseRequestError(cause, "Could not sign out. Try again.");
+    error.value = notifyError(databaseRequestError(cause, "Could not sign out. Try again."));
   } finally {
     loggingOut.value = false;
   }
@@ -255,7 +256,7 @@ onIonViewWillEnter(load);
   font-weight: 800;
 }
 .eyebrow {
-  font-size: 9px;
+  font-size: var(--text-caption);
   letter-spacing: 0.12em;
   font-weight: 800;
   color: var(--ocean);
@@ -276,7 +277,7 @@ onIonViewWillEnter(load);
   border-radius: 99px;
   background: var(--light-blue);
   color: var(--ocean);
-  font-size: 11px;
+  font-size: var(--text-caption);
   font-weight: 700;
 }
 .edit {
@@ -288,7 +289,7 @@ onIonViewWillEnter(load);
   border: 1px solid var(--line);
   border-radius: 10px;
   color: var(--ocean);
-  font-size: 12px;
+  font-size: var(--text-label);
   text-decoration: none;
   font-weight: 700;
 }
@@ -311,16 +312,16 @@ onIonViewWillEnter(load);
 }
 .contact-summary small {
   display: block;
-  font-size: 9px;
+  font-size: var(--text-caption);
   color: var(--muted);
   margin-bottom: 5px;
 }
 .contact-summary strong {
-  font-size: 12px;
+  font-size: var(--text-label);
   overflow-wrap: anywhere;
 }
 .contact-summary a {
-  font-size: 11px;
+  font-size: var(--text-caption);
   color: var(--ocean);
   text-decoration: none;
 }
@@ -331,7 +332,7 @@ onIonViewWillEnter(load);
   margin-top: 26px;
 }
 .profile-sections h2 {
-  font-size: 11px;
+  font-size: var(--text-caption);
   text-transform: uppercase;
   letter-spacing: 0.08em;
   color: var(--muted);
@@ -380,11 +381,11 @@ onIonViewWillEnter(load);
 }
 .menu-card strong {
   display: block;
-  font-size: 12px;
+  font-size: var(--text-label);
 }
 .menu-card small {
   display: block;
-  font-size: 10px;
+  font-size: var(--text-caption);
   line-height: 1.5;
   color: var(--muted);
   margin-top: 5px;
@@ -410,7 +411,7 @@ onIonViewWillEnter(load);
   color: var(--danger);
   border: 1px solid var(--line);
   border-radius: 10px;
-  font-size: 12px;
+  font-size: var(--text-label);
 }
 .error button {
   border: 0;

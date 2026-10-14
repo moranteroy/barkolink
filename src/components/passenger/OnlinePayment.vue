@@ -27,6 +27,7 @@
   </section>
 </template>
 <script setup lang="ts">
+import { notifySuccess, notifyError } from '@/composables/toast';
 import { ref } from 'vue';
 import AppIcon from "@/components/ui/icon/AppIcon.vue";
 import { walletOutline, shieldCheckmarkOutline, cardOutline, lockClosedOutline, arrowForwardOutline, cashOutline, informationCircleOutline } from 'ionicons/icons';
@@ -46,13 +47,13 @@ async function run(action: 'checkout' | 'status' | 'close') {
       return;
     }
     closed.value = result.status === 'CLOSED';
-    notice.value = result.status === 'PAID' ? 'Payment received. Open My bookings to check staff verification and e-ticket availability.'
+    notice.value = notifySuccess(result.status === 'PAID' ? 'Payment received. Open My bookings to check staff verification and e-ticket availability.'
       : result.status === 'REVIEW' ? 'Payment requires administrator review. Do not pay again.'
       : closed.value ? 'Online checkout is closed. You can now pay cash at ticketing.'
-      : 'No completed payment yet. You can resume checkout or close it before paying cash.';
+      : 'No completed payment yet. You can resume checkout or close it before paying cash.');
     if (result.status !== 'UNPAID') emit('updated');
   } catch (cause) {
-    error.value = cause instanceof Error ? cause.message : 'Could not process payment.';
+    error.value = notifyError(cause instanceof Error ? cause.message : 'Could not process payment.');
   } finally { busy.value = false; }
 }
 </script>
@@ -61,12 +62,12 @@ async function run(action: 'checkout' | 'status' | 'close') {
 .payment-heading { display: flex; align-items: center; gap: 12px; margin-bottom: 18px; }
 .payment-icon { display: grid; place-items: center; width: 42px; height: 42px; flex: none; border-radius: 12px; background: var(--light-blue); color: var(--ocean); font-size: 23px; }
 .payment-heading h3 { margin: 0; font-size: 16px; line-height: 1.4; }
-.online-payment p { font-size: 12px; line-height: 1.7; margin: 5px 0 0; color: var(--muted); }
+.online-payment p { font-size: var(--text-label); line-height: 1.7; margin: 5px 0 0; color: var(--muted); }
 .online-option { padding: 16px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface-soft); }
 .option-heading { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; justify-content: space-between; font-size: 14px; }
-.option-heading > span { display: inline-flex; align-items: center; gap: 4px; color: var(--muted); font-size: 10px; }
+.option-heading > span { display: inline-flex; align-items: center; gap: 4px; color: var(--muted); font-size: var(--text-caption); }
 .payment-methods { display: flex; flex-wrap: wrap; gap: 7px; margin: 14px 0; }
-.payment-methods span { display: inline-flex; align-items: center; gap: 5px; padding: 7px 9px; border: 1px solid var(--line); border-radius: 7px; background: var(--surface); font-size: 11px; font-weight: 600; }
+.payment-methods span { display: inline-flex; align-items: center; gap: 5px; padding: 7px 9px; border: 1px solid var(--line); border-radius: 7px; background: var(--surface); font-size: var(--text-caption); font-weight: 600; }
 .payment-methods .gcash { color: var(--ocean); }
 .payment-methods .maya { color: var(--success, #218466); }
 .online-payment button { font-family: inherit; cursor: pointer; }
@@ -75,12 +76,12 @@ async function run(action: 'checkout' | 'status' | 'close') {
 .pay-button .app-icon:last-child { margin-left: auto; }
 .pay-button .app-icon:first-child { margin-right: auto; }
 .payment-support { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 5px; margin-top: 9px; }
-.payment-support small { color: var(--muted); font-size: 10px; }
-.payment-support button { padding: 7px 0; min-height: 36px; border: 0; background: transparent; color: var(--ocean); font-size: 11px; font-weight: 600; }
+.payment-support small { color: var(--muted); font-size: var(--text-caption); }
+.payment-support button { padding: 7px 0; min-height: 36px; border: 0; background: transparent; color: var(--ocean); font-size: var(--text-caption); font-weight: 600; }
 .cash-option { display: grid; grid-template-columns: 22px minmax(0, 1fr); gap: 8px 10px; align-items: start; padding-top: 16px; margin-top: 16px; border-top: 1px solid var(--line); }
 .cash-option > .app-icon { color: var(--ocean); font-size: 21px; }
-.cash-option strong { font-size: 12px; }
-.cash-option button { grid-column: 2; justify-self: start; min-height: 36px; padding: 7px 12px; border: 1px solid var(--line); border-radius: 7px; background: var(--surface-soft); color: var(--ocean); font-size: 11px; font-weight: 600; }
+.cash-option strong { font-size: var(--text-label); }
+.cash-option button { grid-column: 2; justify-self: start; min-height: 36px; padding: 7px 12px; border: 1px solid var(--line); border-radius: 7px; background: var(--surface-soft); color: var(--ocean); font-size: var(--text-caption); font-weight: 600; }
 .online-payment .payment-notice { display: flex; gap: 7px; margin-top: 14px; color: var(--ocean); }
 .payment-notice .app-icon { flex: none; font-size: 18px; margin-top: 2px; }
 .online-payment .payment-error { margin-top: 14px; color: var(--danger); }

@@ -100,7 +100,7 @@ function navigate(event: MouseEvent, path: string) {
   border-radius: 999px;
   background: #c73646;
   color: #fff;
-  font-size: 10px;
+  font-size: var(--text-caption);
   font-weight: 700;
   line-height: 1;
   font-variant-numeric: tabular-nums;

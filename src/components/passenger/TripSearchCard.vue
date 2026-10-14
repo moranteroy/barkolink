@@ -39,6 +39,7 @@
   </form>
 </template>
 <script setup lang="ts">
+import { notifyError } from '@/composables/toast';
 import { computed, onMounted, ref, watch, useId } from "vue";
 import { useRouter } from "vue-router";
 import { Button } from "@/components/ui/button";
@@ -105,7 +106,7 @@ onMounted(async () => {
     if (cities.value.length < 2)
       portError.value = "At least two active port cities are needed to search.";
   } catch (error) {
-    portError.value = (error as Error).message || "Could not load ports.";
+    portError.value = notifyError((error as Error).message || "Could not load ports.");
   } finally {
     loading.value = false;
   }
@@ -149,17 +150,17 @@ function search() {
 .search-card { padding:22px; border:1px solid var(--line); border-radius:21px; background:var(--surface); box-shadow:0 12px 32px #102b4c0a; }
 .card-heading { display:flex; align-items:start; justify-content:space-between; gap:12px; margin-bottom:20px; }
 .card-heading > div:first-child { min-width:0; }
-.eyebrow { color:var(--ocean); font-size:10px; font-weight:800; letter-spacing:.1em; text-transform:uppercase; }
+.eyebrow { color:var(--ocean); font-size: var(--text-caption); font-weight:800; letter-spacing:.1em; text-transform:uppercase; }
 h2 { margin:5px 0; font-size:22px; letter-spacing:-.5px; line-height:1.3; }
-.card-subtitle { margin:6px 0 0; color:var(--muted); font-size:11px; line-height:1.6; }
+.card-subtitle { margin:6px 0 0; color:var(--muted); font-size: var(--text-caption); line-height:1.6; }
 .heading-actions { display:flex; align-items:center; gap:8px; flex-shrink:0; }
-.route-badge { padding:6px 8px; border-radius:7px; background:var(--light-blue); color:var(--ocean); font-size:9px; font-weight:700; white-space:nowrap; }
+.route-badge { padding:6px 8px; border-radius:7px; background:var(--light-blue); color:var(--ocean); font-size: var(--text-caption); font-weight:700; white-space:nowrap; }
 .swap-button { display:grid; place-items:center; width:44px; height:44px; padding:0; border:1px solid var(--line); border-radius:12px; background:var(--surface-soft); color:var(--ocean); cursor:pointer; transition:background .18s; }
 .swap-button:hover { background:var(--light-blue); }
 .route-fields,.detail-fields { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); align-items:end; gap:12px; }
 .detail-fields { margin-top:16px; }
 .date-field,.passenger-field { display:grid; gap:7px; min-width:0; }
-.field-caption { display:flex; align-items:center; gap:5px; color:var(--muted); font-size:10px; font-weight:700; line-height:1.5; }
+.field-caption { display:flex; align-items:center; gap:5px; color:var(--muted); font-size: var(--text-caption); font-weight:700; line-height:1.5; }
 input { box-sizing:border-box; width:100%; min-width:0; height:54px; padding:0 10px; border:1px solid var(--line); border-radius:12px; background:var(--surface-soft); color:var(--ink); font:inherit; font-size:16px; font-weight:650; }
 :global(:root[data-theme="dark"]) input[type="date"] { color-scheme:dark; }
 .counter { display:flex; align-items:center; justify-content:space-between; gap:2px; height:54px; padding:4px; border:1px solid var(--line); border-radius:12px; background:var(--surface-soft); color:var(--ink); }
@@ -169,9 +170,9 @@ input { box-sizing:border-box; width:100%; min-width:0; height:54px; padding:0 1
 .counter small { font-size:8px; font-weight:500; color:var(--muted); }
 .search-button { grid-column:1/-1; width:100%; display:flex; align-items:center; justify-content:center; gap:9px; height:48px; margin:2px 0 0; border-radius:12px; background:var(--action,var(--ocean)); font-size:13px; font-weight:750; white-space:nowrap; }
 .search-button svg { flex-shrink:0; }
-.search-hint { display:flex; align-items:center; justify-content:center; gap:5px; margin:12px 0 0; color:var(--muted); font-size:10px; line-height:1.6; }
+.search-hint { display:flex; align-items:center; justify-content:center; gap:5px; margin:12px 0 0; color:var(--muted); font-size: var(--text-caption); line-height:1.6; }
 .search-hint svg { flex-shrink:0; }
-.form-error { margin:10px 0 0; color:var(--danger); font-size:11px; font-weight:700; }
+.form-error { margin:10px 0 0; color:var(--danger); font-size: var(--text-caption); font-weight:700; }
 .swap-button:focus-visible,.counter button:focus-visible,input:focus-visible { outline:2px solid var(--ocean); outline-offset:3px; }
 @container passenger (max-width:620px) {
   .search-card { padding:18px 15px; }

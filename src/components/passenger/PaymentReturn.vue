@@ -33,9 +33,9 @@ onMounted(verify);
 <style scoped>
 .payment-return { margin: 0 0 20px; padding: 20px; border: 1px solid var(--line); border-radius: 14px; background: var(--surface); color: var(--ink); }
 .payment-return.paid { border-color: var(--ocean); background: var(--light-blue); }
-small { color: var(--muted); font-size: 10px; letter-spacing: .04em; overflow-wrap: anywhere; }
+small { color: var(--muted); font-size: var(--text-caption); letter-spacing: .04em; overflow-wrap: anywhere; }
 h2 { margin: 8px 0; font-size: 20px; }
 p { margin: 0; font-size: 13px; line-height: 1.7; color: var(--muted); }
-a, button { display: inline-block; margin-top: 14px; padding: 10px 15px; border: 0; border-radius: 8px; background: var(--action); color: #fff; text-decoration: none; font: inherit; font-size: 12px; cursor: pointer; }
+a, button { display: inline-block; margin-top: 14px; padding: 10px 15px; border: 0; border-radius: 8px; background: var(--action); color: #fff; text-decoration: none; font: inherit; font-size: var(--text-label); cursor: pointer; }
 button:disabled { opacity: .6; cursor: default; }
 </style>

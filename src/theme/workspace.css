@@ -122,7 +122,7 @@
   text-decoration: none;
 }
 :root body .design-workspace .sailing-link .app-icon {
-  font-size: 12px;
+  font-size: var(--text-label);
 }
 :root body .design-workspace .queue-item {
   border-radius: 10px;
@@ -256,7 +256,7 @@
   outline: none;
   width: 220px;
   color: var(--ink);
-  font-size: 12px;
+  font-size: var(--text-label);
 }
 :root body .admin-bell {
   color: var(--ocean);
@@ -309,15 +309,15 @@
   place-items: center;
   border-radius: 50%;
   background: #ffffff12;
-  font-size: 12px;
+  font-size: var(--text-label);
   font-weight: 700;
 }
 .sidebar-account strong {
-  font-size: 12px;
+  font-size: var(--text-label);
 }
 .sidebar-account small {
   display: block;
-  font-size: 10px;
+  font-size: var(--text-caption);
   color: #8199b0;
   margin-top: 4px;
 }

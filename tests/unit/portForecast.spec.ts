@@ -26,7 +26,8 @@ describe('home port forecast', () => {
     const wrapper = mount(PortForecast, { props: { portId: 'batangas' } }); await flushPromises();
     expect(wrapper.findAll('button.forecast-day')).toHaveLength(3);
     expect(wrapper.text()).toContain('3-day forecast');
-    expect(wrapper.text()).toContain('3 forecast days are currently available');
+    expect(wrapper.text()).not.toContain('7-day');
+    expect(wrapper.text()).not.toContain('3 forecast days are currently available');
     wrapper.unmount();
   });
   it('ignores the old response after changing departure port', async () => {
@@ -39,6 +40,19 @@ describe('home port forecast', () => {
     expect(wrapper.text()).not.toContain('Batangas');
     expect(wrapper.findAll('button.forecast-day')).toHaveLength(0);
     expect(wrapper.text()).toContain('currently unavailable');
+    wrapper.unmount();
+  });
+  it('does not promise seven days while loading or when weather is unavailable', async () => {
+    let resolve!: (value: unknown) => void;
+    mocks.load.mockReturnValueOnce(new Promise(done => { resolve = done; }));
+    const wrapper = mount(PortForecast, { props: { portId: 'batangas' } });
+    expect(wrapper.text()).toContain('Checking the forecast');
+    expect(wrapper.find('.forecast-badge').exists()).toBe(false);
+    expect(wrapper.text()).not.toContain('7-day outlook');
+    resolve({ configured: true, ports: [{ ...fixture.ports[0], available: false }] });
+    await flushPromises();
+    expect(wrapper.text()).toContain('currently unavailable');
+    expect(wrapper.find('.forecast-badge').exists()).toBe(false);
     wrapper.unmount();
   });
 });

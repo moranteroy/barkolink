@@ -28,6 +28,7 @@
   </section>
 </template>
 <script setup lang="ts">
+import { notifyError, notifySuccess } from '@/composables/toast';
 import { computed, onMounted, onBeforeUnmount, reactive, ref, watch } from 'vue';
 import { IonModal } from '@ionic/vue';
 import AppIcon from '@/components/ui/icon/AppIcon.vue';
@@ -77,9 +78,9 @@ function apply(data: DailySchedulesData){
   schedules.value = positions.size
     ? [...data.schedules].sort((a, b) => (positions.get(a.id) ?? positions.size) - (positions.get(b.id) ?? positions.size))
     : activeFirst(data.schedules, item => !item.routeActive);routes.value=data.routes;for(const s of data.schedules)if(!s.departureTimes.includes(selectedTimes[s.id] || ''))selectedTimes[s.id]=s.departureTimes[0]!;}
-async function load(){if(!staffDatabase)return;loading.value=true;error.value='';try{apply((await dailySchedules(staffDatabase)).data);}catch(e){error.value=databaseRequestError(e,'Could not load daily schedules.');}finally{loading.value=false;}}
+async function load(){if(!staffDatabase)return;loading.value=true;error.value='';try{apply((await dailySchedules(staffDatabase)).data);}catch(e){error.value=notifyError(databaseRequestError(e,'Could not load daily schedules.'));}finally{loading.value=false;}}
 function edit(item?: DailySchedule){Object.assign(form,{id:item?.id || '',operator:item?.operator || operator.value,routeId:item?.routeId || '',hours:durationInput(item?.durationMinutes),times:item ? [...item.departureTimes] : ['08:00'],isActive:!!item?.isActive && !!item?.routeActive});baseline=JSON.stringify(form);formError.value='';editing.value=true;}
-async function save(){if(!staffDatabase || busy.value)return;formError.value='';const times=[...form.times].sort();const duration=String(form.hours).trim() ? parseDurationMinutes(form.hours) : null;if(!form.operator || !form.routeId || times.some(t=>!/^([01]\d|2[0-3]):[0-5]\d$/.test(t)) || new Set(times).size!==times.length || (String(form.hours).trim() && duration===null)){formError.value='Choose an operator and route, then enter unique departure times and a duration in hours:minutes (for example, 1:30).';return;}busy.value='form';try{apply((await saveDailySchedule(staffDatabase,{id:form.id || undefined,operator:form.operator,routeId:form.routeId,departureTimes:times,durationMinutes:duration,isActive:form.isActive})).data);baseline=JSON.stringify(form);editing.value=false;notice.value='Daily schedule saved.';}catch(e){formError.value=databaseRequestError(e,'Could not save daily schedule.');}finally{busy.value='';}}
+async function save(){if(!staffDatabase || busy.value)return;formError.value='';const times=[...form.times].sort();const duration=String(form.hours).trim() ? parseDurationMinutes(form.hours) : null;if(!form.operator || !form.routeId || times.some(t=>!/^([01]\d|2[0-3]):[0-5]\d$/.test(t)) || new Set(times).size!==times.length || (String(form.hours).trim() && duration===null)){formError.value='Choose an operator and route, then enter unique departure times and a duration in hours:minutes (for example, 1:30).';return;}busy.value='form';try{apply((await saveDailySchedule(staffDatabase,{id:form.id || undefined,operator:form.operator,routeId:form.routeId,departureTimes:times,durationMinutes:duration,isActive:form.isActive})).data);baseline=JSON.stringify(form);editing.value=false;notice.value=notifySuccess('Daily schedule saved.');}catch(e){formError.value=notifyError(databaseRequestError(e,'Could not save daily schedule.'));}finally{busy.value='';}}
 async function toggle(item:DailySchedule){
   if(!staffDatabase || busy.value || props.disabled)return;
   const nextActive = !item.isActive;
@@ -89,8 +90,8 @@ async function toggle(item:DailySchedule){
     if (!changedScheduleIds.value.includes(item.id)) changedScheduleIds.value.push(item.id);
     apply(result.data);
     lastPausedId.value=nextActive ? '' : item.id;
-    notice.value=nextActive ? 'Daily schedule resumed.' : 'Daily schedule paused.';
-  }catch(e){error.value=databaseRequestError(e,'Could not change schedule status.');}
+    notice.value=notifySuccess(nextActive ? 'Daily schedule resumed.' : 'Daily schedule paused.');
+  }catch(e){error.value=notifyError(databaseRequestError(e,'Could not change schedule status.'));}
   finally{busy.value='';}
 }
 function prepare(item:DailySchedule){const time=selectedTimes[item.id];if(!available(item)||!date.value||date.value<today.value||!time||!remainingDepartures(item.departureTimes,date.value,Date.now()).includes(time)||props.disabled||busy.value)return;emit('plan',{operator:item.operator,routeCode:item.routeCode,routeId:item.routeId,departureAt:`${date.value}T${time}`,durationMinutes:item.durationMinutes});}
@@ -101,9 +102,9 @@ onBeforeUnmount(() => clearInterval(clockTimer));
 <style scoped>
 .daily-schedules { border: 1px solid var(--line); border-radius: 14px; background: var(--surface); color: var(--ink); margin: 16px 0; padding: 18px; min-width: 0; }
 .panel-heading, .card-heading { display: flex; justify-content: space-between; align-items: center; gap: 12px; }.panel-heading { align-items: flex-start; }.panel-heading > button { flex: none; }
-.eyebrow { font-size: 10px; font-weight: 700; letter-spacing: .08em; color: var(--muted); margin: 0 0 6px; }h2 { font-size: 17px; margin: 0; }p,small { font-size: 12px; line-height: 1.6; } .panel-heading p:not(.eyebrow), small,.panel-note { color: var(--muted); }
-.filters { display: flex; flex-wrap: wrap; gap: 12px; margin: 16px 0; }label { display: grid; gap: 7px; font-size: 12px; min-width: 0; }select,input:not([type="checkbox"]) { width: 100%; min-width: 0; box-sizing: border-box; background: var(--surface-soft); color: var(--ink); border: 1px solid var(--line); border-radius: 8px; padding: 10px; min-height: 42px; font: inherit; }
-.schedule-cards { display: grid; grid-template-columns: repeat(auto-fit,minmax(min(100%,300px),1fr)); gap: 12px; }article { border: 1px solid var(--line); border-radius: 12px; padding: 16px; min-width: 0; }.card-heading strong { font-size: 12px; }h3 { font-size: 13px; line-height: 1.5; margin: 12px 0; }.times { min-height: 38px; margin: 0 0 8px; }.availability-note { color: var(--muted); }
+.eyebrow { font-size: var(--text-caption); font-weight: 700; letter-spacing: .08em; color: var(--muted); margin: 0 0 6px; }h2 { font-size: 17px; margin: 0; }p,small { font-size: var(--text-label); line-height: 1.6; } .panel-heading p:not(.eyebrow), small,.panel-note { color: var(--muted); }
+.filters { display: flex; flex-wrap: wrap; gap: 12px; margin: 16px 0; }label { display: grid; gap: 7px; font-size: var(--text-label); min-width: 0; }select,input:not([type="checkbox"]) { width: 100%; min-width: 0; box-sizing: border-box; background: var(--surface-soft); color: var(--ink); border: 1px solid var(--line); border-radius: 8px; padding: 10px; min-height: 42px; font: inherit; }
+.schedule-cards { display: grid; grid-template-columns: repeat(auto-fit,minmax(min(100%,300px),1fr)); gap: 12px; }article { border: 1px solid var(--line); border-radius: 12px; padding: 16px; min-width: 0; }.card-heading strong { font-size: var(--text-label); }h3 { font-size: 13px; line-height: 1.5; margin: 12px 0; }.times { min-height: 38px; margin: 0 0 8px; }.availability-note { color: var(--muted); }
 .prepare-controls { display: flex; gap: 10px; align-items: end; margin-top: 16px; }.prepare-controls label { flex: 1; }article footer { display: flex; gap: 8px; margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--line); }.message { margin: 12px 0; }.error { color: var(--danger); }.panel-note { margin-bottom: 0; }
 .schedule-modal { --width: min(600px,calc(100vw - 32px)); --height: auto; --max-height: calc(100dvh - 40px); --border-radius: 16px; --background: var(--surface); }.schedule-dialog { display: flex; flex-direction: column; max-height: calc(100dvh - 40px); background: var(--surface); color: var(--ink); font-family: var(--ion-font-family); }.schedule-dialog header { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 20px; border-bottom: 1px solid var(--line); flex: none; }.dialog-close { display: grid; place-items: center; width: 44px; height: 44px; flex: none; border: 1px solid var(--line); border-radius: 10px; background: var(--surface-soft); color: var(--muted); cursor: pointer; }.dialog-close .app-icon { font-size: 22px; }.schedule-dialog form { display: flex; flex-direction: column; min-height: 0; }.form-scroll { padding: 20px; overflow-y: auto; min-height: 0; }fieldset { display: grid; gap: 16px; border: 0; margin: 0; padding: 0; min-width: 0; }.time-row { display: flex; gap: 8px; margin-bottom: 8px; }.departure-fields h3 { margin-top: 0; }.toggle { display: flex; align-items: center; }.toggle input { accent-color: var(--ocean); }.modal-footer { display: flex; justify-content: end; gap: 10px; padding: 16px 20px; border-top: 1px solid var(--line); flex: none; }button:disabled { opacity: .6; }button:focus-visible,input:focus-visible,select:focus-visible { outline: 2px solid var(--ocean); outline-offset: 2px; }
 @media(max-width:600px) { .daily-schedules { padding: 16px; }.panel-heading { flex-wrap: wrap; }.inactive-divider { grid-column:1/-1; border-top:1px solid var(--line); padding-top:16px; margin-top:4px; }
@@ -117,13 +118,13 @@ onBeforeUnmount(() => clearInterval(clockTimer));
 article { display:flex; flex-direction:column; padding:16px; background:var(--surface-soft); }
 article h3 { font-size:14px; margin:10px 0 6px; }
 article h3 span { color:var(--muted); margin:0 4px; }
-.departure-preview { margin:10px 0 0; font-size:12px; }
+.departure-preview { margin:10px 0 0; font-size: var(--text-label); }
 .departure-preview summary { color:var(--ocean); cursor:pointer; width:fit-content; padding:4px 0; }
 .time-chips { display:flex; flex-wrap:wrap; gap:6px; padding-top:8px; }
 .time-chips span { border:1px solid var(--line); border-radius:6px; padding:5px 8px; font-variant-numeric:tabular-nums; }
 .prepare-controls { margin-top:auto; padding-top:12px; }
 article footer { margin-top:12px; padding-top:10px; }
-.availability-note { margin:8px 0 0; font-size:11px; }
+.availability-note { margin:8px 0 0; font-size: var(--text-caption); }
 article.unavailable { background:var(--surface); }
 .schedule-modal { --width:min(700px,calc(100vw - 32px)); }
 .form-scroll fieldset { grid-template-columns:repeat(2,minmax(0,1fr)); align-items:start; }

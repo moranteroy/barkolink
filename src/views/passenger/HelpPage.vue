@@ -123,7 +123,7 @@ useSectionNavigation(helpMain, '/help', questions.map(item => `#${item.id}`));
 }
 .eyebrow {
   margin-top: 38px;
-  font-size: 10px;
+  font-size: var(--text-caption);
   font-weight: 800;
   color: var(--ocean);
   letter-spacing: 0.1em;
@@ -139,10 +139,10 @@ h1 {
 .mascot-guide { display: flex; align-items: center; gap: 16px; margin-top: 22px; padding: 16px; border: 1px solid var(--line); border-radius: 16px; background: linear-gradient(135deg, var(--light-blue), var(--surface)); color: var(--ink); text-decoration: none; }
 .mascot-guide .barko-mascot { width: 80px; }
 .mascot-guide > span { display: grid; gap: 8px; min-width: 0; }
-.mascot-guide small { color: var(--ocean); font-size: 9px; font-weight: 800; letter-spacing: .08em; }
+.mascot-guide small { color: var(--ocean); font-size: var(--text-caption); font-weight: 800; letter-spacing: .08em; }
 .mascot-guide strong { font-size: 17px; line-height: 1.4; }
-.mascot-guide span > span { color: var(--muted); font-size: 12px; line-height: 1.6; }
-.mascot-guide b { display: flex; align-items: center; gap: 6px; color: var(--ocean); font-size: 12px; }
+.mascot-guide span > span { color: var(--muted); font-size: var(--text-label); line-height: 1.6; }
+.mascot-guide b { display: flex; align-items: center; gap: 6px; color: var(--ocean); font-size: var(--text-label); }
 .mascot-guide:hover { border-color: var(--ocean); }
 .mascot-guide:focus-visible { outline: 2px solid var(--ocean); outline-offset: 3px; }
 @container passenger (max-width: 380px) { .mascot-guide { gap: 12px; padding: 12px; } .mascot-guide .barko-mascot { width: 64px; } }
@@ -190,7 +190,7 @@ aside p {
   align-items: center;
   gap: 7px;
   min-height: 44px;
-  font-size: 12px;
+  font-size: var(--text-label);
   color: var(--ocean);
   font-weight: 700;
   text-decoration: none;

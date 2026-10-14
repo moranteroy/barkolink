@@ -76,4 +76,18 @@ describe('admin communication compose dialogs', () => {
     expect(wrapper.find('[role="dialog"] [role="alert"]').exists()).toBe(true);
     expect((wrapper.find('form input').element as HTMLInputElement).value).toBe('Welcome aboard'); wrapper.unmount();
   });
+  it('finds a broadcast beyond the original server page and sorts the complete history', async () => {
+    const first = Array.from({length:30},(_,index)=>({id:`first-${index}`,title:`Other notice ${index}`,message:'Information',audience:'ALL',recipientCount:2,createdAt:'2026-10-14T08:00:00Z'}));
+    const last = {id:'last-page',title:'Last-page notice',message:'Information',audience:'ALL',recipientCount:50,createdAt:'2026-10-13T08:00:00Z'};
+    mocks.campaigns.mockImplementation(async (_client: unknown, page: number) => ({data:{campaigns:page === 0 ? first : [last],totalCount:31}}));
+    const wrapper=mount(NotificationsPanel); await flushPromises();
+    expect(mocks.campaigns).toHaveBeenCalledWith({},1);
+    await wrapper.find('.broadcast-filters input').setValue('Last-page notice');
+    expect(wrapper.find('.records-grid').text()).toContain('Last-page notice');
+    expect(wrapper.find('.records-grid').text()).not.toContain('Other notice');
+    await wrapper.find('.broadcast-filters input').setValue('');
+    await wrapper.find('.broadcast-filters select').setValue('recipientCount:desc');
+    expect(wrapper.find('.records-grid').text().indexOf('Last-page notice')).toBeLessThan(wrapper.find('.records-grid').text().indexOf('Other notice'));
+    wrapper.unmount();
+  });
 });

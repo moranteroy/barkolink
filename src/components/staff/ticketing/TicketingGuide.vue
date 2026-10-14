@@ -31,7 +31,7 @@ import { ticketOutline } from "ionicons/icons";
   background: linear-gradient(145deg, var(--surface), var(--surface-soft));
 }
 .kicker {
-  font-size: 10px;
+  font-size: var(--text-caption);
   font-weight: 800;
   color: var(--ocean);
 }
@@ -40,8 +40,8 @@ h2 {
 }
 .ticketing-guide { border-radius: 18px; padding: 22px; }
 h2 { margin: 8px 0; font-size: 21px; line-height: 1.5; }
-.guide-intro { margin: 0 0 20px; font-size: 12px; color: var(--muted); line-height: 1.7; }
-.walk-in-link { min-height: 46px; font-size: 12px; font-weight: 600; background: var(--action); }
+.guide-intro { margin: 0 0 20px; font-size: var(--text-label); color: var(--muted); line-height: 1.7; }
+.walk-in-link { min-height: 46px; font-size: var(--text-label); font-weight: 600; background: var(--action); }
 .walk-in-link:focus-visible { outline: 2px solid var(--ocean); outline-offset: 3px; }
 ol {
   display: grid;
@@ -51,13 +51,13 @@ ol {
   list-style: none;
   counter-reset: step;
   color: var(--muted);
-  font-size: 11px;
+  font-size: var(--text-caption);
   line-height: 1.55;
 }
 li { position: relative; padding-left: 36px; counter-increment: step; }
-li::before { content: counter(step); position: absolute; left: 0; top: 0; display: grid; place-items: center; width: 25px; height: 25px; border-radius: 8px; background: var(--light-blue); color: var(--ocean); font-size: 11px; font-weight: 650; }
-li strong { display: block; color: var(--ink); font-size: 12px; font-weight: 600; line-height: 1.6; }
-li span { display: block; margin-top: 5px; font-size: 11px; line-height: 1.8; }
+li::before { content: counter(step); position: absolute; left: 0; top: 0; display: grid; place-items: center; width: 25px; height: 25px; border-radius: 8px; background: var(--light-blue); color: var(--ocean); font-size: var(--text-caption); font-weight: 650; }
+li strong { display: block; color: var(--ink); font-size: var(--text-label); font-weight: 600; line-height: 1.6; }
+li span { display: block; margin-top: 5px; font-size: var(--text-caption); line-height: 1.8; }
 li::marker {
   color: var(--ocean);
   font-weight: 800;
@@ -73,7 +73,7 @@ li::marker {
   border-radius: 9px;
   background: var(--ocean);
   color: #fff;
-  font-size: 11px;
+  font-size: var(--text-caption);
   font-weight: 800;
   text-decoration: none;
 }

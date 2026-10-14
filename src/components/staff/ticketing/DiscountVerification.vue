@@ -26,6 +26,7 @@
   </div>
 </template>
 <script setup lang="ts">
+import { notifyError, notifySuccess } from '@/composables/toast';
 import { ref } from "vue";
 import { staffDatabase } from "../../../services/session";
 import { verifyPassengerDiscount } from "../../../services/database/operations";
@@ -43,9 +44,10 @@ async function verify() {
   error.value = "";
   try {
     await verifyPassengerDiscount(staffDatabase, props.passengerId, note.value);
+    notifySuccess('Discount eligibility verified.');
     emit("verified");
   } catch (cause) {
-    error.value = databaseRequestError(cause, "Could not verify discount.");
+    error.value = notifyError(databaseRequestError(cause, "Could not verify discount."));
   } finally {
     busy.value = false;
   }
@@ -57,7 +59,7 @@ async function verify() {
   gap: 9px;
   width: 100%;
   margin-top: 10px;
-  font-size: 12px;
+  font-size: var(--text-label);
 }
 label {
   display: flex;

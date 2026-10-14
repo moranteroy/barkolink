@@ -14,7 +14,7 @@
             <h1>Account settings</h1>
             <p>Keep your contact details and sign-in preferences up to date.</p>
           </div>
-          <router-link class="settings-back" :to="workspacePath"><AppIcon :icon="gridOutline" aria-hidden="true" /> Back to workspace</router-link>
+          <router-link class="settings-back" :to="workspacePath"><BackIcon /> Back to workspace</router-link>
         </section>
 
         <div class="settings-layout">
@@ -199,6 +199,8 @@
 </template>
 
 <script setup lang="ts">
+import { notifyError, notifySuccess } from '@/composables/toast';
+import BackIcon from "@/components/ui/icon/BackIcon.vue";
 import BrandMark from "../../components/shared/BrandMark.vue";
 import StaffNavigation from "../../components/staff/StaffNavigation.vue";
 import StaffWorkspaceHeader from "../../components/staff/StaffWorkspaceHeader.vue";
@@ -214,12 +216,7 @@ import {
 } from "../../services/auth";
 import { IonContent, IonPage, onIonViewWillEnter, useIonRouter } from "@ionic/vue";
 import AppIcon from "@/components/ui/icon/AppIcon.vue";
-import {
-  contrastOutline,
-  gridOutline,
-  personOutline,
-  shieldCheckmarkOutline,
-} from "ionicons/icons";
+import { contrastOutline, personOutline, shieldCheckmarkOutline } from "ionicons/icons";
 import ThemeSwitcher from "../../components/shared/ThemeSwitcher.vue";
 import AppearancePreview from "../../components/shared/AppearancePreview.vue";
 import { myProfile, updateMyProfile } from "../../services/database/passenger";
@@ -338,10 +335,10 @@ async function loadProfile() {
     }
     phone.value = profile.value.phone || "";
   } catch (error) {
-    profileError.value = databaseRequestError(
+    profileError.value = notifyError(databaseRequestError(
       error,
       "Could not load staff profile.",
-    );
+    ));
   } finally {
     if (request === profileRequest) profileLoading.value = false;
   }
@@ -364,13 +361,13 @@ async function savePhone() {
     profile.value = { ...profile.value, phone: values.phone };
     phone.value = values.phone || "";
     phoneMessageType.value = "success";
-    phoneMessage.value = "Contact number saved.";
+    phoneMessage.value = notifySuccess("Contact number saved.");
   } catch (error) {
     phoneMessageType.value = "error";
-    phoneMessage.value = databaseRequestError(
+    phoneMessage.value = notifyError(databaseRequestError(
       error,
       "Could not save contact number.",
-    );
+    ));
   } finally {
     savingPhone.value = false;
   }
@@ -423,16 +420,16 @@ async function changePassword() {
     password.next = "";
     password.confirm = "";
     passwordMessageType.value = "success";
-    passwordMessage.value = "Password updated.";
+    passwordMessage.value = notifySuccess("Password updated.");
   } catch (error) {
     passwordMessageType.value = "error";
     const code = (error as { code?: string }).code;
     passwordMessage.value =
-      code === "auth/invalid-credential" ||
+      notifyError(code === "auth/invalid-credential" ||
       code === "auth/wrong-password" ||
       code === "invalid_credentials"
         ? "Current password is incorrect."
-        : databaseRequestError(error, "Could not update password.");
+        : databaseRequestError(error, "Could not update password."));
   } finally {
     savingPassword.value = false;
   }
@@ -470,7 +467,7 @@ async function changePassword() {
   border-radius: 999px;
   background: var(--surface);
   color: var(--ocean);
-  font-size: 10px;
+  font-size: var(--text-caption);
   font-weight: 800;
   text-transform: uppercase;
   letter-spacing: 0.05em;
@@ -485,7 +482,7 @@ async function changePassword() {
 .eyebrow {
   margin: 0;
   color: var(--ocean);
-  font-size: 10px;
+  font-size: var(--text-caption);
   font-weight: 800;
   letter-spacing: 0.1em;
 }
@@ -500,7 +497,7 @@ async function changePassword() {
 .theme-card p {
   margin: 0;
   color: var(--muted);
-  font-size: 12px;
+  font-size: var(--text-label);
   line-height: 1.55;
 }
 .heading-icon {
@@ -535,7 +532,7 @@ async function changePassword() {
 .nav-title {
   margin: 6px 10px 9px;
   color: var(--muted);
-  font-size: 9px;
+  font-size: var(--text-caption);
   font-weight: 800;
   letter-spacing: 0.1em;
 }
@@ -547,7 +544,7 @@ async function changePassword() {
   padding: 0 11px;
   border-radius: 10px;
   color: var(--muted);
-  font-size: 12px;
+  font-size: var(--text-label);
   font-weight: 700;
   text-decoration: none;
 }
@@ -632,7 +629,7 @@ async function changePassword() {
 .identity-card div span {
   margin-top: 4px;
   color: var(--muted);
-  font-size: 11px;
+  font-size: var(--text-caption);
 }
 .detail-grid {
   display: grid;
@@ -651,11 +648,11 @@ async function changePassword() {
 }
 .detail span {
   color: var(--muted);
-  font-size: 10px;
+  font-size: var(--text-caption);
 }
 .detail strong {
   margin-top: 8px;
-  font-size: 12px;
+  font-size: var(--text-label);
   overflow-wrap: anywhere;
 }
 .phone-form {
@@ -672,7 +669,7 @@ async function changePassword() {
 .phone-form label,
 .password-form label {
   color: var(--ink);
-  font-size: 11px;
+  font-size: var(--text-caption);
   font-weight: 800;
 }
 .phone-actions {
@@ -690,7 +687,7 @@ async function changePassword() {
   background: var(--surface-soft);
   color: var(--ink);
   font: inherit;
-  font-size: 12px;
+  font-size: var(--text-label);
 }
 .phone-actions input:focus,
 .password-form input:focus {
@@ -707,7 +704,7 @@ async function changePassword() {
   background: var(--ocean);
   color: #fff;
   font: inherit;
-  font-size: 11px;
+  font-size: var(--text-caption);
   font-weight: 800;
   cursor: pointer;
 }
@@ -719,7 +716,7 @@ async function changePassword() {
 .feedback {
   margin: 6px 0 0;
   color: var(--muted);
-  font-size: 11px;
+  font-size: var(--text-caption);
 }
 .feedback.error {
   color: var(--danger);
@@ -792,7 +789,7 @@ async function changePassword() {
     gap: 6px;
     min-height: 40px;
     padding: 0 5px;
-    font-size: 10px;
+    font-size: var(--text-caption);
   }
   .settings-nav a > .app-icon:first-child {
     font-size: 16px;
@@ -848,7 +845,7 @@ async function changePassword() {
 .staff-settings-page > :deep(.staff-workspace-header) { border: 1px solid var(--line); border-radius: 12px; }
 .page-heading { margin: 24px 0 18px; gap: 12px; flex-wrap: wrap; }
 .page-heading h1 { font-size: 28px; margin: 5px 0; }
-.settings-back { display: inline-flex; align-items: center; gap: 7px; min-height: 42px; padding: 8px 12px; border: 1px solid var(--line); border-radius: 9px; background: var(--surface); color: var(--ocean); font-size: 12px; text-decoration: none; }
+.settings-back { display: inline-flex; align-items: center; gap: 7px; min-height: 42px; padding: 8px 12px; border: 1px solid var(--line); border-radius: 9px; background: var(--surface); color: var(--ocean); font-size: var(--text-label); text-decoration: none; }
 .settings-back .app-icon { font-size: 17px; }
 .settings-layout { grid-template-columns: 190px minmax(0, 1fr); gap: 18px; }
 .settings-nav, .settings-card { border-radius: 12px; box-shadow: none; }
@@ -864,10 +861,10 @@ async function changePassword() {
 .detail strong { overflow-wrap: anywhere; }
 .phone-form { margin-top: 18px; padding-top: 18px; }
 .phone-actions input, .password-form input { min-height: 44px; font-size: 13px; }
-.phone-actions button, .password-form button { min-height: 44px; border-radius: 9px; font-size: 12px; }
-.phone-form > button { margin-top: 10px; padding: 8px 12px; border: 1px solid var(--line); border-radius: 8px; color: var(--muted); background: var(--surface-soft); font-size: 11px; }
+.phone-actions button, .password-form button { min-height: 44px; border-radius: 9px; font-size: var(--text-label); }
+.phone-form > button { margin-top: 10px; padding: 8px 12px; border: 1px solid var(--line); border-radius: 8px; color: var(--muted); background: var(--surface-soft); font-size: var(--text-caption); }
 .password-form { margin-top: 18px; max-width: 520px; }
-.password-form label { font-size: 12px; font-weight: 500; }
+.password-form label { font-size: var(--text-label); font-weight: 500; }
 .theme-card { margin-top: 16px; padding: 16px; }
 @media (max-width: 760px) {
  .staff-settings-page { padding: 12px 16px 32px; }
@@ -878,9 +875,8 @@ async function changePassword() {
  .settings-nav .workspace-link { display: none; }
 }
 
-</style>
 
-<style scoped>
+
 .staff-settings-shell { min-height: 100dvh; background: var(--cloud); color: var(--ink); }
 .staff-sidebar { position: fixed; inset: 0 auto 0 0; width: 235px; box-sizing: border-box; display: flex; flex-direction: column; padding: 26px 16px; z-index: 20; }
 .staff-sidebar :deep(.brand-copy strong), .staff-sidebar :deep(.brand-copy b) { color: white; }
@@ -895,25 +891,24 @@ async function changePassword() {
 .card-heading { margin-bottom: 16px; }.card-heading h2 { font-size: 19px; }.card-heading > .app-icon { width: 36px; height: 36px; padding: 8px; border-radius: 10px; }
 .identity-card { padding: 12px; }.identity-card .avatar { width: 38px; height: 38px; border-radius: 10px; }.detail-grid { gap: 10px; }.detail { padding: 12px; }
 .phone-actions input, .password-form input { min-height: 44px; }.phone-actions button, .password-form > button { min-height: 44px; }
-@media(max-width:1100px) { .settings-layout { grid-template-columns: minmax(0, 1fr); }.settings-nav { display: flex; flex-wrap: wrap; gap: 5px; }.nav-title { display: none; }.settings-nav a { flex: 1; justify-content: center; font-size: 12px; gap: 6px; } }
+@media(max-width:1100px) { .settings-layout { grid-template-columns: minmax(0, 1fr); }.settings-nav { display: flex; flex-wrap: wrap; gap: 5px; }.nav-title { display: none; }.settings-nav a { flex: 1; justify-content: center; font-size: var(--text-label); gap: 6px; } }
 @media(max-width:800px) { .staff-settings-main { margin-left: 0; }.staff-sidebar { display: none; }.staff-sidebar.mobile-open { display: flex; width: min(84vw, 300px); z-index: 31; box-shadow: 12px 0 36px #020b1880; }.settings-scrim { position: fixed; inset: 0; display: block; width: 100%; height: 100%; z-index: 30; border: 0; background: #061222a8; }.staff-settings-page { padding: 20px 16px 32px; } }
-@media(max-width:480px) { .settings-card { padding: 16px; }.page-heading { flex-wrap: wrap; }.page-heading h1 { font-size: 25px; }.settings-nav a { min-width: 0; padding: 0 6px; font-size: 11px; }.settings-nav a .app-icon { font-size: 16px; } }
-</style>
+@media(max-width:480px) { .settings-card { padding: 16px; }.page-heading { flex-wrap: wrap; }.page-heading h1 { font-size: 25px; }.settings-nav a { min-width: 0; padding: 0 6px; font-size: var(--text-caption); }.settings-nav a .app-icon { font-size: 16px; } }
 
-<style scoped>
+
 .staff-settings-page { max-width: 1000px; margin: 0; padding: 24px 28px 36px; }
-.page-heading { align-items: center; margin-bottom: 18px; }.page-heading h1 { font-size: 27px; }.settings-back { min-height: 40px; font-size: 11px; }
+.page-heading { align-items: center; margin-bottom: 18px; }.page-heading h1 { font-size: 27px; }.settings-back { min-height: 40px; font-size: var(--text-caption); }
 .settings-layout { display: grid; grid-template-columns: minmax(0, 1fr); gap: 14px; }
 .settings-nav { position: static; display: flex; align-items: center; flex-wrap: nowrap; gap: 5px; width: fit-content; max-width: 100%; padding: 5px; border-radius: 10px; background: var(--surface-soft); }
-.settings-nav .nav-title { display: none; }.settings-nav a { min-width: 0; min-height: 44px; flex: initial; justify-content: center; gap: 7px; padding: 8px 16px; font-size: 12px; border: 1px solid transparent; border-radius: 7px; }.settings-nav a.active { border-color: var(--line); background: var(--surface); color: var(--ocean); box-shadow: 0 1px 4px #061a3510; }
+.settings-nav .nav-title { display: none; }.settings-nav a { min-width: 0; min-height: 44px; flex: initial; justify-content: center; gap: 7px; padding: 8px 16px; font-size: var(--text-label); border: 1px solid transparent; border-radius: 7px; }.settings-nav a.active { border-color: var(--line); background: var(--surface); color: var(--ocean); box-shadow: 0 1px 4px #061a3510; }
 .settings-nav a .app-icon { font-size: 17px; }
 .settings-card { min-height: 0; padding: 20px; border-radius: 12px; }.settings-card.account-section { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px 22px; }
 .account-section > .card-heading { grid-column: 1 / -1; margin: 0; padding-bottom: 14px; }.card-heading h2 { margin-top: 4px; font-size: 18px; }.card-heading > .app-icon { width: 32px; height: 32px; padding: 7px; }
-.account-overview { min-width: 0; }.identity-card { margin: 0 0 12px; padding: 10px; border-radius: 9px; }.identity-card strong { font-size: 13px; }.identity-card .avatar { width: 36px; height: 36px; font-size: 12px; }
-.detail-grid { grid-template-columns: minmax(0, 1fr); gap: 0; border: 1px solid var(--line); border-radius: 9px; overflow: hidden; }.detail { border: 0; border-radius: 0; background: transparent; padding: 10px 12px; }.detail + .detail { border-top: 1px solid var(--line); }.detail strong { font-size: 12px; }.detail span { font-size: 10px; }
-.phone-form { margin: 0; padding: 12px 14px; border: 1px solid var(--line); border-radius: 9px; background: var(--surface-soft); align-self: start; }.phone-form h3 { font-size: 14px; margin: 0 0 5px; }.phone-form p { font-size: 11px; }.phone-actions { display: flex; flex-direction: column; flex-wrap: nowrap; align-items: stretch; gap: 8px; }.phone-actions input { box-sizing: border-box; width: 100%; max-width: 100%; flex: none; background: var(--surface); }.phone-actions button { align-self: flex-start; }.phone-actions button { width: auto; padding: 9px 14px; }
+.account-overview { min-width: 0; }.identity-card { margin: 0 0 12px; padding: 10px; border-radius: 9px; }.identity-card strong { font-size: 13px; }.identity-card .avatar { width: 36px; height: 36px; font-size: var(--text-label); }
+.detail-grid { grid-template-columns: minmax(0, 1fr); gap: 0; border: 1px solid var(--line); border-radius: 9px; overflow: hidden; }.detail { border: 0; border-radius: 0; background: transparent; padding: 10px 12px; }.detail + .detail { border-top: 1px solid var(--line); }.detail strong { font-size: var(--text-label); }.detail span { font-size: var(--text-caption); }
+.phone-form { margin: 0; padding: 12px 14px; border: 1px solid var(--line); border-radius: 9px; background: var(--surface-soft); align-self: start; }.phone-form h3 { font-size: 14px; margin: 0 0 5px; }.phone-form p { font-size: var(--text-caption); }.phone-actions { display: flex; flex-direction: column; flex-wrap: nowrap; align-items: stretch; gap: 8px; }.phone-actions input { box-sizing: border-box; width: 100%; max-width: 100%; flex: none; background: var(--surface); }.phone-actions button { align-self: flex-start; }.phone-actions button { width: auto; padding: 9px 14px; }
 .password-form { margin-top: 14px; }.theme-card { padding: 12px; border-radius: 10px; }
 @media(max-width:1000px) { .settings-card.account-section { grid-template-columns: minmax(0, 1fr); }.account-section > .card-heading { grid-column: 1; } }
 @media(max-width:800px) { .staff-settings-page { padding: 20px 16px 28px; } }
-@media(max-width:480px) { .settings-nav { width: 100%; }.settings-nav a { padding: 8px; flex: 1; font-size: 11px; gap: 5px; }.settings-card { padding: 14px; }.page-heading h1 { font-size: 24px; }.page-heading { align-items: flex-start; } }
+@media(max-width:480px) { .settings-nav { width: 100%; }.settings-nav a { padding: 8px; flex: 1; font-size: var(--text-caption); gap: 5px; }.settings-card { padding: 14px; }.page-heading h1 { font-size: 24px; }.page-heading { align-items: flex-start; } }
 </style>

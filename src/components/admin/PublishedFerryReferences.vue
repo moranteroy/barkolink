@@ -47,10 +47,10 @@ function displayTime(time: string) { const [h, m] = time.split(':').map(Number);
 <style scoped>
 .published-references { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; margin: 16px 0; color: var(--ink); }
 summary { cursor: pointer; padding: 18px; font-weight: 600; font-size: 14px; }
-.reference-content { padding: 0 18px 18px; }.reference-intro { color: var(--muted); font-size: 12px; line-height: 1.6; }
-.reference-filters { display: flex; flex-wrap: wrap; gap: 16px; }label { display: grid; gap: 6px; font-size: 12px; max-width: 100%; }
+.reference-content { padding: 0 18px 18px; }.reference-intro { color: var(--muted); font-size: var(--text-label); line-height: 1.6; }
+.reference-filters { display: flex; flex-wrap: wrap; gap: 16px; }label { display: grid; gap: 6px; font-size: var(--text-label); max-width: 100%; }
 select,input { background: var(--surface); color: var(--ink); border: 1px solid var(--line); border-radius: 8px; padding: 9px; max-width: 100%; }
 .reference-cards { display: grid; grid-template-columns: repeat(auto-fit,minmax(min(100%,270px),1fr)); gap: 12px; margin-top: 16px; }
-article { border: 1px solid var(--line); padding: 14px; border-radius: 10px; min-width: 0; font-size: 12px; }h3 { font-size: 13px; margin: 8px 0; }
+article { border: 1px solid var(--line); padding: 14px; border-radius: 10px; min-width: 0; font-size: var(--text-label); }h3 { font-size: 13px; margin: 8px 0; }
 .departure-times { display: flex; flex-wrap: wrap; gap: 6px; }small { display: block; color: var(--muted); margin-top: 10px; }a { display: inline-block; margin-top: 12px; color: var(--primary); }
 </style>

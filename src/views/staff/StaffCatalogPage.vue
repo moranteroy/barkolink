@@ -126,7 +126,7 @@
                       "
                       :to="`/staff/boarding/manifest?sailing=${encodeURIComponent(row.key)}`"
                       >{{ value }}</router-link
-                    ><Badge v-else-if="index === row.statusIndex" :variant="['Cancelled', 'No show'].includes(String(value)) ? 'destructive' : ['Pending', 'Delayed', 'Boarding'].includes(String(value)) ? 'warning' : 'success'">{{ value }}</Badge><strong v-else-if="section === 'passengers' && index === 0" class="passenger-name">{{ value }}</strong><span v-else :class="{ 'passenger-code': section === 'passengers' && [1, 2].includes(index) }">{{ value }}</span></template
+                    ><Badge v-else-if="index === row.statusIndex" :variant="['Cancelled', 'No show'].includes(String(value)) ? 'destructive' : ['Pending', 'Delayed', 'Boarding'].includes(String(value)) ? 'warning' : 'success'">{{ statusLabel(String(value)) }}</Badge><strong v-else-if="section === 'passengers' && index === 0" class="passenger-name">{{ value }}</strong><span v-else :class="{ 'passenger-code': section === 'passengers' && [1, 2].includes(index) }">{{ value }}</span></template
                   ></RecordsGrid
                 >
                 <div v-else class="staff-inbox">
@@ -156,6 +156,8 @@
   >
 </template>
 <script setup lang="ts">
+import { notifyError } from '@/composables/toast';
+import { statusLabel } from "../../data/statusPresentation";
 import StaffPortRequired from '../../components/staff/StaffPortRequired.vue';
 import { useStaffPortGate } from '../../composables/staffPortGate';
 const { portBlocked } = useStaffPortGate(load);
@@ -363,7 +365,7 @@ async function load() {
     }
   } catch (e) {
     if (token === request)
-      error.value = databaseRequestError(e, "Could not load staff records.");
+      error.value = notifyError(databaseRequestError(e, "Could not load staff records."));
   } finally {
     if (token === request) loading.value = false;
   }
@@ -375,7 +377,7 @@ async function read(id: string) {
     clearNotificationUnread(id);
     await load();
   } catch (e) {
-    error.value = databaseRequestError(e, "Could not mark notification read.");
+    error.value = notifyError(databaseRequestError(e, "Could not mark notification read."));
   }
 }
 
@@ -395,35 +397,35 @@ onIonViewWillEnter(load);
 .boarding-trips-directory .reference-heading p:last-child { font-size: 13px; line-height: 1.6; }
 .boarding-trips-directory .reference-heading > button { min-height: 44px; }
 .boarding-trips-directory :deep(.weather-trip-picker) { width: 100%; max-width: none; margin: 0 0 16px; padding: 12px 16px; border-radius: 12px; }
-.boarding-trips-directory :deep(.weather-trigger strong) { font-size: 12px; }
-.boarding-trips-directory :deep(.weather-trigger small) { font-size: 11px; }
+.boarding-trips-directory :deep(.weather-trigger strong) { font-size: var(--text-label); }
+.boarding-trips-directory :deep(.weather-trigger small) { font-size: var(--text-caption); }
 .boarding-trips-directory .reference-filters { display: grid; grid-template-columns: minmax(0, 1fr) 170px auto auto; gap: 10px; padding: 16px; margin: 0 0 20px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); align-items: center; }
-.boarding-trips-directory .directory-search-label { grid-column: 1 / -1; font-size: 12px; font-weight: 650; }
+.boarding-trips-directory .directory-search-label { grid-column: 1 / -1; font-size: var(--text-label); font-weight: 650; }
 .boarding-trips-directory .reference-filters input, .boarding-trips-directory .reference-filters select { min-height: 44px; width: 100%; font-family: inherit; font-size: 13px; }
 .boarding-trips-directory .reference-filters button { min-height: 44px; }
-.boarding-trips-directory .directory-search-help { grid-column: 1 / -1; margin: 0; font-size: 11px; line-height: 1.6; color: var(--muted); }
+.boarding-trips-directory .directory-search-help { grid-column: 1 / -1; margin: 0; font-size: var(--text-caption); line-height: 1.6; color: var(--muted); }
 .boarding-trips-directory .trip-directory { display: block; border: 1px solid var(--line); border-radius: 14px 14px 0 0; background: var(--surface); overflow: hidden; }
 .sailing-list-heading { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 20px; }
 .sailing-list-heading h2 { font-size: 18px; line-height: 1.4; margin: 0 0 5px; }
-.sailing-list-heading p { font-size: 12px; color: var(--muted); margin: 0; line-height: 1.5; }
-.sailing-count { flex: none; padding: 6px 10px; background: var(--light-blue); color: var(--ocean); border-radius: 20px; font-size: 11px; font-weight: 650; }
+.sailing-list-heading p { font-size: var(--text-label); color: var(--muted); margin: 0; line-height: 1.5; }
+.sailing-count { flex: none; padding: 6px 10px; background: var(--light-blue); color: var(--ocean); border-radius: 20px; font-size: var(--text-caption); font-weight: 650; }
 .sailing-table-scroll { max-height: 540px; overflow: auto; scrollbar-width: thin; scrollbar-color: var(--line) transparent; }
-.sailing-table { width: 100%; border-collapse: separate; border-spacing: 0; text-align: left; font-size: 12px; }
-.sailing-table th { position: sticky; top: 0; z-index: 1; padding: 12px 16px; border-block: 1px solid var(--line); background: var(--surface-soft); color: var(--muted); font-size: 10px; font-weight: 650; letter-spacing: .5px; text-transform: uppercase; white-space: nowrap; }
+.sailing-table { width: 100%; border-collapse: separate; border-spacing: 0; text-align: left; font-size: var(--text-label); }
+.sailing-table th { position: sticky; top: 0; z-index: 1; padding: 12px 16px; border-block: 1px solid var(--line); background: var(--surface-soft); color: var(--muted); font-size: var(--text-caption); font-weight: 650; letter-spacing: .5px; text-transform: uppercase; white-space: nowrap; }
 .sailing-table td { padding: 16px; border-bottom: 1px solid var(--line); line-height: 1.6; vertical-align: middle; }
 .sailing-table tbody tr:last-child td { border-bottom: 0; }
 .sailing-table tbody tr:hover td { background: var(--surface-soft); }
 .sailing-route { min-width: 180px; }
 .sailing-route strong { display: block; font-size: 13px; line-height: 1.6; }
 .sailing-route .app-icon { color: var(--ocean); font-size: 13px; vertical-align: middle; margin: 0 3px; }
-.sailing-route small { display: block; color: var(--muted); font-size: 11px; margin-top: 4px; }
+.sailing-route small { display: block; color: var(--muted); font-size: var(--text-caption); margin-top: 4px; }
 .sailing-departure { min-width: 145px; font-variant-numeric: tabular-nums; }
 .seat-availability { min-width: 85px; }
 .seat-availability strong { font-size: 14px; font-variant-numeric: tabular-nums; }
-.seat-availability small { color: var(--muted); font-size: 11px; }
+.seat-availability small { color: var(--muted); font-size: var(--text-caption); }
 .seat-track { height: 4px; margin-top: 7px; border-radius: 10px; overflow: hidden; background: var(--line); }
 .seat-track i { display: block; height: 100%; background: var(--ocean); border-radius: inherit; }
-.sailing-badge { font-size: 11px; font-weight: 650; white-space: nowrap; border: 1px solid transparent; }
+.sailing-badge { font-size: var(--text-caption); font-weight: 650; white-space: nowrap; border: 1px solid transparent; }
 .sailing-badge.scheduled { color: #1d4ed8; background: #eff6ff; border-color: #bfdbfe; }
 .sailing-badge.boarding { color: #6d28d9; background: #f5f3ff; border-color: #ddd6fe; }
 .sailing-badge.delayed { color: #92400e; background: #fffbeb; border-color: #fde68a; }
@@ -434,11 +436,11 @@ onIonViewWillEnter(load);
 :global(:root[data-theme="dark"]) .sailing-badge.delayed { color: #fcd34d; background: #3c2d17; border-color: #78602b; }
 :global(:root[data-theme="dark"]) .sailing-badge.completed { color: #86efac; background: #18382b; border-color: #2e674a; }
 :global(:root[data-theme="dark"]) .sailing-badge.cancelled { color: #fca5a5; background: #43232c; border-color: #7f3946; }
-.sailing-action a { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 40px; padding: 8px 12px; border: 1px solid var(--line); border-radius: 8px; color: var(--ocean); font-size: 12px; font-weight: 600; text-decoration: none; white-space: nowrap; }
+.sailing-action a { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 40px; padding: 8px 12px; border: 1px solid var(--line); border-radius: 8px; color: var(--ocean); font-size: var(--text-label); font-weight: 600; text-decoration: none; white-space: nowrap; }
 .sailing-action a:hover { background: var(--light-blue); border-color: var(--ocean); }
 .sailing-action a:focus-visible, .sailing-table-scroll:focus-visible { outline: 2px solid var(--ocean); outline-offset: -2px; }
 .sailing-table .sailing-empty { padding: 40px 20px; text-align: center; color: var(--muted); }
-.boarding-trips-directory :deep(.workspace-pagination) { margin: 0; padding: 14px 20px; border: 1px solid var(--line); border-top: 0; border-radius: 0 0 14px 14px; font-size: 12px; }
+.boarding-trips-directory :deep(.workspace-pagination) { margin: 0; padding: 14px 20px; border: 1px solid var(--line); border-top: 0; border-radius: 0 0 14px 14px; font-size: var(--text-label); }
 .boarding-trips-directory :deep(.workspace-pagination button) { min-height: 44px; }
 @media (max-width: 1100px) {
   .boarding-trips-directory .reference-filters { grid-template-columns: minmax(0, 1fr) 150px auto; }
@@ -453,7 +455,7 @@ onIonViewWillEnter(load);
   .sailing-table thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
   .sailing-table tbody tr { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px 20px; padding: 18px; border-top: 1px solid var(--line); }
   .sailing-table td { display: block; padding: 0; border: 0; min-width: 0; }
-  .sailing-table td[data-label]::before { content: attr(data-label); display: block; color: var(--muted); font-size: 10px; margin-bottom: 4px; }
+  .sailing-table td[data-label]::before { content: attr(data-label); display: block; color: var(--muted); font-size: var(--text-caption); margin-bottom: 4px; }
   .sailing-table td:first-child { grid-column: 1 / -1; }
   .sailing-table td:first-child::before { display: none; }
   .sailing-route, .sailing-departure, .seat-availability { min-width: 0; }
@@ -521,7 +523,7 @@ onIonViewWillEnter(load);
   font-size: 16px;
 }
 .reference-topbar a {
-  font-size: 12px;
+  font-size: var(--text-label);
   color: var(--ocean);
   text-decoration: none;
 }
@@ -542,7 +544,7 @@ onIonViewWillEnter(load);
   font-size: 28px;
 }
 .reference-heading p {
-  font-size: 12px;
+  font-size: var(--text-label);
   color: var(--muted);
 }
 button {
@@ -551,7 +553,7 @@ button {
   border-radius: 9px;
   background: var(--surface);
   color: var(--ocean);
-  font-size: 12px;
+  font-size: var(--text-label);
   cursor: pointer;
 }
 .reference-filters {
@@ -567,7 +569,7 @@ button {
   background: var(--surface);
   color: var(--ink);
   min-width: 0;
-  font-size: 12px;
+  font-size: var(--text-label);
 }
 .reference-filters input {
   flex: 1;
@@ -575,7 +577,7 @@ button {
 .reference-empty {
   padding: 30px;
   color: var(--muted);
-  font-size: 12px;
+  font-size: var(--text-label);
 }
 .reference-menu,
 .reference-scrim {
@@ -588,7 +590,7 @@ button {
 }
 .staff-inbox p {
   white-space: pre-wrap;
-  font-size: 12px;
+  font-size: var(--text-label);
   line-height: 1.6;
 }
 .staff-inbox small {
@@ -644,15 +646,15 @@ button {
 .reference-heading { margin-bottom: 20px; }
 .reference-filters { padding: 16px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); gap: 10px; }
 .trip-directory { display: grid; gap: 12px; }
-.trip-result-count { margin: 4px 0; font-size: 12px; color: var(--muted); }
+.trip-result-count { margin: 4px 0; font-size: var(--text-label); color: var(--muted); }
 .operation-trip { padding: 18px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); }
 .trip-route { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
 .trip-route h2 { margin: 0; font-size: 17px; line-height: 1.5; }
 .operation-trip > small { display: block; margin-top: 7px; color: var(--muted); }
 .operation-trip dl { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin: 16px 0; }
-.operation-trip dt { font-size: 11px; color: var(--muted); margin-bottom: 5px; }
-.operation-trip dd { margin: 0; font-size: 12px; line-height: 1.6; }
-.operation-trip > a { display: inline-flex; min-height: 40px; align-items: center; padding: 8px 12px; border: 1px solid var(--line); border-radius: 8px; color: var(--ocean); text-decoration: none; font-size: 12px; }
+.operation-trip dt { font-size: var(--text-caption); color: var(--muted); margin-bottom: 5px; }
+.operation-trip dd { margin: 0; font-size: var(--text-label); line-height: 1.6; }
+.operation-trip > a { display: inline-flex; min-height: 40px; align-items: center; padding: 8px 12px; border: 1px solid var(--line); border-radius: 8px; color: var(--ocean); text-decoration: none; font-size: var(--text-label); }
 @media (max-width: 600px) { .trip-route { align-items: flex-start; flex-wrap: wrap; } .operation-trip dl { grid-template-columns: minmax(0, 1fr); } .operation-trip { padding: 14px; } }
 
 
@@ -661,12 +663,12 @@ button {
 .operation-trip { display: grid; grid-template-columns: minmax(180px, 1.1fr) minmax(280px, 1.6fr) auto 76px; align-items: center; gap: 12px; padding: 12px 14px; border-radius: 10px; }
 .trip-identity { min-width: 0; }
 .trip-identity h2 { margin: 0; font-size: 13px; line-height: 1.5; overflow-wrap: anywhere; }
-.trip-identity small { display: block; margin-top: 4px; font-size: 10px; color: var(--muted); overflow-wrap: anywhere; }
+.trip-identity small { display: block; margin-top: 4px; font-size: var(--text-caption); color: var(--muted); overflow-wrap: anywhere; }
 .operation-trip dl { margin: 0; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr) minmax(0, .6fr); gap: 10px; }
-.operation-trip dt { margin-bottom: 3px; font-size: 10px; }
-.operation-trip dd { font-size: 11px; line-height: 1.5; overflow-wrap: anywhere; }
-.operation-trip > a { justify-content: center; min-height: 40px; padding: 7px 9px; font-size: 11px; }
-.operation-trip .trip-status { justify-self: end; font-size: 9px; }
+.operation-trip dt { margin-bottom: 3px; font-size: var(--text-caption); }
+.operation-trip dd { font-size: var(--text-caption); line-height: 1.5; overflow-wrap: anywhere; }
+.operation-trip > a { justify-content: center; min-height: 40px; padding: 7px 9px; font-size: var(--text-caption); }
+.operation-trip .trip-status { justify-self: end; font-size: var(--text-caption); }
 @media (max-width: 1100px) {
  .operation-trip { grid-template-columns: minmax(0, 1fr) auto; gap: 10px; }
  .operation-trip .trip-status { grid-column: 2; grid-row: 1; }
@@ -677,25 +679,25 @@ button {
  .operation-trip { padding: 12px; }
  .operation-trip dl { grid-column: 1 / -1; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto; }
  .operation-trip > a { grid-row: 3; min-height: 36px; }
- .operation-trip dd { font-size: 10px; }
+ .operation-trip dd { font-size: var(--text-caption); }
 }
 
 </style>
 
 <style scoped>
 .passenger-directory .reference-content { padding: 24px 28px 32px; }
-.directory-kicker { color: var(--ocean) !important; font-size: 10px !important; font-weight: 700; letter-spacing: .1em; margin: 0 0 7px; }
+.directory-kicker { color: var(--ocean) !important; font-size: var(--text-caption) !important; font-weight: 700; letter-spacing: .1em; margin: 0 0 7px; }
 .passenger-directory .reference-heading h1 { font-size: 28px; }
 .passenger-directory .reference-heading button { display: inline-flex; gap: 7px; min-height: 44px; }
 .passenger-directory .reference-filters { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 8px 10px; padding: 14px; margin-bottom: 16px; }
-.directory-search-label { grid-column: 1 / -1; display: flex; align-items: center; gap: 7px; font-size: 12px; font-weight: 600; }
+.directory-search-label { grid-column: 1 / -1; display: flex; align-items: center; gap: 7px; font-size: var(--text-label); font-weight: 600; }
 .directory-search-label .app-icon { color: var(--ocean); }
 .passenger-directory .reference-filters input { width: 100%; min-height: 44px; padding: 10px 12px; background: var(--surface-soft); }
 .passenger-directory .reference-filters button { min-height: 44px; display: inline-flex; gap: 7px; }
-.directory-search-help { grid-column: 1 / -1; margin: 0; color: var(--muted); font-size: 11px; line-height: 1.6; }
+.directory-search-help { grid-column: 1 / -1; margin: 0; color: var(--muted); font-size: var(--text-caption); line-height: 1.6; }
 .passenger-directory .catalog-table { overflow: hidden; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); }
 .passenger-name { font-weight: 600; }
-.passenger-code { font-size: 11px; }
+.passenger-code { font-size: var(--text-caption); }
 .passenger-directory :deep(.grid-tools) { padding: 10px 12px; }
 .passenger-directory :deep(.workspace-pagination) { padding: 12px 14px; border: 1px solid var(--line); border-top: 0; border-radius: 0 0 12px 12px; margin-top: 0; background: var(--surface); }
 .passenger-directory :deep(.workspace-pagination button) { min-height: 44px; }
@@ -706,7 +708,7 @@ button {
  .passenger-directory :deep(.grid-tools > div:last-child) { flex-wrap: wrap; }
  .passenger-directory :deep(.grid-summary) { width: 100%; }
  .passenger-directory :deep(.pagination-controls) { width: 100%; justify-content: space-between; gap: 6px; }
- .passenger-directory :deep(.pagination-position) { font-size: 10px; }
+ .passenger-directory :deep(.pagination-position) { font-size: var(--text-caption); }
 }
 </style>
 
@@ -730,22 +732,22 @@ button {
 .fare-directory .reference-heading button { min-height: 44px; display: inline-flex; gap: 7px; }
 .fare-reference { min-width: 0; }
 .fare-toolbar { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; padding: 12px 14px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; }
-.fare-toolbar label { display: flex; align-items: center; gap: 7px; font-size: 12px; font-weight: 600; }
+.fare-toolbar label { display: flex; align-items: center; gap: 7px; font-size: var(--text-label); font-weight: 600; }
 .fare-toolbar label .app-icon { color: var(--ocean); }
-.fare-toolbar input { flex: 1; min-width: 140px; min-height: 44px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 9px; background: var(--surface-soft); color: var(--ink); font: inherit; font-size: 12px; }
-.fare-toolbar > span { color: var(--muted); font-size: 11px; }
+.fare-toolbar input { flex: 1; min-width: 140px; min-height: 44px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 9px; background: var(--surface-soft); color: var(--ink); font: inherit; font-size: var(--text-label); }
+.fare-toolbar > span { color: var(--muted); font-size: var(--text-caption); }
 .fare-toolbar button { min-height: 44px; }
-.fare-help { color: var(--muted); font-size: 11px; line-height: 1.7; margin: 12px 0; }
+.fare-help { color: var(--muted); font-size: var(--text-caption); line-height: 1.7; margin: 12px 0; }
 .vessel-fare { display: grid; grid-template-columns: minmax(160px, 1fr) 130px minmax(220px, 1.8fr) minmax(150px, 1fr); gap: 16px; align-items: start; padding: 16px; margin-bottom: 10px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); }
 .fare-vessel { display: flex; align-items: center; gap: 9px; min-width: 0; }
 .fare-ship { display: grid; place-items: center; flex: none; width: 32px; height: 32px; border-radius: 9px; background: var(--light-blue); color: var(--ocean); font-size: 18px; }
 .fare-vessel h2 { margin: 0; font-size: 13px; line-height: 1.5; overflow-wrap: anywhere; }
-.base-fare { display: grid; gap: 4px; }.base-fare small, .base-fare span { font-size: 10px; color: var(--muted); }.base-fare strong { font-size: 18px; color: var(--ocean); white-space: nowrap; }
-.vessel-fare h3 { margin: 0 0 8px; font-size: 11px; color: var(--muted); font-weight: 500; }
-.discount-list { display: flex; flex-wrap: wrap; gap: 5px; }.fare-discount { display: inline-flex; gap: 5px; align-items: center; flex-wrap: wrap; border: 1px solid var(--line); border-radius: 6px; padding: 4px 6px; font-size: 10px; background: var(--surface-soft); }.fare-discount b { color: var(--ocean); }.fare-discount.inactive { color: var(--muted); border-style: dashed; }.fare-discount small { font-size: 9px; }
-.accommodation-charge { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 5px; margin-top: 6px; font-size: 11px; line-height: 1.5; }.accommodation-charge b { font-weight: 600; color: var(--ocean); }.fare-accommodations > span,.fare-discounts p { font-size: 11px; color: var(--muted); }
+.base-fare { display: grid; gap: 4px; }.base-fare small, .base-fare span { font-size: var(--text-caption); color: var(--muted); }.base-fare strong { font-size: 18px; color: var(--ocean); white-space: nowrap; }
+.vessel-fare h3 { margin: 0 0 8px; font-size: var(--text-caption); color: var(--muted); font-weight: 500; }
+.discount-list { display: flex; flex-wrap: wrap; gap: 5px; }.fare-discount { display: inline-flex; gap: 5px; align-items: center; flex-wrap: wrap; border: 1px solid var(--line); border-radius: 6px; padding: 4px 6px; font-size: var(--text-caption); background: var(--surface-soft); }.fare-discount b { color: var(--ocean); }.fare-discount.inactive { color: var(--muted); border-style: dashed; }.fare-discount small { font-size: var(--text-caption); }
+.accommodation-charge { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 5px; margin-top: 6px; font-size: var(--text-caption); line-height: 1.5; }.accommodation-charge b { font-weight: 600; color: var(--ocean); }.fare-accommodations > span,.fare-discounts p { font-size: var(--text-caption); color: var(--muted); }
 .fare-footnote { display: flex; align-items: flex-start; gap: 7px; }.fare-footnote .app-icon { flex: none; margin-top: 2px; color: var(--ocean); }
-.fare-empty { padding: 24px; text-align: center; border: 1px dashed var(--line); border-radius: 12px; color: var(--muted); font-size: 12px; }
+.fare-empty { padding: 24px; text-align: center; border: 1px dashed var(--line); border-radius: 12px; color: var(--muted); font-size: var(--text-label); }
 @media(max-width:1200px) { .vessel-fare { grid-template-columns: minmax(0, 1fr) 130px; }.fare-discounts { grid-column: 1; }.fare-accommodations { grid-column: 2; } }
 @media(max-width:800px) { .fare-directory .reference-content { padding: 20px 16px 28px; } }
 @media(max-width:480px) { .vessel-fare { padding: 12px; gap: 12px; grid-template-columns: minmax(0, 1fr) 100px; }.base-fare strong { font-size: 16px; }.fare-discounts, .fare-accommodations { grid-column: 1 / -1; }.fare-toolbar input { flex-basis: 100%; }.fare-toolbar > span { margin-left: auto; } }
@@ -755,7 +757,7 @@ button {
 .schedule-directory .reference-heading { margin-bottom: 16px; }.schedule-directory .reference-heading h1 { font-size: 27px; }
 .schedule-directory .catalog-table { border-radius: 12px; }
 .schedule-directory .reference-filters { background: var(--surface); border-radius: 12px; gap: 9px; }
-.schedule-directory .reference-filters input { font-size: 12px; }.schedule-directory .reference-filters select { font-size: 12px; }
+.schedule-directory .reference-filters input { font-size: var(--text-label); }.schedule-directory .reference-filters select { font-size: var(--text-label); }
 @media(min-width:1180px) {
  .schedule-directory .reference-content:has(> .weather-trip-picker) { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr); gap: 16px; align-items: start; }
  .schedule-directory .reference-content > .reference-heading, .schedule-directory .reference-content > .catalog-error, .schedule-directory .reference-content > .catalog-table, .schedule-directory .reference-content > :deep(.workspace-pagination) { grid-column: 1 / -1; }
@@ -765,7 +767,7 @@ button {
  .schedule-directory .reference-filters input { grid-column: 1 / -1; }
  .schedule-directory .reference-filters select { width: 100%; }
  .schedule-directory .reference-filters button { padding: 8px 11px; }
- .schedule-directory .reference-filters .directory-search-help { font-size: 10px; }
+ .schedule-directory .reference-filters .directory-search-help { font-size: var(--text-caption); }
  .schedule-directory .reference-content > :deep(.workspace-pagination) { margin-top: -16px; }
 }
 </style>

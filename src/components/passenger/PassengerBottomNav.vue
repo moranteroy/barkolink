@@ -88,7 +88,7 @@ function navigateTab(event: MouseEvent, path: string) {
   gap: 4px;
   color: #98a2b3;
   text-decoration: none;
-  font-size: 10px;
+  font-size: var(--text-caption);
   font-weight: 700;
   white-space: nowrap;
 }

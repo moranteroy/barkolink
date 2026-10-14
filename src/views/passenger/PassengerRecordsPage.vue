@@ -113,7 +113,7 @@
                       :icon="checkmarkCircleOutline"
                       aria-hidden="true"
                     />
-                    {{ person.ticketStatus }}</b
+                    {{ statusLabel(person.ticketStatus || "ISSUED") }}</b
                   >
                 </div>
                 <div
@@ -378,14 +378,14 @@
               </h2>
               <b class="detail-status" :class="[currentBooking.status.toLowerCase(), currentBooking.paymentStatus.toLowerCase()]">{{
                 currentBooking.paymentStatus === "REFUND_PENDING"
-                  ? "REFUND PENDING"
+                  ? "Refund pending"
                   : currentBooking.paymentStatus === "REFUNDED"
-                    ? "REFUNDED"
+                    ? "Refunded"
                     : ["CANCELLED", "EXPIRED"].includes(currentBooking.status)
-                      ? currentBooking.status
+                      ? statusLabel(currentBooking.status)
                       : currentBooking.paymentStatus === "PAID"
-                        ? awaitingPaymentVerification(currentBooking) ? "AWAITING STAFF VERIFICATION" : "PAID"
-                        : "PAYMENT PENDING"
+                        ? awaitingPaymentVerification(currentBooking) ? "Awaiting verification" : "Paid"
+                        : "Awaiting payment"
               }}</b>
             </div>
             <p class="detail-reference">
@@ -562,6 +562,8 @@
   ></ion-page>
 </template>
 <script setup lang="ts">
+import { notifyError, notifySuccess } from '@/composables/toast';
+import { statusLabel } from "../../data/statusPresentation";
 import { Button } from "@/components/ui/button";
 import { confirmAction } from "../../composables/confirmation";
 import PaymentDeadline from "../../components/passenger/PaymentDeadline.vue";
@@ -708,14 +710,15 @@ async function markAllRead() {
   noticeError.value = "";
   try {
     await markAllNotificationsRead(database);
+    notifySuccess('All notifications marked as read.');
     clearNotificationUnread(undefined, uid);
     notices.value.forEach(notice => { notice.unread = false; });
 
   } catch (cause) {
-    noticeError.value = databaseRequestError(
+    noticeError.value = notifyError(databaseRequestError(
       cause,
       "Could not mark notifications read.",
-    );
+    ));
   } finally {
     noticeBusy.value = false;
   }
@@ -971,10 +974,10 @@ async function loadData() {
       };
     }
   } catch (error) {
-    loadError.value = databaseRequestError(
+    loadError.value = notifyError(databaseRequestError(
       error,
       "Could not load account data.",
-    );
+    ));
   } finally {
     loading.value = false;
   }
@@ -1016,13 +1019,14 @@ async function cancel(reference: string) {
       sailingCode: item.sailingCode,
       passengerCount: item.passengerCount,
     });
+    notifySuccess('Reservation cancelled.');
     await loadData();
     selectedTab.value = "Cancelled";
   } catch (error) {
-    loadError.value = databaseRequestError(
+    loadError.value = notifyError(databaseRequestError(
       error,
       "Could not cancel reservation.",
-    );
+    ));
   }
 }
 function notificationCategoryLabel(category: string) {
@@ -1048,7 +1052,7 @@ async function markNotice(notice: { id: string; unread: boolean }) {
     notice.unread = false;
     clearNotificationUnread(notice.id, uid);
   } catch (error) {
-    noticeError.value = databaseRequestError(error, 'Could not update notification. Try marking it read again.');
+    noticeError.value = notifyError(databaseRequestError(error, 'Could not update notification. Try marking it read again.'));
   } finally {
     noticeUpdating.value = '';
   }
@@ -1061,9 +1065,10 @@ async function saveProfile() {
       phone: profile.value.phone || null,
     });
     saved.value = true;
+    notifySuccess('Profile saved.');
     window.setTimeout(() => (saved.value = false), 1800);
   } catch (error) {
-    loadError.value = databaseRequestError(error, "Could not save profile.");
+    loadError.value = notifyError(databaseRequestError(error, "Could not save profile."));
   }
 }
 </script>
@@ -1089,7 +1094,7 @@ async function saveProfile() {
 .role-link,
 .settings-link {
   color: var(--ocean);
-  font-size: 12px;
+  font-size: var(--text-label);
   font-weight: 700;
   text-decoration: none;
 }
@@ -1110,7 +1115,7 @@ async function saveProfile() {
 .kicker {
   margin: 0;
   color: var(--ocean);
-  font-size: 10px;
+  font-size: var(--text-caption);
   font-weight: 800;
   letter-spacing: 0.12em;
 }
@@ -1169,7 +1174,7 @@ async function saveProfile() {
 .detail-reference {
   margin: 7px 0 16px;
   color: var(--muted);
-  font-size: 11px;
+  font-size: var(--text-caption);
 }
 .detail-passengers {
   margin-top: 20px;
@@ -1192,7 +1197,7 @@ async function saveProfile() {
 }
 .detail-passengers small {
   color: var(--muted);
-  font-size: 10px;
+  font-size: var(--text-caption);
 }
 .detail-actions {
   display: flex;
@@ -1238,7 +1243,7 @@ async function saveProfile() {
   border-radius: 6px;
   background: #e6f7ef;
   color: #117a52;
-  font-size: 9px;
+  font-size: var(--text-caption);
 }
 .row-heading > b.completed {
   background: #edf1f5;
@@ -1251,11 +1256,11 @@ async function saveProfile() {
 .booking-copy p {
   margin: 5px 0;
   color: var(--muted);
-  font-size: 12px;
+  font-size: var(--text-label);
 }
 .booking-copy > small {
   color: var(--muted);
-  font-size: 10px;
+  font-size: var(--text-caption);
 }
 .booking-actions {
   display: flex;
@@ -1268,7 +1273,7 @@ async function saveProfile() {
   border: 0;
   background: none;
   color: var(--ocean);
-  font-size: 11px;
+  font-size: var(--text-caption);
   font-weight: 800;
   text-decoration: none;
   cursor: pointer;
@@ -1323,7 +1328,7 @@ async function saveProfile() {
 }
 .ticket-head small {
   color: #9cc9e3;
-  font-size: 9px;
+  font-size: var(--text-caption);
   letter-spacing: 0.1em;
 }
 .ticket-head h2 {
@@ -1338,7 +1343,7 @@ async function saveProfile() {
   border-radius: 6px;
   background: #dff5ec;
   color: #13764d;
-  font-size: 9px;
+  font-size: var(--text-caption);
 }
 .ticket-meta {
   display: grid;
@@ -1353,12 +1358,12 @@ async function saveProfile() {
 }
 .ticket-meta small {
   color: var(--muted);
-  font-size: 9px;
+  font-size: var(--text-caption);
   font-weight: 800;
 }
 .ticket-meta strong {
   margin-top: 6px;
-  font-size: 11px;
+  font-size: var(--text-caption);
 }
 .ticket-passengers {
   padding: 18px 24px;
@@ -1382,7 +1387,7 @@ async function saveProfile() {
   border-radius: 50%;
   background: var(--light-blue);
   color: var(--ocean);
-  font-size: 10px;
+  font-size: var(--text-caption);
   font-weight: 800;
 }
 .ticket-person > div {
@@ -1393,16 +1398,16 @@ async function saveProfile() {
   display: block;
 }
 .ticket-person strong {
-  font-size: 12px;
+  font-size: var(--text-label);
 }
 .ticket-person small {
   margin-top: 3px;
   color: var(--muted);
-  font-size: 10px;
+  font-size: var(--text-caption);
 }
 .ticket-person > b {
   color: #13764d;
-  font-size: 9px;
+  font-size: var(--text-caption);
 }
 .ticket-foot {
   display: flex;
@@ -1414,7 +1419,7 @@ async function saveProfile() {
 .ticket-foot p {
   max-width: 330px;
   color: var(--muted);
-  font-size: 11px;
+  font-size: var(--text-caption);
   line-height: 1.5;
 }
 .fake-qr {
@@ -1451,17 +1456,17 @@ async function saveProfile() {
 .notifications p {
   margin: 4px 0;
   color: var(--muted);
-  font-size: 11px;
+  font-size: var(--text-caption);
 }
 .notifications small {
   color: var(--muted);
-  font-size: 10px;
+  font-size: var(--text-caption);
 }
 .notifications button {
   border: 0;
   background: none;
   color: var(--ocean);
-  font-size: 10px;
+  font-size: var(--text-caption);
   font-weight: 700;
   cursor: pointer;
 }
@@ -1482,7 +1487,7 @@ async function saveProfile() {
 .profile-card > p {
   margin: 5px 0 20px;
   color: var(--muted);
-  font-size: 12px;
+  font-size: var(--text-label);
 }
 .profile-card form {
   display: grid;
@@ -1492,7 +1497,7 @@ async function saveProfile() {
 .profile-card label {
   display: grid;
   gap: 6px;
-  font-size: 11px;
+  font-size: var(--text-caption);
   font-weight: 700;
 }
 .profile-card input {
@@ -1512,7 +1517,7 @@ async function saveProfile() {
 .prototype-note {
   margin-top: 18px;
   color: var(--muted);
-  font-size: 10px;
+  font-size: var(--text-caption);
   text-align: center;
 }
 @container passenger (max-width:620px) {
@@ -1533,7 +1538,7 @@ async function saveProfile() {
     font-size: 28px;
   }
   .role-link {
-    font-size: 10px;
+    font-size: var(--text-caption);
   }
   .booking-card {
     padding: 14px;
@@ -1563,7 +1568,7 @@ async function saveProfile() {
     gap: 15px;
   }
   .tabs button {
-    font-size: 11px;
+    font-size: var(--text-caption);
   }
 }
 .ticket-title {
@@ -1672,7 +1677,7 @@ async function saveProfile() {
     padding: 16px;
   }
   .ticket-meta strong {
-    font-size: 11px;
+    font-size: var(--text-caption);
   }
   .ticket-passengers {
     padding: 16px;
@@ -1683,7 +1688,7 @@ async function saveProfile() {
   }
   .ticket-foot p {
     margin: 0;
-    font-size: 10px;
+    font-size: var(--text-caption);
   }
   .ticket-code {
     width: 66px;
@@ -1748,13 +1753,13 @@ async function saveProfile() {
   flex-wrap: wrap;
   gap: 8px 18px;
   color: var(--muted);
-  font-size: 11px;
+  font-size: var(--text-caption);
 }
 .booking-meta {
   margin: 9px 0 6px;
 }
 .booking-reference {
-  font-size: 10px;
+  font-size: var(--text-caption);
 }
 .booking-meta span,
 .booking-reference span {
@@ -1815,14 +1820,14 @@ async function saveProfile() {
   .booking-meta,
   .booking-reference {
     gap: 7px 12px;
-    font-size: 10px;
+    font-size: var(--text-caption);
   }
   .booking-actions {
     gap: 11px 15px;
   }
   .booking-actions a,
   .booking-actions button {
-    font-size: 10px;
+    font-size: var(--text-caption);
   }
 }
 .notifications {
@@ -1876,7 +1881,7 @@ async function saveProfile() {
   border-radius: 8px;
   background: var(--light-blue);
   color: var(--ocean);
-  font-size: 10px;
+  font-size: var(--text-caption);
   font-weight: 800;
   white-space: nowrap;
 }
@@ -1934,7 +1939,7 @@ async function saveProfile() {
 .profile-kicker {
   margin: 0 0 6px !important;
   color: var(--ocean) !important;
-  font-size: 9px !important;
+  font-size: var(--text-caption) !important;
   font-weight: 800;
   letter-spacing: 0.12em;
 }
@@ -1944,7 +1949,7 @@ async function saveProfile() {
 .profile-identity > p:last-child {
   margin: 5px 0 0;
   color: var(--muted);
-  font-size: 12px;
+  font-size: var(--text-label);
 }
 .profile-card form {
   gap: 16px;
@@ -1957,7 +1962,7 @@ async function saveProfile() {
   align-items: center;
   gap: 7px;
   color: var(--muted);
-  font-size: 11px;
+  font-size: var(--text-caption);
   font-weight: 700;
 }
 .field-label .app-icon {
@@ -1973,7 +1978,7 @@ async function saveProfile() {
   background: var(--surface-soft);
   color: var(--ink);
   font: inherit;
-  font-size: 12px;
+  font-size: var(--text-label);
 }
 .profile-card input:focus {
   outline: 2px solid color-mix(in srgb, var(--ocean) 35%, transparent);
@@ -1993,7 +1998,7 @@ async function saveProfile() {
   padding: 11px 8px;
   border-top: 1px solid var(--line);
   color: var(--ocean);
-  font-size: 11px;
+  font-size: var(--text-caption);
 }
 .settings-link .app-icon {
   font-size: 15px;
@@ -2090,7 +2095,7 @@ async function saveProfile() {
 .qr-block small {
   display: block;
   color: var(--ocean);
-  font-size: 9px;
+  font-size: var(--text-caption);
   font-weight: 800;
   letter-spacing: 0.08em;
 }
@@ -2098,19 +2103,19 @@ async function saveProfile() {
   display: block;
   margin-top: 8px;
   color: var(--ink);
-  font-size: 11px;
+  font-size: var(--text-caption);
   overflow-wrap: anywhere;
 }
 .qr-block p {
   margin: 8px 0 0;
   color: var(--muted);
-  font-size: 10px;
+  font-size: var(--text-caption);
   line-height: 1.45;
 }
 .qr-unavailable {
   display: block;
   color: #a65530;
-  font-size: 11px;
+  font-size: var(--text-caption);
   line-height: 1.5;
 }
 .ticket-picker {
@@ -2138,11 +2143,11 @@ async function saveProfile() {
   background: var(--light-blue);
 }
 .ticket-picker strong {
-  font-size: 11px;
+  font-size: var(--text-caption);
 }
 .ticket-picker small {
   color: var(--muted);
-  font-size: 9px;
+  font-size: var(--text-caption);
 }
 @container passenger (max-width:480px) {
   .qr-block {
@@ -2160,7 +2165,7 @@ async function saveProfile() {
 .payment-hint {
   display: block;
   color: var(--muted);
-  font-size: 11px;
+  font-size: var(--text-caption);
   font-weight: 700;
   margin: 8px 0;
 }
@@ -2197,7 +2202,7 @@ async function saveProfile() {
   border-radius: 7px;
   background: var(--light-blue);
   color: var(--ocean);
-  font-size: 10px;
+  font-size: var(--text-caption);
   font-weight: 800;
 }
 .booking-detail-card .booking-meta {
@@ -2211,7 +2216,7 @@ async function saveProfile() {
 .booking-detail-card .booking-meta span {
   align-items: flex-start;
   color: var(--ink);
-  font-size: 11px;
+  font-size: var(--text-caption);
   line-height: 1.45;
 }
 .booking-detail-card .detail-passengers {
@@ -2263,7 +2268,7 @@ async function saveProfile() {
 }
 .notification-toolbar {
   justify-content: space-between;
-  font-size: 12px;
+  font-size: var(--text-label);
 }
 .notification-toolbar button,
 .ticket-actions button,
@@ -2283,7 +2288,7 @@ async function saveProfile() {
   margin-bottom: 18px;
 }
 .notification-filters button {
-  font-size: 10px;
+  font-size: var(--text-caption);
   white-space: nowrap;
 }
 .notification-filters .active {
@@ -2302,7 +2307,7 @@ button:disabled {
 .booking-filters label {
   display: grid;
   gap: 7px;
-  font-size: 11px;
+  font-size: var(--text-caption);
   font-weight: 700;
   color: var(--muted);
 }
@@ -2338,22 +2343,22 @@ button:disabled {
 .booking-detail-card .row-heading { display: flex; flex-direction: column; align-items: flex-start; gap: 12px; padding: 0; }
 .booking-detail-card .row-heading h2 { font-size: 22px; line-height: 1.5; }
 .booking-detail-card .row-heading h2 span { margin-inline: 5px; }
-.booking-detail-card .row-heading > .detail-status { padding: 5px 9px; border-radius: 6px; font-size: 10px; line-height: 1.5; letter-spacing: .025em; }
+.booking-detail-card .row-heading > .detail-status { padding: 5px 9px; border-radius: 6px; font-size: var(--text-caption); line-height: 1.5; letter-spacing: .025em; }
 .booking-detail-card .detail-status.unpaid.pending { color: #8a5100; background: #fff0d5; }
 .booking-detail-card .detail-status.paid { color: var(--ocean); background: var(--light-blue); }
 .booking-detail-card .detail-reference { display: grid; gap: 5px; margin: 18px 0 0; padding: 0; border-radius: 0; background: none; font-weight: 400; }
-.booking-detail-card .detail-reference span { color: var(--muted); font-size: 11px; }
+.booking-detail-card .detail-reference span { color: var(--muted); font-size: var(--text-caption); }
 .booking-detail-card .detail-reference strong { color: var(--ink); font-size: 13px; line-height: 1.6; overflow-wrap: anywhere; }
 .booking-detail-card .booking-meta { margin: 20px 0 0; padding: 18px 0; border-top: 1px solid var(--line); gap: 16px; }
 .booking-detail-card .booking-meta > div { min-width: 0; }
-.booking-detail-card .booking-meta span { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--muted); }
+.booking-detail-card .booking-meta span { display: flex; align-items: center; gap: 6px; font-size: var(--text-caption); color: var(--muted); }
 .booking-detail-card .booking-meta strong { display: block; margin-top: 7px; color: var(--ink); font-size: 13px; line-height: 1.6; overflow-wrap: anywhere; }
 .detail-fares { margin-top: 20px; padding: 16px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface-soft); }
 .detail-fares h3, .booking-detail-card .detail-passengers h3 { margin: 0 0 14px; font-size: 14px; line-height: 1.5; color: var(--ink); }
-.detail-fares > div { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; margin-top: 12px; color: var(--muted); font-size: 12px; line-height: 1.6; }
+.detail-fares > div { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; margin-top: 12px; color: var(--muted); font-size: var(--text-label); line-height: 1.6; }
 .detail-fares > div > span { min-width: 0; overflow-wrap: anywhere; }
-.detail-fares b { flex: none; font-size: 12px; color: var(--ink); white-space: nowrap; }
-.detail-fares small { display: block; margin-top: 3px; color: var(--muted); font-size: 11px; }
+.detail-fares b { flex: none; font-size: var(--text-label); color: var(--ink); white-space: nowrap; }
+.detail-fares small { display: block; margin-top: 3px; color: var(--muted); font-size: var(--text-caption); }
 .detail-fares > .detail-fare-total { flex-wrap: wrap; align-items: center; margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--line); color: var(--ink); }
 .detail-fare-total strong:first-child { font-size: 13px; }
 .detail-fare-total strong:last-child { font-size: 22px; line-height: 1.4; white-space: nowrap; }
@@ -2361,18 +2366,18 @@ button:disabled {
 .booking-detail-card .detail-passengers > div { display: grid; grid-template-columns: 34px minmax(0, 1fr) auto; align-items: start; gap: 10px; padding: 14px 0; }
 .booking-detail-card .detail-passengers > div > span:nth-child(2) { min-width: 0; overflow-wrap: anywhere; }
 .booking-detail-card .detail-passengers strong { display: block; font-size: 14px; line-height: 1.5; }
-.booking-detail-card .detail-passengers small { display: block; margin-top: 5px; font-size: 11px; line-height: 1.5; }
-.detail-person-fare { text-align: right; white-space: nowrap; color: var(--ink); font-size: 12px; line-height: 1.5; }
+.booking-detail-card .detail-passengers small { display: block; margin-top: 5px; font-size: var(--text-caption); line-height: 1.5; }
+.detail-person-fare { text-align: right; white-space: nowrap; color: var(--ink); font-size: var(--text-label); line-height: 1.5; }
 .detail-person-fare small { font-weight: 400; }
 .detail-payment { margin-top: 20px; }
-.detail-payment > p { margin: 12px 0 0; color: var(--muted); font-size: 12px; line-height: 1.8; }
+.detail-payment > p { margin: 12px 0 0; color: var(--muted); font-size: var(--text-label); line-height: 1.8; }
 .detail-payment > h3 { font-size: 14px; color: var(--ink); }
 .detail-payment :deep(.deadline) { display: grid; grid-template-columns: 24px minmax(0, 1fr); align-items: start; gap: 10px; margin: 0; padding: 16px; }
 .detail-payment :deep(.deadline div) { min-width: 0; }
 .detail-payment :deep(.deadline strong) { font-size: 13px; line-height: 1.5; }
-.detail-payment :deep(.deadline small) { font-size: 12px; line-height: 1.6; }
+.detail-payment :deep(.deadline small) { font-size: var(--text-label); line-height: 1.6; }
 .detail-payment :deep(.deadline b) { grid-column: 2; margin: 0; font-size: 15px; line-height: 1.5; }
-.detail-payment :deep(.deadline b)::before { content: 'Time left · '; font-size: 11px; font-weight: 400; }
+.detail-payment :deep(.deadline b)::before { content: 'Time left · '; font-size: var(--text-caption); font-weight: 400; }
 .booking-detail-card .payment-hint { margin: 16px 0 0; font-size: 13px; line-height: 1.7; }
 .booking-detail-card .detail-actions { margin: 24px 0 0; padding-top: 18px; gap: 10px; }
 .booking-detail-card .detail-actions ion-button { margin: 0; min-height: 46px; font-size: 13px; }
@@ -2390,12 +2395,12 @@ button:disabled {
 .bookings-page .page-title { margin: 24px 0 20px; }
 .bookings-page .page-title h1 { font-size: 26px; line-height: 1.3; }
 .bookings-page .booking-filters { grid-template-columns: minmax(0, 1fr); gap: 12px; margin: 0 0 18px; }
-.bookings-page .booking-filters label { min-width: 0; font-size: 11px; font-weight: 600; }
+.bookings-page .booking-filters label { min-width: 0; font-size: var(--text-caption); font-weight: 600; }
 .bookings-page .booking-filters label:last-child { grid-template-columns: minmax(0, 1fr); gap: 7px; }
 .bookings-page .booking-filters input, .bookings-page .booking-filters select { min-width: 0; min-height: 44px; border-radius: 10px; font-size: 14px; }
-.bookings-page .booking-filters input::placeholder { font-size: 12px; font-weight: 400; }
+.bookings-page .booking-filters input::placeholder { font-size: var(--text-label); font-weight: 400; }
 .bookings-page .tabs { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px; margin: 0 0 18px; padding: 4px; border: 1px solid var(--line); border-radius: 11px; background: var(--surface-soft); overflow: visible; }
-.bookings-page .tabs button { min-width: 0; min-height: 44px; padding: 7px 4px; border: 0; border-radius: 7px; background: transparent; color: var(--muted); font-size: 11px; font-weight: 600; line-height: 1.5; white-space: normal; }
+.bookings-page .tabs button { min-width: 0; min-height: 44px; padding: 7px 4px; border: 0; border-radius: 7px; background: transparent; color: var(--muted); font-size: var(--text-caption); font-weight: 600; line-height: 1.5; white-space: normal; }
 .bookings-page .tabs button.selected { background: var(--action); color: #fff; border: 0; }
 .bookings-page .booking-list { gap: 16px; }
 .bookings-page .booking-card { display: block; padding: 18px; border-radius: 15px; background: var(--surface); }
@@ -2403,38 +2408,38 @@ button:disabled {
 .bookings-page .booking-card .row-heading { display: flex; flex-direction: column; align-items: flex-start; gap: 10px; margin: 0; }
 .bookings-page .booking-card .row-heading h2 { margin: 0; font-size: 18px; line-height: 1.5; font-weight: 650; overflow-wrap: anywhere; }
 .bookings-page .booking-card .row-heading h2 span { display: inline; margin-inline: 4px; color: var(--ocean); }
-.bookings-page .booking-card .row-heading > b { padding: 5px 9px; border-radius: 7px; font-size: 10px; line-height: 1.5; letter-spacing: .02em; }
+.bookings-page .booking-card .row-heading > b { padding: 5px 9px; border-radius: 7px; font-size: var(--text-caption); line-height: 1.5; letter-spacing: .02em; }
 .bookings-page .row-heading > b.unpaid { background: #fff0d5; color: #8a5100; }
 .bookings-page .row-heading > b.paid { background: var(--light-blue); color: var(--ocean); }
 .bookings-page .row-heading > b.cancelled, .bookings-page .row-heading > b.expired { background: var(--surface-soft); color: var(--muted); }
 .bookings-page .row-heading > b.refund_pending { background: #fff0d5; color: #8a5100; }
 .bookings-page .booking-meta { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 10px; margin: 16px 0; }
-.bookings-page .booking-meta span { display: flex; align-items: flex-start; gap: 6px; min-width: 0; color: var(--muted); font-size: 11px; line-height: 1.7; overflow-wrap: anywhere; }
+.bookings-page .booking-meta span { display: flex; align-items: flex-start; gap: 6px; min-width: 0; color: var(--muted); font-size: var(--text-caption); line-height: 1.7; overflow-wrap: anywhere; }
 .bookings-page .booking-meta .app-icon { flex: none; margin-top: 3px; color: var(--ocean); font-size: 15px; }
 .bookings-page .booking-fare-panel { padding: 13px 14px; border: 1px solid var(--line); border-radius: 11px; background: var(--surface-soft); }
 .bookings-page .booking-total { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px 14px; }
-.bookings-page .booking-total span { color: var(--muted); font-size: 12px; }
+.bookings-page .booking-total span { color: var(--muted); font-size: var(--text-label); }
 .bookings-page .booking-total strong { color: var(--ink); font-size: 21px; line-height: 1.4; white-space: nowrap; }
-.bookings-page .booking-accommodation { margin: 8px 0 0; color: var(--muted); font-size: 11px; line-height: 1.7; }
+.bookings-page .booking-accommodation { margin: 8px 0 0; color: var(--muted); font-size: var(--text-caption); line-height: 1.7; }
 .bookings-page .booking-reference { display: flex; flex-wrap: wrap; gap: 8px 16px; margin: 16px 0; color: var(--muted); }
-.bookings-page .booking-reference span { display: inline-flex; align-items: center; gap: 6px; min-width: 0; font-size: 11px; line-height: 1.6; overflow-wrap: anywhere; }
+.bookings-page .booking-reference span { display: inline-flex; align-items: center; gap: 6px; min-width: 0; font-size: var(--text-caption); line-height: 1.6; overflow-wrap: anywhere; }
 .bookings-page .booking-reference .app-icon { flex: none; color: var(--ocean); font-size: 15px; }
 .bookings-page .booking-card :deep(.deadline) { display: grid; grid-template-columns: 22px minmax(0, 1fr); gap: 8px 10px; margin: 16px 0; padding: 14px; }
 .bookings-page .booking-card :deep(.deadline > .app-icon) { align-self: start; font-size: 21px; }
-.bookings-page .booking-card :deep(.deadline strong) { font-size: 12px; line-height: 1.5; }
-.bookings-page .booking-card :deep(.deadline small) { font-size: 11px; line-height: 1.6; }
+.bookings-page .booking-card :deep(.deadline strong) { font-size: var(--text-label); line-height: 1.5; }
+.bookings-page .booking-card :deep(.deadline small) { font-size: var(--text-caption); line-height: 1.6; }
 .bookings-page .booking-card :deep(.deadline > b) { grid-column: 2; margin: 0; font-size: 14px; line-height: 1.5; }
-.bookings-page .booking-card :deep(.deadline > b)::before { content: 'Time left · '; font-size: 11px; font-weight: 400; }
+.bookings-page .booking-card :deep(.deadline > b)::before { content: 'Time left · '; font-size: var(--text-caption); font-weight: 400; }
 .bookings-page .booking-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--line); }
-.bookings-page .booking-actions a, .bookings-page .booking-actions button { display: inline-flex; align-items: center; justify-content: center; gap: 7px; min-height: 44px; padding: 10px; border: 1px solid var(--line); border-radius: 9px; background: var(--surface); color: var(--ocean); font-size: 12px; font-weight: 600; line-height: 1.5; text-align: center; }
+.bookings-page .booking-actions a, .bookings-page .booking-actions button { display: inline-flex; align-items: center; justify-content: center; gap: 7px; min-height: 44px; padding: 10px; border: 1px solid var(--line); border-radius: 9px; background: var(--surface); color: var(--ocean); font-size: var(--text-label); font-weight: 600; line-height: 1.5; text-align: center; }
 .bookings-page .booking-actions a .app-icon { font-size: 17px; flex: none; }
 .bookings-page .booking-actions .booking-ticket-link { background: var(--action); color: #fff; border-color: transparent; }
-.bookings-page .booking-actions .booking-cancel-link { color: var(--danger); font-size: 11px; }
+.bookings-page .booking-actions .booking-cancel-link { color: var(--danger); font-size: var(--text-caption); }
 .bookings-page .booking-actions > :only-child { grid-column: 1 / -1; }
 @container passenger (max-width: 380px) {
   .bookings-page .booking-card { padding: 16px; }
   .bookings-page .booking-meta { grid-template-columns: minmax(0, 1fr); gap: 8px; }
-  .bookings-page .tabs button { font-size: 10px; }
+  .bookings-page .tabs button { font-size: var(--text-caption); }
   .bookings-page .booking-card .row-heading h2 { font-size: 17px; }
   .bookings-page .booking-actions { grid-template-columns: minmax(0, 1fr); }
 }
@@ -2444,7 +2449,7 @@ button:disabled {
 .bookings-page .filter-panel-heading { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 16px; }
 .bookings-page .filter-panel-heading > span { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 650; }
 .bookings-page .filter-panel-heading .app-icon { color: var(--ocean); font-size: 18px; }
-.bookings-page .filter-panel-heading small { color: var(--muted); font-size: 11px; }
+.bookings-page .filter-panel-heading small { color: var(--muted); font-size: var(--text-caption); }
 .bookings-page .booking-filters { margin-bottom: 0; }
 .bookings-page .booking-filters label > span { display: flex; align-items: center; gap: 6px; }
 .bookings-page .booking-filters label .app-icon { color: var(--ocean); font-size: 15px; }
@@ -2454,19 +2459,19 @@ button:disabled {
 .bookings-page .tabs button > .app-icon { font-size: 19px; color: var(--ocean); }
 .bookings-page .tabs button:nth-child(3) > .app-icon { color: #e47d86; }
 .bookings-page .tabs button:nth-child(4) > .app-icon { color: #dca948; }
-.bookings-page .tabs button small { display: grid; place-items: center; min-width: 22px; padding: 1px 6px; border-radius: 6px; background: var(--surface); font-size: 10px; }
+.bookings-page .tabs button small { display: grid; place-items: center; min-width: 22px; padding: 1px 6px; border-radius: 6px; background: var(--surface); font-size: var(--text-caption); }
 .bookings-page .tabs button.selected > .app-icon { color: #fff; }
 .bookings-page .tabs button.selected small { color: #fff; background: #ffffff24; }
 .bookings-page .tabs button:hover:not(.selected) { background: var(--light-blue); }
-.bookings-page .booking-results { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin: 0 0 14px; font-size: 12px; color: var(--muted); }
+.bookings-page .booking-results { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin: 0 0 14px; font-size: var(--text-label); color: var(--muted); }
 .bookings-page .booking-results strong { color: var(--ink); }
-.bookings-page .booking-results small { font-size: 10px; }
-.bookings-page .booking-results button { padding: 8px 0 8px 8px; border: 0; background: transparent; color: var(--ocean); font-size: 11px; }
+.bookings-page .booking-results small { font-size: var(--text-caption); }
+.bookings-page .booking-results button { padding: 8px 0 8px 8px; border: 0; background: transparent; color: var(--ocean); font-size: var(--text-caption); }
 .bookings-page .booking-card { border-radius: 18px; border-top: 3px solid color-mix(in srgb, var(--ocean) 55%, var(--line)); }
 .bookings-page .booking-card .row-heading h2 { display: grid; grid-template-columns: minmax(0, 1fr) 22px minmax(0, 1fr); gap: 8px; width: 100%; align-items: center; font-family: inherit; font-size: 18px; line-height: 1.4; }
 .bookings-page .booking-card .row-heading h2 span { margin: 0; }
 .bookings-page .booking-card .row-heading h2 .booking-port { color: var(--ink); }
-.bookings-page .booking-card .row-heading > .booking-status { display: inline-flex; align-items: center; gap: 6px; text-transform: none; letter-spacing: 0; font-family: inherit; font-size: 11px; font-weight: 600; }
+.bookings-page .booking-card .row-heading > .booking-status { display: inline-flex; align-items: center; gap: 6px; text-transform: none; letter-spacing: 0; font-family: inherit; font-size: var(--text-caption); font-weight: 600; }
 .bookings-page .booking-status .app-icon { font-size: 15px; flex: none; }
 .bookings-page .booking-status.warning { color: #895500; background: #fff0d3; }
 .bookings-page .booking-status.success { color: #13724e; background: #e2f6ec; }
@@ -2474,12 +2479,12 @@ button:disabled {
 .bookings-page .booking-status.neutral { color: var(--muted); background: var(--surface-soft); }
 .bookings-page .booking-schedule { display: grid; grid-template-columns: minmax(0, 1fr) 70px minmax(0, 1fr); gap: 10px; align-items: center; margin: 0 0 16px; padding: 14px 0; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
 .bookings-page .booking-schedule > div:last-child { text-align: right; }
-.bookings-page .booking-schedule small { display: block; margin-bottom: 5px; color: var(--muted); font-size: 10px; }
+.bookings-page .booking-schedule small { display: block; margin-bottom: 5px; color: var(--muted); font-size: var(--text-caption); }
 .bookings-page .booking-schedule strong { font-size: 16px; font-weight: 650; }
 .bookings-page .schedule-track { display: flex; align-items: center; gap: 6px; color: var(--ocean); }
 .bookings-page .schedule-track::before, .bookings-page .schedule-track::after { content: ''; flex: 1; height: 1px; background: var(--line); }
 .bookings-page .schedule-track .app-icon { font-size: 20px; }
-.bookings-page .booking-card .payment-hint { padding: 12px; border-radius: 10px; background: var(--light-blue); color: var(--ink); font-size: 11px; line-height: 1.7; font-weight: 400; }
+.bookings-page .booking-card .payment-hint { padding: 12px; border-radius: 10px; background: var(--light-blue); color: var(--ink); font-size: var(--text-caption); line-height: 1.7; font-weight: 400; }
 .bookings-page .empty-state { margin-top: 0; padding: 32px 20px; border: 1px solid var(--line); border-radius: 18px; background: radial-gradient(ellipse at top, var(--light-blue), var(--surface) 75%); }
 .bookings-page .empty-state h2 { font-family: inherit; font-size: 21px; }
 .bookings-page .empty-state p { max-width: 320px; margin: 12px auto 20px; font-size: 13px; line-height: 1.8; }
@@ -2502,20 +2507,20 @@ button:disabled {
 .notifications-page .notification-toolbar { display: grid; grid-template-columns: 44px minmax(0, 1fr); gap: 10px 12px; margin: 0 0 18px; padding: 18px; border: 1px solid var(--line); border-radius: 16px; background: linear-gradient(120deg, var(--light-blue), var(--surface)); }
 .notifications-page .inbox-icon { display: grid; place-items: center; width: 44px; height: 44px; border-radius: 13px; background: var(--surface); color: var(--ocean); font-size: 24px; }
 .notifications-page .notification-toolbar strong { font-size: 15px; line-height: 1.5; }
-.notifications-page .notification-toolbar p { margin: 4px 0 0; color: var(--muted); font-size: 11px; line-height: 1.7; }
-.notifications-page .notification-toolbar button { grid-column: 2; justify-self: start; display: inline-flex; align-items: center; gap: 6px; min-height: 44px; padding: 9px 12px; background: var(--surface); color: var(--ocean); border: 1px solid var(--line); border-radius: 9px; font: inherit; font-size: 12px; font-weight: 600; }
+.notifications-page .notification-toolbar p { margin: 4px 0 0; color: var(--muted); font-size: var(--text-caption); line-height: 1.7; }
+.notifications-page .notification-toolbar button { grid-column: 2; justify-self: start; display: inline-flex; align-items: center; gap: 6px; min-height: 44px; padding: 9px 12px; background: var(--surface); color: var(--ocean); border: 1px solid var(--line); border-radius: 9px; font: inherit; font-size: var(--text-label); font-weight: 600; }
 .notifications-page .notification-view { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 5px; padding: 5px; margin-bottom: 14px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface-soft); }
-.notifications-page .notification-view button { display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px; border: 0; border-radius: 8px; background: transparent; color: var(--muted); font: inherit; font-size: 12px; font-weight: 600; }
+.notifications-page .notification-view button { display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px; border: 0; border-radius: 8px; background: transparent; color: var(--muted); font: inherit; font-size: var(--text-label); font-weight: 600; }
 .notifications-page .notification-view button.selected { background: var(--action); color: #fff; }
-.notifications-page .notification-view small { display: grid; place-items: center; min-width: 22px; padding: 2px 5px; border-radius: 5px; background: var(--surface); font-size: 10px; }
+.notifications-page .notification-view small { display: grid; place-items: center; min-width: 22px; padding: 2px 5px; border-radius: 5px; background: var(--surface); font-size: var(--text-caption); }
 .notifications-page .notification-view .selected small { background: #ffffff26; }
 .notifications-page .notification-filters { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 18px; }
-.notifications-page .notification-filters button { display: inline-flex; align-items: center; gap: 6px; min-height: 40px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 9px; background: var(--surface); color: var(--muted); font: inherit; font-size: 11px; font-weight: 500; }
+.notifications-page .notification-filters button { display: inline-flex; align-items: center; gap: 6px; min-height: 40px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 9px; background: var(--surface); color: var(--muted); font: inherit; font-size: var(--text-caption); font-weight: 500; }
 .notifications-page .notification-filters .app-icon { font-size: 15px; color: var(--ocean); }
-.notifications-page .notification-filters small { font-size: 10px; color: inherit; }
+.notifications-page .notification-filters small { font-size: var(--text-caption); color: inherit; }
 .notifications-page .notification-filters .active { background: var(--light-blue); color: var(--ocean); border-color: var(--ocean); }
-.notifications-page .notification-results { display: flex; align-items: center; justify-content: space-between; margin: 0 0 12px; color: var(--muted); font-size: 11px; }
-.notifications-page .notification-results span { font-size: 10px; }
+.notifications-page .notification-results { display: flex; align-items: center; justify-content: space-between; margin: 0 0 12px; color: var(--muted); font-size: var(--text-caption); }
+.notifications-page .notification-results span { font-size: var(--text-caption); }
 .notifications-page .notifications { max-width: none; gap: 12px; }
 .notifications-page .notifications article { display: grid; grid-template-columns: 40px minmax(0, 1fr); align-items: start; gap: 12px; padding: 18px; border: 1px solid var(--line); border-radius: 16px; background: var(--surface); box-shadow: none; }
 .notifications-page .notifications article.unread { border-left: 3px solid var(--ocean); background: color-mix(in srgb, var(--light-blue) 25%, var(--surface)); }
@@ -2523,24 +2528,24 @@ button:disabled {
 .notifications-page .notice-icon.promo { color: #937100; background: #fff2c9; }
 .notifications-page .notice-icon.general, .notifications-page .notice-icon.system { color: #197767; background: #e1f4ed; }
 .notifications-page .notice-icon.trips { color: #8455bb; background: #f1e8ff; }
-.notifications-page .notice-eyebrow { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 6px; font-size: 10px; color: var(--muted); }
-.notifications-page .notice-eyebrow b { display: inline-flex; align-items: center; gap: 5px; color: var(--ocean); font-size: 10px; font-weight: 600; }
+.notifications-page .notice-eyebrow { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 6px; font-size: var(--text-caption); color: var(--muted); }
+.notifications-page .notice-eyebrow b { display: inline-flex; align-items: center; gap: 5px; color: var(--ocean); font-size: var(--text-caption); font-weight: 600; }
 .notifications-page .notice-eyebrow i { width: 5px; height: 5px; border-radius: 50%; background: var(--ocean); }
 .notifications-page .notice-copy h2 { margin: 0; font-size: 14px; line-height: 1.6; font-weight: 650; overflow-wrap: anywhere; }
-.notifications-page .notice-copy p { margin: 7px 0 12px; font-size: 12px; line-height: 1.8; }
+.notifications-page .notice-copy p { margin: 7px 0 12px; font-size: var(--text-label); line-height: 1.8; }
 .notifications-page .notice-footer { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 12px; padding-top: 10px; border-top: 1px solid var(--line); }
-.notifications-page .notice-footer time, .notifications-page .notice-read { display: inline-flex; align-items: center; gap: 5px; color: var(--muted); font-size: 10px; line-height: 1.7; }
+.notifications-page .notice-footer time, .notifications-page .notice-read { display: inline-flex; align-items: center; gap: 5px; color: var(--muted); font-size: var(--text-caption); line-height: 1.7; }
 .notifications-page .notice-footer .app-icon { flex: none; font-size: 14px; }
-.notifications-page .notice-footer button { margin: 0; min-height: 40px; padding: 8px 10px; font-size: 11px; font-weight: 600; }
+.notifications-page .notice-footer button { margin: 0; min-height: 40px; padding: 8px 10px; font-size: var(--text-caption); font-weight: 600; }
 .notifications-page .notice-read { margin-left: auto; }
 .notifications-page button { cursor: pointer; }
 .notifications-page button:disabled { opacity: .5; cursor: default; }
 .notifications-page button:focus-visible { outline: 2px solid var(--ocean); outline-offset: 3px; }
-.notifications-page .notice-error { padding: 12px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface); color: var(--danger); font-size: 12px; line-height: 1.7; }
+.notifications-page .notice-error { padding: 12px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface); color: var(--danger); font-size: var(--text-label); line-height: 1.7; }
 .notifications-page .empty-state { padding: 32px 20px; border: 1px solid var(--line); border-radius: 16px; background: var(--surface); }
 .notifications-page .empty-state h2 { font-family: inherit; font-size: 21px; }
-.notifications-page .empty-state p { font-size: 12px; line-height: 1.8; }
-.notifications-page .reset-notices { min-height: 44px; padding: 10px 14px; border: 1px solid var(--line); border-radius: 9px; background: var(--light-blue); color: var(--ocean); font: inherit; font-size: 12px; }
+.notifications-page .empty-state p { font-size: var(--text-label); line-height: 1.8; }
+.notifications-page .reset-notices { min-height: 44px; padding: 10px 14px; border: 1px solid var(--line); border-radius: 9px; background: var(--light-blue); color: var(--ocean); font: inherit; font-size: var(--text-label); }
 :global(:root[data-theme="dark"]) .notifications-page .notice-icon.promo { color: #f0ce75; background: #352d1a; }
 :global(:root[data-theme="dark"]) .notifications-page .notice-icon.general, :global(:root[data-theme="dark"]) .notifications-page .notice-icon.system { color: #74d7bd; background: #17372e; }
 :global(:root[data-theme="dark"]) .notifications-page .notice-icon.trips { color: #c6a3f4; background: #30213e; }
@@ -2554,39 +2559,39 @@ button:disabled {
 .ticket-page .page-title { margin: 28px 0 20px; }
 .ticket-page .page-title h1 { font-size: 28px; letter-spacing: -.7px; }
 .ticket-page .ticket-actions { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin: 0 0 18px; }
-.ticket-page .ticket-actions button { width: 100%; min-width: 0; min-height: 44px; padding: 9px 8px; gap: 6px; font-family: inherit; font-size: 11px; line-height: 1.4; white-space: normal; }
+.ticket-page .ticket-actions button { width: 100%; min-width: 0; min-height: 44px; padding: 9px 8px; gap: 6px; font-family: inherit; font-size: var(--text-caption); line-height: 1.4; white-space: normal; }
 .ticket-page .ticket-actions .app-icon { flex: none; font-size: 16px; }
 .ticket-page .ticket-picker { display: grid; gap: 9px; margin: 0 0 20px; overflow: visible; padding: 14px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); }
-.ticket-picker > span { display: flex; justify-content: space-between; gap: 10px; font-size: 12px; font-weight: 600; }
-.ticket-page .ticket-picker small { margin: 0; color: var(--muted); font-size: 10px; font-weight: 400; }
-.ticket-picker select { width: 100%; min-width: 0; min-height: 44px; padding: 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface-soft); color: var(--ink); font-family: inherit; font-size: 12px; text-overflow: ellipsis; }
+.ticket-picker > span { display: flex; justify-content: space-between; gap: 10px; font-size: var(--text-label); font-weight: 600; }
+.ticket-page .ticket-picker small { margin: 0; color: var(--muted); font-size: var(--text-caption); font-weight: 400; }
+.ticket-picker select { width: 100%; min-width: 0; min-height: 44px; padding: 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface-soft); color: var(--ink); font-family: inherit; font-size: var(--text-label); text-overflow: ellipsis; }
 .ticket-page .ticket { width: 100%; border-radius: 18px; background: var(--surface); }
 .ticket-page .ticket-head { position: relative; display: block; padding: 22px 20px; }
 .ticket-page .ticket-title { min-width: 0; }
-.ticket-page .ticket-title small { padding-right: 65px; font-size: 9px; line-height: 1.6; letter-spacing: .06em; flex-wrap: wrap; }
+.ticket-page .ticket-title small { padding-right: 65px; font-size: var(--text-caption); line-height: 1.6; letter-spacing: .06em; flex-wrap: wrap; }
 .ticket-page .ticket-head h2 { display: grid; grid-template-columns: minmax(0, 1fr) 22px minmax(0, 1fr); align-items: center; gap: 10px; margin-top: 18px; font-family: inherit; font-size: 20px; line-height: 1.5; font-weight: 700; overflow-wrap: anywhere; }
 .ticket-page .ticket-head h2 .route-port { color: inherit; }
 .ticket-page .ticket-head h2 .route-arrow { display: grid; place-items: center; }
-.ticket-page .ticket-head > b { position: absolute; top: 20px; right: 20px; display: inline-flex; align-items: center; gap: 4px; margin-top: 1px; padding: 6px 8px; font-size: 10px; font-weight: 600; white-space: nowrap; }
+.ticket-page .ticket-head > b { position: absolute; top: 20px; right: 20px; display: inline-flex; align-items: center; gap: 4px; margin-top: 1px; padding: 6px 8px; font-size: var(--text-caption); font-weight: 600; white-space: nowrap; }
 .ticket-page .ticket-head > b .app-icon { font-size: 14px; }
 .ticket-page .ticket-meta { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px 14px; padding: 20px; }
 .ticket-page .ticket-meta > div { min-width: 0; }
 .ticket-page .ticket-meta > div:last-child { grid-column: 1 / -1; }
-.ticket-page .ticket-meta small { font-size: 9px; letter-spacing: .04em; }
-.ticket-page .ticket-meta strong { font-family: inherit; font-size: 12px; line-height: 1.7; }
+.ticket-page .ticket-meta small { font-size: var(--text-caption); letter-spacing: .04em; }
+.ticket-page .ticket-meta strong { font-family: inherit; font-size: var(--text-label); line-height: 1.7; }
 .ticket-page .ticket-passengers { padding: 20px; }
 .ticket-page .ticket-passengers h3 { font-size: 14px; margin-bottom: 14px; }
 .ticket-page .ticket-pass { margin-top: 16px; padding-top: 4px; }
 .ticket-page .ticket-person { gap: 9px; padding: 14px 0; }
 .ticket-page .ticket-person strong { font-family: inherit; font-size: 13px; line-height: 1.6; }
-.ticket-page .ticket-person small { font-size: 11px; line-height: 1.6; text-transform: capitalize; }
-.ticket-page .ticket-person > b { font-size: 9px; }
+.ticket-page .ticket-person small { font-size: var(--text-caption); line-height: 1.6; text-transform: capitalize; }
+.ticket-page .ticket-person > b { font-size: var(--text-caption); }
 .ticket-page .qr-block { display: grid; grid-template-columns: minmax(0, 1fr); justify-items: center; gap: 16px; margin-top: 4px; padding: 20px 14px; border: 1px solid var(--line); border-radius: 14px; background: var(--surface-soft); text-align: center; }
 .ticket-page .qr-block img { width: 280px; height: 280px; max-width: 100%; padding: 10px; border-radius: 12px; background: white; object-fit: contain; }
 .ticket-page .qr-block > div { width: 100%; min-width: 0; }
-.ticket-page .qr-block small { color: var(--ocean); font-size: 10px; letter-spacing: .08em; font-weight: 600; }
-.ticket-page .qr-block code { display: block; margin: 10px 0; padding: 9px; border: 1px dashed var(--line); border-radius: 7px; color: var(--ink); font-size: 11px; line-height: 1.6; overflow-wrap: anywhere; }
-.ticket-page .qr-block p { max-width: 280px; margin: 0 auto; font-size: 12px; line-height: 1.7; color: var(--muted); }
+.ticket-page .qr-block small { color: var(--ocean); font-size: var(--text-caption); letter-spacing: .08em; font-weight: 600; }
+.ticket-page .qr-block code { display: block; margin: 10px 0; padding: 9px; border: 1px dashed var(--line); border-radius: 7px; color: var(--ink); font-size: var(--text-caption); line-height: 1.6; overflow-wrap: anywhere; }
+.ticket-page .qr-block p { max-width: 280px; margin: 0 auto; font-size: var(--text-label); line-height: 1.7; color: var(--muted); }
 @container passenger (max-width: 380px) {
   .ticket-page .ticket-head { padding: 18px 16px; gap: 8px; }
   .ticket-page .ticket-head h2 { font-size: 18px; }

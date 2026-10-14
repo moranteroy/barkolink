@@ -64,6 +64,7 @@
   </section>
 </template>
 <script setup lang="ts">
+import { notifyError, notifySuccess } from '@/composables/toast';
 import { confirmAction } from "../../composables/confirmation";
 import AppIcon from "@/components/ui/icon/AppIcon.vue";
 import { personRemoveOutline, searchOutline, checkmarkCircleOutline, peopleOutline, timeOutline } from "ionicons/icons";
@@ -125,7 +126,7 @@ async function load() {
     rows.value = r.data.passengers;
     sailing.value = r.data.sailing;
   } catch (e) {
-    error.value = databaseRequestError(e, "Could not load no-shows.");
+    error.value = notifyError(databaseRequestError(e, "Could not load no-shows."));
   } finally {
     loading.value = false;
   }
@@ -142,7 +143,7 @@ async function more() {
     sailingPage.value++;
     sailingTotal.value = r.data.totalCount;
   } catch (e) {
-    error.value = databaseRequestError(e, "Could not load trips.");
+    error.value = notifyError(databaseRequestError(e, "Could not load trips."));
   } finally {
     loading.value = false;
   }
@@ -162,9 +163,9 @@ async function mark(id?: string) {
   try {
     const r = await markNoShow(staffDatabase, code.value, id);
     await load();
-    notice.value = `${r.data.marked} no-show records added.`;
+    notice.value = notifySuccess(`${r.data.marked} no-show records added.`);
   } catch (e) {
-    error.value = databaseRequestError(e, "Could not record attendance.");
+    error.value = notifyError(databaseRequestError(e, "Could not record attendance."));
   } finally {
     busy.value = false;
   }
@@ -178,7 +179,7 @@ onMounted(async () => {
     if (!code.value) code.value = sailings.value[0]?.code || "";
     if (code.value) await load();
   } catch (e) {
-    error.value = databaseRequestError(e, "Could not load completed trips.");
+    error.value = notifyError(databaseRequestError(e, "Could not load completed trips."));
   }
 });
 </script>
@@ -191,18 +192,18 @@ onMounted(async () => {
 .no-show-symbol { width: 36px; height: 36px; font-size: 22px; }
 .no-show-empty-symbol { width: 40px; height: 40px; font-size: 24px; margin: 0 auto 12px; }
 .no-shows-panel h2 { font-size: 17px; margin: 0; color: var(--ink); line-height: 1.4; }
-.eyebrow { font-size: 10px; color: var(--ocean); font-weight: 800; letter-spacing: .1em; margin: 0 0 5px; }
+.eyebrow { font-size: var(--text-caption); color: var(--ocean); font-weight: 800; letter-spacing: .1em; margin: 0 0 5px; }
 .no-show-heading { display: flex; justify-content: space-between; align-items: center; gap: 16px; margin-bottom: 14px; }
-.no-show-intro > div > p:last-child { margin: 6px 0 0; color: var(--muted); font-size: 12px; line-height: 1.5; }
+.no-show-intro > div > p:last-child { margin: 6px 0 0; color: var(--muted); font-size: var(--text-label); line-height: 1.5; }
 .no-show-heading > button { flex: none; background: var(--light-blue); color: var(--ocean); font-weight: 600; }
 .no-show-picker-card > button { margin-top: 10px; }
-.catalog-picker, .no-show-search-label { display: grid; gap: 7px; min-width: 0; font-size: 12px; font-weight: 600; color: var(--muted); }
-.no-shows-panel select, .no-shows-panel input { box-sizing: border-box; width: 100%; min-width: 0; min-height: 40px; padding: 8px 12px; border: 1px solid var(--line); border-radius: 9px; background: var(--surface-soft); color: var(--ink); font: inherit; font-size: 12px; }
-.no-shows-panel button { min-height: 40px; padding: 8px 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); color: var(--ocean); font-family: inherit; font-size: 12px; cursor: pointer; }
+.catalog-picker, .no-show-search-label { display: grid; gap: 7px; min-width: 0; font-size: var(--text-label); font-weight: 600; color: var(--muted); }
+.no-shows-panel select, .no-shows-panel input { box-sizing: border-box; width: 100%; min-width: 0; min-height: 40px; padding: 8px 12px; border: 1px solid var(--line); border-radius: 9px; background: var(--surface-soft); color: var(--ink); font: inherit; font-size: var(--text-label); }
+.no-shows-panel button { min-height: 40px; padding: 8px 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); color: var(--ocean); font-family: inherit; font-size: var(--text-label); cursor: pointer; }
 .no-shows-panel button:disabled, .no-shows-panel select:disabled { opacity: .6; cursor: default; }
 .no-shows-panel button:focus-visible, .no-shows-panel select:focus-visible { outline: 2px solid var(--ocean); outline-offset: 2px; }
 .no-show-search { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: end; gap: 8px 12px; padding: 12px 16px; border: 1px solid var(--line); border-radius: 14px; background: var(--surface); }
-.no-show-search > span { grid-column: 1 / -1; color: var(--muted); font-size: 11px; line-height: 1.5; }
+.no-show-search > span { grid-column: 1 / -1; color: var(--muted); font-size: var(--text-caption); line-height: 1.5; }
 .no-show-search-input { display: flex; align-items: center; gap: 8px; padding-left: 12px; border: 1px solid var(--line); border-radius: 9px; background: var(--surface-soft); }
 .no-show-search-input .app-icon { font-size: 17px; flex: none; color: var(--muted); }
 .no-shows-panel .no-show-search-input input { border: 0; background: transparent; outline: none; }
@@ -211,24 +212,24 @@ onMounted(async () => {
 .no-show-counts > div { display: flex; align-items: center; gap: 10px; padding: 12px 16px; min-width: 0; }
 .no-show-counts > div + div { border-left: 1px solid var(--line); }
 .no-show-counts > div > div { display: grid; gap: 3px; min-width: 0; }
-.no-show-counts span { color: var(--muted); font-size: 11px; line-height: 1.5; }
+.no-show-counts span { color: var(--muted); font-size: var(--text-caption); line-height: 1.5; }
 .no-show-counts strong { font-size: 21px; line-height: 1.2; font-variant-numeric: tabular-nums; }
 .no-show-counts .count-icon { display: grid; place-items: center; width: 30px; height: 30px; flex: none; border-radius: 8px; background: var(--light-blue); color: var(--ocean); font-size: 18px; }
 .pending-count .count-icon { color: var(--muted); }
 .no-show-empty { padding: 22px 16px; text-align: center; border: 1px dashed var(--line); border-radius: 12px; background: var(--surface-soft); }
 .no-show-empty strong { font-size: 14px; }
-.no-show-empty p { margin: 6px 0 0; font-size: 12px; color: var(--muted); line-height: 1.5; }
+.no-show-empty p { margin: 6px 0 0; font-size: var(--text-label); color: var(--muted); line-height: 1.5; }
 .catalog-table { border: 1px solid var(--line); border-radius: 14px; background: var(--surface); overflow: hidden; min-width: 0; }
 .no-show-table-heading { padding: 14px 16px; border-bottom: 1px solid var(--line); }
 .catalog-table :deep(.grid-tools) { padding: 8px 16px; border-bottom: 1px solid var(--line); }
 .catalog-table :deep(.grid-tools button) { min-height: 34px; padding: 6px 8px; }
 .catalog-table :deep(.desktop-grid) { padding: 8px; }
-.catalog-table :deep(.grid-cell-content) { padding: 7px 0; font-size: 12px; line-height: 1.5; }
+.catalog-table :deep(.grid-cell-content) { padding: 7px 0; font-size: var(--text-label); line-height: 1.5; }
 .catalog-table :deep(.grid-row-actions) { display: flex; align-items: center; min-height: 44px; padding: 7px 0; }
-.no-shows-panel .mark-no-show { min-height: 32px; padding: 5px 9px; font-size: 11px; background: var(--light-blue); }
-.attendance-recorded { display: inline-flex; align-items: center; gap: 6px; color: var(--muted); font-size: 12px; white-space: nowrap; }
+.no-shows-panel .mark-no-show { min-height: 32px; padding: 5px 9px; font-size: var(--text-caption); background: var(--light-blue); }
+.attendance-recorded { display: inline-flex; align-items: center; gap: 6px; color: var(--muted); font-size: var(--text-label); white-space: nowrap; }
 .attendance-recorded .app-icon { color: var(--ocean); font-size: 16px; }
-.no-show-notice { padding: 10px 16px; margin: 0; border: 1px solid var(--line); border-radius: 10px; background: var(--light-blue); color: var(--ocean); font-size: 12px; }
+.no-show-notice { padding: 10px 16px; margin: 0; border: 1px solid var(--line); border-radius: 10px; background: var(--light-blue); color: var(--ocean); font-size: var(--text-label); }
 @media (max-width: 700px) {
   .no-show-heading { flex-direction: column; align-items: stretch; gap: 12px; }
   .no-show-counts > div { flex-direction: column; align-items: flex-start; gap: 6px; padding: 10px; }

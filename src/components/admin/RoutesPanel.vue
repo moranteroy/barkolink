@@ -19,7 +19,7 @@
           <div v-if="index === 0"><strong class="route-code">{{ value }}</strong></div>
           <strong v-else-if="index === 1 || index === 2" class="route-port-name">{{ value }}</strong>
           <span v-else-if="index === 3" class="route-duration"><AppIcon :icon="timeOutline" aria-hidden="true" />{{ value }}</span>
-          <Badge v-else :variant="row.source.isActive ? 'success' : 'destructive'">{{ value }}</Badge>
+          <Badge v-else :variant="row.source.isActive ? 'success' : 'destructive'">{{ statusLabel(String(value)) }}</Badge>
         </template>
         <template #actions="{ row }"><button v-if="row.source.referenceMetadata" type="button" class="route-edit" :aria-label="`View details for route ${row.source.code}`" @click="referenceRecord = row.source">Details</button><button type="button" class="route-edit" :disabled="busy" :aria-label="`Edit route ${row.source.code}`" @click="start(row.source)">Edit</button></template>
       </RecordsGrid>
@@ -49,6 +49,8 @@
   </section>
 </template>
 <script setup lang="ts">
+import { notifyError, notifySuccess } from '@/composables/toast';
+import { statusLabel } from "../../data/statusPresentation";
 import { durationHours, durationInput, parseDurationMinutes } from '../../data/duration';
 import FerryReferenceDetails from './FerryReferenceDetails.vue';
 import type { ReferenceRecord } from '../../data/ferryReferences';
@@ -135,7 +137,7 @@ async function load() {
     rows.value = r.data.routes;
     ports.value = p.data.ports.filter((p) => p.isActive);
   } catch (e) {
-    error.value = databaseRequestError(e, "Could not load routes.");
+    error.value = notifyError(databaseRequestError(e, "Could not load routes."));
   } finally {
     loading.value = false;
   }
@@ -161,9 +163,9 @@ async function save() {
     busy.value = false;
     editing.value = false;
     await load();
-    notice.value = "Route saved.";
+    notice.value = notifySuccess("Route saved.");
   } catch (e) {
-    formError.value = databaseRequestError(e, "Could not save route.");
+    formError.value = notifyError(databaseRequestError(e, "Could not save route."));
   } finally {
     busy.value = false;
   }
@@ -173,8 +175,8 @@ onMounted(load);
 <style scoped>
 .routes-workspace { display: grid; gap: 16px; min-width: 0; font-family: var(--ion-font-family); }
 .route-filters { display: grid; grid-template-columns: minmax(220px, 1fr) 150px 180px auto; align-items: end; gap: 12px; padding: 12px 16px; border: 1px solid var(--line); border-radius: 14px; background: var(--surface); }
-label { display: grid; gap: 8px; min-width: 0; font-size: 12px; font-weight: 600; color: var(--muted); }
-input:not([type="checkbox"]), select { box-sizing: border-box; width: 100%; min-width: 0; min-height: 40px; padding: 8px 12px; border: 1px solid var(--line); border-radius: 9px; background: var(--surface-soft); color: var(--ink); font: inherit; font-size: 12px; }
+label { display: grid; gap: 8px; min-width: 0; font-size: var(--text-label); font-weight: 600; color: var(--muted); }
+input:not([type="checkbox"]), select { box-sizing: border-box; width: 100%; min-width: 0; min-height: 40px; padding: 8px 12px; border: 1px solid var(--line); border-radius: 9px; background: var(--surface-soft); color: var(--ink); font: inherit; font-size: var(--text-label); }
 .route-search { flex: 1; }
 .search-input { display: flex; align-items: center; gap: 8px; padding-left: 12px; border: 1px solid var(--line); border-radius: 9px; background: var(--surface-soft); }
 .search-input input { border: 0; background: transparent; outline: none; }
@@ -183,47 +185,47 @@ input:not([type="checkbox"]), select { box-sizing: border-box; width: 100%; min-
 .route-filters > button { flex: none; min-height: 40px; }
 .route-directory { border: 1px solid var(--line); border-radius: 14px; overflow: hidden; background: var(--surface); min-width: 0; }
 .directory-heading { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 14px 16px; border-bottom: 1px solid var(--line); }
-.eyebrow { margin: 0 0 6px; font-size: 10px; font-weight: 800; letter-spacing: .1em; color: var(--ocean); }
+.eyebrow { margin: 0 0 6px; font-size: var(--text-caption); font-weight: 800; letter-spacing: .1em; color: var(--ocean); }
 h2 { margin: 0; font-size: 17px; color: var(--ink); }
-.directory-hint { margin: 5px 0 0; color: var(--muted); font-size: 11px; line-height: 1.5; }
+.directory-hint { margin: 5px 0 0; color: var(--muted); font-size: var(--text-caption); line-height: 1.5; }
 .route-directory :deep(.grid-tools) { padding: 8px 16px; border-bottom: 1px solid var(--line); background: var(--surface); }
 .route-directory :deep(.grid-tools button) { min-height: 34px; padding: 6px 8px; }
 .route-directory :deep(.desktop-grid) { padding: 8px; }
-.route-directory :deep(.grid-cell-content) { padding: 7px 0; font-size: 12px; line-height: 1.5; }
+.route-directory :deep(.grid-cell-content) { padding: 7px 0; font-size: var(--text-label); line-height: 1.5; }
 .route-directory :deep(.grid-row-actions) { display: flex; align-items: center; gap: 8px; min-height: 44px; padding: 7px 0; }
-.route-port-name { font-size: 12px; font-weight: 650; }
-.directory-footer { margin: 0; padding: 10px 16px; border-top: 1px solid var(--line); color: var(--muted); font-size: 11px; line-height: 1.5; }
-.routes-workspace button, .route-dialog button { display: inline-flex; align-items: center; justify-content: center; gap: 7px; font-family: inherit; font-size: 12px; min-height: 40px; }
-.routes-workspace .route-edit { min-height: 32px; padding: 5px 10px; border: 1px solid var(--line); border-radius: 7px; background: var(--surface); color: var(--ocean); font-size: 11px; cursor: pointer; }
+.route-port-name { font-size: var(--text-label); font-weight: 650; }
+.directory-footer { margin: 0; padding: 10px 16px; border-top: 1px solid var(--line); color: var(--muted); font-size: var(--text-caption); line-height: 1.5; }
+.routes-workspace button, .route-dialog button { display: inline-flex; align-items: center; justify-content: center; gap: 7px; font-family: inherit; font-size: var(--text-label); min-height: 40px; }
+.routes-workspace .route-edit { min-height: 32px; padding: 5px 10px; border: 1px solid var(--line); border-radius: 7px; background: var(--surface); color: var(--ocean); font-size: var(--text-caption); cursor: pointer; }
 .routes-workspace button .app-icon { font-size: 17px; }
 .route-code { color: var(--ink); font-weight: 650; }
 .route-duration { display: inline-flex; align-items: center; gap: 7px; white-space: nowrap; font-variant-numeric: tabular-nums; }
 .route-duration .app-icon { color: var(--muted); font-size: 16px; }
-.route-note { margin: 0; font-size: 12px; color: var(--muted); line-height: 1.6; }
+.route-note { margin: 0; font-size: var(--text-label); color: var(--muted); line-height: 1.6; }
 .route-note a { color: var(--ocean); }
 .route-modal { --width: min(640px, calc(100vw - 32px)); --height: auto; --max-height: calc(100dvh - 40px); --border-radius: 16px; --background: var(--surface); }
 .route-dialog { display: flex; flex-direction: column; min-height: 0; max-height: calc(100dvh - 40px); overflow: hidden; background: var(--surface); color: var(--ink); font-family: var(--ion-font-family); }
 .route-modal-header { display: flex; align-items: center; gap: 12px; padding: 18px 20px; border-bottom: 1px solid var(--line); flex: none; }
 .route-symbol { display: grid; place-items: center; width: 44px; height: 44px; flex: none; border-radius: 12px; background: var(--light-blue); color: var(--ocean); font-size: 24px; }
-.route-subtitle { margin: 6px 0 0; color: var(--muted); font-size: 12px; line-height: 1.5; }
+.route-subtitle { margin: 6px 0 0; color: var(--muted); font-size: var(--text-label); line-height: 1.5; }
 .route-dialog .route-close { display: grid; place-items: center; width: 44px; height: 44px; flex: none; margin-left: auto; border: 1px solid var(--line); border-radius: 10px; background: var(--surface-soft); color: var(--muted); font-size: 22px; cursor: pointer; }
 .route-form { display: flex; flex: 1 1 auto; flex-direction: column; min-height: 0; overflow: hidden; }
 .route-fields { flex: 1 1 auto; border: 0; margin: 0; min-width: 0; min-height: 0; padding: 16px 20px; overflow-y: auto; scrollbar-width: thin; }
 .route-preview { display: grid; grid-template-columns: minmax(0, 1fr) 20px minmax(0, 1fr); align-items: center; gap: 12px; padding: 12px; margin-bottom: 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface-soft); }
 .route-preview div { display: grid; gap: 8px; min-width: 0; }
 .route-preview div:last-child { text-align: right; }
-.route-preview span { font-size: 10px; font-weight: 700; letter-spacing: .08em; color: var(--muted); }
-.route-preview strong { font-size: 12px; overflow-wrap: anywhere; }
+.route-preview span { font-size: var(--text-caption); font-weight: 700; letter-spacing: .08em; color: var(--muted); }
+.route-preview strong { font-size: var(--text-label); overflow-wrap: anywhere; }
 .route-preview > .app-icon { color: var(--ocean); font-size: 22px; }
 .route-field-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; gap: 16px; margin-top: 12px; }
-.route-fields label small { font-size: 12px; line-height: 1.5; font-weight: 400; }
+.route-fields label small { font-size: var(--text-label); line-height: 1.5; font-weight: 400; }
 .route-availability { display: flex; align-items: center; gap: 10px; margin-top: 16px; padding: 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface-soft); }
 .route-availability input { width: 17px; height: 17px; flex: none; accent-color: var(--ocean); }
 .route-availability span { display: grid; gap: 4px; }
-.route-availability strong { color: var(--ink); font-size: 12px; }
+.route-availability strong { color: var(--ink); font-size: var(--text-label); }
 .route-modal-footer { display: flex; justify-content: flex-end; gap: 10px; flex: none; padding: 14px 20px; border-top: 1px solid var(--line); background: var(--surface-soft); }
 .route-modal-footer button { min-height: 40px; }
-.route-form-error { margin: 16px 24px 0; padding: 12px; border-radius: 9px; background: var(--danger-soft); color: var(--danger); font-size: 12px; line-height: 1.5; }
+.route-form-error { margin: 16px 24px 0; padding: 12px; border-radius: 9px; background: var(--danger-soft); color: var(--danger); font-size: var(--text-label); line-height: 1.5; }
 .route-fields .route-form-error { margin: 16px 0 0; }
 input:focus-visible, select:focus-visible, button:focus-visible { outline: 2px solid var(--ocean); outline-offset: 2px; }
 button:disabled { opacity: .6; }

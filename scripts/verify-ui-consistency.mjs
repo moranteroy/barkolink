@@ -26,11 +26,19 @@ try {
     let fareConfig = {code:'vessel',regularFare:600,studentDiscount:20,seniorDiscount:20,childDiscount:50,pwdDiscount:20,pregnantDiscount:0,customDiscounts:[]}, fareSaves=0
     let readAt = null, markAllCalls = 0, lastBookingArgs = null, lastAuditArgs = null
     let managedAccountCalls = 0, lastManagedInput = null, lastPortAssignment = null
+    let travelerSaveFails = false
     await context.addInitScript(() => Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText: async text => { sessionStorage.setItem('ui-copied-password', text) } } }))
     let profile = { uid: id, fullName: 'UI User', email: user.email, role, phone: '09123456789', assignedPortId: sailing.origin.id, assignedPort: { ...sailing.origin, isActive: true } }
     await context.route(`${projectUrl}/**`, async route => {
       const url = route.request().url()
       if (url.includes('/auth/v1/')) return route.fulfill({ json: user })
+      if (url.includes('/functions/v1/weather') && process.env.BARKOLINK_WEATHER_CHECK === '1') {
+        const {portId} = route.request().postDataJSON()
+        const current = {at:new Date().toISOString(),condition:'Partly cloudy',temperatureC:28,windKph:18,gustKph:25,visibilityKm:9,rainChance:35,cloudCover:42}
+        const days = Array.from({length:7},(_,i)=>({date:new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Manila',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date(Date.now()+i*86400000)),condition:'Partly cloudy',conditionCode:2,highC:30,lowC:24,rainChance:35,windKph:18}))
+        const ports = [sailing.origin,sailing.destination].filter(port=>!portId || port.id===portId).map((port,i)=>({...port,available:true,current,days,forecast:portId?null:current,role:i===0?'Departure port':'Arrival port'}))
+        return route.fulfill({json:{configured:true,departureAt:sailing.departureAt,ports}})
+      }
       if (url.includes('/functions/v1/manage-account')) {
         const { action, input } = route.request().postDataJSON()
         if (action === 'generateTemporaryPassword') return route.fulfill({ json: { password: 'Ui-generated-password123' } })
@@ -40,6 +48,10 @@ try {
       }
       if (!url.includes('/rpc/barkolink_execute')) return route.fulfill({ status: 403, json: { message: 'Direct access is blocked in this test.' } })
       const { operation, args } = route.request().postDataJSON()
+      if (operation === 'MySaveTraveler') return route.fulfill(travelerSaveFails
+        ? { status: 500, json: { message: 'Could not save traveler. Please retry.' } }
+        : { json: {} })
+      if (operation === 'MyDeleteTraveler') return route.fulfill({ json: {} })
       let result
       if (operation === 'AdminAssignStaffPort') { lastPortAssignment = args; return route.fulfill({ json: { uid: args.uid, assignedPortId: args.portId } }) }
       if (operation === 'AdminStaffPortAssignments') {
@@ -69,6 +81,7 @@ try {
         BrowseActivePorts: { ports: [sailing.origin, sailing.destination] },
         PassengerSailingBoard: { date: '2099-01-01', updatedAt: new Date().toISOString(), sailings: [] },
         ActiveTravelAdvisories: { advisories: [] },
+        QuoteLoyaltyVoucher: { quote: null },
         MyLoyalty: { completedTrips: 0, rewardValue: 100, tripsToNextReward: 5, tripsPerReward: 5, currentTier: "Bronze", tiers: [{ name: 'Bronze', trips: 5, value: 100 }], vouchers: [] },
         AdminPorts: { ports: [sailing.origin, sailing.destination].map(p => ({ ...p, isActive: true })) }, AdminVessels: { vessels: [sailing.vessel] },
         AdminSailingBookings:{bookings:[]}, AdminUsers: { users: [{uid:'user-z',fullName:'Zelda User',email:'zelda@example.invalid',role:'PASSENGER',createdAt:'2026-10-05T01:00:00Z'},{uid:'user-a',fullName:'Anna User',email:'anna@example.invalid',role:'TICKETING',createdAt:'2026-10-05T01:00:00Z'},{uid:'user-m',fullName:'Marco User',email:'marco@example.invalid',role:'BOARDING',createdAt:'2026-10-05T01:00:00Z'}],totalCount:3 }, AdminPassengerRecords: { bookingPassengers: [], totalCount: 0 },
@@ -94,8 +107,10 @@ try {
     const paths = role === 'ADMIN' ? ['/admin', '/admin/accommodation', '/admin/routes', '/admin/no-shows', '/admin/notifications', '/admin/analytics', '/admin/audit-logs', '/admin/advisories', '/admin/trip-operations?sailing=UI-TRIP', '/admin/trips', '/admin/bookings', '/admin/settings/profile', '/admin/settings/password', '/admin/settings/appearance'] : role === 'TICKETING' || role === 'BOARDING' ? [`/staff/${role.toLowerCase()}`, ...((role === 'TICKETING' ? ['bookings','passengers','trips','fares','notifications'] : ['trips','check-in','boarding','manifest','no-shows','notifications']).map(section=>`/staff/${role.toLowerCase()}/${section}`)), ...['account','security','appearance'].map(section => `/staff/${role.toLowerCase()}/settings/${section}`)] : ['/home', '/profile', '/settings/profile', '/settings/password', '/settings/appearance', '/notifications', '/bookings', '/ticket?reference=UI-BOOKING', '/travelers', '/help', '/search?all=1']
     if (role === 'ADMIN') paths.push('/admin/users', '/admin/staff-ports', '/admin/operations', '/admin/fares')
     if (role === 'ADMIN') paths.push('/admin/manifest', '/admin/inbox')
+    if (role === 'ADMIN') paths.push('/admin/ports', '/admin/vessels')
     if (role === 'TICKETING') paths.push('/staff/ticketing/walk-in')
     if (role === 'PASSENGER') {
+      paths.push('/trip-details', '/booking-summary', '/assistant', '/privacy?from=profile')
       paths.push('/passenger-info', '/booking-confirmed?reference=UI-BOOKING')
       await context.addInitScript(({ sailing }) => localStorage.setItem('barkolink-selected-trip', JSON.stringify({
         id: sailing.code, selectionId: 'ui-check', from: sailing.origin.city, to: sailing.destination.city,
@@ -105,12 +120,101 @@ try {
     }
     const selectedPaths = process.env.BARKOLINK_UI_PATHS?.split(',')
     for (const path of paths.filter(path => !selectedPaths || selectedPaths.includes(path.split('?')[0]))) {
+      booking.paymentVerificationRequired = path === '/home'
       await page.goto(baseUrl + path)
       await page.locator('h1').first().waitFor()
       await page.waitForTimeout(450)
+      if (path === '/admin/trips') {
+        assert.equal(await page.locator('.trip-records-panel').isVisible(), true, 'Actual trips are the default view')
+        await page.getByRole('button', { name:'Daily schedules', exact:true }).click()
+        await page.locator('.daily-schedules').waitFor()
+        assert.equal(await page.locator('.trip-records-panel').isVisible(), false, 'Templates do not bury actual trip records')
+        await page.getByRole('button', { name:'Actual trips', exact:true }).click()
+        await page.locator('.trip-records-panel').getByText('Jan 1, 2099, 4:00 PM', { exact:true }).waitFor()
+        assert.ok((await page.locator('.trip-records-panel').innerText()).includes('4:00 PM'), 'Admin departures stay in Philippine time on an overseas device')
+        if (process.env.BARKOLINK_UX_DRAFT_CHECK === '1') {
+          await page.getByRole('button',{name:'Create trip',exact:true}).click()
+          await page.locator('.trip-form').waitFor()
+          await page.locator('.trip-form select').nth(0).selectOption(sailing.origin.id)
+          await page.locator('.trip-form select').nth(1).selectOption(sailing.destination.id)
+          await page.locator('.trip-form select').nth(2).selectOption(sailing.vessel.id)
+          await page.locator('.trip-form input[type="datetime-local"]').nth(0).fill('2099-01-02T10:00')
+          await page.locator('.trip-form input[type="datetime-local"]').nth(1).fill('2099-01-02T12:00')
+          await page.getByRole('link',{name:'Status settings · keep draft',exact:true}).click()
+          await page.waitForURL(url=>url.pathname==='/admin/operations')
+          await page.getByRole('link',{name:'Return to the trip draft',exact:true}).last().click()
+          await page.locator('.trip-form').waitFor()
+          assert.equal(await page.locator('.trip-form input[type="datetime-local"]').nth(0).inputValue(),'2099-01-02T10:00','Setup navigation preserves the unsaved Philippine departure')
+          assert.equal(await page.locator('.trip-form select').nth(2).inputValue(),sailing.vessel.id,'Setup navigation preserves the selected vessel')
+          await page.keyboard.press('Escape')
+          await page.locator('.trip-form').waitFor({state:'hidden'})
+        }
+      }
+      if (path === '/home') {
+        assert.ok((await page.locator('.upcoming-block').innerText()).includes('Do not pay again'), 'Received online payments never prompt another payment')
+        assert.equal((await page.locator('.upcoming-block ion-button').innerText()).trim(),'Check verification','Ticket action waits for payment verification')
+        const journey=await page.locator('.upcoming-block').boundingBox()
+        const board=await page.locator('.sailing-board').boundingBox()
+        assert.ok(journey.y < board.y, 'Active booking appears before secondary schedule content')
+        if (process.env.BARKOLINK_WEATHER_CHECK === '1') {
+          await page.locator('.smart-weather').waitFor()
+          assert.equal(await page.locator('.forecast-day').count(),7,'Seven daily forecasts render')
+          assert.match(await page.locator('.forecast-badge').innerText(),/7-day forecast/)
+        }
+      }
+      if (role === 'PASSENGER') {
+        const frame=await page.locator('ion-app > ion-router-outlet').boundingBox()
+        assert.ok(frame.width <= 560.5,'Passenger web and mobile keep the same compact canvas')
+        assert.ok(Math.abs((frame.x + frame.width / 2) - width / 2) < 2,'Passenger canvas stays centered')
+        const nav=page.locator('.ion-page:not(.ion-page-hidden) .bottom-nav')
+        if (await nav.count()) {
+          const bounds=await nav.first().boundingBox()
+          assert.ok(Math.abs(bounds.x-frame.x)<2 && Math.abs(bounds.width-frame.width)<2,'Bottom navigation matches the passenger canvas')
+        }
+      }
+      if (path === '/staff/ticketing' || path === '/staff/boarding') {
+        assert.ok((await page.locator('.queue-freshness').innerText()).includes('Updated'), 'Staff can see the last successful queue update')
+      }
+      if (path === '/admin/ports' || path === '/admin/vessels') {
+        assert.equal(await page.locator('#directory-status').inputValue(),'ACTIVE','Operational directories default to active records')
+        await page.locator('#directory-status').selectOption('INACTIVE')
+        assert.ok((await page.locator('.archive-guidance').innerText()).includes('past trips and tickets'),'History explains retained inactive identities')
+        await page.getByRole('button',{name:'Reset filters',exact:true}).click()
+        assert.equal(await page.locator('#directory-status').inputValue(),'ACTIVE','Reset returns to active operations')
+      }
       const overflow = await page.locator('main').first().evaluate(el => el.scrollWidth > el.clientWidth + 2)
+      if (overflow) console.log(JSON.stringify(await page.locator('main').first().evaluate(root => {
+        const boundary=root.getBoundingClientRect();
+        return Array.from(root.querySelectorAll('*')).filter(el=>el.getClientRects().length && el.getBoundingClientRect().right>boundary.right+2).slice(0,10).map(el=>({tag:el.tagName,class:el.className,text:el.textContent.trim().slice(0,50),width:el.getBoundingClientRect().width,minWidth:getComputedStyle(el).minWidth}));
+      })))
       assert.equal(overflow, false, `${role} ${width}px ${path} overflow`)
       assert.equal(await page.locator('[role=alert]').count(), 0, `${path}: unexpected error`)
+      if (process.env.BARKOLINK_TOAST_CHECK === '1' && path === '/travelers') {
+        await page.getByRole('button', { name: 'Save traveler', exact: true }).click()
+        assert.equal(await page.locator('.app-toast').count(), 0, 'Required fields remain inline/browser validation')
+        await page.getByLabel('Full name', { exact: true }).fill('Toast Test Traveler')
+        await page.getByLabel('Birth date', { exact: true }).fill('1990-01-01')
+        await page.locator('.travelers-page form select').selectOption('FEMALE')
+        await page.getByLabel('Mobile number', { exact: true }).fill('09123456789')
+        await page.getByRole('button', { name: 'Save traveler', exact: true }).click()
+        await page.locator('.app-toast.success').getByText('Traveler saved.', { exact: true }).waitFor()
+        await page.getByRole('button', { name: 'Dismiss notification' }).click()
+        await page.locator('.app-toast').waitFor({state:'hidden'})
+        await page.getByRole('button', { name: 'Edit', exact: true }).click()
+        travelerSaveFails = true
+        await page.getByRole('button', { name: 'Save traveler', exact: true }).click()
+        await page.locator('.app-toast.error').waitFor()
+        assert.match(await page.locator('.app-toast.error').innerText(), /Could not save traveler/)
+        assert.equal(await page.getByLabel('Full name', { exact: true }).inputValue(), 'UI Traveler', 'Failed save retains form input')
+        await page.getByRole('button', { name: 'Dismiss notification' }).click()
+        await page.locator('.app-toast').waitFor({state:'hidden'})
+        travelerSaveFails = false
+        await page.getByRole('button', { name: 'Delete', exact: true }).click()
+        await page.locator('ion-alert button').filter({hasText:'Delete traveler'}).click()
+        await page.locator('.app-toast.success').getByText('Traveler deleted.', {exact:true}).waitFor()
+        await page.getByRole('button', { name: 'Dismiss notification' }).click()
+        await page.locator('.app-toast').waitFor({state:'hidden'})
+      }
       const actionStyleProblems = await page.locator('[data-slot="button"][data-size]').evaluateAll(nodes => nodes.filter(el => el.getClientRects().length).flatMap(el => {
         const style = getComputedStyle(el)
         return parseFloat(style.minHeight) < 44 || style.borderRadius !== '10px'
@@ -150,9 +254,44 @@ try {
         assert.ok(new Set(navIconSizes).size <= 1, path + ': active and inactive navigation icons keep the same size')
         assert.equal(await page.locator('main').first().evaluate(el => el.scrollWidth > el.clientWidth + 2), false, path + ': no horizontal overflow')
         for (const logo of await page.locator('.brand-symbol img').all()) {
+          await logo.evaluate(el => el.decode().catch(() => undefined))
           assert.equal(await logo.evaluate(el => el.complete && el.naturalWidth > 0), true, path + ': ferry logo loaded')
         }
         fs.mkdirSync('docs/screenshots/consistency', { recursive: true })
+        if (process.env.BARKOLINK_WEATHER_CHECK === '1' && path === '/admin/trips') {
+          const details = page.locator('.admin-trip-weather')
+          if (!await details.evaluate(el=>el.open)) await details.locator('summary').click()
+          await page.locator('.weather-trigger').click()
+          await page.getByRole('option').filter({hasText:'UI-TRIP'}).click()
+          await page.locator('.smart-weather').first().waitFor()
+        }
+        if (process.env.BARKOLINK_WEATHER_CHECK === '1' && await page.locator('.smart-weather').count()) {
+          const weather = page.locator(path === '/home' ? '.port-forecast' : '.trip-weather').first()
+          await weather.scrollIntoViewIfNeeded()
+          assert.equal(await weather.evaluate(el=>el.scrollWidth>el.clientWidth+2),false,'Weather card fits its canvas')
+          assert.match(await weather.locator('.weather-metrics').first().innerText(), /18 km\/h/, 'Wind measurement stays visible in the card')
+          await weather.screenshot({path:`docs/screenshots/consistency/weather-${role.toLowerCase()}-${path.split('?')[0].replaceAll('/','-').slice(1)}-${width}-${theme}.png`})
+          await weather.locator('.smart-weather').first().scrollIntoViewIfNeeded()
+          await weather.locator('.smart-weather').first().screenshot({path:`docs/screenshots/consistency/weather-card-${role.toLowerCase()}-${width}-${theme}.png`})
+        }
+        if (process.env.BARKOLINK_TOAST_CHECK === '1') {
+          await page.evaluate(async () => {
+            const { notifyError, clearToasts } = await import('/src/composables/toast.ts')
+            clearToasts(); notifyError('Could not save changes. Check your connection and try again.')
+          })
+          await page.locator('.app-toast.error').waitFor()
+          await page.waitForFunction(() => {
+            const toast = document.querySelector('.app-toast.error')
+            return toast && getComputedStyle(toast).opacity === '1'
+          })
+          const toastBounds = await page.locator('.app-toast').boundingBox()
+          assert.ok(toastBounds.x >= 0 && toastBounds.x + toastBounds.width <= width, 'Toast fits the viewport')
+          assert.ok(Math.abs(toastBounds.x + toastBounds.width / 2 - width / 2) < 2, 'Toast stays centered')
+          assert.equal(await page.locator('.app-toast').evaluate(el => el.scrollWidth > el.clientWidth + 1), false, 'Toast text has no horizontal overflow')
+          await page.screenshot({ path: `docs/screenshots/consistency/toast-${role.toLowerCase()}-${width}-${theme}.png` })
+          await page.getByRole('button', {name:'Dismiss notification'}).click()
+          await page.locator('.app-toast').waitFor({state:'hidden'})
+        }
         await page.screenshot({ path: 'docs/screenshots/consistency/' + role.toLowerCase() + '-' + width + '-' + path.split('?')[0].replaceAll('/', '-').slice(1) + '-' + theme + '.png' })
       }
     }

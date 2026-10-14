@@ -35,13 +35,13 @@ header { display: flex; align-items: center; justify-content: space-between; gap
 .dialog-close { display: grid; place-items: center; width: 44px; height: 44px; flex: none; margin-left: auto; border: 1px solid var(--line); border-radius: 10px; background: var(--surface-soft); color: var(--muted); cursor: pointer; }
 .dialog-close .app-icon { font-size: 22px; }
 .dialog-close:focus-visible { outline: 2px solid var(--ocean); outline-offset: 2px; }
-.eyebrow { margin: 0 0 6px; color: var(--muted); font-size: 10px; font-weight: 700; letter-spacing: .08em; }
+.eyebrow { margin: 0 0 6px; color: var(--muted); font-size: var(--text-caption); font-weight: 700; letter-spacing: .08em; }
 h2 { font-size: 20px; margin: 0; overflow-wrap: anywhere; }
 .details-content { padding: 8px 24px 24px; overflow-y: auto; min-height: 0; scrollbar-width: thin; }
 h3 { font-size: 13px; margin: 20px 0 10px; font-weight: 650; }
 p { font-size: 13px; line-height: 1.6; overflow-wrap: anywhere; }
 ul { list-style: none; padding: 0; margin: 0; display: grid; gap: 8px; }
-li { display: grid; gap: 5px; font-size: 12px; padding: 12px 14px; border: 1px solid var(--line); border-radius: 9px; background: var(--surface-soft); }
+li { display: grid; gap: 5px; font-size: var(--text-label); padding: 12px 14px; border: 1px solid var(--line); border-radius: 9px; background: var(--surface-soft); }
 li span, li small { color: var(--muted); line-height: 1.5; }
 @media (max-width: 600px) { header { padding: 16px; } .details-content { padding: 4px 16px 20px; } h2 { font-size: 18px; } }
 </style>

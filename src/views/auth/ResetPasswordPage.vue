@@ -25,17 +25,17 @@
           <p v-if="message" :role="failed ? 'alert' : 'status'">{{ message }}</p>
           <ion-button type="submit" :disabled="busy || !recoveryReady">Save password</ion-button>
         </form>
-        <RouterLink to="/login" class="sign-in-return"><AppIcon :icon="logInOutline" aria-hidden="true" /> Back to sign in</RouterLink>
+        <RouterLink to="/login" class="sign-in-return"><BackIcon /> Back to sign in</RouterLink>
       </main></ion-content
     ></ion-page
   >
 </template>
 <script setup lang="ts">
+import { notifyError } from '@/composables/toast';
+import BackIcon from "@/components/ui/icon/BackIcon.vue";
 import { ref } from "vue";
 import { RouterLink } from "vue-router";
 import { IonPage, IonContent, IonButton, onIonViewWillEnter } from "@ionic/vue";
-import AppIcon from "@/components/ui/icon/AppIcon.vue";
-import { logInOutline } from "ionicons/icons";
 import { requireSupabase } from "../../services/supabase";
 const password = ref(""),
   confirm = ref(""),
@@ -53,7 +53,7 @@ async function checkRecovery() {
 onIonViewWillEnter(async () => {
   recoveryReady.value = false;
   try { await checkRecovery(); recoveryReady.value = true; }
-  catch (error) { failed.value = true; message.value = (error as Error).message; }
+  catch (error) { failed.value = true; message.value = notifyError((error as Error).message); }
 });
 async function save() {
   if (busy.value || !recoveryReady.value) return;
@@ -87,7 +87,7 @@ async function save() {
   } catch (error) {
     failed.value = true;
     message.value =
-      error instanceof Error ? error.message : "Could not save password.";
+      notifyError(error instanceof Error ? error.message : "Could not save password.");
   } finally {
     busy.value = false;
   }

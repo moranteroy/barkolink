@@ -8,7 +8,7 @@
         :class="{ 'passenger-info-page': flow === 'passengers' }"
       >
         <PassengerHeader />
-        <router-link :to="bookingBack.path" class="booking-back"><AppIcon :icon="bookingBack.icon" aria-hidden="true" />{{ bookingBack.label }}</router-link>
+        <router-link :to="bookingBack.path" class="booking-back"><BackIcon />{{ bookingBack.label }}</router-link>
         <nav class="progress" aria-label="Booking steps">
           <div
             v-for="(step, index) in steps"
@@ -25,7 +25,9 @@
         </nav>
 
         <p class="step-caption"><span>Step {{ activeStep + 1 }} of {{ steps.length }}</span><strong>{{ steps[activeStep] }}</strong></p>
-        <AdvisoryBanner :sailing-code="trip.id" />
+        <details v-if="flow === 'passengers'" class="booking-secondary-details"><summary>Travel reminders</summary><AdvisoryBanner :sailing-code="trip.id" /></details>
+        <AdvisoryBanner v-else :sailing-code="trip.id" />
+        <div v-if="flow === 'passengers'" class="compact-trip-context"><strong>{{ trip.from }} → {{ trip.to }}</strong><span>{{ trip.date }} · {{ trip.departure }} (PH)</span><span>{{ passengers.length }} passenger{{ passengers.length === 1 ? '' : 's' }} · PHP {{ total.toLocaleString('en-PH') }}</span></div>
         <section v-if="flow === 'details'" class="flow-layout details-flow">
           <div>
             <p class="kicker">TRIP DETAILS</p>
@@ -236,16 +238,14 @@
                   class="icon-back"
                   aria-label="Back to trip details"
                   title="Back to trip details"
-                  ><AppIcon
-                    :icon="boatOutline"
-                    aria-hidden="true" /></router-link
+                  ><BackIcon /></router-link
                 ><ion-button class="continue" type="submit"
                   >Review booking <AppIcon :icon="arrowForwardOutline" aria-hidden="true" /></ion-button
                 >
               </div>
             </form>
           </div>
-          <aside class="flow-aside glass-panel sticky trip-summary">
+          <aside class="flow-aside glass-panel sticky trip-summary passenger-context">
             <p class="kicker">YOUR TRIP</p>
             <div class="trip-route">
               <strong>{{ trip.from }}</strong
@@ -261,7 +261,7 @@
               </div>
             </div>
             <div class="total">
-              <span>Passengers</span><strong>{{ passengers.length }}</strong>
+              <span>{{ passengers.length }} passenger{{ passengers.length === 1 ? "" : "s" }}</span><strong>PHP {{ total.toLocaleString("en-PH") }}</strong>
             </div>
             <p class="hint">
               Discounts are subject to eligibility verification at ticketing.
@@ -481,6 +481,8 @@
 </template>
 
 <script setup lang="ts">
+import { notifyError, notifySuccess } from '@/composables/toast';
+import BackIcon from "@/components/ui/icon/BackIcon.vue";
 import { bookingReference } from '@/data/recordCodes';
 import OnlinePayment from "../../components/passenger/OnlinePayment.vue";
 import TripWeather from "../../components/shared/TripWeather.vue";
@@ -502,19 +504,7 @@ import { computed, nextTick, onMounted, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { IonButton, IonContent, IonPage, onIonViewWillEnter } from "@ionic/vue";
 import AppIcon from "@/components/ui/icon/AppIcon.vue";
-import {
-  ticketOutline,
-  arrowForwardOutline,
-  chevronDownOutline,
-  boatOutline,
-  calendarOutline,
-  checkmarkOutline,
-  locationOutline,
-  peopleOutline,
-  walletOutline,
-  timeOutline,
-  closeCircleOutline,
-} from "ionicons/icons";
+import { ticketOutline, arrowForwardOutline, chevronDownOutline, boatOutline, calendarOutline, checkmarkOutline, locationOutline, peopleOutline, walletOutline, timeOutline, closeCircleOutline } from "ionicons/icons";
 import PortLocationMap from "../../components/shared/PortLocationMap.vue";
 import PassengerHeader from "../../components/passenger/PassengerHeader.vue";
 import { accountPassengerDetails, travelerPassengerDetails } from "../../data/bookingPassenger";
@@ -570,10 +560,10 @@ const router = useRouter();
 const steps = ["Sailing", "Passengers", "Review", "Reserved"];
 const flow = computed(() => String(route.name || "details"));
 const bookingBack = computed(() => flow.value === 'passengers'
-  ? { path: '/trip-details', label: 'Back to trip details', icon: boatOutline }
-  : flow.value === 'summary' ? { path: '/passenger-info', label: 'Back to passengers', icon: peopleOutline }
-  : flow.value === 'confirmed' ? { path: '/bookings', label: 'Back to my bookings', icon: ticketOutline }
-  : { path: '/trips', label: 'Back to sailings', icon: boatOutline });
+  ? { path: '/trip-details', label: 'Back to trip details' }
+  : flow.value === 'summary' ? { path: '/passenger-info', label: 'Back to passengers' }
+  : flow.value === 'confirmed' ? { path: '/bookings', label: 'Back to my bookings' }
+  : { path: '/trips', label: 'Back to sailings' });
 const activeStep = computed(() =>
   Math.max(
     0,
@@ -769,7 +759,7 @@ async function applyAutomaticVoucher(){
     if(id===voucherRequest && context===voucherContext.value && response.quote){
       voucherQuote.value=response.quote;voucherCode.value=response.quote.code;loyaltyApplied.value=true;
     }
-  }catch{if(id===voucherRequest)voucherError.value='Could not check loyalty rewards. You can continue without a voucher or try again.';}
+  }catch{if(id===voucherRequest)voucherError.value=notifyError('Could not check loyalty rewards. You can continue without a voucher or try again.');}
   finally{if(id===voucherRequest)voucherBusy.value=false;}
 }
 async function applyVoucher(){
@@ -781,7 +771,7 @@ async function applyVoucher(){
     const args={...voucherArgs(),voucherCode:voucherCode.value};
     const response=(await quoteVoucher(database,args)).data;
     if(id===voucherRequest && context===voucherContext.value)voucherQuote.value=response;
-  }catch(e){if(id===voucherRequest)voucherError.value=databaseRequestError(e,'Could not apply voucher.');}finally{if(id===voucherRequest)voucherBusy.value=false;}
+  }catch(e){if(id===voucherRequest)voucherError.value=notifyError(databaseRequestError(e,'Could not apply voucher.'));}finally{if(id===voucherRequest)voucherBusy.value=false;}
 }
 const booking = ref<Booking>({
   reference: "",
@@ -996,7 +986,7 @@ async function confirm() {
       );
     if (total.value + serviceFee.value !== oldTotal) {
       errorMessage.value =
-        "The fare changed. Review the updated total and confirm again.";
+        notifySuccess("The fare changed. Review the updated total and confirm again.");
       return;
     }
     if (existingIntent) {
@@ -1071,12 +1061,13 @@ async function confirm() {
       createdAt: new Date().toISOString(),
     };
     sessionStorage.removeItem(draftStorageKey);
+    notifySuccess('Reservation created. Review your payment instructions.');
     await router.push({ name: "confirmed", query: { reference } });
   } catch (error) {
     const duplicate = databaseRequestError(error, '').match(/Duplicate booking: ([A-Za-z0-9-]+)\./);
     if (duplicate) {
       duplicateReference.value = duplicate[1];
-      errorMessage.value = `You already have booking ${duplicate[1]} for this trip with the same passenger details. Open your existing booking instead of reserving again.`;
+      errorMessage.value = notifyError(`You already have booking ${duplicate[1]} for this trip with the same passenger details. Open your existing booking instead of reserving again.`);
       sessionStorage.removeItem(bookingIntentKey);
       return;
     }
@@ -1088,7 +1079,7 @@ async function confirm() {
     } catch {
       /* The reservation may exist even when its status cannot be checked. */
     }
-    errorMessage.value = `${databaseRequestError(error, "Could not complete the reservation.")} If you already confirmed, check My Bookings before trying again.`;
+    errorMessage.value = notifyError(`${databaseRequestError(error, "Could not complete the reservation.")} If you already confirmed, check My Bookings before trying again.`);
   } finally {
     saving.value = false;
   }
@@ -1103,7 +1094,7 @@ async function copyReference() {
     window.setTimeout(() => (copied.value = false), 1800);
   } catch {
     copied.value = false;
-    errorMessage.value = "Could not copy the reference. Select the booking reference and copy it manually.";
+    errorMessage.value = notifyError("Could not copy the reference. Select the booking reference and copy it manually.");
   }
 }
 async function loadConfirmedBooking() {
@@ -1169,10 +1160,10 @@ async function loadConfirmedBooking() {
       if (intent?.reference === saved.reference) sessionStorage.removeItem(bookingIntentKey);
     } catch { /* Invalid saved intent must not interrupt reservation loading. */ }
   } catch (error) {
-    errorMessage.value = databaseRequestError(
+    errorMessage.value = notifyError(databaseRequestError(
       error,
       "Could not load your reservation. Open My Bookings to try again.",
-    );
+    ));
   }
 }
 onMounted(() => {
@@ -1266,7 +1257,7 @@ watch(
   gap: 8px;
   padding-right: 74px;
   color: #a5afbb;
-  font-size: 11px;
+  font-size: var(--text-caption);
 }
 .step:last-child {
   padding: 0;
@@ -1317,7 +1308,7 @@ watch(
 .kicker {
   margin: 0;
   color: var(--ocean);
-  font-size: 10px;
+  font-size: var(--text-caption);
   font-weight: 800;
   letter-spacing: 0.12em;
 }
@@ -1359,7 +1350,7 @@ watch(
 .journey-time span {
   display: block;
   color: var(--muted);
-  font-size: 10px;
+  font-size: var(--text-caption);
 }
 .journey-time strong {
   display: block;
@@ -1382,7 +1373,7 @@ watch(
 }
 .journey-line b {
   color: var(--muted);
-  font-size: 10px;
+  font-size: var(--text-caption);
   white-space: nowrap;
 }
 .route-mark {
@@ -1416,12 +1407,12 @@ watch(
 .vessel-detail p {
   margin: 4px 0 0;
   color: var(--muted);
-  font-size: 11px;
+  font-size: var(--text-caption);
 }
 .available {
   margin-left: auto;
   color: #087b68;
-  font-size: 10px;
+  font-size: var(--text-caption);
   font-weight: 700;
 }
 .info-grid {
@@ -1447,7 +1438,7 @@ watch(
 }
 .info-grid small {
   color: var(--muted);
-  font-size: 10px;
+  font-size: var(--text-caption);
   font-weight: 700;
 }
 .info-grid strong {
@@ -1458,7 +1449,7 @@ watch(
 .info-grid span {
   margin-top: 4px;
   color: var(--muted);
-  font-size: 10px;
+  font-size: var(--text-caption);
   line-height: 1.4;
 }
 .flow-aside {
@@ -1476,7 +1467,7 @@ watch(
   gap: 14px;
   padding: 13px 0;
   color: var(--muted);
-  font-size: 12px;
+  font-size: var(--text-label);
 }
 .fare-row span,
 .total span {
@@ -1488,7 +1479,7 @@ watch(
   display: block;
   margin-top: 4px;
   color: var(--muted);
-  font-size: 10px;
+  font-size: var(--text-caption);
   font-weight: 400;
   line-height: 1.4;
 }
@@ -1517,7 +1508,7 @@ watch(
 .hint {
   margin: 12px 0 0;
   color: var(--muted);
-  font-size: 10px;
+  font-size: var(--text-caption);
   line-height: 1.5;
   text-align: center;
 }
@@ -1533,7 +1524,7 @@ watch(
 }
 .passenger-heading {
   color: var(--ocean);
-  font-size: 10px;
+  font-size: var(--text-caption);
   letter-spacing: 0.1em;
 }
 .remove {
@@ -1552,7 +1543,7 @@ watch(
 .form-grid label {
   display: grid;
   gap: 6px;
-  font-size: 11px;
+  font-size: var(--text-caption);
   font-weight: 700;
 }
 .form-grid input,
@@ -1565,7 +1556,7 @@ watch(
   background: #fbfcfe;
   color: var(--ink);
   font: inherit;
-  font-size: 12px;
+  font-size: var(--text-label);
 }
 .form-grid input:focus,
 .form-grid select:focus {
@@ -1577,7 +1568,7 @@ watch(
   border: 0;
   background: none;
   color: var(--ocean);
-  font-size: 12px;
+  font-size: var(--text-label);
   font-weight: 800;
   cursor: pointer;
 }
@@ -1593,7 +1584,7 @@ watch(
 .passenger-actions a,
 .summary-heading a {
   color: var(--ocean);
-  font-size: 12px;
+  font-size: var(--text-label);
   font-weight: 700;
   text-decoration: none;
 }
@@ -1619,13 +1610,13 @@ watch(
   color: var(--ink);
 }
 .trip-route span {
-  font-size: 11px;
+  font-size: var(--text-caption);
   color: var(--muted);
 }
 .trip-date {
   margin: 7px 0 0;
   color: var(--muted);
-  font-size: 11px;
+  font-size: var(--text-caption);
 }
 .trip-vessel {
   display: flex;
@@ -1646,13 +1637,13 @@ watch(
 }
 .trip-vessel small {
   color: var(--muted);
-  font-size: 9px;
+  font-size: var(--text-caption);
   font-weight: 700;
   letter-spacing: 0.08em;
 }
 .trip-vessel strong {
   margin-top: 3px;
-  font-size: 12px;
+  font-size: var(--text-label);
   color: var(--ink);
 }
 .trip-summary .total {
@@ -1696,7 +1687,7 @@ watch(
   grid-column: 1/-1;
   margin-top: 7px;
   color: var(--muted);
-  font-size: 11px;
+  font-size: var(--text-caption);
 }
 .passenger-row {
   display: flex;
@@ -1712,7 +1703,7 @@ watch(
   border-radius: 50%;
   background: var(--light-blue);
   color: var(--ocean);
-  font-size: 10px;
+  font-size: var(--text-caption);
   font-weight: 800;
 }
 .passenger-row strong,
@@ -1720,12 +1711,12 @@ watch(
   display: block;
 }
 .passenger-row strong {
-  font-size: 12px;
+  font-size: var(--text-label);
 }
 .passenger-row small {
   margin-top: 3px;
   color: var(--muted);
-  font-size: 10px;
+  font-size: var(--text-caption);
 }
 .confirmed-page {
   max-width: 600px;
@@ -1757,7 +1748,7 @@ watch(
 .confirmed-card small {
   display: block;
   color: var(--muted);
-  font-size: 9px;
+  font-size: var(--text-caption);
   font-weight: 800;
   letter-spacing: 0.08em;
 }
@@ -1785,7 +1776,7 @@ watch(
 .confirmed-card strong {
   display: block;
   margin-top: 5px;
-  font-size: 12px;
+  font-size: var(--text-label);
 }
 .confirmation-actions {
   display: flex;
@@ -1826,7 +1817,7 @@ watch(
 .reference button {
   min-height: 38px;
   padding: 0 4px;
-  font-size: 12px;
+  font-size: var(--text-label);
   font-weight: 800;
   cursor: pointer;
 }
@@ -1850,7 +1841,7 @@ watch(
   }
   .details-flow .hint {
     padding-top: 8px;
-    font-size: 9px;
+    font-size: var(--text-caption);
     line-height: 1.35;
   }
 }
@@ -1940,7 +1931,7 @@ watch(
     gap: 4px;
     padding-right: 0;
     text-align: center;
-    font-size: 9px;
+    font-size: var(--text-caption);
   }
   .step:not(:last-child):after {
     display: none;
@@ -1951,7 +1942,7 @@ watch(
   }
   .step b {
     display: block;
-    font-size: 9px;
+    font-size: var(--text-caption);
   }
   .summary-flow > div > .summary-card {
     padding: 16px;
@@ -2015,7 +2006,7 @@ watch(
     border: 0;
   }
   .passenger-flow > .trip-summary > .total span {
-    font-size: 9px;
+    font-size: var(--text-caption);
   }
   .passenger-flow > .trip-summary > .total strong {
     font-size: 20px;
@@ -2096,7 +2087,7 @@ watch(
     letter-spacing: -0.6px;
   }
   .confirmed-page > .muted {
-    font-size: 12px;
+    font-size: var(--text-label);
   }
   .reference {
     gap: 8px;
@@ -2119,7 +2110,7 @@ watch(
     border-top: 1px solid var(--line);
   }
   .confirmed-card strong {
-    font-size: 12px;
+    font-size: var(--text-label);
   }
   .confirmation-actions {
     gap: 8px;
@@ -2175,7 +2166,7 @@ watch(
     width: 100%;
   }
   .confirmation-actions ion-button {
-    font-size: 12px;
+    font-size: var(--text-label);
   }
 }
 @container passenger (max-width:800px) {
@@ -2288,11 +2279,11 @@ watch(
     padding: 14px 10px;
   }
   .info-grid strong {
-    font-size: 12px;
+    font-size: var(--text-label);
     line-height: 1.4;
   }
   .info-grid span {
-    font-size: 9px;
+    font-size: var(--text-caption);
     line-height: 1.5;
   }
 }
@@ -2300,7 +2291,7 @@ watch(
 .summary-flow { gap: 20px; }
 .summary-flow > div { min-width: 0; }
 .summary-flow .summary-heading { align-items: center; gap: 12px; }
-.summary-flow .summary-heading a { display: inline-flex; align-items: center; min-height: 44px; font-size: 12px; white-space: nowrap; }
+.summary-flow .summary-heading a { display: inline-flex; align-items: center; min-height: 44px; font-size: var(--text-label); white-space: nowrap; }
 .summary-flow .summary-heading a:focus-visible,
 .passenger-identity summary:focus-visible { outline: 2px solid var(--ocean); outline-offset: 3px; border-radius: 6px; }
 .summary-flow .summary-route { grid-template-columns: minmax(0, 1fr) 24px minmax(0, 1fr); gap: 12px; padding: 8px 0 16px; border: 0; }
@@ -2308,7 +2299,7 @@ watch(
 .summary-flow .summary-route .app-icon { color: var(--ocean); font-size: 20px; }
 .summary-trip-meta { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin: 0; padding-bottom: 20px; border-bottom: 1px solid var(--line); }
 .summary-trip-meta div, .identity-grid div { min-width: 0; }
-.summary-trip-meta dt, .identity-grid dt { color: var(--muted); font-size: 11px; line-height: 1.5; }
+.summary-trip-meta dt, .identity-grid dt { color: var(--muted); font-size: var(--text-caption); line-height: 1.5; }
 .summary-trip-meta dd, .identity-grid dd { margin: 5px 0 0; color: var(--ink); font-size: 13px; line-height: 1.6; overflow-wrap: anywhere; }
 .summary-flow .passengers-heading { margin: 14px 0 4px; }
 .summary-flow .passenger-row { display: grid; grid-template-columns: 36px minmax(0, 1fr); align-items: start; gap: 8px 12px; padding: 18px 0; }
@@ -2316,13 +2307,13 @@ watch(
 .summary-flow .passenger-row .initial { width: 36px; height: 36px; margin-top: 2px; }
 .passenger-name-line { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; }
 .summary-flow .passenger-row strong { font-size: 14px; line-height: 1.5; overflow-wrap: anywhere; }
-.summary-flow .passenger-row small { margin-top: 5px; font-size: 12px; line-height: 1.5; }
-.passenger-contact { display: block; margin-top: 4px; color: var(--muted); font-size: 12px; line-height: 1.5; overflow-wrap: anywhere; }
-.passenger-status { display: inline-flex; align-items: center; gap: 4px; padding: 3px 7px; border-radius: 6px; background: color-mix(in srgb, var(--ocean) 10%, var(--surface)); color: var(--ocean); font-size: 10px; font-weight: 600; line-height: 1.5; white-space: nowrap; }
+.summary-flow .passenger-row small { margin-top: 5px; font-size: var(--text-label); line-height: 1.5; }
+.passenger-contact { display: block; margin-top: 4px; color: var(--muted); font-size: var(--text-label); line-height: 1.5; overflow-wrap: anywhere; }
+.passenger-status { display: inline-flex; align-items: center; gap: 4px; padding: 3px 7px; border-radius: 6px; background: color-mix(in srgb, var(--ocean) 10%, var(--surface)); color: var(--ocean); font-size: var(--text-caption); font-weight: 600; line-height: 1.5; white-space: nowrap; }
 .passenger-status.incomplete { color: var(--ink); background: var(--surface-soft); border: 1px solid var(--line); }
 .passenger-status .app-icon { font-size: 13px; }
 .passenger-identity { grid-column: 2; min-width: 0; }
-.passenger-identity summary { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 44px; color: var(--ocean); font-size: 12px; font-weight: 600; list-style: none; cursor: pointer; }
+.passenger-identity summary { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 44px; color: var(--ocean); font-size: var(--text-label); font-weight: 600; list-style: none; cursor: pointer; }
 .passenger-identity summary::-webkit-details-marker { display: none; }
 .passenger-identity summary .app-icon { flex: none; font-size: 15px; transition: transform .15s ease; }
 .passenger-identity[open] summary .app-icon { transform: rotate(180deg); }
@@ -2332,7 +2323,7 @@ watch(
 .summary-flow .review-fares .fare-row { align-items: flex-start; gap: 16px; padding: 14px 0; border-bottom: 1px solid var(--line); }
 .review-fares .fare-row > span { min-width: 0; }
 .review-fares .fare-row strong { display: block; color: var(--ink); font-size: 13px; line-height: 1.5; overflow-wrap: anywhere; }
-.review-fares .fare-row small { display: block; margin-top: 4px; color: var(--muted); font-size: 12px; line-height: 1.5; }
+.review-fares .fare-row small { display: block; margin-top: 4px; color: var(--muted); font-size: var(--text-label); line-height: 1.5; }
 .review-fares .fare-row b { flex: none; font-size: 13px; line-height: 1.5; white-space: nowrap; }
 .summary-flow .review-fares .total { flex-wrap: wrap; gap: 8px 16px; padding: 18px 0; margin: 0; border: 0; }
 .review-fares .total strong { font-size: 24px; white-space: nowrap; }
@@ -2343,14 +2334,14 @@ watch(
 .duplicate-notice-icon { display: grid; place-items: center; flex: none; width: 34px; height: 34px; border-radius: 9px; background: var(--light-blue); color: var(--ocean); font-size: 19px; }
 .duplicate-notice-heading > div { min-width: 0; }
 .duplicate-booking-notice h3 { margin: 0 0 6px; color: var(--ink); font-size: 14px; line-height: 1.5; }
-.duplicate-booking-notice p { margin: 0; color: var(--muted); font-size: 12px; font-weight: 400; line-height: 1.7; }
+.duplicate-booking-notice p { margin: 0; color: var(--muted); font-size: var(--text-label); font-weight: 400; line-height: 1.7; }
 .duplicate-booking-reference { display: grid; gap: 6px; margin: 16px 0 12px; padding: 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); }
-.duplicate-booking-reference span { color: var(--muted); font-size: 9px; font-weight: 600; letter-spacing: .07em; }
+.duplicate-booking-reference span { color: var(--muted); font-size: var(--text-caption); font-weight: 600; letter-spacing: .07em; }
 .duplicate-booking-reference strong { color: var(--ink); font-size: 13px; line-height: 1.5; overflow-wrap: anywhere; }
-.duplicate-booking-action { display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 46px; margin-top: 16px; padding: 10px 12px; border-radius: 9px; background: var(--action); color: #fff; font-size: 12px; font-weight: 600; line-height: 1.5; text-align: center; text-decoration: none; }
+.duplicate-booking-action { display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 46px; margin-top: 16px; padding: 10px 12px; border-radius: 9px; background: var(--action); color: #fff; font-size: var(--text-label); font-weight: 600; line-height: 1.5; text-align: center; text-decoration: none; }
 .duplicate-booking-action .app-icon { flex: none; font-size: 17px; }
 .duplicate-booking-action .app-icon:last-child { margin-left: auto; }
-.duplicate-edit-action { display: flex; align-items: center; justify-content: center; min-height: 42px; margin-top: 6px; color: var(--ocean); font-size: 12px; font-weight: 600; text-decoration: none; }
+.duplicate-edit-action { display: flex; align-items: center; justify-content: center; min-height: 42px; margin-top: 6px; color: var(--ocean); font-size: var(--text-label); font-weight: 600; text-decoration: none; }
 .duplicate-booking-action:hover { filter: brightness(1.08); }
 .duplicate-edit-action:hover { text-decoration: underline; text-underline-offset: 3px; }
 .duplicate-booking-action:focus-visible, .duplicate-edit-action:focus-visible { outline: 2px solid var(--ocean); outline-offset: 3px; border-radius: 9px; }
@@ -2366,30 +2357,30 @@ watch(
 </style>
 
 <style scoped>
-.voucher-entry{padding:16px 0;border-bottom:1px solid var(--line)}.voucher-entry label{display:block;font-size:13px;font-weight:600;margin-bottom:10px}.voucher-entry>div{display:flex;gap:8px}.voucher-entry input{min-width:0;flex:1;background:var(--surface);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:10px;font:inherit}.voucher-entry button{min-height:44px;border:1px solid var(--line);border-radius:8px;padding:8px 14px;color:var(--ocean);background:var(--surface);font:inherit;cursor:pointer}.voucher-entry button:disabled{opacity:.5}.voucher-entry p{font-size:12px;line-height:1.6}.voucher-entry small{display:block;margin-top:10px;color:var(--muted);font-size:11px}.voucher-discount{color:var(--ocean)}
+.voucher-entry{padding:16px 0;border-bottom:1px solid var(--line)}.voucher-entry label{display:block;font-size:13px;font-weight:600;margin-bottom:10px}.voucher-entry>div{display:flex;gap:8px}.voucher-entry input{min-width:0;flex:1;background:var(--surface);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:10px;font:inherit}.voucher-entry button{min-height:44px;border:1px solid var(--line);border-radius:8px;padding:8px 14px;color:var(--ocean);background:var(--surface);font:inherit;cursor:pointer}.voucher-entry button:disabled{opacity:.5}.voucher-entry p{font-size: var(--text-label);line-height:1.6}.voucher-entry small{display:block;margin-top:10px;color:var(--muted);font-size: var(--text-caption)}.voucher-discount{color:var(--ocean)}
 </style>
 
 <style scoped>
 .booking-page { font-family: var(--ion-font-family); padding-bottom: calc(48px + env(safe-area-inset-bottom)); }
-.booking-page .booking-back { gap: 8px; min-height: 44px; border-radius: 10px; font-size: 12px; }
+.booking-page .booking-back { gap: 8px; min-height: 44px; border-radius: 10px; font-size: var(--text-label); }
 .booking-page .progress { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; margin: 22px 0 12px; padding: 12px 6px; border: 1px solid var(--line); border-radius: 16px; background: var(--surface); }
 .booking-page .progress .step { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: start; gap: 8px; padding: 0; min-width: 0; text-align: center; }
 .booking-page .progress .step::after { display: none; }
-.booking-page .progress .step > span { display: grid; place-items: center; width: 30px; height: 30px; background: var(--surface-soft); color: var(--muted); font-size: 12px; }
+.booking-page .progress .step > span { display: grid; place-items: center; width: 30px; height: 30px; background: var(--surface-soft); color: var(--muted); font-size: var(--text-label); }
 .booking-page .progress .step.active > span { background: var(--light-blue); color: var(--ocean); border-color: var(--line); }
 .booking-page .progress .step.current > span { background: var(--action); border-color: transparent; color: #fff; box-shadow: 0 0 0 4px var(--light-blue); }
-.booking-page .progress .step b { display: block; font-size: 10px; line-height: 1.5; font-weight: 600; color: var(--muted); }
+.booking-page .progress .step b { display: block; font-size: var(--text-caption); line-height: 1.5; font-weight: 600; color: var(--muted); }
 .booking-page .progress .step.active b { color: var(--ocean); }
-.booking-page .step-caption { display: flex; justify-content: space-between; gap: 10px; margin: 0 0 24px; padding: 0 2px; font-size: 11px; color: var(--muted); }
+.booking-page .step-caption { display: flex; justify-content: space-between; gap: 10px; margin: 0 0 24px; padding: 0 2px; font-size: var(--text-caption); color: var(--muted); }
 .booking-page .step-caption strong { color: var(--ocean); font-weight: 600; }
 .booking-page .flow-layout h1, .booking-page .confirmed-page h1 { font-size: 28px; line-height: 1.3; letter-spacing: -.7px; overflow-wrap: anywhere; }
-.booking-page .muted { font-size: 12px; line-height: 1.8; }
+.booking-page .muted { font-size: var(--text-label); line-height: 1.8; }
 .booking-page .journey-card { padding: 20px; border-radius: 18px; border-top: 3px solid var(--ocean); }
 .booking-page .journey-time { grid-template-columns: minmax(0, 1fr) 76px minmax(0, 1fr); gap: 10px; }
 .booking-page .journey-time > div { min-width: 0; }
 .booking-page .journey-time strong { font-size: 24px; letter-spacing: -.5px; }
-.booking-page .journey-time small { font-size: 9px; letter-spacing: .05em; }
-.booking-page .journey-time span { font-size: 11px; line-height: 1.5; overflow-wrap: anywhere; }
+.booking-page .journey-time small { font-size: var(--text-caption); letter-spacing: .05em; }
+.booking-page .journey-time span { font-size: var(--text-caption); line-height: 1.5; overflow-wrap: anywhere; }
 .booking-page .journey-line { display: grid; grid-template-columns: 1fr 24px 1fr; gap: 4px; }
 .booking-page .journey-line .route-mark { grid-column: 2; grid-row: 1; color: var(--ocean); }
 .booking-page .journey-line i { grid-row: 1; }
@@ -2397,22 +2388,22 @@ watch(
 .booking-page .vessel-detail { display: grid; grid-template-columns: 38px minmax(0, 1fr); gap: 8px 12px; }
 .booking-page .vessel-detail > div { min-width: 0; overflow-wrap: anywhere; }
 .booking-page .vessel-detail strong { font-size: 14px; line-height: 1.5; }
-.booking-page .vessel-detail p { font-size: 10px; line-height: 1.7; }
-.booking-page .vessel-detail .available { grid-column: 2; margin: 0; justify-self: start; padding: 4px 8px; border-radius: 6px; background: color-mix(in srgb, #20ae87 12%, var(--surface)); color: var(--ink); font-size: 10px; }
+.booking-page .vessel-detail p { font-size: var(--text-caption); line-height: 1.7; }
+.booking-page .vessel-detail .available { grid-column: 2; margin: 0; justify-self: start; padding: 4px 8px; border-radius: 6px; background: color-mix(in srgb, #20ae87 12%, var(--surface)); color: var(--ink); font-size: var(--text-caption); }
 .booking-page .flow-aside { padding: 20px; border-radius: 18px; box-shadow: none; }
 .booking-page .flow-aside .kicker { display: flex; align-items: center; gap: 7px; margin-bottom: 8px; }
 .booking-page .flow-aside .kicker .app-icon { font-size: 16px; }
-.booking-page .fare-row { font-size: 12px; padding: 14px 0; }
-.booking-page .fare-row span small, .booking-page .total span small { display: block; font-size: 11px; line-height: 1.6; }
+.booking-page .fare-row { font-size: var(--text-label); padding: 14px 0; }
+.booking-page .fare-row span small, .booking-page .total span small { display: block; font-size: var(--text-caption); line-height: 1.6; }
 .booking-page .total { margin-top: 12px; padding-top: 18px; }
 .booking-page .total strong { font-size: 24px; white-space: nowrap; }
 .booking-page .continue { --background: var(--action); --border-radius: var(--button-radius); --padding-start: 14px; --padding-end: 14px; height: 48px; font-size: 13px; letter-spacing: 0; font-weight: 650; }
 .booking-page .continue .app-icon { margin-left: 10px; font-size: 18px; }
-.booking-page .hint { font-size: 11px; line-height: 1.8; }
-.booking-page .selection-hint { color: var(--ocean); font-size: 11px; line-height: 1.6; padding: 10px; border-radius: 8px; background: var(--light-blue); }
+.booking-page .hint { font-size: var(--text-caption); line-height: 1.8; }
+.booking-page .selection-hint { color: var(--ocean); font-size: var(--text-caption); line-height: 1.6; padding: 10px; border-radius: 8px; background: var(--light-blue); }
 .booking-page .info-grid article { min-width: 0; padding: 14px 10px; min-height: 100px; border-radius: 12px; }
-.booking-page .info-grid strong { font-size: 12px; line-height: 1.6; overflow-wrap: anywhere; }
-.booking-page .info-grid span { font-size: 10px; line-height: 1.6; }
+.booking-page .info-grid strong { font-size: var(--text-label); line-height: 1.6; overflow-wrap: anywhere; }
+.booking-page .info-grid span { font-size: var(--text-caption); line-height: 1.6; }
 .booking-page .passenger-flow { gap: 20px; }
 .booking-page .passenger-flow > .trip-summary { margin-top: 0; padding: 16px; position: static; }
 .booking-page .trip-summary .hint { text-align: left; }
@@ -2420,23 +2411,23 @@ watch(
 .booking-page .passenger-heading { margin-bottom: 14px; letter-spacing: 0; gap: 10px; }
 .booking-page .passenger-heading strong { display: flex; align-items: center; gap: 8px; font-size: 13px; }
 .booking-page .passenger-heading .app-icon { display: grid; padding: 7px; border-radius: 8px; background: var(--light-blue); font-size: 18px; }
-.booking-page .passenger-heading .remove { min-height: 44px; padding: 7px; font-size: 11px; }
+.booking-page .passenger-heading .remove { min-height: 44px; padding: 7px; font-size: var(--text-caption); }
 .booking-page .form-grid { gap: 16px; }
-.booking-page .form-grid label { min-width: 0; gap: 8px; font-size: 12px; font-weight: 500; }
+.booking-page .form-grid label { min-width: 0; gap: 8px; font-size: var(--text-label); font-weight: 500; }
 .booking-page .form-grid input, .booking-page .form-grid select { min-width: 0; height: 46px; font-size: 14px; font-weight: 400; border-radius: 10px; background-color: var(--surface-soft); }
 .booking-page .form-grid input[aria-invalid="true"], .booking-page .form-grid select[aria-invalid="true"] { border-color: var(--danger); }
-.booking-page .passenger-card p[role="alert"], .booking-page .form-message { padding: 12px; border-radius: 10px; color: var(--danger); background: color-mix(in srgb, var(--danger) 8%, var(--surface)); font-size: 12px; line-height: 1.7; }
+.booking-page .passenger-card p[role="alert"], .booking-page .form-message { padding: 12px; border-radius: 10px; color: var(--danger); background: color-mix(in srgb, var(--danger) 8%, var(--surface)); font-size: var(--text-label); line-height: 1.7; }
 .booking-page .passenger-actions { gap: 12px; }
 .booking-page .passenger-actions .continue { flex: 1; }
 .booking-page .summary-card { padding: 20px; border-radius: 18px; }
 .booking-page .summary-heading > strong { display: flex; align-items: center; gap: 7px; }
 .booking-page .summary-heading .app-icon { color: var(--ocean); font-size: 18px; }
-.booking-page .summary-heading a { padding: 5px 8px; border-radius: 8px; background: var(--light-blue); font-size: 11px; min-height: 36px; }
+.booking-page .summary-heading a { padding: 5px 8px; border-radius: 8px; background: var(--light-blue); font-size: var(--text-caption); min-height: 36px; }
 .booking-page .summary-flow .passenger-row { padding: 16px 0; }
 .booking-page .passenger-identity summary { padding: 8px 10px; border-radius: 8px; background: var(--surface-soft); }
 .booking-page .voucher-entry { margin: 6px 0; padding: 16px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface-soft); }
 .booking-page .voucher-entry input { width: 0; min-height: 44px; font-size: 13px; }
-.booking-page .voucher-entry button { font-size: 12px; }
+.booking-page .voucher-entry button { font-size: var(--text-label); }
 .booking-page .confirmed-page { margin-top: 12px; }
 .booking-page .success-icon { border-radius: 18px; background: color-mix(in srgb, #24b791 16%, var(--surface)); color: #24a58c; }
 .booking-page .success-icon.pending { background: var(--light-blue); color: var(--ocean); }
@@ -2448,7 +2439,7 @@ watch(
 .booking-page .confirmed-card > div:first-child { grid-column: 1 / -1; padding-bottom: 14px; border-bottom: 1px solid var(--line); }
 .booking-page .confirmed-card > div:first-child strong { font-size: 18px; line-height: 1.5; }
 .booking-page .confirmed-card strong { font-size: 13px; line-height: 1.7; }
-.booking-page .confirmed-card small { font-size: 9px; line-height: 1.6; }
+.booking-page .confirmed-card small { font-size: var(--text-caption); line-height: 1.6; }
 .booking-page .confirmation-actions { width: 100%; }
 .booking-page .confirmation-actions ion-button { max-width: none; }
 .booking-page .trip-port-map :deep(.map-heading) { padding: 20px 18px 14px; }
@@ -2471,7 +2462,7 @@ watch(
   .booking-page .journey-card, .booking-page .flow-aside, .booking-page .passenger-card, .booking-page .summary-card { padding: 16px; }
   .booking-page .journey-time { grid-template-columns: minmax(0, 1fr) 50px minmax(0, 1fr); gap: 6px; }
   .booking-page .journey-time strong { font-size: 20px; }
-  .booking-page .journey-time span { font-size: 10px; }
+  .booking-page .journey-time span { font-size: var(--text-caption); }
   .booking-page .info-grid { gap: 6px; }
   .booking-page .info-grid article { padding: 12px 8px; }
   .booking-page .confirmed-card { grid-template-columns: minmax(0, 1fr); }
@@ -2482,4 +2473,13 @@ watch(
   @keyframes booking-step-in { from { transform: scale(.85); } to { transform: scale(1); } }
 }
 
+</style>
+
+<style scoped>
+.booking-secondary-details { margin:12px 0; }.booking-secondary-details summary { min-height:44px; display:flex; align-items:center; color:var(--ocean); cursor:pointer; font-size:var(--text-label); }.passenger-actions { position:sticky; bottom:0; z-index:2; background:var(--surface); padding:12px; border-top:1px solid var(--line); }.passenger-context .hint { font-size:var(--text-caption); }
+@container passenger (max-width:800px){ .booking-page.passenger-info-page .passenger-flow > .passenger-context { order:2; }.passenger-info-page .passenger-context .trip-vessel,.passenger-info-page .passenger-context .hint { display:none; }.passenger-info-page .progress { margin:12px 0; }.passenger-info-page .step-caption { margin:8px 0; }.passenger-info-page .booking-back { margin-top:8px; }.passenger-info-page .passenger-actions { bottom:env(safe-area-inset-bottom); }.passenger-info-page .flow-layout { gap:16px; } }
+</style>
+
+<style scoped>
+.compact-trip-context { display:flex; align-items:center; flex-wrap:wrap; gap:6px 14px; padding:12px; margin:12px 0; border:1px solid var(--line); border-radius:12px; background:var(--surface); font-size:var(--text-caption); color:var(--muted); }.compact-trip-context strong { color:var(--ink); }.compact-trip-context span { overflow-wrap:anywhere; }
 </style>

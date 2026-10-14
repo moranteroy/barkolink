@@ -1,0 +1,22 @@
+/* Shared reading and interaction rules for all workspaces. */
+:root {
+  --text-caption: 13px;
+  --text-label: 14px;
+  --text-body: 15px;
+  --button-font-size: var(--text-label);
+}
+.workspace-tabs { display:flex; flex-wrap:wrap; gap:6px; padding:6px; margin:16px 0; border:1px solid var(--line); border-radius:12px; background:var(--surface-soft); }
+.workspace-tabs button { display:inline-flex; align-items:center; justify-content:center; gap:8px; min-height:var(--button-height); padding:10px 16px; border:1px solid transparent; border-radius:var(--button-radius); background:transparent; color:var(--muted); font:inherit; font-size:var(--text-label); cursor:pointer; }
+.workspace-tabs button[aria-pressed="true"] { color:var(--ocean); background:var(--surface); border-color:var(--line); box-shadow:var(--card-shadow); }
+.workspace-tabs button:focus-visible { outline:2px solid var(--ocean); outline-offset:2px; }
+.archive-guidance,.setup-guidance { margin:12px 0; padding:14px; border:1px solid var(--line); border-radius:12px; background:var(--surface-soft); color:var(--muted); font-size:var(--text-label); line-height:1.6; }
+.ui-field-error { display:block; margin:6px 0 0; color:var(--danger, #c73646); font-size:var(--text-caption); line-height:1.5; }
+[aria-invalid="true"] { border-color:var(--danger, #c73646) !important; }
+.setup-checklist { display:grid; gap:8px; padding:16px; margin:12px 0; border:1px solid var(--line); border-radius:12px; background:var(--surface-soft); }
+.setup-checklist h3 { margin:0 0 4px; font-size:16px; }.setup-checklist p { margin:0; font-size:var(--text-label); line-height:1.6; }
+.setup-checklist a { display:inline-flex; align-items:center; min-height:44px; color:var(--ocean); text-underline-offset:3px; }
+@media(max-width:480px) {
+  .workspace-tabs button { flex:1; padding-inline:10px; }
+  .setup-checklist { padding:12px; }
+}
+@media(prefers-reduced-motion:reduce) { *,*::before,*::after { scroll-behavior:auto !important; } }

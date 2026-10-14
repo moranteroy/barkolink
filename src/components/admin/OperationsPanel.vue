@@ -22,6 +22,7 @@
   <SailingStatusSettings ref="statusSettings" />
 </template>
 <script setup lang="ts">
+import { notifySuccess, notifyError } from '@/composables/toast';
 import { computed, onMounted, ref } from "vue";
 import SailingStatusSettings from './SailingStatusSettings.vue';
 const statusSettings=ref<{hasUnsavedChanges:()=>boolean}|null>(null);
@@ -61,9 +62,9 @@ async function save() {
   try {
     await saveOperationSettings(staffDatabase, minutes);
     hours.value = minutes / 60;
-    notice.value = "Payment deadline saved for new reservations.";
+    notice.value = notifySuccess("Payment deadline saved for new reservations.");
   } catch (cause) {
-    error.value = databaseRequestError(cause, "Could not save the deadline.");
+    error.value = notifyError(databaseRequestError(cause, "Could not save the deadline."));
   } finally {
     saving.value = false;
   }
@@ -79,7 +80,7 @@ async function load() {
       (await operationSettings(staffDatabase)).data.reservationMinutes / 60;
     loaded.value = true;
   } catch (cause) {
-    error.value = databaseRequestError(cause, "Could not load the deadline.");
+    error.value = notifyError(databaseRequestError(cause, "Could not load the deadline."));
   } finally {
     loading.value = false;
   }
@@ -92,17 +93,17 @@ onMounted(load);
 .settings-heading { display:flex; align-items:center; gap:12px; padding:14px 16px; border-bottom:1px solid var(--line); }
 .settings-icon,.history-icon { display:grid; place-items:center; flex:none; width:34px; height:34px; border-radius:12px; background:var(--light-blue); color:var(--ocean); font-size:20px; }
 h2 { margin:0; font-size:17px; color:var(--ink); }
-p { color:var(--muted); font-size:12px; line-height:1.7; }
+p { color:var(--muted); font-size: var(--text-label); line-height:1.7; }
 .settings-heading p:last-child { margin:7px 0 0; }
-.eyebrow { color:var(--ocean); font-size:10px; letter-spacing:.1em; font-weight:800; margin:0 0 7px; }
+.eyebrow { color:var(--ocean); font-size: var(--text-caption); letter-spacing:.1em; font-weight:800; margin:0 0 7px; }
 .settings-body { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:14px; padding:14px 16px; }
-label { display:grid; gap:9px; font-size:12px; font-weight:600; color:var(--ink); }
+label { display:grid; gap:9px; font-size: var(--text-label); font-weight:600; color:var(--ink); }
 .hours-field { display:flex; align-items:center; gap:12px; border:1px solid var(--line); border-radius:10px; background:var(--surface-soft); padding:0 14px; }
 .hours-field input { width:100%; min-width:0; height:40px; padding:12px 0; border:0; background:transparent; color:var(--ink); font:inherit; font-size:18px; font-weight:700; }
 .hours-field:focus-within { outline:2px solid var(--ocean); outline-offset:2px; }
 .hours-field input:focus { outline:none; }
-.hours-field > span { color:var(--muted); font-size:12px; font-weight:400; }
-.field-hint { margin:7px 0 10px; font-size:11px; }
+.hours-field > span { color:var(--muted); font-size: var(--text-label); font-weight:400; }
+.field-hint { margin:7px 0 10px; font-size: var(--text-caption); }
 .deadline-presets { display:flex; gap:8px; flex-wrap:wrap; }
 .deadline-presets button[aria-pressed="true"] { background:var(--light-blue); color:var(--ocean); border-color:var(--ocean); }
 .deadline-preview { padding:12px 14px; border:1px solid var(--line); border-radius:12px; background:var(--surface-soft); }
@@ -111,14 +112,14 @@ label { display:grid; gap:9px; font-size:12px; font-weight:600; color:var(--ink)
 .deadline-note { grid-column:1/-1; display:flex; align-items:start; gap:10px; padding:10px 12px; margin:0; border:1px solid var(--line); border-radius:10px; }
 .deadline-note .app-icon { color:var(--ocean); font-size:18px; flex:none; margin-top:2px; }
 .settings-footer { display:flex; justify-content:space-between; align-items:center; gap:16px; padding:12px 16px; border-top:1px solid var(--line); }
-.settings-footer > span { color:var(--muted); font-size:11px; }
+.settings-footer > span { color:var(--muted); font-size: var(--text-caption); }
 .settings-status,.error,.settings-notice { padding:14px 18px; margin:0; border:1px solid var(--line); border-radius:10px; background:var(--surface); }
 .error { color:#bd3b45; border-color:#bd3b4533; }
 .settings-notice { display:flex; align-items:center; gap:9px; color:var(--ocean); }
 .history-link { display:flex; align-items:center; gap:14px; padding:12px 14px; border:1px solid var(--line); border-radius:14px; background:var(--surface); color:var(--ocean); text-decoration:none; }
 .history-link > span:nth-child(2) { flex:1; min-width:0; }
 .history-link strong { font-size:13px; }
-.history-link small { display:block; color:var(--muted); font-size:11px; margin-top:6px; line-height:1.6; }
+.history-link small { display:block; color:var(--muted); font-size: var(--text-caption); margin-top:6px; line-height:1.6; }
 .history-link:hover { border-color:var(--ocean); }
 .history-link > .app-icon { flex:none; }
 @media(max-width:600px) { .settings-heading,.settings-body { padding:18px; } .settings-body { grid-template-columns:1fr; gap:18px; } .settings-heading { align-items:start; } .settings-footer { padding:16px 18px; flex-wrap:wrap; } .history-link { padding:18px; } h2 { font-size:17px; } }

@@ -20,7 +20,7 @@ try {
     for (const path of ['/search?all=1', '/help', '/privacy']) {
       await page.goto(baseUrl + path)
       await page.locator('h1').waitFor()
-      assert.equal(new URL(page.url()).pathname, path.split('?')[0])
+      assert.equal(new URL(page.url()).pathname, path.split('?')[0] === '/search' ? '/trips' : path.split('?')[0])
       assert.equal(await page.locator('main').evaluate(el => el.scrollWidth > el.clientWidth + 2), false)
       assert.equal(await page.locator('[role=alert]').count(), 0)
       if (path !== '/privacy') assert.equal(await page.getByRole('link', { name: 'Sign in', exact: true }).count(), 1)

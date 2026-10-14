@@ -13,7 +13,7 @@
           <nav aria-label="Admin navigation">
             <div class="nav-group port-display-shortcut">
               <router-link to="/port-display" target="_blank" rel="noopener" @click="menuOpen = false">
-                <AppIcon :icon="gridOutline" aria-hidden="true" />Port Display (TV)
+                <Monitor class="app-icon" :size="20" aria-hidden="true" />Port Display (TV)
               </router-link>
             </div>
             <div
@@ -101,6 +101,7 @@
             </div>
           </header>
           <main class="content" :class="{ 'staff-port-content': section === 'staff-ports' }">
+            <p v-if="route.query.returnTo === '/admin/trips'" class="setup-guidance">Your trip draft is saved. <router-link to="/admin/trips">Return to the trip draft</router-link> after completing setup.</p>
             <div class="heading">
               <div>
                 <p class="eyebrow">{{ page.group }}</p>
@@ -492,9 +493,9 @@
               <div v-else-if="section === 'users'" class="booking-filters user-filters">
                 <label class="booking-search-field" for="user-search"><span>Search users</span><div class="booking-search-input"><AppIcon :icon="searchOutline" aria-hidden="true" /><input id="user-search" v-model.trim="search" type="search" placeholder="Full name or email address" /></div></label>
                 <label for="user-role-filter"><span>Account role</span><select id="user-role-filter" v-model="statusFilter"><option value="ALL">All roles</option><option v-for="value in filterOptions" :key="value" :value="value">{{ userRoleLabel(value) }}</option></select></label>
-                <Button variant="ghost" :disabled="!search && statusFilter === 'ALL'" @click="search = ''; statusFilter = 'ALL'">Reset filters</Button>
+                <Button variant="ghost" :disabled="!search && statusFilter === 'ALL'" @click="search = ''; statusFilter = ['ports', 'vessels'].includes(section) ? 'ACTIVE' : 'ALL'">Reset filters</Button>
               </div>
-              <div v-else-if="['bookings', 'passengers', 'trips', 'ports', 'vessels'].includes(section)" class="booking-filters" :class="{ 'trip-filters': section === 'trips' }">
+              <div v-else-if="['bookings', 'passengers', 'trips', 'ports', 'vessels'].includes(section)" v-show="section !== 'trips' || tripTab === 'trips'" class="booking-filters" :class="{ 'trip-filters': section === 'trips' }">
                 <label class="booking-search-field" for="directory-search">
                   <span>{{ section === 'vessels' ? 'Search vessels' : section === 'ports' ? 'Search ports' : section === 'trips' ? 'Search trips' : section === 'passengers' ? 'Search passengers' : 'Search bookings' }}</span>
                   <div class="booking-search-input">
@@ -506,10 +507,10 @@
                   <span>{{ section === 'vessels' ? 'Vessel status' : section === 'ports' ? 'Port status' : section === 'trips' ? 'Trip status' : section === 'passengers' ? 'Ticket status' : 'Payment / booking status' }}</span>
                   <select id="directory-status" v-model="statusFilter">
                     <option value="ALL">All statuses</option>
-                    <option v-for="value in filterOptions" :key="value" :value="value">{{ section === 'trips' ? value.toLowerCase().replaceAll('_', ' ').replace(/\b\w/g, letter => letter.toUpperCase()) : value }}</option>
+                    <option v-for="value in filterOptions" :key="value" :value="value">{{ statusLabel(value) }}</option>
                   </select>
                 </label>
-                <Button variant="ghost" :disabled="!search && statusFilter === 'ALL'" @click="search = ''; statusFilter = 'ALL'">Reset filters</Button>
+                <Button variant="ghost" :disabled="!search && statusFilter === 'ALL'" @click="search = ''; statusFilter = ['ports', 'vessels'].includes(section) ? 'ACTIVE' : 'ALL'">Reset filters</Button>
               </div>
               <div v-else class="toolbar">
                 <input
@@ -537,7 +538,7 @@
                     :key="value"
                     :value="value"
                   >
-                    {{ value }}
+                    {{ statusLabel(value) }}
                   </option></select
                 ><select
                   v-if="['check-in', 'boarding', 'manifest'].includes(section)"
@@ -550,12 +551,18 @@
                   </option>
                 </select>
               </div>
+              <label v-if="['bookings','trips','users','passengers','check-in','boarding','manifest'].includes(section) && (section !== 'trips' || tripTab === 'trips')" class="directory-global-sort">Sort all matching records<select v-model="directorySort"><option value="">Default order</option><template v-if="section === 'bookings'"><option value="reference:asc">Reference: A–Z</option><option value="amount:desc">Amount: highest first</option><option value="departure:asc">Departure: earliest first</option></template><template v-else-if="section === 'trips'"><option value="departure:asc">Departure: earliest first</option><option value="departure:desc">Departure: latest first</option><option value="name:asc">Vessel: A–Z</option></template><template v-else><option value="name:asc">Name: A–Z</option><option value="name:desc">Name: Z–A</option></template></select><small>Orders every matching record before pagination. Column controls below only change this page.</small></label>
               <p v-if="section === 'check-in'" class="check-in-guidance"><AppIcon :icon="informationCircleOutline" aria-hidden="true" /><span>Check in issued tickets for paid, confirmed bookings. Choose a sailing to focus on its passengers.</span></p>
               <VesselTrackingPanel v-if="section === 'vessels'" ref="childEditorRef" />
-              <DailySchedulesPanel ref="childEditorRef" v-if="section === 'trips'" :disabled="loading || !!busy" @plan="planPublishedDeparture" />
-              <p v-if="section === 'trips'" class="trip-field-hint">Automatic status follows each trip's confirmed boarding time and scheduled arrival. Updates run every minute. Trips without a confirmed boarding time are flagged for review. Admin controls Delayed and Cancelled; update the schedule before resuming a delayed trip.</p>
-              <details v-if="section === 'trips'" class="admin-trip-weather"><summary><span><AppIcon :icon="boatOutline" aria-hidden="true" /> Port weather</span><span>Choose a sailing to view its forecast</span></summary><WeatherTripPicker :trips="sailings" /></details>
-              <section class="panel" :class="{ 'booking-records-panel': ['bookings', 'passengers', 'trips', 'ports', 'vessels', 'check-in', 'boarding', 'manifest', 'users'].includes(section), 'passenger-records-panel': section === 'passengers', 'trip-records-panel': section === 'trips', 'boarding-records-panel': section === 'boarding', 'manifest-records-panel': section === 'manifest' }">
+              <div v-if="section === 'trips'" class="workspace-tabs" role="group" aria-label="Trip management view">
+                <button type="button" :aria-pressed="tripTab === 'trips'" @click="tripTab = 'trips'">Actual trips</button>
+                <button type="button" :aria-pressed="tripTab === 'templates'" @click="tripTab = 'templates'">Daily schedules</button>
+              </div>
+              <DailySchedulesPanel ref="childEditorRef" v-if="section === 'trips'" v-show="tripTab === 'templates'" :disabled="loading || !!busy" @plan="planPublishedDeparture" />
+              <p v-if="['ports', 'vessels'].includes(section) && statusFilter === 'INACTIVE'" class="archive-guidance">Archived records remain linked to past trips and tickets. They are unavailable for new trips.</p>
+              <p v-if="section === 'trips' && tripTab === 'trips'" class="trip-field-hint">Automatic status follows each trip's confirmed boarding time and scheduled arrival. Updates run every minute. Trips without a confirmed boarding time are flagged for review. Admin controls Delayed and Cancelled; update the schedule before resuming a delayed trip.</p>
+              <details v-if="section === 'trips' && tripTab === 'trips'" class="admin-trip-weather"><summary><span><AppIcon :icon="boatOutline" aria-hidden="true" /> Port weather</span><span>Choose a sailing to view its forecast</span></summary><WeatherTripPicker :trips="sailings" /></details>
+              <section v-show="section !== 'trips' || tripTab === 'trips'" class="panel" :class="{ 'booking-records-panel': ['bookings', 'passengers', 'trips', 'ports', 'vessels', 'check-in', 'boarding', 'manifest', 'users'].includes(section), 'passenger-records-panel': section === 'passengers', 'trip-records-panel': section === 'trips', 'boarding-records-panel': section === 'boarding', 'manifest-records-panel': section === 'manifest' }">
                 <div class="panel-head">
                   <div>
                     <p class="eyebrow">{{ section === 'users' ? 'ACCOUNT DIRECTORY' : section === 'manifest' ? 'PAID PASSENGER RECORDS' : section === 'boarding' ? 'PASSENGER BOARDING' : section === 'check-in' ? 'PASSENGER CHECK-IN' : section === 'vessels' ? 'FLEET RECORDS' : section === 'ports' ? 'PORT RECORDS' : section === 'trips' ? 'TRIP SCHEDULES' : section === 'passengers' ? 'PASSENGER RECORDS' : 'RECORDS' }}</p>
@@ -806,36 +813,36 @@
             </button>
           </div>
           <p v-if="formError" class="alert" role="alert">{{ formError }}</p>
-          <form v-if="modal === 'port'" class="port-form" @submit.prevent="savePort">
+          <form novalidate v-if="modal === 'port'" class="port-form" @submit.prevent="savePort">
             <fieldset class="port-fields" :disabled="!!busy">
               <p class="port-form-note">Fields marked * are required.</p>
               <h3 class="port-field-heading">Port details</h3>
               <div class="port-field-grid">
-                <label for="port-code">Port code *<input id="port-code" v-model.trim="portForm.code" :disabled="!!editingId" required maxlength="12" placeholder="e.g. BTG" aria-describedby="port-code-hint" /><small id="port-code-hint">{{ editingId ? 'Port codes stay fixed after creation.' : 'Use a short, unique code. Saved in uppercase.' }}</small></label>
-                <label for="port-name">Port name *<input id="port-name" v-model.trim="portForm.name" required maxlength="120" placeholder="e.g. Batangas Port" /></label>
+                <label for="port-code">Port code *<input id="port-code" v-model.trim="portForm.code" :disabled="!!editingId" required maxlength="12" placeholder="e.g. BTG" v-bind="fieldAttrs('port.code', 'port-code-hint')" /><small v-if="fieldErrors['port.code']" :id="errorId('port.code')" class="ui-field-error">{{ fieldErrors['port.code'] }}</small><small id="port-code-hint">{{ editingId ? 'Port codes stay fixed after creation.' : 'Use a short, unique code. Saved in uppercase.' }}</small></label>
+                <label for="port-name">Port name *<input id="port-name" v-model.trim="portForm.name" required maxlength="120" placeholder="e.g. Batangas Port" v-bind="fieldAttrs('port.name')" /><small v-if="fieldErrors['port.name']" :id="errorId('port.name')" class="ui-field-error">{{ fieldErrors['port.name'] }}</small></label>
               </div>
               <h3 class="port-field-heading">Location</h3>
               <div class="port-field-grid">
-                <label for="port-city">City *<input id="port-city" v-model.trim="portForm.city" required maxlength="120" placeholder="e.g. Batangas City" /></label>
-                <label for="port-region">Region (optional)<input id="port-region" v-model.trim="portForm.region" maxlength="120" placeholder="e.g. Batangas" /></label>
+                <label for="port-city">City *<input id="port-city" v-model.trim="portForm.city" required maxlength="120" placeholder="e.g. Batangas City" v-bind="fieldAttrs('port.city')" /><small v-if="fieldErrors['port.city']" :id="errorId('port.city')" class="ui-field-error">{{ fieldErrors['port.city'] }}</small></label>
+                <label for="port-region">Region (optional)<input id="port-region" v-model.trim="portForm.region" maxlength="120" placeholder="e.g. Batangas" v-bind="fieldAttrs('port.region')" /><small v-if="fieldErrors['port.region']" :id="errorId('port.region')" class="ui-field-error">{{ fieldErrors['port.region'] }}</small></label>
               </div>
-              <label v-if="editingId" class="port-availability"><input v-model="portForm.isActive" type="checkbox" /><span><strong>Active port</strong><small>Available when creating new sailings.</small></span></label>
+              <label v-if="editingId" class="port-availability"><input v-model="portForm.isActive" type="checkbox" v-bind="fieldAttrs('port.isActive')" /><small v-if="fieldErrors['port.isActive']" :id="errorId('port.isActive')" class="ui-field-error">{{ fieldErrors['port.isActive'] }}</small><span><strong>Active port</strong><small>Available when creating new sailings.</small></span></label>
             </fieldset>
             <footer class="port-form-footer">
               <button data-slot="button" data-variant="outline" data-size="default" class="secondary" type="button" :disabled="!!busy" @click="closeModal">Cancel</button>
               <button data-slot="button" data-variant="default" data-size="default" class="primary" type="submit" :disabled="!!busy">{{ busy ? "Saving…" : editingId ? "Save changes" : "Add port" }}</button>
             </footer>
           </form>
-          <form v-else-if="modal === 'vessel'" class="port-form" @submit.prevent="saveVessel">
+          <form novalidate v-else-if="modal === 'vessel'" class="port-form" @submit.prevent="saveVessel">
             <div class="catalog-modal-scroll">
               <fieldset class="port-fields" :disabled="!!busy">
                 <p class="port-form-note">Vessel code, name, and passenger capacity are required.</p>
                 <div class="port-field-grid">
-                  <label for="vessel-code">Vessel code<input id="vessel-code" v-model.trim="vesselForm.code" :disabled="!!editingId" required maxlength="20" placeholder="e.g. VSL-005" /><small>{{ editingId ? 'Vessel codes stay fixed after creation.' : 'Use a unique code. Saved in uppercase.' }}</small></label>
-                  <label for="vessel-name">Vessel name<input id="vessel-name" v-model.trim="vesselForm.name" required maxlength="120" placeholder="e.g. MV Island Ferry" /></label>
-                  <label for="vessel-capacity">Passenger capacity<input id="vessel-capacity" v-model.number="vesselForm.capacity" type="number" min="1" max="10000" :disabled="!!editingId" required /><small>{{ editingId ? 'Capacity is fixed after creation to preserve existing sailing availability.' : 'Maximum number of passenger seats, from 1 to 10,000.' }}</small></label>
+                  <label for="vessel-code">Vessel code<input id="vessel-code" v-model.trim="vesselForm.code" :disabled="!!editingId" required maxlength="20" placeholder="e.g. VSL-005" v-bind="fieldAttrs('vessel.code')" /><small v-if="fieldErrors['vessel.code']" :id="errorId('vessel.code')" class="ui-field-error">{{ fieldErrors['vessel.code'] }}</small><small>{{ editingId ? 'Vessel codes stay fixed after creation.' : 'Use a unique code. Saved in uppercase.' }}</small></label>
+                  <label for="vessel-name">Vessel name<input id="vessel-name" v-model.trim="vesselForm.name" required maxlength="120" placeholder="e.g. MV Island Ferry" v-bind="fieldAttrs('vessel.name')" /><small v-if="fieldErrors['vessel.name']" :id="errorId('vessel.name')" class="ui-field-error">{{ fieldErrors['vessel.name'] }}</small></label>
+                  <label for="vessel-capacity">Passenger capacity<input id="vessel-capacity" v-model.number="vesselForm.capacity" type="number" min="1" max="10000" :disabled="!!editingId" required v-bind="fieldAttrs('vessel.capacity')" /><small v-if="fieldErrors['vessel.capacity']" :id="errorId('vessel.capacity')" class="ui-field-error">{{ fieldErrors['vessel.capacity'] }}</small><small>{{ editingId ? 'Capacity is fixed after creation to preserve existing sailing availability.' : 'Maximum number of passenger seats, from 1 to 10,000.' }}</small></label>
                 </div>
-                <label v-if="editingId" class="port-availability"><input v-model="vesselForm.isActive" type="checkbox" /><span><strong>Active vessel</strong><small>Available when creating new sailings.</small></span></label>
+                <label v-if="editingId" class="port-availability"><input v-model="vesselForm.isActive" type="checkbox" v-bind="fieldAttrs('vessel.isActive')" /><small v-if="fieldErrors['vessel.isActive']" :id="errorId('vessel.isActive')" class="ui-field-error">{{ fieldErrors['vessel.isActive'] }}</small><span><strong>Active vessel</strong><small>Available when creating new sailings.</small></span></label>
               </fieldset>
             </div>
             <footer class="port-form-footer"><button data-slot="button" data-variant="outline" data-size="default" class="secondary" type="button" :disabled="!!busy" @click="closeModal">Cancel</button><button data-slot="button" data-variant="default" data-size="default" class="primary" type="submit" :disabled="!!busy">{{ busy ? 'Saving…' : 'Save vessel' }}</button></footer>
@@ -843,6 +850,7 @@
           <form
             v-else-if="modal === 'trip'"
             class="trip-form"
+            novalidate
             @submit.prevent="saveTrip"
           >
             <div class="trip-scroll">
@@ -890,6 +898,14 @@
                   </p>
                 </div>
               </div>
+              <section class="setup-checklist" aria-label="Trip setup checklist">
+                <h3>Ready to schedule?</h3>
+                <p>{{ tripForm.originPortId && tripForm.destinationPortId && tripForm.originPortId !== tripForm.destinationPortId ? '✓ Route selected' : 'Choose different departure and arrival ports.' }}</p>
+                <p>{{ tripForm.vesselId ? '✓ Vessel selected' : 'Choose an active vessel for this route.' }}</p>
+                <p>{{ tripVesselFares ? '✓ Fares configured' : 'Configure this vessel’s fares before saving.' }} <a v-if="tripForm.vesselId && !tripVesselFares" href="/admin/fares" @click.prevent="openTripSetup('/admin/fares')">Set fares and return to this draft</a></p>
+                <p>{{ tripVesselIssue || vesselAvailabilityError || 'Vessel location and route connections are checked before bookings open.' }} <a v-if="tripVesselIssue || vesselAvailabilityError" href="/admin/vessels" @click.prevent="openTripSetup('/admin/vessels')">Confirm vessel location and return to this draft</a></p>
+                <p>{{ tripForm.boardingAt || selectedStatusPolicy?.boardingLeadMinutes ? '✓ Boarding time configured' : 'Enter the operator-confirmed boarding start and source.' }}</p>
+              </section>
               <div class="trip-grid">
                 <div class="trip-details">
                   <section
@@ -917,7 +933,7 @@
                           v-model="tripForm.originPortId"
                           :disabled="tripFieldsLocked"
                           required
-                        >
+                         v-bind="fieldAttrs('trip.originPortId')">
                           <option value="" disabled>Select origin port</option>
                           <option
                             v-for="p in activePorts"
@@ -926,13 +942,13 @@
                           >
                             {{ p.name }}
                           </option>
-                        </select></label
+                        </select><small v-if="fieldErrors['trip.originPortId']" :id="errorId('trip.originPortId')" class="ui-field-error">{{ fieldErrors['trip.originPortId'] }}</small></label
                       ><label
                         >Destination<select
                           v-model="tripForm.destinationPortId"
                           :disabled="tripFieldsLocked"
                           required
-                        >
+                         v-bind="fieldAttrs('trip.destinationPortId')">
                           <option value="" disabled>
                             Select destination port
                           </option>
@@ -943,7 +959,7 @@
                           >
                             {{ p.name }}
                           </option>
-                        </select></label
+                        </select><small v-if="fieldErrors['trip.destinationPortId']" :id="errorId('trip.destinationPortId')" class="ui-field-error">{{ fieldErrors['trip.destinationPortId'] }}</small></label
                       >
                     </div>
                     <label
@@ -951,7 +967,7 @@
                         v-model="tripForm.vesselId"
                         :disabled="tripFieldsLocked"
                         required
-                      >
+                       v-bind="fieldAttrs('trip.vesselId')">
                         <option value="" disabled>Select vessel</option>
                         <option
                           v-for="v in tripVesselOptions"
@@ -960,7 +976,7 @@
                         >
                           {{ v.name }} · {{ v.passengerCapacity }} seats
                         </option>
-                      </select></label
+                      </select><small v-if="fieldErrors['trip.vesselId']" :id="errorId('trip.vesselId')" class="ui-field-error">{{ fieldErrors['trip.vesselId'] }}</small></label
                     >
                     <p v-if="tripPublishedOperator" class="trip-field-hint">{{ tripPublishedOperator }} published timetable · confirm the assigned vessel, arrival time, and fares before saving.</p>
                     <p v-if="selectedTripVessel" class="trip-field-hint">
@@ -986,7 +1002,7 @@
                         </option>
                       </select></label
                     >
-                    <div class="vessel-position-hint" v-if="tripVesselIssue || vesselAvailabilityError"><p>{{ tripVesselIssue || vesselAvailabilityError }}</p><router-link to="/admin/vessels">Manage vessel locations</router-link></div>
+                    <div class="vessel-position-hint" v-if="tripVesselIssue || vesselAvailabilityError"><p>{{ tripVesselIssue || vesselAvailabilityError }}</p><a href="/admin/vessels" @click.prevent="openTripSetup('/admin/vessels')">Manage vessel locations · keep this draft</a></div>
                   </section>
                   <section
                     class="trip-section"
@@ -997,7 +1013,7 @@
                         ><AppIcon :icon="calendarOutline" aria-hidden="true"
                       /></span>
                       <div>
-                        <h3 id="trip-schedule-title">Sailing schedule</h3>
+                        <h3 id="trip-schedule-title">Sailing schedule · Philippine time</h3>
                         <p>Set the departure and expected arrival.</p>
                       </div>
                     </div>
@@ -1006,13 +1022,12 @@
                         >Departure<input
                           v-model="tripForm.departureAt"
                           type="datetime-local"
-                          required /></label
+                          required v-bind="fieldAttrs('trip.departureAt')" /><small v-if="fieldErrors['trip.departureAt']" :id="errorId('trip.departureAt')" class="ui-field-error">{{ fieldErrors['trip.departureAt'] }}</small></label
                       ><label
                         >Arrival<input
                           v-model="tripForm.arrivalAt"
                           type="datetime-local"
-                          required
-                      /></label>
+                          required v-bind="fieldAttrs('trip.arrivalAt')" /><small v-if="fieldErrors['trip.arrivalAt']" :id="errorId('trip.arrivalAt')" class="ui-field-error">{{ fieldErrors['trip.arrivalAt'] }}</small></label>
                     </div>
                     <p class="trip-field-hint">
                       <AppIcon :icon="timeOutline" aria-hidden="true" />{{
@@ -1022,9 +1037,9 @@
                     </p>
                   </section>
                   <section class="trip-section trip-boarding-section" aria-labelledby="trip-boarding-title">
-                    <div class="trip-section-heading"><span><AppIcon :icon="timeOutline" aria-hidden="true" /></span><div><h3 id="trip-boarding-title">Boarding</h3><p>Confirm when boarding opens for this trip.</p></div><router-link class="boarding-settings-action" to="/admin/operations">Status settings</router-link></div>
+                    <div class="trip-section-heading"><span><AppIcon :icon="timeOutline" aria-hidden="true" /></span><div><h3 id="trip-boarding-title">Boarding</h3><p>Confirm when boarding opens for this trip.</p></div><a class="boarding-settings-action" href="/admin/operations" @click.prevent="openTripSetup('/admin/operations')">Status settings · keep draft</a></div>
                     <div class="form-grid">
-                      <label>Confirmed boarding start<input v-model="tripForm.boardingAt" type="datetime-local" :max="tripForm.departureAt" :required="!selectedStatusPolicy?.boardingLeadMinutes" /><small>{{ selectedStatusPolicy?.boardingLeadMinutes ? `Optional override. Operator setting: ${selectedStatusPolicy.boardingLeadMinutes} minutes before departure.` : 'Enter the boarding time confirmed by the operator or terminal.' }}</small></label>
+                      <label>Confirmed boarding start<input v-model="tripForm.boardingAt" type="datetime-local" :max="tripForm.departureAt" :required="!selectedStatusPolicy?.boardingLeadMinutes" v-bind="fieldAttrs('trip.boardingAt')" /><small v-if="fieldErrors['trip.boardingAt']" :id="errorId('trip.boardingAt')" class="ui-field-error">{{ fieldErrors['trip.boardingAt'] }}</small><small>{{ selectedStatusPolicy?.boardingLeadMinutes ? `Optional override. Operator setting: ${selectedStatusPolicy.boardingLeadMinutes} minutes before departure.` : 'Enter the boarding time confirmed by the operator or terminal.' }}</small></label>
                       <label>Boarding time confirmation<textarea v-model.trim="tripForm.boardingTimeSource" rows="2" minlength="3" maxlength="500" :required="!!tripForm.boardingAt" placeholder="Confirmed by the operator or terminal" /><small>Record who confirmed the time and when. Required when you enter a boarding start.</small></label>
                     </div>
                   </section>
@@ -1061,8 +1076,7 @@
                         step="1"
                         :readonly="!editingId"
                         :disabled="tripFieldsLocked || !tripVesselFares"
-                        required
-                    /></label>
+                        required v-bind="fieldAttrs('trip.regularFare')" /><small v-if="fieldErrors['trip.regularFare']" :id="errorId('trip.regularFare')" class="ui-field-error">{{ fieldErrors['trip.regularFare'] }}</small></label>
                     <div
                       v-if="dynamicTripDiscounts !== null"
                       class="trip-discount-fares"
@@ -1113,8 +1127,8 @@
                     class="trip-fare-warning"
                   >
                     Save fares for this vessel in
-                    <router-link to="/admin/fares"
-                      >Fares & discounts</router-link
+                    <a href="/admin/fares" @click.prevent="openTripSetup('/admin/fares')"
+                      >Fares & discounts</a
                     >
                     before creating a trip or changing its fares.
                   </p>
@@ -1333,12 +1347,20 @@
 </template>
 
 <script setup lang="ts">
+import { notifyError, notifySuccess, notify } from '@/composables/toast';
+import { orderedDirectory } from "../../data/directoryOrdering";
+import { useFieldErrors } from "../../composables/fieldErrors";
+import { defineAsyncComponent } from "vue";
+import { philippineDateTime, philippineInput, parsePhilippineInput } from "../../data/philippineTime";
+import { statusLabel } from "../../data/statusPresentation";
+import { cachedReference, clearReferenceCache } from "../../services/database/referenceCache";
+import { Monitor } from "@lucide/vue";
 import { durationHours } from '../../data/duration';
 import FerryReferenceDetails from '../../components/admin/FerryReferenceDetails.vue';
 import type { ReferenceRecord } from '../../data/ferryReferences';
-import StaffPortAssignmentsPanel from '../../components/admin/StaffPortAssignmentsPanel.vue';
+const StaffPortAssignmentsPanel = defineAsyncComponent(() => import('../../components/admin/StaffPortAssignmentsPanel.vue'));
 import { paymentMethodLabel } from '../../data/paymentMethod';
-import WeatherTripPicker from '../../components/shared/WeatherTripPicker.vue';
+const WeatherTripPicker = defineAsyncComponent(() => import('../../components/shared/WeatherTripPicker.vue'));
 import { awaitingPaymentVerification } from '../../data/paymentVerification';
 import WorkspacePagination from "../../components/shared/WorkspacePagination.vue";
 import { Button } from "@/components/ui/button";
@@ -1346,28 +1368,27 @@ import { Badge } from "@/components/ui/badge";
 import { confirmAction, requestReason } from "../../composables/confirmation";
 import { useUnsavedChanges } from "../../composables/unsavedChanges";
 import { notificationUnreadCount } from "../../composables/notificationUnread";
-import AuditLogsPanel from "../../components/admin/AuditLogsPanel.vue";
-import AdminOverviewPanel from "../../components/admin/AdminOverviewPanel.vue";
-import AccommodationPanel from "../../components/admin/AccommodationPanel.vue";
+const AuditLogsPanel = defineAsyncComponent(() => import("../../components/admin/AuditLogsPanel.vue"));
+const AdminOverviewPanel = defineAsyncComponent(() => import("../../components/admin/AdminOverviewPanel.vue"));
+const AccommodationPanel = defineAsyncComponent(() => import("../../components/admin/AccommodationPanel.vue"));
 import { vesselAvailability } from '../../services/database/vesselTracking';
-import VesselTrackingPanel from '../../components/admin/VesselTrackingPanel.vue';
-import DailySchedulesPanel from '../../components/admin/DailySchedulesPanel.vue';
+const VesselTrackingPanel = defineAsyncComponent(() => import('../../components/admin/VesselTrackingPanel.vue'));
+const DailySchedulesPanel = defineAsyncComponent(() => import('../../components/admin/DailySchedulesPanel.vue'));
 import type { PublishedDeparture } from '../../components/admin/PublishedFerryReferences.vue';
 import { sailingStatusPolicies, type SailingStatusPolicy } from '@/services/database/sailingStatus';
-import RoutesPanel from "../../components/admin/RoutesPanel.vue";
+const RoutesPanel = defineAsyncComponent(() => import("../../components/admin/RoutesPanel.vue"));
 import {
   routes as savedRoutes,
   type FerryRoute,
 } from "../../services/database/workspaces";
-import NoShowsPanel from "../../components/admin/NoShowsPanel.vue";
-import NotificationsPanel from "../../components/admin/NotificationsPanel.vue";
-import RecordsGrid, {
-  type RecordGridRow,
-} from "../../components/shared/RecordsGrid.vue";
-import OperationsPanel from "../../components/admin/OperationsPanel.vue";
-import VouchersPanel from "../../components/admin/VouchersPanel.vue";
-import AdvisoriesPanel from "../../components/admin/AdvisoriesPanel.vue";
-import TripOperationsPanel from "../../components/admin/TripOperationsPanel.vue";
+const NoShowsPanel = defineAsyncComponent(() => import("../../components/admin/NoShowsPanel.vue"));
+const NotificationsPanel = defineAsyncComponent(() => import("../../components/admin/NotificationsPanel.vue"));
+const RecordsGrid = defineAsyncComponent(() => import("../../components/shared/RecordsGrid.vue"));
+import type { RecordGridRow } from "../../components/shared/RecordsGrid.vue";
+const OperationsPanel = defineAsyncComponent(() => import("../../components/admin/OperationsPanel.vue"));
+const VouchersPanel = defineAsyncComponent(() => import("../../components/admin/VouchersPanel.vue"));
+const AdvisoriesPanel = defineAsyncComponent(() => import("../../components/admin/AdvisoriesPanel.vue"));
+const TripOperationsPanel = defineAsyncComponent(() => import("../../components/admin/TripOperationsPanel.vue"));
 import { useQueueRefresh } from "../../composables/queueRefresh";
 import { databaseRequestError } from "../../data/databaseErrors";
 import { computed, onBeforeUnmount, reactive, ref, watch } from "vue";
@@ -1421,15 +1442,14 @@ import {
 } from "ionicons/icons";
 import PortLocationMap from "../../components/shared/PortLocationMap.vue";
 import BrandMark from "../../components/shared/BrandMark.vue";
-import AdminReportsPanel from "../../components/admin/AdminReportsPanel.vue";
-import AdminManifestExport from "../../components/admin/AdminManifestExport.vue";
-import InboxPanel from "../../components/admin/InboxPanel.vue";
+const AdminReportsPanel = defineAsyncComponent(() => import("../../components/admin/AdminReportsPanel.vue"));
+const AdminManifestExport = defineAsyncComponent(() => import("../../components/admin/AdminManifestExport.vue"));
+const InboxPanel = defineAsyncComponent(() => import("../../components/admin/InboxPanel.vue"));
 import {
   adminCancelBooking,
   adminCreatePort,
   adminCreateSailing,
   adminCreateVessel,
-  adminDashboardStats,
   adminPassengerRecords,
   adminPorts,
   adminRescheduleSailing,
@@ -1509,9 +1529,11 @@ const menuOpen = ref(false),
   editingId = ref("");
 const globalSearch = ref("");
 const search = ref(String(route.query.search || "")),
-  statusFilter = ref("ALL"),
+  statusFilter = ref(String(route.query.status || (["ports", "vessels"].includes(section.value) ? "ACTIVE" : "ALL"))),
   sailingFilter = ref(String(route.query.sailing || "ALL"));
 const reportsRefresh = ref(0);
+const tripTab = ref<"trips" | "templates">("trips");
+const directorySort = ref(String(route.query.sort || ""));
 const referenceRecord = ref<ReferenceRecord | null>(null);
 const routeOptions = ref<FerryRoute[]>([]),
   savedRouteId = ref("");
@@ -1529,11 +1551,11 @@ function useSavedRoute() {
   const duration = estimatedRouteMinutes(selected);
   if (tripForm.departureAt && duration != null) {
     const arrival = new Date(
-      new Date(tripForm.departureAt).getTime() +
+      parsePhilippineInput(tripForm.departureAt).getTime() +
         duration * 60000,
     );
     tripForm.arrivalAt = new Date(
-      arrival.getTime() - arrival.getTimezoneOffset() * 60000,
+      arrival.getTime() + 8 * 3600000,
     )
       .toISOString()
       .slice(0, 16);
@@ -1542,9 +1564,11 @@ function useSavedRoute() {
 watch(section, () => {
   if (!isWorkspaceRoute.value) return;
   recordPage.value = 0;
+  directorySort.value = String(route.query.sort || "");
   search.value = String(route.query.search || "");
-  statusFilter.value = "ALL";
+  statusFilter.value = ["ports", "vessels"].includes(section.value) ? "ACTIVE" : "ALL";
   sailingFilter.value = String(route.query.sailing || "ALL");
+  if (route.query.status) statusFilter.value = String(route.query.status);
   menuOpen.value = false;
   void loadData();
 });
@@ -1808,21 +1832,7 @@ const primaryAction = computed(
       }) as Record<string, string>
     )[section.value] || "",
 );
-const localDayBounds = () => {
-  const day = new Date().toLocaleDateString("en-CA", {
-    timeZone: "Asia/Manila",
-  });
-  const start = new Date(`${day}T00:00:00+08:00`);
-  return {
-    dayStart: start.toISOString(),
-    dayEnd: new Date(start.getTime() + 86400000).toISOString(),
-  };
-};
-const dateTime = (value: string) =>
-  new Date(value).toLocaleString("en-PH", {
-    dateStyle: "medium",
-    timeStyle: "short",
-  });
+const dateTime = philippineDateTime;
 const routeLabel = (s: AdminSailingsData["sailings"][number]) =>
   `${s.origin.name} → ${s.destination.name}`;
 let loadRequest = 0;
@@ -1837,7 +1847,8 @@ function bookingStatusFilter() {
     )[statusFilter.value] || statusFilter.value
   );
 }
-watch([search, statusFilter, sailingFilter], () => {
+watch([search, statusFilter, sailingFilter, directorySort], () => {
+  if (isWorkspaceRoute.value) void router.replace({ query: { ...route.query, search: search.value || undefined, status: statusFilter.value, sort: directorySort.value || undefined, sailing: sailingFilter.value === "ALL" ? undefined : sailingFilter.value } });
   if (!["bookings", "trips", "users", "passengers", "check-in", "boarding", "manifest"].includes(section.value) || !isWorkspaceRoute.value) return;
   recordPage.value = 0;
   if (bookingSearchTimer) clearTimeout(bookingSearchTimer);
@@ -1849,7 +1860,8 @@ onBeforeUnmount(() => {
   loadRequest++;
   if (bookingSearchTimer) clearTimeout(bookingSearchTimer);
 });
-async function loadData() {
+async function loadData(event?: unknown) {
+  if (event instanceof Event && staffDatabase) clearReferenceCache(staffDatabase);
   if (refreshDecision.value) return;
   if (childEditorRef.value?.hasUnsavedChanges?.()) {
     refreshDecision.value = true;
@@ -1890,43 +1902,42 @@ async function loadData() {
   loading.value = true;
   error.value = "";
   const dc = staffDatabase;
+  const loadBookings = async () => {
+    const options = { page:recordPage.value,pageSize,status:bookingStatusFilter(),search:search.value };
+    if (!directorySort.value) return staffBookings(dc, options);
+    const ordered = await orderedDirectory(async (page,size) => { const r=await staffBookings(dc,{...options,page,pageSize:size}); return {rows:r.data.bookings,total:r.data.totalCount ?? r.data.bookings.length}; },directorySort.value,(row,key)=>key==='amount' ? row.total : key==='departure' ? Date.parse(row.sailing.departureAt) : row.reference,recordPage.value,pageSize);
+    return { data:{bookings:ordered.rows,totalCount:ordered.total} };
+  };
+  const loadTrips = async () => {
+    const options = {page:recordPage.value,pageSize,...(section.value==='trips' ? {status:statusFilter.value,search:search.value} : {})};
+    if (!directorySort.value || section.value!=='trips') return adminSailings(dc,options);
+    const ordered=await orderedDirectory(async(page,size)=>{const r=await adminSailings(dc,{...options,page,pageSize:size});return {rows:r.data.sailings,total:r.data.totalCount ?? r.data.sailings.length};},directorySort.value,(row,key)=>key==='name' ? row.vessel.name : Date.parse(row.departureAt),recordPage.value,pageSize);
+    return {data:{sailings:ordered.rows,totalCount:ordered.total}};
+  };
+  const loadUsers = async () => {
+    const options={page:recordPage.value,pageSize,status:statusFilter.value,search:search.value};
+    if(!directorySort.value)return adminUsers(dc,options);
+    const ordered=await orderedDirectory(async(page,size)=>{const r=await adminUsers(dc,{...options,page,pageSize:size});return {rows:r.data.users,total:r.data.totalCount ?? r.data.users.length};},directorySort.value,row=>row.fullName,recordPage.value,pageSize);
+    return {data:{users:ordered.rows,totalCount:ordered.total}};
+  };
+  const loadPassengers = async () => {
+    const options={page:recordPage.value,pageSize,search:search.value,status:['passengers','check-in','boarding'].includes(section.value)?statusFilter.value:'ALL',sailingCode:sailingFilter.value,paidOnly:['check-in','boarding','manifest'].includes(section.value)};
+    if(!directorySort.value)return adminPassengerRecords(dc,options);
+    const ordered=await orderedDirectory(async(page,size)=>{const r=await adminPassengerRecords(dc,{...options,page,pageSize:size});return {rows:r.data.bookingPassengers,total:r.data.totalCount ?? r.data.bookingPassengers.length};},directorySort.value,row=>row.fullName,recordPage.value,pageSize);
+    return {data:{bookingPassengers:ordered.rows,totalCount:ordered.total}};
+  };
   fareSettingsLoaded.value = false;
   nextTripCode.value = "";
   const results = await Promise.allSettled([
-    staffBookings(dc, {
-      fetchPolicy: "SERVER_ONLY",
-      page: recordPage.value,
-      pageSize,
-      ...(section.value === "bookings"
-        ? { search: search.value, status: bookingStatusFilter() }
-        : {}),
-    }),
-    adminSailings(dc, {
-      fetchPolicy: "SERVER_ONLY",
-      page: recordPage.value,
-      pageSize,
-      ...(section.value === "trips" ? { search: search.value, status: statusFilter.value } : {}),
-    }),
-    adminUsers(dc, {
-      fetchPolicy: "SERVER_ONLY",
-      page: recordPage.value,
-      pageSize,
-      ...(section.value === "users" ? { search: search.value, status: statusFilter.value } : {}),
-    }),
-    adminPorts(dc, { fetchPolicy: "SERVER_ONLY" }),
-    adminVessels(dc, { fetchPolicy: "SERVER_ONLY" }),
-    adminPassengerRecords(dc, {
-      fetchPolicy: "SERVER_ONLY",
-      page: recordPage.value,
-      pageSize,
-      search: ["passengers", "check-in", "boarding", "manifest"].includes(section.value) ? search.value : "",
-      status: ["passengers", "check-in", "boarding"].includes(section.value) ? statusFilter.value : "ALL",
-      sailingCode: sailingFilter.value,
-      paidOnly: ["check-in", "boarding", "manifest"].includes(section.value),
-    }),
-    adminDashboardStats(dc, localDayBounds(), { fetchPolicy: "SERVER_ONLY" }),
-    adminFareSettings(dc, { fetchPolicy: "SERVER_ONLY" }),
-    adminNextTripCode(dc, { fetchPolicy: "SERVER_ONLY" }),
+    section.value === "bookings" ? loadBookings() : Promise.resolve({ data: { bookings: [], totalCount: 0 } }),
+    ["trips", "vessels"].includes(section.value) ? loadTrips() : Promise.resolve({ data: { sailings: [], totalCount: 0 } }),
+    section.value === "users" ? loadUsers() : Promise.resolve({ data: { users: [], totalCount: 0 } }),
+    ["ports", "trips"].includes(section.value) ? cachedReference(dc, 'ports:' + auth?.currentUser?.uid, () => adminPorts(dc, { fetchPolicy: "SERVER_ONLY" })) : Promise.resolve({ data: { ports: [] } }),
+    ["vessels", "trips", "fares"].includes(section.value) ? cachedReference(dc, 'vessels:' + auth?.currentUser?.uid, () => adminVessels(dc, { fetchPolicy: "SERVER_ONLY" })) : Promise.resolve({ data: { vessels: [] } }),
+    ["passengers", "check-in", "boarding", "manifest"].includes(section.value) ? loadPassengers() : Promise.resolve({ data: { bookingPassengers: [], totalCount: 0 } }),
+    Promise.resolve({ data: stats.value }),
+    ["trips", "fares"].includes(section.value) ? adminFareSettings(dc, { fetchPolicy: "SERVER_ONLY" }) : Promise.resolve({ data: { fareSettings: null, vesselFareSettings: [] } }),
+    section.value === "trips" ? adminNextTripCode(dc, { fetchPolicy: "SERVER_ONLY" }) : Promise.resolve({ data: { nextTripCode: null } }),
     section.value === "trips"
       ? savedRoutes(dc)
       : Promise.resolve({ data: { routes: [] as FerryRoute[] } }),
@@ -1934,7 +1945,7 @@ async function loadData() {
   ] as const);
   if (["check-in", "boarding", "manifest"].includes(section.value)) {
     try { sailingOptions.value = (await adminSailingOptions(dc)).data.sailings; }
-    catch { error.value = "Could not load sailing choices. Refresh to retry."; }
+    catch { error.value = notifyError("Could not load sailing choices. Refresh to retry."); }
   }
   if (request !== loadRequest || !isWorkspaceRoute.value) return;
   const failed: string[] = [];
@@ -2001,7 +2012,7 @@ async function loadData() {
   if (a.status === "fulfilled")
     passengers.value = a.value.data.bookingPassengers;
   if (d.status === "fulfilled") stats.value = d.value.data;
-  if (f.status === "fulfilled") {
+  if (f.status === "fulfilled" && ["trips", "fares"].includes(section.value)) {
     Object.assign(
       fareSettings,
       f.value.data.fareSettings || defaultFareSettings,
@@ -2034,6 +2045,7 @@ async function loadData() {
     error.value = `Could not refresh ${failed.join(", ")}. Other admin records remain available. Try Refresh.`;
   if (['trips','vessels'].includes(section.value)) await childEditorRef.value?.refresh?.();
   loading.value = false;
+  await restoreTripDraft();
 }
 onIonViewWillEnter(() => {
   if (isWorkspaceRoute.value) void loadData();
@@ -2116,7 +2128,70 @@ const tripForm = reactive({
   pwdFare: 400,
   pregnantFare: 500,
 });
+const { fieldErrors, fieldAttrs, errorId, clearErrors, showErrors } = useFieldErrors();
 const tripPublishedOperator = ref('');
+async function validateEditor(kind: 'port' | 'vessel' | 'trip') {
+  const errors: Record<string,string> = {};
+  const required = (key: string, value: string, label: string, max = 120) => {
+    if (!value.trim()) errors[key] = 'Enter ' + label + '.';
+    else if (value.trim().length > max) errors[key] = label + ' must be ' + max + ' characters or fewer.';
+  };
+  if (kind === 'port') {
+    required('port.code', portForm.code, 'a port code', 12);
+    required('port.name', portForm.name, 'a port name');
+    required('port.city', portForm.city, 'a city');
+    if (portForm.region.length > 120) errors['port.region'] = 'Use 120 characters or fewer.';
+  } else if (kind === 'vessel') {
+    required('vessel.code', vesselForm.code, 'a vessel code', 20);
+    required('vessel.name', vesselForm.name, 'a vessel name');
+    if (!Number.isInteger(vesselForm.capacity) || vesselForm.capacity < 1 || vesselForm.capacity > 10000) errors['vessel.capacity'] = 'Enter a whole number from 1 to 10,000.';
+  } else {
+    if (!tripForm.originPortId) errors['trip.originPortId'] = 'Choose the departure port.';
+    if (!tripForm.destinationPortId) errors['trip.destinationPortId'] = 'Choose the arrival port.';
+    else if (tripForm.originPortId === tripForm.destinationPortId) errors['trip.destinationPortId'] = 'Choose a different arrival port.';
+    if (!tripForm.vesselId) errors['trip.vesselId'] = 'Choose a vessel assigned to this route.';
+    const departure = parsePhilippineInput(tripForm.departureAt), arrival = parsePhilippineInput(tripForm.arrivalAt), boarding = parsePhilippineInput(tripForm.boardingAt);
+    if (!Number.isFinite(departure.getTime()) || departure <= new Date()) errors['trip.departureAt'] = 'Choose a future departure in Philippine time.';
+    if (!Number.isFinite(arrival.getTime()) || arrival <= departure) errors['trip.arrivalAt'] = 'Arrival must be after departure, including the correct day for overnight trips.';
+    if (!tripForm.boardingAt && !selectedStatusPolicy.value?.boardingLeadMinutes) errors['trip.boardingAt'] = 'Enter the operator-confirmed boarding time.';
+    if (tripForm.boardingAt && (!Number.isFinite(boarding.getTime()) || boarding >= departure)) errors['trip.boardingAt'] = 'Boarding must start before departure.';
+    if (tripForm.boardingAt && tripForm.boardingTimeSource.trim().length < 3) errors['trip.boardingTimeSource'] = 'Enter who confirmed the boarding time (at least 3 characters).';
+    for (const type of fareTypes) if (!Number.isSafeInteger(tripForm[type.key]) || tripForm[type.key] < 1 || tripForm[type.key] > 2147483647) errors['trip.' + type.key] = 'Enter a positive whole-peso fare.';
+  }
+  await showErrors(errors);
+  if (Object.keys(errors).length) { formError.value = 'Check the highlighted fields before saving.'; return false; }
+  return true;
+}
+watch(modal, clearErrors);
+const tripDraftKey = () => 'barkolink-admin-trip-draft:' + auth?.currentUser?.uid;
+async function openTripSetup(path: string) {
+  if (busy.value) return;
+  sessionStorage.setItem(tripDraftKey(), JSON.stringify({ form: tripForm, editingId: editingId.value, operator: tripPublishedOperator.value, savedAt: Date.now() }));
+  editorBaseline = editorSnapshot();
+  modal.value = '';
+  await router.push({ path, query: { returnTo: '/admin/trips' } });
+}
+async function restoreTripDraft() {
+  if (section.value !== 'trips' || modal.value || !fareSettingsLoaded.value || !nextTripCode.value) return;
+  const stored = sessionStorage.getItem(tripDraftKey());
+  if (!stored) return;
+  try {
+    const draft = JSON.parse(stored);
+    sessionStorage.removeItem(tripDraftKey());
+    if (Date.now() - draft.savedAt > 3600000) return;
+    if (draft.editingId) {
+      const sailing = sailings.value.find(s => s.code === draft.editingId);
+      if (!sailing) return;
+      await openTripEditor(sailing);
+    } else openAction();
+    if (modal.value !== 'trip') return;
+    Object.assign(tripForm, draft.form, draft.editingId ? {} : { code: nextTripCode.value });
+    tripPublishedOperator.value = draft.operator || '';
+    if (!editingId.value && tripVesselFares.value) Object.assign(tripForm, calculateFares(tripVesselFares.value.regularFare, tripVesselFares.value));
+    editorBaseline = editorSnapshot();
+    notice.value = notify('Trip draft restored. Review the updated setup before saving.');
+  } catch { sessionStorage.removeItem(tripDraftKey()); }
+}
 const tripVesselFares = computed(() =>
   fareSettingsLoaded.value
     ? vesselFareSettings.value[tripForm.vesselId]
@@ -2129,12 +2204,12 @@ watch(() => [modal.value, tripForm.originPortId, tripForm.departureAt, editingId
   const request = ++vesselAvailabilityRequest;
   vesselDepartureIssues.value = {}; vesselAvailabilityError.value = '';
   if (modal.value !== 'trip' || !staffDatabase || !tripForm.originPortId || !tripForm.departureAt) return;
-  const departure = new Date(tripForm.departureAt);
+  const departure = parsePhilippineInput(tripForm.departureAt);
   if (!Number.isFinite(departure.getTime())) return;
   try {
     const result = await vesselAvailability(staffDatabase,{originPortId:tripForm.originPortId,departureAt:departure.toISOString(),excludeCode:editingId.value || undefined});
     if (request === vesselAvailabilityRequest) vesselDepartureIssues.value = Object.fromEntries(result.data.vessels.map(v => [v.id,v.issue]));
-  } catch { if (request === vesselAvailabilityRequest) vesselAvailabilityError.value = 'Vessel location check is unavailable. The database will check availability when you save.'; }
+  } catch { if (request === vesselAvailabilityRequest) vesselAvailabilityError.value = notifyError('Vessel location check is unavailable. The database will check availability when you save.'); }
 });
 const tripVesselIssue = computed(() => vesselDepartureIssues.value[tripForm.vesselId]);
 const tripVesselOptions = computed(() => vessels.value.filter(v => {
@@ -2159,8 +2234,8 @@ const selectedStatusPolicy = computed(() => statusPolicies.value.find(p => p.ope
 watch(() => [tripForm.vesselId, tripForm.departureAt], () => { if (modal.value === 'trip' && !tripFieldsLocked.value && savedRouteId.value) useSavedRoute(); });
 const tripDurationLabel = computed(() => {
   const minutes = Math.round(
-    (new Date(tripForm.arrivalAt).getTime() -
-      new Date(tripForm.departureAt).getTime()) /
+    (parsePhilippineInput(tripForm.arrivalAt).getTime() -
+      parsePhilippineInput(tripForm.departureAt).getTime()) /
       60000,
   );
   if (!Number.isFinite(minutes) || minutes <= 0) return "";
@@ -2288,9 +2363,9 @@ async function saveFareSettings() {
     await adminSaveFareSettings(dc, { vesselId, ...settings });
     vesselFareSettings.value[vesselId] = settings;
     fareDrafts.value[vesselId] = settings;
-    notice.value = `Fares & discounts saved for ${selectedFareVessel.value.name}. New trips for this vessel will use these rates.`;
+    notice.value = notifySuccess(`Fares & discounts saved for ${selectedFareVessel.value.name}. New trips for this vessel will use these rates.`);
   } catch (cause) {
-    error.value = databaseRequestError(cause, "Could not save fare settings.");
+    error.value = notifyError(databaseRequestError(cause, "Could not save fare settings."));
   } finally {
     busy.value = "";
   }
@@ -2328,6 +2403,7 @@ const modalTitle = computed(
     )[modal.value] || "",
 );
 function planPublishedDeparture(departure: PublishedDeparture) {
+  tripTab.value = "trips";
   const [originCode, destinationCode] = departure.routeCode.split('-');
   const route = routeOptions.value.find(r => r.id === departure.routeId);
   const origin = ports.value.find(p => (route ? p.id === route.originPortId : p.code === originCode) && p.isActive);
@@ -2463,12 +2539,13 @@ async function mutate(label: string, work: () => Promise<unknown>) {
   try {
     await work();
     modal.value = "";
-    notice.value = "Saved successfully.";
+    notice.value = notifySuccess("Saved successfully.");
+    if (staffDatabase) clearReferenceCache(staffDatabase);
     await loadData();
   } catch (e) {
     const message = databaseRequestError(e, "Could not save changes.");
-    if (modal.value) formError.value = message;
-    else error.value = message;
+    if (modal.value) formError.value = notifyError(message);
+    else error.value = notifyError(message);
   } finally {
     busy.value = "";
   }
@@ -2504,7 +2581,7 @@ async function cancelBooking(b: StaffBookingsData["bookings"][number]) {
 }
 async function savePort() {
   const dc = staffDatabase;
-  if (!dc) return;
+  if (!dc || !(await validateEditor("port"))) return;
   const code = portForm.code.trim().toUpperCase();
   if (!code || !portForm.name.trim() || !portForm.city.trim()) {
     formError.value = "Complete the port code, name, and city.";
@@ -2529,7 +2606,7 @@ async function savePort() {
 }
 async function saveVessel() {
   const dc = staffDatabase;
-  if (!dc) return;
+  if (!dc || !(await validateEditor("vessel"))) return;
   const code = vesselForm.code.trim().toUpperCase();
   if (
     !code ||
@@ -2568,11 +2645,7 @@ async function saveVessel() {
         }),
   );
 }
-function toLocalDateTime(value: string) {
-  const date = new Date(value);
-  const part = (number: number) => String(number).padStart(2, "0");
-  return `${date.getFullYear()}-${part(date.getMonth() + 1)}-${part(date.getDate())}T${part(date.getHours())}:${part(date.getMinutes())}`;
-}
+const toLocalDateTime = philippineInput;
 function canEditTrip(sailing: AdminSailingsData["sailings"][number]) {
   return sailing.status === "SCHEDULED" || sailing.status === "DELAYED";
 }
@@ -2620,10 +2693,10 @@ async function openTripEditor(sailing: AdminSailingsData["sailings"][number]) {
     tripBookings.value = result.data.bookings;
     tripBookingsLoaded.value = true;
   } catch (cause) {
-    formError.value = databaseRequestError(
+    formError.value = notifyError(databaseRequestError(
       cause,
       "Could not check reservations. Close and try again.",
-    );
+    ));
   } finally {
     tripEditLoading.value = false;
   }
@@ -2642,14 +2715,15 @@ async function saveTrip() {
       "Save fare settings for the selected vessel before creating or switching a trip.";
     return;
   }
+  if (!(await validateEditor("trip"))) return;
   const vessel = vessels.value.find(v => v.id === tripForm.vesselId);
   if (vessel?.referenceMetadata?.kind === 'verified-reference' && !(vessel.routes || []).some(r => r.isActive && r.originPortId === tripForm.originPortId && r.destinationPortId === tripForm.destinationPortId)) {
     formError.value = 'Choose a verified route assigned to this vessel.';
     return;
   }
-  const departure = new Date(tripForm.departureAt),
-    arrival = new Date(tripForm.arrivalAt);
-  const boarding = new Date(tripForm.boardingAt);
+  const departure = parsePhilippineInput(tripForm.departureAt),
+    arrival = parsePhilippineInput(tripForm.arrivalAt);
+  const boarding = parsePhilippineInput(tripForm.boardingAt);
   if ((!tripForm.boardingAt && !selectedStatusPolicy.value?.boardingLeadMinutes) || (tripForm.boardingAt && (!Number.isFinite(boarding.getTime()) || boarding >= departure || tripForm.boardingTimeSource.trim().length < 3))) {
     formError.value = 'Enter the operator-confirmed boarding start before departure and its source.';
     return;
@@ -2719,12 +2793,12 @@ async function saveTrip() {
         pwdFare: tripForm.pwdFare,
         pregnantFare: tripForm.pregnantFare,
       });
-      notice.value = `${result.data.sailing_insert.code} created.`;
+      notice.value = notifySuccess(`${result.data.sailing_insert.code} created.`);
     } else if (tripHasBookings.value) {
       const result = await adminRescheduleSailing(dc, schedule);
       if (!result.data.sailing_update)
         throw new Error("The sailing was not updated.");
-      notice.value = `${schedule.code} rescheduled. ${result.data.notified} account(s) notified.`;
+      notice.value = notifySuccess(`${schedule.code} rescheduled. ${result.data.notified} account(s) notified.`);
     } else {
       const result = await adminUpdateUnbookedSailing(dc, {
         ...schedule,
@@ -2740,12 +2814,12 @@ async function saveTrip() {
       });
       if (!result.data.sailing_update)
         throw new Error("The sailing was not updated.");
-      notice.value = `${schedule.code} updated.`;
+      notice.value = notifySuccess(`${schedule.code} updated.`);
     }
     modal.value = "";
     await loadData();
   } catch (cause) {
-    formError.value = databaseRequestError(cause, "Could not save this trip.");
+    formError.value = notifyError(databaseRequestError(cause, "Could not save this trip."));
   } finally {
     busy.value = "";
   }
@@ -2814,10 +2888,10 @@ async function changeSailingStatus(
     });
     sailings.value = refreshed.data.sailings;
     await loadData();
-    notice.value = `${s.code} status changed to ${status}. ${result.data.notified ?? 0} account(s) notified.`;
+    notice.value = notifySuccess(`${s.code} status changed to ${status}. ${result.data.notified ?? 0} account(s) notified.`);
   } catch (e) {
     select.value = s.status;
-    error.value = databaseRequestError(e, "Could not update the trip.");
+    error.value = notifyError(databaseRequestError(e, "Could not update the trip."));
   } finally {
     busy.value = "";
   }
@@ -2850,14 +2924,14 @@ async function processTicket(
     if (action === "check-in") await checkInTicket(dc, { passengerId: p.id });
     else await boardTicket(dc, { passengerId: p.id });
     await loadData();
-    notice.value = `${p.fullName} ${action === "check-in" ? "checked in" : "boarded"} for ${p.booking.sailing.code}.`;
+    notice.value = notifySuccess(`${p.fullName} ${action === "check-in" ? "checked in" : "boarded"} for ${p.booking.sailing.code}.`);
   } catch (cause) {
     const message = ticketRequestError(
       cause,
       "The ticket or sailing has changed. Refresh and check the ticket, payment, and sailing status before trying again.",
     );
     await loadData();
-    error.value = message;
+    error.value = notifyError(message);
   } finally {
     busy.value = "";
   }
@@ -2881,11 +2955,12 @@ async function generatePassword() {
     )
       throw new Error("Could not generate a password. Try again.");
     userForm.password = result.data.password;
+    notifySuccess('Temporary password generated.');
   } catch (e) {
-    formError.value = accountRequestError(
+    formError.value = notifyError(accountRequestError(
       e,
       "Could not generate a password. Try again.",
-    );
+    ));
   } finally {
     busy.value = "";
   }
@@ -2912,12 +2987,13 @@ async function saveUser() {
       role: result.data.role,
       password: account.password,
     };
+    notifySuccess('Account created.');
     await loadData();
   } catch (e) {
-    formError.value = accountRequestError(
+    formError.value = notifyError(accountRequestError(
       e,
       "Could not create account. Try again.",
-    );
+    ));
   } finally {
     busy.value = "";
   }
@@ -2931,9 +3007,10 @@ async function copyPassword() {
       );
     await navigator.clipboard.writeText(createdAccount.value.password);
     accountPasswordCopied.value = true;
+    notifySuccess('Password copied.');
   } catch {
     formError.value =
-      "Could not copy the password. Select it and copy it manually.";
+      notifyError("Could not copy the password. Select it and copy it manually.");
   }
 }
 
@@ -2984,7 +3061,7 @@ const columns = computed(
           "Booking account",
           "Ticket status",
         ],
-        trips: ["Trip / Route", "Vessel", "Departure", "Booked / Capacity", "Status"],
+        trips: ["Trip / Route", "Vessel", "Departure (PH)", "Booked / Capacity", "Status"],
         ports: ["Code", "Port", "Location", "Status"],
         vessels: ["Code", "Vessel", "Capacity", "Status"],
         "check-in": ["Passenger", "Booking", "Sailing", "Departure", "Ticket"],
@@ -3211,7 +3288,7 @@ const rows = computed<Row[]>(() => {
 :is(.admin-port-directory, .admin-vessel-directory, .admin-checkin-directory, .admin-boarding-directory, .admin-manifest-directory, .admin-user-directory) .content { padding: 24px 28px; }
 :is(.admin-port-directory, .admin-vessel-directory, .admin-checkin-directory, .admin-boarding-directory, .admin-manifest-directory, .admin-user-directory) .heading { margin-bottom: 16px; }
 :is(.admin-port-directory, .admin-vessel-directory, .admin-checkin-directory, .admin-boarding-directory, .admin-manifest-directory, .admin-user-directory) .booking-filters { display: grid; grid-template-columns: minmax(0, 1fr) 170px auto; gap: 12px; padding: 12px 16px; margin-bottom: 16px; }
-:is(.admin-port-directory, .admin-vessel-directory, .admin-checkin-directory, .admin-boarding-directory, .admin-manifest-directory, .admin-user-directory) .booking-filters input, :is(.admin-port-directory, .admin-vessel-directory, .admin-checkin-directory, .admin-boarding-directory, .admin-manifest-directory, .admin-user-directory) .booking-filters select { min-height: 40px; font: inherit; font-size: 12px; }
+:is(.admin-port-directory, .admin-vessel-directory, .admin-checkin-directory, .admin-boarding-directory, .admin-manifest-directory, .admin-user-directory) .booking-filters input, :is(.admin-port-directory, .admin-vessel-directory, .admin-checkin-directory, .admin-boarding-directory, .admin-manifest-directory, .admin-user-directory) .booking-filters select { min-height: 40px; font: inherit; font-size: var(--text-label); }
 :is(.admin-port-directory, .admin-vessel-directory, .admin-checkin-directory, .admin-boarding-directory, .admin-manifest-directory, .admin-user-directory) .booking-filters select { width: 100%; min-width: 0; }
 :is(.admin-port-directory, .admin-vessel-directory, .admin-checkin-directory, .admin-boarding-directory, .admin-manifest-directory, .admin-user-directory) .booking-records-panel { border-radius: 14px; overflow: hidden; }
 :is(.admin-port-directory, .admin-vessel-directory, .admin-checkin-directory, .admin-boarding-directory, .admin-manifest-directory, .admin-user-directory) .booking-records-panel .panel-head { padding: 14px 16px; }
@@ -3219,19 +3296,19 @@ const rows = computed<Row[]>(() => {
 :is(.admin-port-directory, .admin-vessel-directory, .admin-checkin-directory, .admin-boarding-directory, .admin-manifest-directory, .admin-user-directory) :deep(.grid-tools) { padding: 8px 16px; border-bottom: 1px solid var(--line); background: var(--surface); }
 :is(.admin-port-directory, .admin-vessel-directory, .admin-checkin-directory, .admin-boarding-directory, .admin-manifest-directory, .admin-user-directory) :deep(.grid-tools button) { min-height: 34px; padding: 6px 8px; }
 :is(.admin-port-directory, .admin-vessel-directory, .admin-checkin-directory, .admin-boarding-directory, .admin-manifest-directory, .admin-user-directory) :deep(.desktop-grid) { padding: 8px; }
-:is(.admin-port-directory, .admin-vessel-directory, .admin-checkin-directory, .admin-boarding-directory, .admin-manifest-directory, .admin-user-directory) :deep(.grid-cell-content) { padding: 7px 0; font-size: 12px; line-height: 1.5; }
+:is(.admin-port-directory, .admin-vessel-directory, .admin-checkin-directory, .admin-boarding-directory, .admin-manifest-directory, .admin-user-directory) :deep(.grid-cell-content) { padding: 7px 0; font-size: var(--text-label); line-height: 1.5; }
 :is(.admin-port-directory, .admin-vessel-directory, .admin-checkin-directory, .admin-boarding-directory, .admin-manifest-directory, .admin-user-directory) :deep(.grid-row-actions) { display: flex; align-items: center; min-height: 44px; padding: 7px 0; }
-:is(.admin-port-directory, .admin-vessel-directory, .admin-checkin-directory, .admin-boarding-directory, .admin-manifest-directory, .admin-user-directory) .port-code, :is(.admin-port-directory, .admin-vessel-directory, .admin-checkin-directory, .admin-boarding-directory, .admin-manifest-directory, .admin-user-directory) .port-name { font-size: 12px; }
-:is(.admin-port-directory, .admin-vessel-directory, .admin-checkin-directory, .admin-boarding-directory, .admin-manifest-directory, .admin-user-directory) .text-action { min-height: 32px; padding: 5px 10px; font-size: 11px; }
-:is(.admin-port-directory, .admin-vessel-directory, .admin-checkin-directory, .admin-boarding-directory, .admin-manifest-directory, .admin-user-directory) .table-foot { margin: 0; padding: 10px 16px; border-top: 1px solid var(--line); font-size: 11px; line-height: 1.5; }
+:is(.admin-port-directory, .admin-vessel-directory, .admin-checkin-directory, .admin-boarding-directory, .admin-manifest-directory, .admin-user-directory) .port-code, :is(.admin-port-directory, .admin-vessel-directory, .admin-checkin-directory, .admin-boarding-directory, .admin-manifest-directory, .admin-user-directory) .port-name { font-size: var(--text-label); }
+:is(.admin-port-directory, .admin-vessel-directory, .admin-checkin-directory, .admin-boarding-directory, .admin-manifest-directory, .admin-user-directory) .text-action { min-height: 32px; padding: 5px 10px; font-size: var(--text-caption); }
+:is(.admin-port-directory, .admin-vessel-directory, .admin-checkin-directory, .admin-boarding-directory, .admin-manifest-directory, .admin-user-directory) .table-foot { margin: 0; padding: 10px 16px; border-top: 1px solid var(--line); font-size: var(--text-caption); line-height: 1.5; }
 :is(.admin-port-directory, .admin-vessel-directory, .admin-checkin-directory, .admin-boarding-directory, .admin-manifest-directory, .admin-user-directory) .admin-port-map { margin-top: 18px; }
 .port-modal:is(.port-editor-modal, .vessel-editor-modal) { --width: min(640px, calc(100vw - 32px)); }
 .port-dialog:is(.port-editor-dialog, .vessel-editor-dialog) .modal-head { padding: 18px 20px; }
 .port-dialog:is(.port-editor-dialog, .vessel-editor-dialog) .port-fields { padding: 16px 20px 20px; }
-.port-dialog:is(.port-editor-dialog, .vessel-editor-dialog) .port-field-heading { margin: 0 0 12px; font-size: 12px; color: var(--ink); font-weight: 650; }
+.port-dialog:is(.port-editor-dialog, .vessel-editor-dialog) .port-field-heading { margin: 0 0 12px; font-size: var(--text-label); color: var(--ink); font-weight: 650; }
 .port-dialog:is(.port-editor-dialog, .vessel-editor-dialog) .port-field-grid + .port-field-heading { margin-top: 22px; padding-top: 16px; border-top: 1px solid var(--line); }
 .port-dialog:is(.port-editor-dialog, .vessel-editor-dialog) .port-field-grid { gap: 16px; }
-.port-dialog:is(.port-editor-dialog, .vessel-editor-dialog) input:not([type="checkbox"]) { min-height: 40px; font-family: inherit; font-size: 12px; }
+.port-dialog:is(.port-editor-dialog, .vessel-editor-dialog) input:not([type="checkbox"]) { min-height: 40px; font-family: inherit; font-size: var(--text-label); }
 .port-dialog:is(.port-editor-dialog, .vessel-editor-dialog) .port-form-footer { padding: 14px 20px; }
 .port-dialog:is(.port-editor-dialog, .vessel-editor-dialog) .port-form-footer button { min-height: 40px; }
 @media (max-width: 1000px) {
@@ -3247,38 +3324,38 @@ const rows = computed<Row[]>(() => {
 .admin-trips-directory .content { padding: 24px 28px; }
 .admin-trips-directory .heading { margin-bottom: 16px; }
 .admin-trips-directory .booking-filters { display: grid; grid-template-columns: minmax(0, 1fr) 190px auto; gap: 12px; padding: 12px 16px; margin-bottom: 14px; }
-.admin-trips-directory .booking-filters input, .admin-trips-directory .booking-filters select { min-height: 40px; font-size: 12px; font-family: inherit; }
+.admin-trips-directory .booking-filters input, .admin-trips-directory .booking-filters select { min-height: 40px; font-size: var(--text-label); font-family: inherit; }
 .admin-trips-directory .booking-filters select { width: 100%; min-width: 0; }
 .admin-trip-weather { margin-bottom: 16px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); }
-.admin-trip-weather summary { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 16px; cursor: pointer; color: var(--ocean); font-size: 12px; font-weight: 600; list-style: none; }
+.admin-trip-weather summary { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 16px; cursor: pointer; color: var(--ocean); font-size: var(--text-label); font-weight: 600; list-style: none; }
 .admin-trip-weather summary::-webkit-details-marker { display: none; }
 .admin-trip-weather summary > span:first-child { display: flex; gap: 8px; align-items: center; }
-.admin-trip-weather summary > span:last-child { font-size: 11px; color: var(--muted); font-weight: 400; }
+.admin-trip-weather summary > span:last-child { font-size: var(--text-caption); color: var(--muted); font-weight: 400; }
 .admin-trip-weather summary::after { content: '+'; font-size: 18px; }.admin-trip-weather[open] summary::after { content: '−'; }
 .admin-trip-weather :deep(.weather-trip-picker) { margin: 0; width: 100%; max-width: none; border: 0; padding: 12px 16px 16px; }
-.admin-trip-weather :deep(.weather-trigger strong) { font-size: 12px; }.admin-trip-weather :deep(.weather-trigger small) { font-size: 11px; }
+.admin-trip-weather :deep(.weather-trigger strong) { font-size: var(--text-label); }.admin-trip-weather :deep(.weather-trigger small) { font-size: var(--text-caption); }
 .admin-trips-directory .trip-records-panel { overflow: hidden; border-radius: 14px; }
 .admin-trips-directory .trip-records-panel .panel-head { padding: 12px 16px; }
 .admin-trips-directory .panel-head h2 { font-size: 17px; margin: 4px 0 0; }
 .admin-trips-directory :deep(.grid-tools) { padding: 8px 16px; background: var(--surface); border-bottom: 1px solid var(--line); }
 .admin-trips-directory :deep(.grid-tools button) { min-height: 34px; padding: 6px 8px; }
 .admin-trips-directory :deep(.desktop-grid) { padding: 8px; }
-.admin-trips-directory :deep(.grid-cell-content) { padding: 7px 0; font-size: 12px; line-height: 1.5; }
+.admin-trips-directory :deep(.grid-cell-content) { padding: 7px 0; font-size: var(--text-label); line-height: 1.5; }
 .admin-trips-directory :deep(.grid-row-actions) { display: flex; align-items: center; min-height: 48px; padding: 7px 0; }
 .schedule-identity { display: grid; gap: 3px; line-height: 1.5; }
-.schedule-identity strong { font-size: 12px; }.schedule-identity small { font-size: 11px; font-weight: 400; color: var(--muted); }
+.schedule-identity strong { font-size: var(--text-label); }.schedule-identity small { font-size: var(--text-caption); font-weight: 400; color: var(--muted); }
 .admin-trips-directory .trip-row-actions { grid-template-columns: minmax(0, 1fr) auto; gap: 6px; }
-.admin-trips-directory .trip-row-actions .text-action { min-height: 32px; padding: 5px 7px; font-size: 10px; }
+.admin-trips-directory .trip-row-actions .text-action { min-height: 32px; padding: 5px 7px; font-size: var(--text-caption); }
 .schedule-seat-track { height: 4px; background: var(--line); border-radius: 8px; overflow: hidden; margin-top: 5px; }.schedule-seat-track i { display: block; height: 100%; background: var(--ocean); border-radius: inherit; }
-.schedule-status-select { width: 100%; min-height: 34px; padding: 5px 24px 5px 8px; border: 1px solid var(--line); border-radius: 7px; font-family: inherit; font-size: 11px; text-transform: capitalize; cursor: pointer; }
-.schedule-status-badge { font-size: 11px; text-transform: capitalize; }
+.schedule-status-select { width: 100%; min-height: 34px; padding: 5px 24px 5px 8px; border: 1px solid var(--line); border-radius: 7px; font-family: inherit; font-size: var(--text-caption); text-transform: capitalize; cursor: pointer; }
+.schedule-status-badge { font-size: var(--text-caption); text-transform: capitalize; }
 .schedule-status-select.scheduled { background: #eff6ff; color: #1d4ed8; }.schedule-status-select.boarding { background: #f5f3ff; color: #6d28d9; }.schedule-status-select.delayed { background: #fffbeb; color: #92400e; }
 :global(:root[data-theme="dark"]) .schedule-status-select.scheduled { background: #172e4d; color: #93c5fd; }
 :global(:root[data-theme="dark"]) .schedule-status-select.boarding { background: #30234e; color: #c4b5fd; }
 :global(:root[data-theme="dark"]) .schedule-status-select.delayed { background: #3c2d17; color: #fcd34d; }
 .admin-trip-weather summary:focus-visible, .schedule-status-select:focus-visible { outline: 2px solid var(--ocean); outline-offset: 2px; }
-.admin-trips-directory .table-foot { margin: 0; padding: 8px 16px; font-size: 10px; line-height: 1.5; border-top: 1px solid var(--line); }
-.admin-trips-directory :deep(.workspace-pagination) { padding: 10px 16px; font-size: 11px; }
+.admin-trips-directory .table-foot { margin: 0; padding: 8px 16px; font-size: var(--text-caption); line-height: 1.5; border-top: 1px solid var(--line); }
+.admin-trips-directory :deep(.workspace-pagination) { padding: 10px 16px; font-size: var(--text-caption); }
 @media (max-width: 1000px) { .admin-trips-directory .booking-filters { grid-template-columns: minmax(0, 1fr) 170px; }.admin-trips-directory .booking-filters > button { grid-column: 1 / -1; justify-self: start; } }
 @media (max-width: 600px) { .admin-trips-directory .content { padding: 20px 16px; }.admin-trips-directory .booking-filters { grid-template-columns: minmax(0, 1fr); }.admin-trip-weather summary > span:last-child { display: none; }.admin-trips-directory :deep(.grid-tools) { flex-wrap: wrap; } }
 </style>
@@ -3287,8 +3364,8 @@ const rows = computed<Row[]>(() => {
 .admin-passenger-directory .content { padding: 24px 28px; }
 .admin-passenger-directory .heading { margin-bottom: 16px; }
 .admin-passenger-directory .booking-filters { display: grid; grid-template-columns: minmax(0, 1fr) 190px auto; gap: 12px; padding: 12px 16px; margin-bottom: 14px; }
-.admin-passenger-directory .booking-filters label > span { font-size: 12px; }
-.admin-passenger-directory .booking-filters input, .admin-passenger-directory .booking-filters select { font-family: inherit; font-size: 12px; min-height: 40px; }
+.admin-passenger-directory .booking-filters label > span { font-size: var(--text-label); }
+.admin-passenger-directory .booking-filters input, .admin-passenger-directory .booking-filters select { font-family: inherit; font-size: var(--text-label); min-height: 40px; }
 .admin-passenger-directory .booking-filters select { min-width: 0; width: 100%; }
 .admin-passenger-directory .passenger-records-panel { overflow: hidden; border-radius: 14px; }
 .admin-passenger-directory .passenger-records-panel .panel-head { padding: 12px 16px; }
@@ -3296,18 +3373,18 @@ const rows = computed<Row[]>(() => {
 .admin-passenger-directory :deep(.grid-tools) { padding: 8px 16px; background: var(--surface); border-bottom: 1px solid var(--line); }
 .admin-passenger-directory :deep(.grid-tools button) { min-height: 34px; padding: 6px 8px; }
 .admin-passenger-directory :deep(.desktop-grid) { padding: 8px; }
-.admin-passenger-directory :deep(.grid-cell-content) { padding: 7px 0; font-size: 12px; line-height: 1.5; }
+.admin-passenger-directory :deep(.grid-cell-content) { padding: 7px 0; font-size: var(--text-label); line-height: 1.5; }
 .admin-passenger-directory .passenger-name { font-size: 13px; }
-.admin-passenger-directory .passenger-reference { font-size: 11px; font-weight: 400; }
-.admin-passenger-directory .passenger-type { font-size: 10px; padding: 3px 6px; }
-.admin-passenger-directory .passenger-status-badge { font-size: 10px; border-radius: 6px; padding: 4px 7px; white-space: nowrap; }
+.admin-passenger-directory .passenger-reference { font-size: var(--text-caption); font-weight: 400; }
+.admin-passenger-directory .passenger-type { font-size: var(--text-caption); padding: 3px 6px; }
+.admin-passenger-directory .passenger-status-badge { font-size: var(--text-caption); border-radius: 6px; padding: 4px 7px; white-space: nowrap; }
 .admin-passenger-directory .passenger-status-badge.issued { color: #1d4ed8; background: #eff6ff; }
 .admin-passenger-directory .passenger-status-badge.checked-in { color: #6d28d9; background: #f5f3ff; }
 .admin-passenger-directory .passenger-status-badge.expired { color: var(--muted); background: var(--surface-soft); border-color: var(--line); }
 :global(:root[data-theme="dark"]) .admin-passenger-directory .passenger-status-badge.issued { color: #93c5fd; background: #172e4d; }
 :global(:root[data-theme="dark"]) .admin-passenger-directory .passenger-status-badge.checked-in { color: #c4b5fd; background: #30234e; }
-.admin-passenger-directory .table-foot { padding: 8px 16px; font-size: 10px; line-height: 1.5; margin: 0; border-top: 1px solid var(--line); }
-.admin-passenger-directory :deep(.workspace-pagination) { padding: 10px 16px; font-size: 11px; }
+.admin-passenger-directory .table-foot { padding: 8px 16px; font-size: var(--text-caption); line-height: 1.5; margin: 0; border-top: 1px solid var(--line); }
+.admin-passenger-directory :deep(.workspace-pagination) { padding: 10px 16px; font-size: var(--text-caption); }
 .admin-passenger-directory :deep(.workspace-pagination button) { min-height: 36px; }
 @media (max-width: 1000px) { .admin-passenger-directory .booking-filters { grid-template-columns: minmax(0, 1fr) 170px; }.admin-passenger-directory .booking-filters > button { grid-column: 1 / -1; justify-self: start; } }
 @media (max-width: 600px) {
@@ -3322,8 +3399,8 @@ const rows = computed<Row[]>(() => {
 .admin-booking-directory .content { padding: 24px 28px; }
 .admin-booking-directory .heading { margin-bottom: 16px; }
 .admin-booking-directory .booking-filters { display: grid; grid-template-columns: minmax(0, 1fr) 210px auto; gap: 12px; padding: 12px 16px; margin-bottom: 14px; }
-.admin-booking-directory .booking-filters label > span { font-size: 12px; }
-.admin-booking-directory .booking-filters input, .admin-booking-directory .booking-filters select { font-family: inherit; font-size: 12px; min-height: 40px; }
+.admin-booking-directory .booking-filters label > span { font-size: var(--text-label); }
+.admin-booking-directory .booking-filters input, .admin-booking-directory .booking-filters select { font-family: inherit; font-size: var(--text-label); min-height: 40px; }
 .admin-booking-directory .booking-filters select { min-width: 0; width: 100%; }
 .admin-booking-directory .booking-records-panel { overflow: hidden; border-radius: 14px; }
 .admin-booking-directory .booking-records-panel .panel-head { padding: 12px 16px; }
@@ -3332,23 +3409,23 @@ const rows = computed<Row[]>(() => {
 .admin-booking-directory :deep(.grid-tools button) { min-height: 34px; padding: 6px 8px; }
 .admin-booking-directory :deep(.grid-summary) { flex-wrap: wrap; align-items: center; }
 .admin-booking-directory :deep(.desktop-grid) { padding: 8px; }
-.admin-booking-directory :deep(.grid-cell-content) { padding: 5px 0; font-size: 12px; line-height: 1.4; }
+.admin-booking-directory :deep(.grid-cell-content) { padding: 5px 0; font-size: var(--text-label); line-height: 1.4; }
 .admin-booking-directory :deep(.grid-row-actions) { display: flex; align-items: center; min-height: 44px; padding: 4px 0; }
 .booking-identity, .booking-sailing, .booking-payment { display: grid; gap: 2px; line-height: 1.4; }
 .booking-identity > *, .booking-sailing > * { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.booking-identity strong { font-size: 12px; font-weight: 650; letter-spacing: .1px; }
-.booking-identity small, .booking-sailing small, .booking-payment small { font-size: 11px; color: var(--muted); font-weight: 400; line-height: 1.4; }
-.booking-sailing strong { font-size: 12px; font-weight: 500; }
+.booking-identity strong { font-size: var(--text-label); font-weight: 650; letter-spacing: .1px; }
+.booking-identity small, .booking-sailing small, .booking-payment small { font-size: var(--text-caption); color: var(--muted); font-weight: 400; line-height: 1.4; }
+.booking-sailing strong { font-size: var(--text-label); font-weight: 500; }
 .booking-sailing small { font-variant-numeric: tabular-nums; }
 .booking-passengers { font-size: 13px; font-variant-numeric: tabular-nums; }
 .booking-amount { font-size: 13px; white-space: nowrap; font-weight: 650; font-variant-numeric: tabular-nums; }
-.booking-status-badge { justify-self: start; font-size: 10px; line-height: 1.3; border-radius: 5px; padding: 3px 6px; white-space: normal; }
-.booking-payment .booking-voucher { color: var(--ocean); font-size: 10px; }
+.booking-status-badge { justify-self: start; font-size: var(--text-caption); line-height: 1.3; border-radius: 5px; padding: 3px 6px; white-space: normal; }
+.booking-payment .booking-voucher { color: var(--ocean); font-size: var(--text-caption); }
 .booking-status-badge.expired, .booking-status-badge.refunded { color: var(--muted); background: var(--surface-soft); border-color: var(--line); }
 .booking-no-action { display: inline-block; color: var(--muted); font-size: 18px; }
-.admin-booking-directory .text-action.danger { min-height: 30px; padding: 5px 8px; font-size: 11px; }
-.admin-booking-directory .table-foot { margin: 0; padding: 8px 16px; font-size: 10px; line-height: 1.5; color: var(--muted); border-top: 1px solid var(--line); }
-.admin-booking-directory :deep(.workspace-pagination) { padding: 10px 16px; font-size: 11px; }
+.admin-booking-directory .text-action.danger { min-height: 30px; padding: 5px 8px; font-size: var(--text-caption); }
+.admin-booking-directory .table-foot { margin: 0; padding: 8px 16px; font-size: var(--text-caption); line-height: 1.5; color: var(--muted); border-top: 1px solid var(--line); }
+.admin-booking-directory :deep(.workspace-pagination) { padding: 10px 16px; font-size: var(--text-caption); }
 .admin-booking-directory :deep(.workspace-pagination button) { min-height: 36px; }
 @media (max-width: 1000px) { .admin-booking-directory .booking-filters { grid-template-columns: minmax(0, 1fr) 190px; }.admin-booking-directory .booking-filters > button { grid-column: 1 / -1; justify-self: start; } }
 @media (max-width: 600px) {
@@ -3386,7 +3463,7 @@ const rows = computed<Row[]>(() => {
 .fare-vessel-picker p:last-child {
   margin: 0;
   color: var(--muted);
-  font-size: 12px;
+  font-size: var(--text-label);
   line-height: 1.6;
 }
 .fare-vessel-picker select {
@@ -3398,7 +3475,7 @@ const rows = computed<Row[]>(() => {
   color: var(--ink);
   background: var(--surface-soft);
   font: inherit;
-  font-size: 12px;
+  font-size: var(--text-label);
 }
 .fare-vessel-picker select:focus-visible {
   outline: 2px solid var(--ocean);
@@ -3411,7 +3488,7 @@ const rows = computed<Row[]>(() => {
   border-radius: 20px;
   color: var(--muted);
   background: var(--surface-soft);
-  font-size: 10px;
+  font-size: var(--text-caption);
   font-weight: 700;
 }
 .fare-config-status.configured {
@@ -3421,7 +3498,7 @@ const rows = computed<Row[]>(() => {
 .fare-vessel-note {
   margin: -6px 0 20px;
   color: var(--muted);
-  font-size: 12px;
+  font-size: var(--text-label);
   line-height: 1.6;
 }
 .fare-vessel-note a {
@@ -3457,7 +3534,7 @@ const rows = computed<Row[]>(() => {
   gap: 8px;
   min-width: 0;
   color: var(--muted);
-  font-size: 12px;
+  font-size: var(--text-label);
 }
 .admin-breadcrumbs > .app-icon {
   flex: none;
@@ -3530,7 +3607,7 @@ const rows = computed<Row[]>(() => {
   border-radius: 20px;
   background: #c73646;
   color: white;
-  font-size: 10px;
+  font-size: var(--text-caption);
   font-weight: 700;
 }
 .topbar .admin-bell[aria-current="page"] { color:var(--ocean); border-color:var(--ocean); }
@@ -3548,11 +3625,11 @@ const rows = computed<Row[]>(() => {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-size: 11px;
+  font-size: var(--text-caption);
 }
 .admin-profile-copy small {
   color: var(--muted);
-  font-size: 9px;
+  font-size: var(--text-caption);
 }
 @media (max-width: 540px) {
   .admin-breadcrumbs > span,
@@ -3563,11 +3640,11 @@ const rows = computed<Row[]>(() => {
     gap: 10px;
   }
   .topbar .admin-breadcrumbs > strong {
-    font-size: 12px;
+    font-size: var(--text-label);
   }
   .topbar .admin-profile-copy strong {
     max-width: 95px;
-    font-size: 10px;
+    font-size: var(--text-caption);
   }
   .admin-profile-copy small {
     font-size: 8px;
@@ -3622,13 +3699,13 @@ const rows = computed<Row[]>(() => {
 .fare-preview-heading > p:last-child {
   margin: 6px 0 0;
   color: var(--muted);
-  font-size: 12px;
+  font-size: var(--text-label);
   line-height: 1.5;
 }
 .fare-settings-panel label {
   display: block;
   margin-bottom: 8px;
-  font-size: 12px;
+  font-size: var(--text-label);
   font-weight: 700;
 }
 .fare-input {
@@ -3682,7 +3759,7 @@ const rows = computed<Row[]>(() => {
 .fare-hint {
   margin: 10px 0 0;
   color: var(--muted);
-  font-size: 11px;
+  font-size: var(--text-caption);
   line-height: 1.6;
 }
 .fare-discount-grid {
@@ -3694,7 +3771,7 @@ const rows = computed<Row[]>(() => {
   display: block;
   margin-top: 8px;
   color: var(--muted);
-  font-size: 11px;
+  font-size: var(--text-caption);
   line-height: 1.5;
 }
 .fare-preview-card {
@@ -3727,14 +3804,14 @@ const rows = computed<Row[]>(() => {
   border-bottom: 0;
 }
 .fare-preview span {
-  font-size: 12px;
+  font-size: var(--text-label);
   font-weight: 700;
 }
 .fare-preview span small {
   display: block;
   margin-top: 3px;
   color: var(--muted);
-  font-size: 11px;
+  font-size: var(--text-caption);
   font-weight: 400;
 }
 .fare-preview strong {
@@ -3761,7 +3838,7 @@ const rows = computed<Row[]>(() => {
   padding-top: 18px;
   border-top: 1px solid var(--line);
   color: var(--muted);
-  font-size: 11px;
+  font-size: var(--text-caption);
   line-height: 1.6;
 }
 .fare-preview-note .app-icon {
@@ -3786,7 +3863,7 @@ const rows = computed<Row[]>(() => {
 .fare-save-bar p {
   margin: 5px 0 0;
   color: var(--muted);
-  font-size: 11px;
+  font-size: var(--text-caption);
   line-height: 1.5;
 }
 .fare-save-bar .primary {
@@ -3875,7 +3952,7 @@ input[readonly] {
   background: transparent;
   color: #85abc2;
   text-align: left;
-  font-size: 11px;
+  font-size: var(--text-caption);
   font-weight: 700;
   letter-spacing: 0.04em;
   cursor: pointer;
@@ -3958,7 +4035,7 @@ input[readonly] {
 .eyebrow {
   margin: 0;
   color: var(--ocean, #1565c0);
-  font-size: 10px;
+  font-size: var(--text-caption);
   font-weight: 800;
   letter-spacing: 0.13em;
 }
@@ -3979,7 +4056,7 @@ input[readonly] {
   background: #50a9eb;
   color: #071a29;
   font: inherit;
-  font-size: 12px;
+  font-size: var(--text-label);
   font-weight: 800;
   cursor: pointer;
 }
@@ -4014,7 +4091,7 @@ input[readonly] {
 .metrics span,
 .flow small {
   color: var(--muted, #9db2c5);
-  font-size: 11px;
+  font-size: var(--text-caption);
 }
 .metrics strong {
   font-size: 27px;
@@ -4043,7 +4120,7 @@ input[readonly] {
 .panel-head a,
 .count {
   color: var(--ocean, #1565c0);
-  font-size: 12px;
+  font-size: var(--text-label);
   text-decoration: none;
 }
 .flow {
@@ -4087,7 +4164,7 @@ input[readonly] {
   background: var(--surface);
 }
 .booking-filters label { display: grid; gap: 8px; min-width: 0; }
-.booking-filters label > span { color: var(--muted); font-size: 11px; font-weight: 600; }
+.booking-filters label > span { color: var(--muted); font-size: var(--text-caption); font-weight: 600; }
 .booking-search-field { flex: 1; }
 .booking-search-input {
   display: flex;
@@ -4108,7 +4185,7 @@ input[readonly] {
   outline: none;
   background: transparent;
   color: var(--ink);
-  font-size: 12px;
+  font-size: var(--text-label);
 }
 .booking-filters select {
   min-height: 44px;
@@ -4118,26 +4195,26 @@ input[readonly] {
   border-radius: 9px;
   background: var(--surface-soft);
   color: var(--ink);
-  font-size: 12px;
+  font-size: var(--text-label);
 }
 .booking-filters > button { min-height: 44px; flex: none; }
 .check-in-filters { flex-wrap: wrap; }
 .check-in-filters .booking-search-field { flex-basis: 100%; }
 .check-in-filters .check-in-sailing-filter { flex: 1; }
 .check-in-filters select { width: 100%; min-width: 0; }
-.check-in-guidance { display: flex; align-items: flex-start; gap: 9px; margin: -6px 0 20px; color: var(--muted); font-size: 11px; line-height: 1.6; }
+.check-in-guidance { display: flex; align-items: flex-start; gap: 9px; margin: -6px 0 20px; color: var(--muted); font-size: var(--text-caption); line-height: 1.6; }
 .check-in-guidance .app-icon { flex: none; margin-top: 1px; color: var(--ocean); font-size: 17px; }
 .check-in-action { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 36px; background: var(--light-blue); border-color: var(--line); white-space: nowrap; }
 .check-in-action .app-icon { font-size: 15px; }
 .check-in-action:focus-visible { outline: 2px solid var(--ocean); outline-offset: 2px; }
 :is(.admin-checkin-directory, .admin-boarding-directory, .admin-manifest-directory) .booking-filters { grid-template-columns: minmax(180px, 1fr) 150px minmax(220px, 1fr) auto; }
-:is(.admin-checkin-directory, .admin-boarding-directory, .admin-manifest-directory) .check-in-guidance { margin: -4px 0 14px; font-size: 12px; }
-:is(.admin-checkin-directory, .admin-boarding-directory, .admin-manifest-directory) .passenger-name { font-size: 12px; }
-:is(.admin-checkin-directory, .admin-boarding-directory, .admin-manifest-directory) .passenger-reference { font-variant-numeric: tabular-nums; font-size: 12px; }
-:is(.admin-checkin-directory, .admin-boarding-directory, .admin-manifest-directory) .check-in-action { min-height: 32px; padding: 5px 9px; font-size: 11px; }
+:is(.admin-checkin-directory, .admin-boarding-directory, .admin-manifest-directory) .check-in-guidance { margin: -4px 0 14px; font-size: var(--text-label); }
+:is(.admin-checkin-directory, .admin-boarding-directory, .admin-manifest-directory) .passenger-name { font-size: var(--text-label); }
+:is(.admin-checkin-directory, .admin-boarding-directory, .admin-manifest-directory) .passenger-reference { font-variant-numeric: tabular-nums; font-size: var(--text-label); }
+:is(.admin-checkin-directory, .admin-boarding-directory, .admin-manifest-directory) .check-in-action { min-height: 32px; padding: 5px 9px; font-size: var(--text-caption); }
 :is(.admin-checkin-directory, .admin-boarding-directory, .admin-manifest-directory) .check-in-action:disabled { opacity: .75; color: var(--muted); background: var(--surface-soft); }
 :is(.admin-checkin-directory, .admin-boarding-directory, .admin-manifest-directory) :deep(.workspace-pagination) { padding: 10px 16px; gap: 10px; }
-:is(.admin-checkin-directory, .admin-boarding-directory, .admin-manifest-directory) :deep(.workspace-pagination button) { min-height: 34px; padding: 6px 12px; font-size: 11px; border-radius: 8px; }
+:is(.admin-checkin-directory, .admin-boarding-directory, .admin-manifest-directory) :deep(.workspace-pagination button) { min-height: 34px; padding: 6px 12px; font-size: var(--text-caption); border-radius: 8px; }
 @media (max-width: 1100px) {
   :is(.admin-checkin-directory, .admin-boarding-directory, .admin-manifest-directory) .booking-filters { grid-template-columns: 150px minmax(0, 1fr) auto; }
   :is(.admin-checkin-directory, .admin-boarding-directory, .admin-manifest-directory) .booking-search-field { grid-column: 1 / -1; }
@@ -4155,7 +4232,7 @@ input[readonly] {
 .manifest-download-card { margin-bottom: 20px; }
 .admin-manifest-directory .manifest-download-card { margin-bottom: 16px; }
 .admin-manifest-directory .booking-filters { grid-template-columns: minmax(180px, 1fr) minmax(240px, 1fr) auto; }
-.admin-manifest-directory .manifest-not-boarded { font-size: 12px; white-space: nowrap; }
+.admin-manifest-directory .manifest-not-boarded { font-size: var(--text-label); white-space: nowrap; }
 .admin-manifest-directory :deep(.manifest-export) { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 14px; }
 .admin-manifest-directory :deep(.export-heading) { margin: 0; }
 .admin-manifest-directory :deep(.manifest-export > p) { grid-column: 1 / -1; margin: 0; }
@@ -4171,7 +4248,7 @@ input[readonly] {
   .admin-manifest-directory .booking-filters { grid-template-columns: minmax(0, 1fr); }
 }
 .manifest-sex { text-transform: capitalize; }
-.manifest-not-boarded { color: var(--muted); font-size: 11px; }
+.manifest-not-boarded { color: var(--muted); font-size: var(--text-caption); }
 .manifest-records-panel :deep([data-slot="badge"]) { white-space: normal; line-height: 1.5; }
 .manifest-records-panel :deep(.ag-cell[col-id="cell-5"]) { font-weight: 400; }
 .booking-records-panel .panel-head { padding: 20px 22px; border-bottom: 1px solid var(--line); }
@@ -4183,14 +4260,14 @@ input[readonly] {
 .booking-records-panel :deep(.ag-body-horizontal-scroll-viewport) { scrollbar-width: thin; scrollbar-color: var(--muted) var(--surface); }
 .booking-records-panel :deep(.ag-cell[col-id="cell-0"]) { font-weight: 650; }
 .booking-records-panel:not(.passenger-records-panel):not(.trip-records-panel) :deep(.ag-cell[col-id="cell-5"]) { font-weight: 650; font-variant-numeric: tabular-nums; }
-.trip-reference { color: var(--ink); font-size: 12px; font-weight: 650; }
+.trip-reference { color: var(--ink); font-size: var(--text-label); font-weight: 650; }
 .trip-capacity { display: grid; gap: 3px; }
 .trip-capacity strong { font-variant-numeric: tabular-nums; font-weight: 650; }
-.trip-capacity small { color: var(--muted); font-size: 10px; }
+.trip-capacity small { color: var(--muted); font-size: var(--text-caption); }
 .trip-records-panel :deep([data-slot="badge"]) { white-space: normal; line-height: 1.5; }
 .passenger-name { color: var(--ink); font-size: 13px; font-weight: 650; }
-.passenger-type { display: inline-flex; padding: 3px 8px; border: 1px solid var(--line); border-radius: 6px; background: var(--surface-soft); color: var(--ink); font-size: 11px; text-transform: capitalize; }
-.passenger-reference { font-size: 11px; font-variant-numeric: tabular-nums; }
+.passenger-type { display: inline-flex; padding: 3px 8px; border: 1px solid var(--line); border-radius: 6px; background: var(--surface-soft); color: var(--ink); font-size: var(--text-caption); text-transform: capitalize; }
+.passenger-reference { font-size: var(--text-caption); font-variant-numeric: tabular-nums; }
 .passenger-records-panel :deep([data-slot="badge"]) { white-space: normal; line-height: 1.5; }
 @media (max-width: 1100px) {
   .booking-filters { flex-wrap: wrap; gap: 12px; }
@@ -4215,7 +4292,7 @@ td select,
   background: var(--surface, #142539);
   color: var(--ink, #fff);
   font: inherit;
-  font-size: 12px;
+  font-size: var(--text-label);
 }
 .toolbar input {
   flex: 1;
@@ -4236,12 +4313,12 @@ th,
 td {
   padding: 13px 19px;
   border-bottom: 1px solid var(--line, #2a4155);
-  font-size: 12px;
+  font-size: var(--text-label);
   text-align: left;
 }
 th {
   color: var(--muted, #9db2c5);
-  font-size: 10px;
+  font-size: var(--text-caption);
   text-transform: uppercase;
   letter-spacing: 0.08em;
 }
@@ -4260,7 +4337,7 @@ td strong {
   border-radius: 8px;
   background: #164262;
   color: #8dd1fb;
-  font-size: 11px;
+  font-size: var(--text-caption);
   font-weight: 750;
 }
 .empty {
@@ -4273,7 +4350,7 @@ td strong {
   padding: 14px 20px;
   border-top: 1px solid var(--line, #2a4155);
   color: var(--muted, #9db2c5);
-  font-size: 11px;
+  font-size: var(--text-caption);
 }
 .text-action {
   padding: 6px 10px;
@@ -4282,7 +4359,7 @@ td strong {
   background: transparent;
   color: var(--ocean, #1565c0);
   font: inherit;
-  font-size: 11px;
+  font-size: var(--text-caption);
   cursor: pointer;
 }
 .text-action.danger {
@@ -4300,7 +4377,7 @@ td strong {
   border-radius: 9px;
   background: #542e3a;
   color: #ffd5dc;
-  font-size: 12px;
+  font-size: var(--text-label);
 }
 .notice {
   background: #164d44;
@@ -4347,7 +4424,7 @@ td strong {
 .modal-body label {
   display: grid;
   gap: 6px;
-  font-size: 12px;
+  font-size: var(--text-label);
   font-weight: 700;
 }
 .modal-body input,
@@ -4357,13 +4434,13 @@ td strong {
 .modal-body .primary {
   margin-top: 5px;
 }
-.port-code { color: var(--ink); font-size: 12px; font-weight: 650; }
+.port-code { color: var(--ink); font-size: var(--text-label); font-weight: 650; }
 .port-name { color: var(--ink); font-size: 13px; font-weight: 650; }
 .port-modal { --width: min(680px, calc(100vw - 32px)); --height: auto; --max-height: calc(100dvh - 40px); --border-radius: 16px; --background: var(--surface); }
 .modal-body.port-dialog { display: flex; flex-direction: column; width: 100%; max-height: calc(100dvh - 40px); margin: 0; padding: 0; overflow: hidden; border: 0; border-radius: 0; background: var(--surface); color: var(--ink); }
 .port-dialog .modal-head { flex: none; gap: 16px; margin: 0; padding: 22px 24px; border-bottom: 1px solid var(--line); }
 .port-title-icon { display: grid; place-items: center; width: 44px; height: 44px; flex: none; border-radius: 12px; background: var(--light-blue); color: var(--ocean); font-size: 24px; }
-.port-subtitle { margin: 6px 0 0; color: var(--muted); font-size: 12px; line-height: 1.5; }
+.port-subtitle { margin: 6px 0 0; color: var(--muted); font-size: var(--text-label); line-height: 1.5; }
 .port-dialog .modal-head > button { display: grid; place-items: center; width: 36px; height: 36px; flex: none; border-radius: 9px; background: var(--surface-soft); color: var(--muted); }
 .port-dialog > .alert { flex: none; margin: 16px 24px 0; }
 .port-dialog .port-form { display: flex; flex: 1 1 auto; flex-direction: column; gap: 0; min-height: 0; overflow: hidden; }
@@ -4381,16 +4458,16 @@ td strong {
 }
 
 .port-dialog .port-fields { display: block; min-height: 0; padding: 22px 24px; overflow-y: auto; scrollbar-width: thin; }
-.port-form-note { margin: 0 0 18px; color: var(--muted); font-size: 11px; }
+.port-form-note { margin: 0 0 18px; color: var(--muted); font-size: var(--text-caption); }
 .port-field-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 20px 18px; align-items: start; }
-.port-dialog label { min-width: 0; gap: 8px; font-size: 11px; color: var(--muted); font-weight: 600; }
+.port-dialog label { min-width: 0; gap: 8px; font-size: var(--text-caption); color: var(--muted); font-weight: 600; }
 .port-dialog input:not([type="checkbox"]) { min-height: 44px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 9px; background: var(--surface-soft); color: var(--ink); font-size: 13px; }
 .port-dialog input:disabled { opacity: 0.65; }
-.port-dialog label small { color: var(--muted); font-size: 10px; line-height: 1.5; font-weight: 400; }
+.port-dialog label small { color: var(--muted); font-size: var(--text-caption); line-height: 1.5; font-weight: 400; }
 .port-dialog .port-availability { display: flex; align-items: center; gap: 12px; margin-top: 20px; padding: 14px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface-soft); }
 .port-availability input { width: 17px; height: 17px; flex: none; accent-color: var(--ocean); }
 .port-availability span { display: grid; gap: 4px; }
-.port-availability strong { color: var(--ink); font-size: 12px; }
+.port-availability strong { color: var(--ink); font-size: var(--text-label); }
 .port-form-footer { display: flex; justify-content: flex-end; gap: 10px; flex: none; padding: 16px 24px; border-top: 1px solid var(--line); background: var(--surface-soft); }
 .port-dialog .port-form-footer button { min-height: 44px; margin: 0; }
 .port-dialog input:focus-visible, .port-dialog button:focus-visible { outline: 2px solid var(--ocean); outline-offset: 2px; }
@@ -4415,7 +4492,7 @@ td strong {
 .form-note {
   margin: 0;
   color: #aad0e8;
-  font-size: 12px;
+  font-size: var(--text-label);
 }
 .checkbox {
   display: flex !important;
@@ -4565,7 +4642,7 @@ td strong {
   background: var(--surface-soft);
   color: var(--ink);
   font: inherit;
-  font-size: 11px;
+  font-size: var(--text-caption);
   text-transform: capitalize;
   text-align: center;
   text-align-last: center;
@@ -4580,7 +4657,7 @@ td strong {
   border-radius: 9px;
   background: var(--surface-soft);
   color: var(--ink);
-  font-size: 12px;
+  font-size: var(--text-label);
   line-height: 1.5;
 }
 .modal-body input[readonly] {
@@ -4632,7 +4709,7 @@ td strong {
 }
 .trip-modal-title .eyebrow {
   margin-bottom: 6px;
-  font-size: 9px;
+  font-size: var(--text-caption);
 }
 .trip-dialog .modal-head h2 {
   font-size: 22px;
@@ -4641,7 +4718,7 @@ td strong {
 .trip-subtitle {
   margin: 6px 0 0;
   color: var(--muted);
-  font-size: 12px;
+  font-size: var(--text-label);
   line-height: 1.5;
 }
 .trip-dialog .modal-head > button {
@@ -4692,7 +4769,7 @@ td strong {
   align-items: center;
   gap: 12px;
   color: var(--muted);
-  font-size: 11px;
+  font-size: var(--text-caption);
 }
 .trip-dialog .trip-code-banner input {
   width: 180px;
@@ -4711,14 +4788,14 @@ td strong {
   border-radius: 6px;
   background: var(--light-blue);
   color: var(--ocean);
-  font-size: 10px;
+  font-size: var(--text-caption);
   font-weight: 700;
 }
 .trip-code-banner > p {
   grid-column: 1 / -1;
   margin: 0;
   color: var(--muted);
-  font-size: 11px;
+  font-size: var(--text-caption);
   line-height: 1.5;
 }
 .trip-callout {
@@ -4738,12 +4815,12 @@ td strong {
   margin-top: 1px;
 }
 .trip-callout strong {
-  font-size: 12px;
+  font-size: var(--text-label);
 }
 .trip-callout p {
   margin: 4px 0 0;
   color: var(--muted);
-  font-size: 11px;
+  font-size: var(--text-caption);
   line-height: 1.6;
 }
 .trip-grid {
@@ -4789,7 +4866,7 @@ td strong {
 .trip-section-heading p {
   margin: 4px 0 0;
   color: var(--muted);
-  font-size: 10px;
+  font-size: var(--text-caption);
   line-height: 1.5;
 }
 .trip-lock-badge {
@@ -4798,11 +4875,11 @@ td strong {
   gap: 4px;
   margin-left: auto;
   color: var(--muted);
-  font-size: 9px;
+  font-size: var(--text-caption);
 }
 .trip-dialog label {
   color: var(--ink);
-  font-size: 11px;
+  font-size: var(--text-caption);
   gap: 8px;
 }
 .trip-dialog select,
@@ -4813,7 +4890,7 @@ td strong {
   border: 1px solid var(--line);
   background: var(--surface-soft);
   color: var(--ink);
-  font-size: 12px;
+  font-size: var(--text-label);
   color-scheme: light;
 }
 .trip-dialog input:focus-visible,
@@ -4836,7 +4913,7 @@ td strong {
   gap: 6px;
   margin: 0;
   color: var(--muted);
-  font-size: 10px;
+  font-size: var(--text-caption);
   line-height: 1.6;
 }
 .trip-field-hint .app-icon {
@@ -4889,7 +4966,7 @@ td strong {
 }
 .trip-discount-fares small {
   color: var(--muted);
-  font-size: 9px;
+  font-size: var(--text-caption);
   font-weight: 500;
 }
 .trip-dialog .trip-discount-fares input {
@@ -4921,12 +4998,12 @@ td strong {
   font-size: 30px;
 }
 .trip-fares-empty strong {
-  font-size: 12px;
+  font-size: var(--text-label);
 }
 .trip-fares-empty p {
   margin: 0;
   color: var(--muted);
-  font-size: 11px;
+  font-size: var(--text-caption);
   line-height: 1.6;
 }
 .trip-fare-warning {
@@ -4936,7 +5013,7 @@ td strong {
   border-radius: 8px;
   background: var(--surface);
   color: var(--muted);
-  font-size: 11px;
+  font-size: var(--text-caption);
   line-height: 1.6;
 }
 .trip-fare-warning a {
@@ -4957,7 +5034,7 @@ td strong {
   align-items: center;
   gap: 7px;
   color: var(--muted);
-  font-size: 11px;
+  font-size: var(--text-caption);
 }
 .trip-form-footer > span .app-icon {
   font-size: 16px;
@@ -5019,14 +5096,14 @@ td strong {
     gap: 8px;
   }
   .trip-code-badge {
-    font-size: 9px;
+    font-size: var(--text-caption);
   }
   .trip-dialog .trip-code-banner label {
     gap: 4px;
   }
   .trip-dialog .trip-code-banner input {
     width: 158px;
-    font-size: 12px;
+    font-size: var(--text-label);
   }
   .trip-section {
     padding: 16px;
@@ -5045,7 +5122,7 @@ td strong {
   border-radius: 12px;
   background: var(--surface-soft);
   color: var(--muted);
-  font-size: 12px;
+  font-size: var(--text-label);
   line-height: 1.6;
 }
 .boarding-help > .app-icon {
@@ -5058,9 +5135,9 @@ td strong {
   color: var(--ocean);
 }
 .boarding-help strong { color: var(--ink); font-weight: 650; }
-.admin-boarding-directory .boarding-help { margin: 0 0 14px; padding: 10px 14px; border-radius: 10px; font-size: 12px; line-height: 1.5; }
+.admin-boarding-directory .boarding-help { margin: 0 0 14px; padding: 10px 14px; border-radius: 10px; font-size: var(--text-label); line-height: 1.5; }
 .admin-boarding-directory .boarding-row-action { min-width: 0; }
-.admin-boarding-directory .boarding-row-action .text-action { width: auto; min-height: 32px; padding: 5px 9px; font-size: 11px; }
+.admin-boarding-directory .boarding-row-action .text-action { width: auto; min-height: 32px; padding: 5px 9px; font-size: var(--text-caption); }
 .admin-boarding-directory :deep(.ag-cell[col-id="cell-5"] [data-slot="badge"]) { white-space: nowrap; }
 @media (max-width: 600px) {
   .admin-boarding-directory .boarding-row-action .text-action { min-height: 44px; }
@@ -5105,7 +5182,7 @@ td strong {
   .table-wrap td:before {
     content: attr(data-label);
     text-transform: uppercase;
-    font-size: 9px;
+    font-size: var(--text-caption);
     font-weight: 700;
     color: var(--muted);
     text-align: left;
@@ -5170,7 +5247,7 @@ td strong {
   flex: none;
 }
 .user-dialog .eyebrow {
-  font-size: 9px;
+  font-size: var(--text-caption);
   margin: 0 0 7px;
   color: var(--ocean);
 }
@@ -5181,7 +5258,7 @@ td strong {
 .account-subtitle {
   margin: 7px 0 0;
   color: var(--muted);
-  font-size: 12px;
+  font-size: var(--text-label);
   line-height: 1.5;
 }
 .user-dialog .modal-head > button {
@@ -5207,12 +5284,12 @@ td strong {
 .account-content .account-success { padding: 14px 20px; overflow-y: auto; }
 .user-dialog > .alert { flex: none; }
 .user-name-cell { display: flex; align-items: center; gap: 9px; min-width: 0; }
-.user-initials { display: grid; place-items: center; width: 28px; height: 28px; border-radius: 50%; background: var(--light-blue); color: var(--ocean); font-size: 12px; font-weight: 700; flex: none; }
+.user-initials { display: grid; place-items: center; width: 28px; height: 28px; border-radius: 50%; background: var(--light-blue); color: var(--ocean); font-size: var(--text-label); font-weight: 700; flex: none; }
 .user-name-cell > div { min-width: 0; display: grid; gap: 4px; }
-.user-name-cell strong { color: var(--ink); font-size: 12px; }
-.user-name-cell small { color: var(--muted); font-size: 10px; }
+.user-name-cell strong { color: var(--ink); font-size: var(--text-label); }
+.user-name-cell small { color: var(--muted); font-size: var(--text-caption); }
 .user-email { overflow-wrap: anywhere; }
-.user-created-date { color: var(--muted); font-size: 11px; }
+.user-created-date { color: var(--muted); font-size: var(--text-caption); }
 .account-section-heading {
   display: flex;
   justify-content: space-between;
@@ -5224,12 +5301,12 @@ td strong {
   font-size: 13px;
 }
 .account-section-heading span {
-  font-size: 10px;
+  font-size: var(--text-caption);
   color: var(--muted);
 }
 .user-dialog label {
   gap: 8px;
-  font-size: 12px;
+  font-size: var(--text-label);
 }
 .user-dialog input,
 .user-dialog select {
@@ -5257,7 +5334,7 @@ td strong {
   border: 1px solid var(--line);
   border-radius: 9px;
   color: var(--muted);
-  font-size: 11px;
+  font-size: var(--text-caption);
   line-height: 1.6;
 }
 .account-role-note .app-icon {
@@ -5292,7 +5369,7 @@ td strong {
   margin-top: 0;
 }
 .account-generate p {
-  font-size: 11px;
+  font-size: var(--text-caption);
   line-height: 1.6;
   color: var(--muted);
   margin: 0;
@@ -5304,7 +5381,7 @@ td strong {
   border-radius: 8px;
   background: var(--surface-soft);
   color: var(--ocean);
-  font-size: 11px;
+  font-size: var(--text-caption);
   font-weight: 700;
   cursor: pointer;
 }
@@ -5324,7 +5401,7 @@ td strong {
   border-color: var(--action);
   color: white;
   min-height: 40px;
-  font-size: 12px;
+  font-size: var(--text-label);
 }
 .user-dialog .account-footer .secondary {
   min-height: 42px;
@@ -5358,7 +5435,7 @@ td strong {
   color: var(--muted);
   margin: 6px 0 0;
   line-height: 1.6;
-  font-size: 12px;
+  font-size: var(--text-label);
 }
 .account-created-details {
   margin: 0;
@@ -5371,7 +5448,7 @@ td strong {
   display: flex;
   justify-content: space-between;
   gap: 15px;
-  font-size: 12px;
+  font-size: var(--text-label);
 }
 .account-created-details dt {
   color: var(--muted);
@@ -5397,7 +5474,7 @@ td strong {
 }
 .user-dialog .created .account-copy-notice {
   color: var(--ocean);
-  font-size: 11px;
+  font-size: var(--text-caption);
   margin: 0;
 }
 .account-success-heading p {
@@ -5431,7 +5508,7 @@ td strong {
     font-size: 17px;
   }
   .account-subtitle {
-    font-size: 11px;
+    font-size: var(--text-caption);
   }
   .account-section-heading {
     align-items: start;
@@ -5459,7 +5536,7 @@ td strong {
   gap: 8px;
 }
 .account-password-block > span {
-  font-size: 12px;
+  font-size: var(--text-label);
   font-weight: 700;
 }
 .custom-discount-row {
@@ -5478,7 +5555,7 @@ td strong {
   gap: 8px;
   margin-bottom: 0;
   min-width: 0;
-  font-size: 11px;
+  font-size: var(--text-caption);
   font-weight: 600;
   color: var(--muted);
 }
@@ -5492,11 +5569,11 @@ td strong {
   background: var(--surface);
   color: var(--ink);
   font: inherit;
-  font-size: 12px;
+  font-size: var(--text-label);
 }
 .discount-percent-input { display: flex; align-items: center; gap: 6px; padding-right: 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); }
 .custom-discount-row .discount-percent-input input { border: 0; background: transparent; text-align: center; }
-.discount-percent-input > span { color: var(--muted); font-size: 12px; }
+.discount-percent-input > span { color: var(--muted); font-size: var(--text-label); }
 .discount-percent-input:focus-within { border-color: var(--ocean); outline: 2px solid var(--light-blue); }
 .custom-discount-row input:focus-visible { outline: 2px solid var(--ocean); outline-offset: 2px; }
 .custom-discount-row .custom-active {
@@ -5511,7 +5588,7 @@ td strong {
   height: 16px;
   accent-color: var(--ocean);
 }
-.custom-discount-row .text-action { justify-self: end; min-height: 36px; padding: 7px 12px; color: var(--danger); border-color: var(--line); background: var(--danger-soft); font-size: 11px; }
+.custom-discount-row .text-action { justify-self: end; min-height: 36px; padding: 7px 12px; color: var(--danger); border-color: var(--line); background: var(--danger-soft); font-size: var(--text-caption); }
 .custom-discount-row .text-action:focus-visible { outline: 2px solid var(--danger); outline-offset: 2px; }
 .custom-discounts > .secondary {
   margin-top: 16px;
@@ -5541,20 +5618,20 @@ td strong {
 .trip-dialog .trip-title-icon { width: 38px; height: 38px; border-radius: 10px; font-size: 22px; }
 .trip-dialog .trip-scroll { padding: 16px 22px; }
 .trip-dialog .trip-code-banner { padding: 10px 14px; margin-bottom: 14px; gap: 3px 12px; }
-.trip-dialog .trip-code-banner > p { font-size: 10px; }
+.trip-dialog .trip-code-banner > p { font-size: var(--text-caption); }
 .trip-dialog .trip-grid { grid-template-columns: repeat(2,minmax(0, 1fr)); gap: 14px; align-items: start; }
 .trip-dialog .trip-details { display: contents; }
 .trip-dialog .trip-section { padding: 16px; gap: 12px; border-radius: 11px; }
 .trip-dialog .trip-section-heading { gap: 9px; }
 .trip-dialog .trip-section-heading h3 { font-size: 14px; }
-.trip-dialog .trip-section-heading p { font-size: 11px; }
+.trip-dialog .trip-section-heading p { font-size: var(--text-caption); }
 .trip-dialog .trip-section-heading > span { width: 30px; height: 30px; font-size: 17px; }
-.vessel-position-hint { padding:10px 12px; border:1px solid var(--line); border-radius:8px; background:var(--surface-soft); font-size:12px; }.vessel-position-hint p { margin:0 0 6px; color:var(--muted); }.vessel-position-hint a { color:var(--ocean); }
+.vessel-position-hint { padding:10px 12px; border:1px solid var(--line); border-radius:8px; background:var(--surface-soft); font-size: var(--text-label); }.vessel-position-hint p { margin:0 0 6px; color:var(--muted); }.vessel-position-hint a { color:var(--ocean); }
 .trip-dialog .trip-boarding-section { grid-column:1/-1; }
-.trip-dialog .boarding-settings-action { margin-left:auto; flex:none; font-size:12px; text-decoration:none; border:1px solid var(--line); border-radius:8px; padding:8px 10px; color:var(--ocean); }
+.trip-dialog .boarding-settings-action { margin-left:auto; flex:none; font-size: var(--text-label); text-decoration:none; border:1px solid var(--line); border-radius:8px; padding:8px 10px; color:var(--ocean); }
 .trip-dialog textarea { width:100%; box-sizing:border-box; min-height:76px; padding:10px 12px; border:1px solid var(--line); border-radius:8px; background:var(--surface-soft); color:var(--ink); font:inherit; resize:vertical; }
 .trip-dialog .form-grid { gap: 12px; }
-.trip-dialog label { font-size: 12px; gap: 6px; }
+.trip-dialog label { font-size: var(--text-label); gap: 6px; }
 .trip-dialog input, .trip-dialog select { min-height: 40px; padding: 8px 10px; font-family: inherit; font-size: 14px; }
 .trip-dialog .trip-code-banner input { min-height: 24px; padding: 0; }
 .trip-dialog .trip-fare-section { grid-column: 1 / -1; }
@@ -5562,37 +5639,37 @@ td strong {
 .trip-dialog .trip-regular-fare { padding: 12px; gap: 4px; }
 .trip-dialog .trip-regular-fare input { font-size: 25px; min-height: 32px; }
 .trip-dialog .trip-discount-fares { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px 16px; }
-.trip-dialog .trip-discount-fares label { padding: 7px 0; gap: 8px; font-size: 11px; }
+.trip-dialog .trip-discount-fares label { padding: 7px 0; gap: 8px; font-size: var(--text-caption); }
 .trip-dialog .trip-discount-fares input { width: 70px; min-height: 28px; font-size: 13px; padding: 2px 0; }
 .trip-dialog .trip-fares-empty { grid-template-columns: 30px auto minmax(0, 1fr); align-items: center; justify-items: start; gap: 12px; padding: 10px 0; text-align: left; }
-.trip-dialog .trip-fares-empty .app-icon { font-size: 26px; }.trip-dialog .trip-fares-empty p { font-size: 12px; }
+.trip-dialog .trip-fares-empty .app-icon { font-size: 26px; }.trip-dialog .trip-fares-empty p { font-size: var(--text-label); }
 .trip-dialog .trip-form-footer { padding: 12px 22px; }
 .trip-dialog .trip-form-footer button { min-height: 40px; }
 .fare-settings-panel .fare-base-card { display: grid; grid-template-columns: minmax(0, 1fr) minmax(170px, .85fr); align-items: center; gap: 16px; }
 .fare-base-card .fare-card-heading { margin-bottom: 0; align-items: flex-start; }
 .fare-settings-panel .regular-fare-control { min-width: 0; }
-.fare-settings-panel .regular-fare-control > label { font-size: 10px; color: var(--muted); margin-bottom: 6px; }
+.fare-settings-panel .regular-fare-control > label { font-size: var(--text-caption); color: var(--muted); margin-bottom: 6px; }
 .fare-settings-panel .fare-base-input input { min-height: 44px; font-size: 23px; padding: 8px 10px; }
-.fare-settings-panel .fare-base-input > span { padding-left: 12px; font-size: 11px; }
-.fare-settings-panel .fare-base-card .fare-hint { font-size: 10px; margin-top: 6px; }
-.fare-settings-panel .discount-count { flex: none; margin-left: auto; padding: 4px 7px; border-radius: 6px; background: var(--light-blue); color: var(--ocean); font-size: 10px; font-weight: 600; white-space: nowrap; }
+.fare-settings-panel .fare-base-input > span { padding-left: 12px; font-size: var(--text-caption); }
+.fare-settings-panel .fare-base-card .fare-hint { font-size: var(--text-caption); margin-top: 6px; }
+.fare-settings-panel .discount-count { flex: none; margin-left: auto; padding: 4px 7px; border-radius: 6px; background: var(--light-blue); color: var(--ocean); font-size: var(--text-caption); font-weight: 600; white-space: nowrap; }
 .fare-settings-panel .custom-discounts .fare-card-heading { align-items: flex-start; gap: 10px; }
-.fare-settings-panel .custom-discounts .fare-card-heading p { font-size: 11px; }
+.fare-settings-panel .custom-discounts .fare-card-heading p { font-size: var(--text-caption); }
 .fare-settings-panel .custom-discount-row { grid-template-columns: minmax(0, 1fr) 76px 74px 52px; padding: 12px 0; gap: 10px; margin-top: 0; border: 0; border-top: 1px solid var(--line); border-radius: 0; background: transparent; }
-.fare-settings-panel .custom-discount-row label { gap: 5px; font-size: 10px; }
+.fare-settings-panel .custom-discount-row label { gap: 5px; font-size: var(--text-caption); }
 .fare-settings-panel .custom-discount-row input:not([type="checkbox"]) { min-height: 38px; padding: 8px 10px; background: var(--surface-soft); }
 .fare-settings-panel .custom-discount-row .discount-percent-input { background: var(--surface-soft); padding-right: 8px; gap: 3px; }
 .fare-settings-panel .custom-discount-row .discount-percent-input input { background: transparent; padding-inline: 6px; }
-.fare-settings-panel .custom-discount-row .custom-active { min-height: 38px; gap: 6px; font-size: 11px; }
-.fare-settings-panel .custom-discount-row .text-action { min-height: 38px; padding: 8px; border: 0; background: transparent; font-size: 11px; }
+.fare-settings-panel .custom-discount-row .custom-active { min-height: 38px; gap: 6px; font-size: var(--text-caption); }
+.fare-settings-panel .custom-discount-row .text-action { min-height: 38px; padding: 8px; border: 0; background: transparent; font-size: var(--text-caption); }
 .fare-settings-panel .custom-discount-row .text-action:hover { background: var(--danger-soft); }
 .fare-settings-panel .discount-row-inactive { background: var(--surface-soft); }
 .fare-settings-panel .discount-row-inactive .custom-active { color: var(--muted); }
-.fare-settings-panel .custom-discounts > .secondary { margin-top: 8px; min-height: 36px; font-size: 11px; }
+.fare-settings-panel .custom-discounts > .secondary { margin-top: 8px; min-height: 36px; font-size: var(--text-caption); }
 .fare-settings-panel .fare-save-bar { border-radius: 12px; }
-.fare-settings-panel .fare-save-bar .primary { min-height: 40px; font-size: 12px; }
-.fare-settings-panel .fare-save-bar strong { font-size: 12px; }
-.fare-settings-panel .fare-save-bar p { font-size: 10px; }
+.fare-settings-panel .fare-save-bar .primary { min-height: 40px; font-size: var(--text-label); }
+.fare-settings-panel .fare-save-bar strong { font-size: var(--text-label); }
+.fare-settings-panel .fare-save-bar p { font-size: var(--text-caption); }
 @media (min-width: 1001px) { .fare-settings-panel .fare-layout { grid-template-columns: minmax(0, 1.8fr) minmax(250px, 1fr); } }
 @media (max-width: 1000px) {
   .fare-settings-panel .fare-layout { grid-template-columns: 1fr; }
@@ -5605,7 +5682,7 @@ td strong {
   .fare-settings-panel .fare-base-card { grid-template-columns: 1fr; }
   .fare-settings-panel .fare-card, .fare-settings-panel .fare-preview-card { padding: 16px; }
   .fare-settings-panel .custom-discount-row { grid-template-columns: minmax(0, 1fr) 85px; gap: 8px 12px; }
-  .fare-settings-panel .discount-count { font-size: 9px; }
+  .fare-settings-panel .discount-count { font-size: var(--text-caption); }
   .fare-settings-panel .fare-save-bar { padding: 14px 16px; gap: 12px; }
 }
 @media (max-width: 380px) { .fare-settings-panel .fare-preview { grid-template-columns: 1fr; } }
@@ -5616,4 +5693,9 @@ td strong {
   .trip-dialog .trip-fares-empty { grid-template-columns: 30px minmax(0, 1fr); }.trip-dialog .trip-fares-empty p { grid-column: 2; }
   .trip-dialog .modal-head, .trip-dialog .trip-scroll, .trip-dialog .trip-form-footer { padding: 16px; }
 }
+</style>
+
+<style scoped>
+.directory-global-sort { display:grid; gap:8px; max-width:420px; margin:12px 0 20px; font-size:var(--text-label); }.directory-global-sort select { min-height:44px; padding:10px; border:1px solid var(--line); border-radius:var(--button-radius); background:var(--surface); color:var(--ink); font:inherit; }.directory-global-sort small { color:var(--muted); line-height:1.5; }
+@media(max-width:480px){ .heading .heading-actions { flex-wrap:wrap; }.heading .heading-actions > [data-slot="button"] { flex:1 1 calc(50% - 8px); min-width:0; white-space:normal; } }
 </style>

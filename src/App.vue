@@ -4,6 +4,7 @@
       :key="sessionViewsKey"
       @ionRouteDidChange="refreshPassengerLayout"
     />
+    <ToastHost />
   </ion-app>
 </template>
 
@@ -15,12 +16,15 @@ import { initializeTheme } from "./composables/useTheme";
 import { sessionViewsKey, clearSessionViews } from "./composables/sessionViews";
 import { auth } from "./services/session";
 import { refreshNotificationUnread } from "./composables/notificationUnread";
+import ToastHost from "./components/shared/ToastHost.vue";
+import { clearToasts } from "./composables/toast";
 
 initializeTheme();
 const route = useRoute();
 const router = useRouter();
 watch(() => auth?.currentUser?.uid, async (uid, previousUid) => {
   if (!previousUid || uid === previousUid) return;
+  clearToasts();
   // A logout/account change in another tab must also clear cached private pages.
   sessionStorage.removeItem('barkolink-booking-draft');
   sessionStorage.removeItem('barkolink-booking-intent');

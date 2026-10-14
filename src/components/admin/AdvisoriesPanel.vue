@@ -113,6 +113,7 @@
   </section>
 </template>
 <script setup lang="ts">
+import { notifyError, notifySuccess } from '@/composables/toast';
 import { computed, onMounted, reactive, ref } from "vue";
 import { IonModal } from "@ionic/vue";
 import AppIcon from "@/components/ui/icon/AppIcon.vue";
@@ -164,7 +165,7 @@ async function loadMoreSailings() {
     sailingPage.value++;
     sailingTotal.value = result.data.totalCount || sailings.value.length;
   } catch (cause) {
-    formError.value = databaseRequestError(cause, "Could not load more sailings.");
+    formError.value = notifyError(databaseRequestError(cause, "Could not load more sailings."));
   } finally {
     moreLoading.value = false;
   }
@@ -242,7 +243,7 @@ async function load() {
     sailingPage.value = 0;
     sailingTotal.value = trips.data.totalCount || sailings.value.length;
   } catch (cause) {
-    error.value = databaseRequestError(cause, "Could not load advisories.");
+    error.value = notifyError(databaseRequestError(cause, "Could not load advisories."));
   } finally {
     loading.value = false;
   }
@@ -271,9 +272,9 @@ async function save() {
     busy.value = false; editing.value = false;
     await load();
     notice.value =
-      "Advisory saved. Published advisories appear during their effective period.";
+      notifySuccess("Advisory saved. Published advisories appear during their effective period.");
   } catch (cause) {
-    formError.value = databaseRequestError(cause, "Could not save advisory.");
+    formError.value = notifyError(databaseRequestError(cause, "Could not save advisory."));
   } finally {
     busy.value = false;
   }
@@ -285,13 +286,13 @@ onMounted(load);
 .advisory-panel > header { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
 .communication-heading { padding: 14px 16px; border: 1px solid var(--line); border-radius: 14px; background: var(--surface); gap: 14px; }
 .communication-heading h3 { font-size: 17px; }
-.communication-heading p { margin-top: 5px; font-size: 12px; }
-.eyebrow { color: var(--ocean); font-size: 10px; font-weight: 800; letter-spacing: .1em; }
+.communication-heading p { margin-top: 5px; font-size: var(--text-label); }
+.eyebrow { color: var(--ocean); font-size: var(--text-caption); font-weight: 800; letter-spacing: .1em; }
 .communication-filters { display: grid; grid-template-columns: minmax(0, 1fr) 160px auto; gap: 12px; padding: 12px 16px; border-radius: 14px; }
 .communication-filters select { min-width: 0; }
-.communication-count { font-size: 11px; }
-.communication-empty { padding: 24px 16px; font-size: 12px; }
-.advisory-panel > p { margin: 0; color: var(--muted); font-size: 12px; }
+.communication-count { font-size: var(--text-caption); }
+.communication-empty { padding: 24px 16px; font-size: var(--text-label); }
+.advisory-panel > p { margin: 0; color: var(--muted); font-size: var(--text-label); }
 .advisory-panel > p.error, .error { color: var(--danger, #d85563); }
 .advisory-list { display: grid; border: 1px solid var(--line); border-radius: 14px; background: var(--surface); overflow: hidden; }
 .advisory-list article { display: grid; grid-template-columns: 32px minmax(0, 1fr) auto; align-items: start; gap: 12px; padding: 14px 16px; }
@@ -300,14 +301,14 @@ onMounted(load);
 .advisory-list article > div { min-width: 0; }
 .advisory-badges { gap: 8px; }
 .advisory-list h3 { font-size: 14px; line-height: 1.5; margin: 7px 0 4px; overflow-wrap: anywhere; }
-.advisory-list p { white-space: pre-wrap; overflow-wrap: anywhere; font-size: 12px; line-height: 1.6; margin: 0 0 7px; }
-.advisory-list small { color: var(--muted); font-size: 11px; line-height: 1.6; overflow-wrap: anywhere; }
-.advisory-panel button, .advisory-dialog button { min-height: 40px; font-family: inherit; font-size: 12px; }
+.advisory-list p { white-space: pre-wrap; overflow-wrap: anywhere; font-size: var(--text-label); line-height: 1.6; margin: 0 0 7px; }
+.advisory-list small { color: var(--muted); font-size: var(--text-caption); line-height: 1.6; overflow-wrap: anywhere; }
+.advisory-panel button, .advisory-dialog button { min-height: 40px; font-family: inherit; font-size: var(--text-label); }
 button:not([data-slot="button"]) { display: inline-flex; align-items: center; justify-content: center; gap: 7px; padding: 8px 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface-soft); color: var(--ocean); font-weight: 600; cursor: pointer; }
-.advisory-list button { min-height: 32px; padding: 5px 10px; font-size: 11px; }
+.advisory-list button { min-height: 32px; padding: 5px 10px; font-size: var(--text-caption); }
 button:disabled { opacity: .6; }
-label { display: grid; gap: 7px; min-width: 0; color: var(--muted); font-size: 12px; font-weight: 600; }
-input:not([type="checkbox"]), select, textarea { width: 100%; min-width: 0; min-height: 40px; padding: 8px 12px; border: 1px solid var(--line); border-radius: 9px; background: var(--surface-soft); color: var(--ink); font: inherit; font-size: 12px; }
+label { display: grid; gap: 7px; min-width: 0; color: var(--muted); font-size: var(--text-label); font-weight: 600; }
+input:not([type="checkbox"]), select, textarea { width: 100%; min-width: 0; min-height: 40px; padding: 8px 12px; border: 1px solid var(--line); border-radius: 9px; background: var(--surface-soft); color: var(--ink); font: inherit; font-size: var(--text-label); }
 textarea { resize: vertical; line-height: 1.5; }
 .fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
 .advisory-settings { grid-template-columns: .8fr .8fr 1.4fr; }

@@ -38,34 +38,34 @@ const expiry=(at:string)=>new Date(at).toLocaleDateString('en-PH',{timeZone:'Asi
 .loyalty-heading { display:flex; align-items:center; justify-content:space-between; gap:10px; }
 h2 { display:flex; align-items:center; gap:8px; margin:0; font-size:14px; }
 .heading-icon { display:grid; place-items:center; width:30px; height:30px; border-radius:9px; background:var(--light-blue); color:var(--ocean); }
-.tier-badge { display:inline-flex; align-items:center; gap:5px; padding:6px 9px; border:1px solid var(--line); border-radius:20px; color:var(--muted); font-size:10px; font-weight:600; }
+.tier-badge { display:inline-flex; align-items:center; gap:5px; padding:6px 9px; border:1px solid var(--line); border-radius:20px; color:var(--muted); font-size: var(--text-caption); font-weight:600; }
 .tier-badge[data-tier="gold"] { color:#b78124; background:#d99e2812; border-color:#d99e2840; }
 .tier-badge[data-tier="platinum"] { color:#a18bdd; background:#a18bdd12; border-color:#a18bdd40; }
 .reward-overview { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-top:16px; padding:16px; border:1px solid color-mix(in srgb,var(--ocean) 22%,var(--line)); border-radius:14px; background:linear-gradient(120deg,var(--light-blue),var(--surface-soft)); }
-.reward-eyebrow { color:var(--ocean); font-size:9px; font-weight:700; letter-spacing:.1em; }
+.reward-eyebrow { color:var(--ocean); font-size: var(--text-caption); font-weight:700; letter-spacing:.1em; }
 .reward-amount { display:flex; align-items:baseline; gap:7px; margin-top:6px; font-size:32px; line-height:1.1; letter-spacing:-.04em; }
 .reward-amount small { color:var(--muted); font-size:14px; font-weight:500; letter-spacing:0; }
-.reward-overview p { margin:7px 0 0; color:var(--muted); font-size:10px; line-height:1.6; }
+.reward-overview p { margin:7px 0 0; color:var(--muted); font-size: var(--text-caption); line-height:1.6; }
 .reward-art { position:relative; display:grid; place-items:center; width:58px; height:58px; flex-shrink:0; border:1px dashed color-mix(in srgb,var(--ocean) 45%,transparent); border-radius:16px; background:color-mix(in srgb,var(--ocean) 10%,transparent); color:var(--ocean); transform:rotate(-8deg); }
 .reward-art > svg:last-child { position:absolute; right:-5px; top:-6px; color:#dba838; }
 .progress-section { margin:16px 0 18px; }
 .progress-heading { display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:9px; }
-.progress-heading strong { font-size:12px; }.progress-heading > span { color:var(--ocean); font-size:11px; font-weight:700; font-variant-numeric:tabular-nums; }
+.progress-heading strong { font-size: var(--text-label); }.progress-heading > span { color:var(--ocean); font-size: var(--text-caption); font-weight:700; font-variant-numeric:tabular-nums; }
 progress { display:block; appearance:none; width:100%; height:8px; overflow:hidden; border:0; border-radius:10px; background:var(--line); accent-color:var(--ocean); }
 progress::-webkit-progress-bar { background:var(--line); border-radius:10px; }progress::-webkit-progress-value { background:linear-gradient(90deg,var(--ocean),#32b7a5); border-radius:10px; }progress::-moz-progress-bar { background:var(--ocean); border-radius:10px; }
-.progress-section p { display:flex; align-items:center; flex-wrap:wrap; gap:5px; margin:9px 0 0; color:var(--muted); font-size:10px; line-height:1.6; }.progress-section p > span { margin-left:auto; font-size:9px; }
-.voucher-heading { display:flex; align-items:center; justify-content:space-between; gap:8px; margin:0 0 8px; font-size:12px; }.voucher-heading > span { color:var(--success); font-size:10px; }
+.progress-section p { display:flex; align-items:center; flex-wrap:wrap; gap:5px; margin:9px 0 0; color:var(--muted); font-size: var(--text-caption); line-height:1.6; }.progress-section p > span { margin-left:auto; font-size: var(--text-caption); }
+.voucher-heading { display:flex; align-items:center; justify-content:space-between; gap:8px; margin:0 0 8px; font-size: var(--text-label); }.voucher-heading > span { color:var(--success); font-size: var(--text-caption); }
 .reward-ready { display:flex; align-items:center; gap:9px; margin-bottom:9px; padding:12px; border:1px dashed color-mix(in srgb,var(--success) 45%,var(--line)); border-radius:12px; background:var(--success-soft); }
-.voucher-icon { color:var(--success); flex-shrink:0; }.reward-ready > div { flex:1; min-width:0; }.reward-ready strong { display:block; font-size:12px; line-height:1.5; }.reward-ready p { margin:4px 0; color:var(--muted); font-size:10px; line-height:1.6; }.reward-ready small { color:var(--muted); font-size:9px; line-height:1.6; }.voucher-check { flex-shrink:0; color:var(--success); }
-.milestone-heading { display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:10px; }h3 { margin:0; font-size:12px; }.milestone-heading > span { color:var(--muted); font-size:9px; }
+.voucher-icon { color:var(--success); flex-shrink:0; }.reward-ready > div { flex:1; min-width:0; }.reward-ready strong { display:block; font-size: var(--text-label); line-height:1.5; }.reward-ready p { margin:4px 0; color:var(--muted); font-size: var(--text-caption); line-height:1.6; }.reward-ready small { color:var(--muted); font-size: var(--text-caption); line-height:1.6; }.voucher-check { flex-shrink:0; color:var(--success); }
+.milestone-heading { display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:10px; }h3 { margin:0; font-size: var(--text-label); }.milestone-heading > span { color:var(--muted); font-size: var(--text-caption); }
 .reward-tiers { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:8px; }
 .milestone { --tier-color:#829fb8; display:flex; align-items:center; flex-direction:column; gap:5px; min-width:0; padding:12px 5px 9px; border:1px solid var(--line); border-radius:12px; background:var(--surface-soft); }
 .milestone[data-tier="gold"] { --tier-color:#d1a13e; }.milestone[data-tier="platinum"] { --tier-color:#a18bdd; }
 .milestone.reached { border-color:color-mix(in srgb,var(--tier-color) 65%,var(--line)); background:color-mix(in srgb,var(--tier-color) 7%,var(--surface-soft)); }.milestone.next { border-style:dashed; border-color:color-mix(in srgb,var(--tier-color) 65%,var(--line)); }
 .milestone-icon { display:grid; place-items:center; width:32px; height:32px; margin-bottom:3px; border-radius:50%; background:color-mix(in srgb,var(--tier-color) 14%,transparent); color:var(--tier-color); }
-.tier-name { font-size:10px; }.milestone > b { font-size:18px; line-height:1.4; }.milestone > small { color:var(--muted); font-size:9px; }
+.tier-name { font-size: var(--text-caption); }.milestone > b { font-size:18px; line-height:1.4; }.milestone > small { color:var(--muted); font-size: var(--text-caption); }
 .milestone-state { display:flex; align-items:center; gap:2px; margin-top:4px; color:var(--muted); font-size:8px; }.reached .milestone-state { color:var(--tier-color); }
-.reward-rules { margin-top:14px; border-top:1px solid var(--line); padding-top:5px; }.reward-rules summary { display:flex; align-items:center; justify-content:space-between; min-height:44px; color:var(--muted); font-size:10px; cursor:pointer; list-style:none; }.reward-rules summary::-webkit-details-marker { display:none; }.reward-rules[open] summary svg { transform:rotate(180deg); }.reward-rules p { margin:2px 0 0; color:var(--muted); font-size:10px; line-height:1.8; }
-.state-message { color:var(--muted); font-size:12px; line-height:1.7; }button { min-height:44px; border:0; background:transparent; color:var(--ocean); cursor:pointer; }button:focus-visible,summary:focus-visible { outline:2px solid var(--ocean); outline-offset:3px; }
+.reward-rules { margin-top:14px; border-top:1px solid var(--line); padding-top:5px; }.reward-rules summary { display:flex; align-items:center; justify-content:space-between; min-height:44px; color:var(--muted); font-size: var(--text-caption); cursor:pointer; list-style:none; }.reward-rules summary::-webkit-details-marker { display:none; }.reward-rules[open] summary svg { transform:rotate(180deg); }.reward-rules p { margin:2px 0 0; color:var(--muted); font-size: var(--text-caption); line-height:1.8; }
+.state-message { color:var(--muted); font-size: var(--text-label); line-height:1.7; }button { min-height:44px; border:0; background:transparent; color:var(--ocean); cursor:pointer; }button:focus-visible,summary:focus-visible { outline:2px solid var(--ocean); outline-offset:3px; }
 @container passenger (max-width:380px) { .loyalty-card { padding:16px 12px; }.reward-overview { padding:14px 12px; }.progress-section p > span { flex-basis:100%; margin:0; }.milestone-heading > span { font-size:8px; } }
 </style>

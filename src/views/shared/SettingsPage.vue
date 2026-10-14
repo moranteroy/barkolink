@@ -14,8 +14,7 @@
                   ? 'Back to staff workspace'
                   : 'Back to home'
             "
-            ><AppIcon :icon="isAdmin || isStaff ? gridOutline : homeOutline" aria-hidden="true"
-          /></router-link>
+            ><BackIcon /></router-link>
           <BrandMark />
           <span class="page-mode"
             ><AppIcon :icon="settingsOutline" /> Account settings</span
@@ -89,7 +88,7 @@
                 Loading your saved details...
               </p>
               <router-link v-if="isPassenger" to="/profile" class="profile-back"
-                ><AppIcon :icon="personOutline" aria-hidden="true" /> Back to my profile</router-link
+                ><BackIcon /> Back to my profile</router-link
               >
               <form class="setting-form" @submit.prevent="saveProfile">
                 <fieldset
@@ -229,6 +228,8 @@
 </template>
 
 <script setup lang="ts">
+import { notifyError, notifySuccess } from '@/composables/toast';
+import BackIcon from "@/components/ui/icon/BackIcon.vue";
 import { useUnsavedChanges } from "../../composables/unsavedChanges";
 import { validatedProfile } from "../../data/profileValidation";
 import { databaseRequestError } from "../../data/databaseErrors";
@@ -249,16 +250,7 @@ import {
 import { useRoute } from "vue-router";
 import { IonButton, IonContent, IonPage, onIonViewDidEnter, onIonViewWillEnter, useIonRouter } from "@ionic/vue";
 import AppIcon from "@/components/ui/icon/AppIcon.vue";
-import {
-  gridOutline,
-  homeOutline,
-  contrastOutline,
-  informationCircleOutline,
-  notificationsOutline,
-  personOutline,
-  settingsOutline,
-  shieldCheckmarkOutline,
-} from "ionicons/icons";
+import { contrastOutline, informationCircleOutline, notificationsOutline, personOutline, settingsOutline, shieldCheckmarkOutline } from "ionicons/icons";
 import BrandMark from "../../components/shared/BrandMark.vue";
 import PassengerHeader from "../../components/passenger/PassengerHeader.vue";
 import PassengerBottomNav from "../../components/passenger/PassengerBottomNav.vue";
@@ -356,10 +348,10 @@ async function loadProfile() {
     profileLoaded.value = true;
   } catch (cause) {
     if (request === profileRequest)
-      loadError.value = databaseRequestError(
+      loadError.value = notifyError(databaseRequestError(
         cause,
         "Could not load your profile.",
-      );
+      ));
   } finally {
     if (request === profileRequest) profileLoading.value = false;
   }
@@ -452,7 +444,7 @@ async function saveProfile() {
   try {
     values = validatedProfile(profile.name, profile.phone);
   } catch (cause) {
-    loadError.value = (cause as Error).message;
+    loadError.value = notifyError((cause as Error).message);
     return;
   }
   savingProfile.value = true;
@@ -465,12 +457,12 @@ async function saveProfile() {
     });
     savedProfile.value = { ...profile };
     syncAccountProfileName(user.uid, values.fullName);
-    successMessage.value = "Your profile has been updated.";
+    successMessage.value = notifySuccess("Your profile has been updated.");
   } catch (cause) {
-    loadError.value = databaseRequestError(
+    loadError.value = notifyError(databaseRequestError(
       cause,
       "Could not update your profile. Your changes are kept so you can retry.",
-    );
+    ));
   } finally {
     savingProfile.value = false;
   }
@@ -510,15 +502,15 @@ async function changePassword() {
     password.current = "";
     password.next = "";
     password.confirm = "";
-    successMessage.value = "Your password has been changed.";
+    successMessage.value = notifySuccess("Your password has been changed.");
   } catch (error) {
     const code = (error as { code?: string }).code;
     loadError.value =
-      code === "auth/wrong-password" ||
+      notifyError(code === "auth/wrong-password" ||
       code === "auth/invalid-credential" ||
       code === "invalid_credentials"
         ? "Your current password is incorrect."
-        : databaseRequestError(error, "Could not change your password.");
+        : databaseRequestError(error, "Could not change your password."));
   } finally {
     savingPassword.value = false;
   }
@@ -553,7 +545,7 @@ async function changePassword() {
   align-items: center;
   gap: 7px;
   color: var(--muted);
-  font-size: 11px;
+  font-size: var(--text-caption);
 }
 .page-mode .app-icon {
   color: var(--ocean);
@@ -592,7 +584,7 @@ async function changePassword() {
   background: transparent;
   color: var(--muted);
   font: inherit;
-  font-size: 11px;
+  font-size: var(--text-caption);
   text-align: left;
   text-decoration: none;
   cursor: pointer;
@@ -609,7 +601,7 @@ async function changePassword() {
 .kicker {
   margin: 0;
   color: var(--ocean);
-  font-size: 10px;
+  font-size: var(--text-caption);
   font-weight: 800;
   letter-spacing: 0.11em;
 }
@@ -640,7 +632,7 @@ async function changePassword() {
   margin: 6px 0;
 }
 .card-intro {
-  font-size: 11px;
+  font-size: var(--text-caption);
 }
 .setting-form {
   display: grid;
@@ -651,7 +643,7 @@ async function changePassword() {
   display: grid;
   gap: 6px;
   color: var(--ink);
-  font-size: 11px;
+  font-size: var(--text-caption);
   font-weight: 700;
 }
 .setting-form input {
@@ -663,7 +655,7 @@ async function changePassword() {
   background: var(--surface-soft);
   color: var(--ink);
   font: inherit;
-  font-size: 12px;
+  font-size: var(--text-label);
 }
 .setting-form input:focus {
   outline: 2px solid color-mix(in srgb, var(--ocean) 35%, transparent);
@@ -694,7 +686,7 @@ async function changePassword() {
   padding-top: 13px;
   border-top: 1px solid var(--line);
   color: var(--muted);
-  font-size: 10px;
+  font-size: var(--text-caption);
 }
 .mode-note .app-icon {
   color: var(--ocean);
@@ -704,7 +696,7 @@ async function changePassword() {
   margin: 14px 0 0;
   padding: 11px 13px;
   border-radius: 9px;
-  font-size: 11px;
+  font-size: var(--text-caption);
 }
 .notice.error {
   background: #fff0ee;
@@ -743,7 +735,7 @@ async function changePassword() {
     min-height: 42px;
     justify-content: flex-start;
     padding: 8px;
-    font-size: 10px;
+    font-size: var(--text-caption);
     white-space: normal;
   }
   .settings-content h1 {
@@ -803,13 +795,13 @@ async function changePassword() {
   min-height: 44px;
   margin-top: 12px;
   color: var(--ocean);
-  font-size: 12px;
+  font-size: var(--text-label);
   text-decoration: none;
 }
 .profile-back .app-icon { font-size: 19px; flex: none; }
 .profile-hint,
 .setting-form small {
-  font-size: 11px;
+  font-size: var(--text-caption);
   color: var(--muted);
 }
 .password-toggle {

@@ -20,7 +20,7 @@ const changes = computed(() => auditChanges(props.details));
   margin: 12px 0 0;
   min-width: 150px;
   max-width: 340px;
-  font-size: 12px;
+  font-size: var(--text-label);
   text-align: left;
   line-height: 1.6;
 }
@@ -29,7 +29,7 @@ const changes = computed(() => auditChanges(props.details));
   border-left: 2px solid var(--line);
 }
 dt {
-  font-size: 10px;
+  font-size: var(--text-caption);
   font-weight: 650;
   color: var(--muted);
   margin-bottom: 3px;
@@ -40,7 +40,7 @@ dd {
   overflow-wrap: anywhere;
 }
 .no-changes {
-  font-size: 11px;
+  font-size: var(--text-caption);
   color: var(--muted);
 }
 </style>

@@ -32,7 +32,7 @@ const percent = computed(() =>
   gap: 18px;
   margin: 18px 0;
   color: var(--muted);
-  font-size: 11px;
+  font-size: var(--text-caption);
 }
 .boarding-progress > span {
   display: flex;
@@ -61,7 +61,7 @@ const percent = computed(() =>
     flex-wrap: wrap;
   }
   .boarding-progress > span {
-    font-size: 10px;
+    font-size: var(--text-caption);
     gap: 8px;
   }
   .progress-track {

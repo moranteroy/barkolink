@@ -30,14 +30,14 @@
 .landing-page .mobile-links { display: none; }
 .landing-page .landing-hero { position: relative; overflow: hidden; background: radial-gradient(ellipse at 90% 20%, #1384a866, transparent 60%), linear-gradient(125deg, #083b5d 12%, #0b6382 72%, #147f91); color: #fff; }
 .landing-page .hero-grid { display: grid; grid-template-columns: 1fr 1fr; align-items: start; gap: 56px; padding-top: 56px; padding-bottom: 96px; position: relative; z-index: 1; }
-.landing-page .hero-pill { display: inline-flex; align-items: center; gap: 8px; border: 1px solid #ffffff26; border-radius: 30px; padding: 8px 12px; background: #ffffff0d; color: #e4f5fc; font-size: 12px; font-weight: 600; }
+.landing-page .hero-pill { display: inline-flex; align-items: center; gap: 8px; border: 1px solid #ffffff26; border-radius: 30px; padding: 8px 12px; background: #ffffff0d; color: #e4f5fc; font-size: var(--text-label); font-weight: 600; }
 .landing-page h1 { margin: 24px 0 18px; font-size: clamp(42px, 4.9vw, 66px); line-height: 1.08; letter-spacing: -.045em; font-weight: 850; }
 .landing-page h1 span { color: #b7eef5; }
 .landing-page .hero-copy > p { max-width: 450px; color: #deedf4; font-size: 16px; line-height: 1.8; margin: 0; }
 .landing-page .hero-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 28px; }
 .landing-page .hero-stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 18px; margin-top: 28px; padding-top: 20px; border-top: 1px solid #ffffff26; }
 .landing-page .hero-stats strong { display: block; font-size: 24px; line-height: 1.3; }
-.landing-page .hero-stats span { display: block; color: #d4e9f0; font-size: 12px; margin-top: 5px; line-height: 1.5; }
+.landing-page .hero-stats span { display: block; color: #d4e9f0; font-size: var(--text-label); margin-top: 5px; line-height: 1.5; }
 .landing-page .hero-search { min-width: 0; margin-top: 36px; container: landing-search / inline-size; }
 .landing-page .search-frame { padding: 8px; border: 1px solid #ffffff30; border-radius: 26px; background: #ffffff18; box-shadow: 0 20px 60px #031e3530; }
 .landing-page .search-frame .search-card { margin: 0; color: var(--ink); border-color: var(--line); }
@@ -47,13 +47,13 @@
 .landing-page .search-frame .counter { height: 48px; padding: 0 2px; }
 .landing-page .search-frame .counter button { min-width: 44px; min-height: 44px; }
 .landing-page .search-frame .swap-button { width: 44px; min-height: 44px; }
-.landing-page .search-benefits { display: flex; justify-content: center; flex-wrap: wrap; gap: 16px; margin-top: 16px; color: #e0f0f6; font-size: 12px; }
+.landing-page .search-benefits { display: flex; justify-content: center; flex-wrap: wrap; gap: 16px; margin-top: 16px; color: #e0f0f6; font-size: var(--text-label); }
 .landing-page .search-benefits span { display: flex; align-items: center; gap: 6px; }
 .landing-page .hero-waves { position: absolute; bottom: -1px; left: 0; width: 100%; height: 80px; color: var(--surface); }
 .landing-page .landing-section { padding-block: 56px; }
 .landing-page .landing-muted { background: var(--surface-soft); }
 .landing-page .landing-heading { text-align: center; margin-bottom: 28px; }
-.landing-page .section-eyebrow { color: var(--ocean); font-size: 11px; letter-spacing: .13em; font-weight: 800; }
+.landing-page .section-eyebrow { color: var(--ocean); font-size: var(--text-caption); letter-spacing: .13em; font-weight: 800; }
 .landing-page .landing-heading h2 { margin: 12px 0 10px; font-size: clamp(27px, 3vw, 36px); line-height: 1.2; letter-spacing: -.03em; }
 .landing-page .landing-heading p { max-width: 600px; margin: 0 auto; font-size: 15px; line-height: 1.7; color: var(--muted); }
 .landing-page .landing-grid { display: grid; gap: 22px; }
@@ -67,13 +67,13 @@
 .landing-page .route-card { padding: 22px; display: flex; flex-direction: column; }
 .landing-page .route-card h3 { font-size: 17px; }
 .landing-page .route-card h3 .app-icon { font-size: 14px; color: var(--muted); margin-inline: 3px; }
-.landing-page .route-card .route-duration { font-size: 12px; }
-.landing-page .route-card .route-next { font-size: 12px; margin-top: 18px; }
+.landing-page .route-card .route-duration { font-size: var(--text-label); }
+.landing-page .route-card .route-next { font-size: var(--text-label); margin-top: 18px; }
 .landing-page .route-next strong { font-weight: 650; color: var(--ink); }
 .landing-page .route-bottom { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; padding-top: 20px; margin-top: auto; }
-.landing-page .route-bottom small { display: block; font-size: 11px; color: var(--muted); }
+.landing-page .route-bottom small { display: block; font-size: var(--text-caption); color: var(--muted); }
 .landing-page .route-bottom strong { display: block; font-size: 22px; margin-top: 3px; }
-.landing-page .landing-note { text-align: center; color: var(--muted); font-size: 12px; line-height: 1.6; margin: 22px 0 0; }
+.landing-page .landing-note { text-align: center; color: var(--muted); font-size: var(--text-label); line-height: 1.6; margin: 22px 0 0; }
 .landing-page .section-link { display: flex; align-items: center; justify-content: center; gap: 8px; color: var(--ocean); font-size: 14px; font-weight: 750; min-height: 44px; margin-top: 20px; }
 .landing-page .landing-state { padding: 24px; border: 1px solid var(--line); background: var(--surface); border-radius: 14px; color: var(--muted); font-size: 14px; line-height: 1.8; text-align: center; }
 .landing-page .landing-state a, .landing-page .text-action { color: var(--ocean); text-decoration: underline; font-weight: 650; }
@@ -84,13 +84,13 @@
 .landing-page .fleet-card { overflow: hidden; padding: 0; }
 .landing-page .fleet-visual { display: grid; place-items: center; height: 155px; position: relative; background: linear-gradient(135deg, #0a426a, #14839b); color: #fff; }
 .landing-page .fleet-visual > .app-icon { font-size: 55px; }
-.landing-page .fleet-visual > span { position: absolute; right: 14px; top: 14px; padding: 5px 9px; background: #ffffff18; border: 1px solid #ffffff35; border-radius: 20px; font-size: 10px; }
+.landing-page .fleet-visual > span { position: absolute; right: 14px; top: 14px; padding: 5px 9px; background: #ffffff18; border: 1px solid #ffffff35; border-radius: 20px; font-size: var(--text-caption); }
 .landing-page .fleet-visual svg { width: 100%; height: 30px; position: absolute; bottom: -1px; color: var(--surface); }
 .landing-page .fleet-details { padding: 8px 24px 24px; }
 .landing-page .fleet-details h3 { margin: 8px 0 4px; }
-.landing-page .fleet-details small { color: var(--muted); font-size: 12px; }
+.landing-page .fleet-details small { color: var(--muted); font-size: var(--text-label); }
 .landing-page .fleet-details p { margin-top: 16px; font-size: 13px; }
-.landing-page .fleet-tag { display: inline-block; padding: 5px 10px; border-radius: 20px; background: var(--surface-soft); color: var(--muted); font-size: 12px; margin-top: 12px; }
+.landing-page .fleet-tag { display: inline-block; padding: 5px 10px; border-radius: 20px; background: var(--surface-soft); color: var(--muted); font-size: var(--text-label); margin-top: 12px; }
 .landing-page .travel-tip > .app-icon { font-size: 24px; color: var(--success); }
 .landing-page .port-guide { max-width: 980px; }
 .landing-page .cta-section { padding-block: 48px; }
@@ -104,16 +104,16 @@
 .landing-page .landing-footer nav a { min-height: 44px; display: inline-flex; align-items: center; color: var(--muted); font-size: 13px; }
 .landing-page .search-frame .search-card { padding: 28px; box-shadow: none; }
 .landing-page .search-frame .card-subtitle { font-size: 13px; }
-.landing-page .search-frame .field-caption { font-size: 12px; }
+.landing-page .search-frame .field-caption { font-size: var(--text-label); }
 .landing-page .search-frame .search-button { height: 52px; font-size: 14px; color: #fff; }
-.landing-page .search-frame .search-hint { font-size: 11px; }
+.landing-page .search-frame .search-hint { font-size: var(--text-caption); }
 .landing-page .landing-guides { padding-top: 24px; padding-bottom: 8px; }
 .landing-page .guides-card { gap: 32px; padding: 28px; }
 .landing-page .guide-profile { padding-top: 16px; }
 .landing-page .guide-portrait { height: 156px; }
 .landing-page .guide-captain { width: 100px; }
-.landing-page .guide-language, .landing-page .role-description, .landing-page .role-action { font-size: 12px; }
-.landing-page .guide-role p { font-size: 12px; min-height: 0; }
+.landing-page .guide-language, .landing-page .role-description, .landing-page .role-action { font-size: var(--text-label); }
+.landing-page .guide-role p { font-size: var(--text-label); min-height: 0; }
 .landing-page .guide-role h3 { font-size: 16px; }
 .landing-page .landing-empty { display: flex; align-items: center; gap: 18px; padding: 24px 28px; text-align: left; background: var(--surface-soft); }
 .landing-page .landing-empty > div { flex: 1; min-width: 0; }
@@ -162,15 +162,15 @@
   .landing-page h1 { font-size: clamp(39px, 10vw, 52px); }
   .landing-page .hero-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; }
   .landing-page .three-columns, .landing-page .routes-grid { grid-template-columns: 1fr; }
-  .landing-page .hero-pill { font-size: 11px; }
+  .landing-page .hero-pill { font-size: var(--text-caption); }
   .landing-page .hero-copy > p { font-size: 15px; }
-  .landing-page .search-benefits { font-size: 11px; gap: 12px; }
+  .landing-page .search-benefits { font-size: var(--text-caption); gap: 12px; }
   .landing-page .landing-section { padding-block: 40px; }
   .landing-page .hero-grid { gap: 28px; padding-top: 28px; padding-bottom: 80px; }
   .landing-page .guides-card { padding: 22px 14px 14px; gap: 24px; }
   .landing-page .guide-portrait { height: 140px; }
   .landing-page .guide-captain { width: 90px; }
-  .landing-page .role-description { font-size: 12px; }
+  .landing-page .role-description { font-size: var(--text-label); }
   .landing-page .guide-role h3 { font-size: 14px; }
   .landing-page .landing-empty { padding: 20px; gap: 14px; }
   .landing-page .landing-empty > .landing-button { margin-left: 0; width: 100%; }

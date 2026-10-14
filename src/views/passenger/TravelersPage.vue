@@ -88,6 +88,7 @@
   ></ion-page>
 </template>
 <script setup lang="ts">
+import { notifyError, notifySuccess } from '@/composables/toast';
 import { confirmAction } from "../../composables/confirmation";
 import { onMounted, reactive, ref } from "vue";
 import { IonPage, IonContent, onIonViewWillEnter } from "@ionic/vue";
@@ -136,10 +137,10 @@ async function load() {
   try {
     items.value = (await savedTravelers(database)).data.travelers;
   } catch (cause) {
-    error.value = databaseRequestError(
+    error.value = notifyError(databaseRequestError(
       cause,
       "Could not load saved travelers.",
-    );
+    ));
   } finally {
     loading.value = false;
   }
@@ -153,9 +154,9 @@ async function save() {
     await saveTraveler(database, { ...form, id: form.id || undefined });
     reset();
     await load();
-    notice.value = "Traveler saved.";
+    notice.value = notifySuccess("Traveler saved.");
   } catch (cause) {
-    error.value = databaseRequestError(cause, "Could not save traveler.");
+    error.value = notifyError(databaseRequestError(cause, "Could not save traveler."));
   } finally {
     busy.value = false;
   }
@@ -177,9 +178,9 @@ async function remove(person: SavedTraveler) {
     await deleteTraveler(database, person.id);
     if (form.id === person.id) reset();
     await load();
-    notice.value = "Traveler deleted.";
+    notice.value = notifySuccess("Traveler deleted.");
   } catch (cause) {
-    error.value = databaseRequestError(cause, "Could not delete traveler.");
+    error.value = notifyError(databaseRequestError(cause, "Could not delete traveler."));
   } finally {
     busy.value = false;
   }
@@ -198,7 +199,7 @@ onIonViewWillEnter(load);
   margin: 32px 0 24px;
 }
 .heading p {
-  font-size: 10px;
+  font-size: var(--text-caption);
   letter-spacing: 0.12em;
   color: var(--ocean);
   font-weight: 800;
@@ -226,7 +227,7 @@ h2 {
 label {
   display: grid;
   gap: 6px;
-  font-size: 12px;
+  font-size: var(--text-label);
   font-weight: 700;
 }
 input,
@@ -289,7 +290,7 @@ button:disabled {
 }
 small {
   color: var(--muted);
-  font-size: 11px;
+  font-size: var(--text-caption);
   line-height: 1.5;
 }
 .error {

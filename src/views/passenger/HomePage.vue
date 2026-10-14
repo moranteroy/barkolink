@@ -8,9 +8,6 @@
           <p>Where would you like to sail today?</p>
         </section>
         <p v-if="loadError" class="home-error" role="alert">{{ loadError }} <button @click="loadData">Retry</button></p>
-        <TripSearchCard class="home-search" @origin-changed="weatherPortId = $event" />
-        <SailingBoard :initial-port-id="weatherPortId" :active="boardActive" />
-        <PortForecast id="weather-outlook" tabindex="-1" :port-id="weatherPortId" />
         <section class="section-block upcoming-block" aria-labelledby="upcoming-heading">
           <div class="section-heading">
             <h2 id="upcoming-heading"><AppIcon :icon="boatOutline" aria-hidden="true" /> Upcoming trip</h2>
@@ -21,7 +18,7 @@
             <div class="journey-banner">
               <div class="journey-status-row">
                 <span>{{ departureLabel }}</span>
-                <b class="journey-status" :class="{ pending: !hasTicket }">{{ hasTicket ? 'Confirmed' : 'Payment pending' }}</b>
+                <b class="journey-status" :class="{ pending: !hasTicket }">{{ paymentGuidance.label }}</b>
               </div>
               <div class="upcoming-route">
                 <div><strong>{{ journey.from }}</strong><span>{{ journey.departure }} <small>Departure</small></span></div>
@@ -33,10 +30,12 @@
               <div class="journey-copy">
                 <strong>{{ journey.vessel }}</strong>
                 <p>{{ sailingDate }} <template v-if="journey.accommodation"><span aria-hidden="true">·</span> {{ journey.accommodation }}</template> <span aria-hidden="true">·</span> {{ journey.passengers.length }} passenger{{ journey.passengers.length === 1 ? '' : 's' }}</p>
-                <small v-if="!hasTicket">Pay at the ticketing desk before your payment deadline.</small>
+                <p class="journey-payment-guidance">{{ paymentGuidance.message }}</p>
+                <p class="journey-amount"><strong>{{ hasTicket || journey.paymentStatus === 'PAID' ? 'Payment received' : 'Amount due' }}: PHP {{ journey.total.toLocaleString('en-PH') }}</strong></p>
+                <PaymentDeadline v-if="journey.paymentStatus === 'UNPAID' && journey.paymentDeadline" :deadline="journey.paymentDeadline" @expired="loadData" />
               </div>
               <ion-button v-if="hasTicket" :router-link="`/ticket?reference=${encodeURIComponent(journey.reference)}`">View e-ticket</ion-button>
-              <ion-button v-else :router-link="`/booking-details?reference=${encodeURIComponent(journey.reference)}`">View booking</ion-button>
+              <ion-button v-else :router-link="`/booking-details?reference=${encodeURIComponent(journey.reference)}`">{{ paymentGuidance.action }}</ion-button>
             </div>
           </article>
           <article v-else-if="!loadError" class="upcoming-empty">
@@ -44,6 +43,9 @@
             <div><strong>Your next journey starts here</strong><p>Search a sailing above. Your active reservation will appear here.</p></div>
           </article>
         </section>
+        <TripSearchCard class="home-search" @origin-changed="weatherPortId = $event" />
+        <SailingBoard :initial-port-id="weatherPortId" :active="boardActive" />
+        <PortForecast id="weather-outlook" tabindex="-1" :port-id="weatherPortId" />
         <LoyaltyRewards id="loyalty-rewards" tabindex="-1" :active="boardActive" />
         <section class="section-block quick-block" aria-labelledby="quick-heading">
           <div class="section-heading"><h2 id="quick-heading"><AppIcon :icon="sparklesOutline" aria-hidden="true" /> Travel essentials</h2></div>
@@ -70,6 +72,9 @@
   </ion-page>
 </template>
 <script setup lang="ts">
+import { notifyError } from '@/composables/toast';
+import PaymentDeadline from "../../components/passenger/PaymentDeadline.vue";
+import { bookingPaymentGuidance, bookingTicketReady } from "../../data/paymentVerification";
 import { databaseRequestError } from "../../data/databaseErrors";
 import { computed, ref, watch } from "vue";
 import { useSectionNavigation } from '../../composables/useSectionNavigation';
@@ -148,6 +153,9 @@ type Journey = {
   passengers: { name: string; type: string }[];
   status: string;
   paymentStatus: string;
+  paymentVerificationRequired?: boolean;
+  paymentDeadline?: string | null;
+  total: number;
 };
 const savedJourney = ref<Journey | null>(null);
 const loadError = ref("");
@@ -165,7 +173,8 @@ const greeting =
       ? "Good afternoon"
       : "Good evening";
 const journey = computed(() => savedJourney.value);
-const hasTicket = computed(() => journey.value?.status === "CONFIRMED" && journey.value?.paymentStatus === "PAID");
+const hasTicket = computed(() => bookingTicketReady(journey.value));
+const paymentGuidance = computed(() => bookingPaymentGuidance(journey.value));
 const sailingDate = computed(() => journey.value ? searchDate(philippineDateKey(new Date(journey.value.date))) : "");
 const departureLabel = computed(() => {
   if (!journey.value) return "";
@@ -229,14 +238,17 @@ async function loadData() {
           })),
           status: item.status,
           paymentStatus: item.paymentStatus,
+          paymentVerificationRequired: item.paymentVerificationRequired ?? false,
+          paymentDeadline: item.paymentDeadline,
+          total: Number(item.total),
         }
       : null;
   } catch (error) {
     if (request === loadRequest && auth?.currentUser?.uid === user.uid) {
-      loadError.value = databaseRequestError(
+      loadError.value = notifyError(databaseRequestError(
         error,
         "Could not load your trips.",
-      );
+      ));
     }
   } finally {
     if (request === loadRequest) loading.value = false;
@@ -263,51 +275,51 @@ onIonViewDidLeave(() => { boardActive.value = false; });
 .home-search :deep(.card-heading) { align-items: center; margin-bottom: 18px; }
 .home-search :deep(.eyebrow) { display: none; }
 .home-search :deep(h2) { margin: 0; font-size: 17px; letter-spacing: -.3px; }
-.home-search :deep(.route-badge) { padding: 7px 9px; background: var(--light-blue); color: var(--ocean); border-radius: 7px; font-size: 9px; }
+.home-search :deep(.route-badge) { padding: 7px 9px; background: var(--light-blue); color: var(--ocean); border-radius: 7px; font-size: var(--text-caption); }
 .home-search :deep(.route-fields) { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
 .home-search :deep(.detail-fields) { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 14px 12px; margin-top: 16px; }
 .home-search :deep(.search-button) { grid-column: 1 / -1; width: 100%; height: 46px; margin: 0; border-radius: 10px; background: var(--action); }
 .home-search :deep(select), .home-search :deep(input), .home-search :deep(.counter) { background: var(--surface); border-radius: 10px; }
 .home-search :deep(input) { min-width: 0; max-width: 100%; }
 :global(:root[data-theme="dark"]) .home-search :deep(input[type="date"]) { color-scheme: dark; }
-.home-search :deep(label) { font-size: 10px; font-weight: 600; letter-spacing: .02em; }
+.home-search :deep(label) { font-size: var(--text-caption); font-weight: 600; letter-spacing: .02em; }
 .home-search :deep(.swap-button) { display: grid; place-items: center; width: 44px; min-height: 44px; margin: 0; padding: 0; background: transparent; color: var(--ocean); }
 .section-block { margin-top: 26px; }
 .section-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
 .section-heading h2 { display: flex; align-items: center; gap: 8px; margin: 0; font-size: 14px; font-weight: 650; line-height: 1.5; }
 .section-heading h2 .app-icon { color: var(--ocean); font-size: 17px; flex: none; }
-.section-heading a { display: inline-flex; align-items: center; gap: 5px; min-height: 32px; color: var(--ocean); text-decoration: none; font-size: 12px; font-weight: 600; white-space: nowrap; }
+.section-heading a { display: inline-flex; align-items: center; gap: 5px; min-height: 32px; color: var(--ocean); text-decoration: none; font-size: var(--text-label); font-weight: 600; white-space: nowrap; }
 .upcoming-card { overflow: hidden; border: 1px solid var(--line); border-radius: 15px; background: var(--surface); box-shadow: 0 2px 6px #102b4c06; }
 .journey-banner { padding: 18px; background: linear-gradient(115deg, #102c4d, #166bc0); color: #fff; }
 .journey-status-row { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; }
-.journey-status-row > span { font-size: 10px; font-weight: 650; letter-spacing: .04em; text-transform: uppercase; color: #c6e0fa; }
-.journey-status { padding: 5px 9px; border-radius: 7px; background: #ffffff24; color: #fff; font-size: 10px; font-weight: 650; }
+.journey-status-row > span { font-size: var(--text-caption); font-weight: 650; letter-spacing: .04em; text-transform: uppercase; color: #c6e0fa; }
+.journey-status { padding: 5px 9px; border-radius: 7px; background: #ffffff24; color: #fff; font-size: var(--text-caption); font-weight: 650; }
 .journey-status.pending { background: #fff0cd; color: #784909; }
 .upcoming-route { display: grid; grid-template-columns: minmax(0, 1fr); align-items: center; gap: 10px; margin-top: 24px; }
 .upcoming-route > div { min-width: 0; }
 .upcoming-route strong { display: block; font-size: 23px; line-height: 1.25; letter-spacing: -.5px; overflow-wrap: anywhere; }
 .upcoming-route span { display: block; margin-top: 6px; font-size: 13px; color: #e1efff; }
-.upcoming-route small { display: block; margin-top: 4px; color: #bdd8f6; font-size: 10px; }
+.upcoming-route small { display: block; margin-top: 4px; color: #bdd8f6; font-size: var(--text-caption); }
 .upcoming-route > .app-icon { font-size: 22px; color: #c6e0fa; }
 .align-right { text-align: right; }
 .journey-footer { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 16px; }
 .journey-copy { min-width: 0; }
 .journey-copy > strong { display: block; font-size: 13px; line-height: 1.6; overflow-wrap: anywhere; }
-.journey-copy p { margin: 3px 0 0; font-size: 11px; line-height: 1.6; color: var(--muted); }
-.journey-copy small { display: block; margin-top: 6px; color: var(--muted); font-size: 11px; line-height: 1.6; }
-.journey-footer ion-button { flex: none; margin: 0; min-height: 44px; --border-radius: var(--button-radius); --background: var(--action); --color: #fff; --box-shadow: none; font-size: 11px; font-weight: 650; text-transform: none; }
+.journey-copy p { margin: 3px 0 0; font-size: var(--text-caption); line-height: 1.6; color: var(--muted); }
+.journey-copy small { display: block; margin-top: 6px; color: var(--muted); font-size: var(--text-caption); line-height: 1.6; }
+.journey-footer ion-button { flex: none; margin: 0; min-height: 44px; --border-radius: var(--button-radius); --background: var(--action); --color: #fff; --box-shadow: none; font-size: var(--text-caption); font-weight: 650; text-transform: none; }
 .upcoming-empty { display: flex; align-items: center; gap: 14px; min-height: 110px; padding: 18px; border: 1px dashed var(--line); border-radius: 14px; background: var(--surface); color: var(--muted); font-size: 13px; }
 .upcoming-empty strong { color: var(--ink); font-size: 13px; }
-.upcoming-empty p { margin: 6px 0 0; color: var(--muted); font-size: 12px; line-height: 1.7; }
+.upcoming-empty p { margin: 6px 0 0; color: var(--muted); font-size: var(--text-label); line-height: 1.7; }
 .empty-icon, .quick-icon { display: grid; place-items: center; flex: none; width: 36px; height: 36px; border-radius: 10px; background: var(--light-blue); color: var(--ocean); font-size: 20px; }
 .essentials-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; }
 .essentials-grid a { display:grid; grid-template-columns:36px minmax(0,1fr) 12px; align-items:center; gap:9px; min-width:0; min-height:90px; padding:14px 12px; border:1px solid var(--line); border-radius:14px; background:var(--surface); color:var(--ink); text-decoration:none; transition:border-color .18s,background .18s; }
-.essentials-grid a > span:nth-child(2) { min-width:0; }.essentials-grid strong { display:block; font-size:12px; line-height:1.5; }.essentials-grid small { display:block; margin-top:4px; font-size:10px; line-height:1.6; color:var(--muted); }.shortcut-arrow { color:var(--muted); }
+.essentials-grid a > span:nth-child(2) { min-width:0; }.essentials-grid strong { display:block; font-size: var(--text-label); line-height:1.5; }.essentials-grid small { display:block; margin-top:4px; font-size: var(--text-caption); line-height:1.6; color:var(--muted); }.shortcut-arrow { color:var(--muted); }
 .guide-shortcut .quick-icon { color:#299e91; background:color-mix(in srgb,#299e91 12%,var(--surface)); }.essentials-grid a:hover { border-color:var(--ocean); background:color-mix(in srgb,var(--ocean) 3%,var(--surface)); }
 .recent-list { display:grid; gap:9px; }.recent-list article { display:grid; grid-template-columns:30px minmax(0,1fr) auto; align-items:center; gap:10px; padding:13px; border:1px solid var(--line); border-radius:13px; background:var(--surface); }.recent-list article > div { min-width:0; }
-.recent-icon { display:grid; place-items:center; width:30px; height:30px; border-radius:9px; color:var(--ocean); background:var(--light-blue); }.recent-list strong { display:flex; align-items:center; flex-wrap:wrap; gap:5px; font-size:12px; line-height:1.6; overflow-wrap:anywhere; }.recent-list strong svg { color:var(--muted); flex-shrink:0; }
-.recent-list p { display:flex; flex-wrap:wrap; gap:5px 10px; margin:5px 0 0; font-size:10px; color:var(--muted); }.recent-list p span { display:flex; align-items:center; gap:4px; }.recent-list p svg { flex-shrink:0; }
-.recent-list button { display:flex; align-items:center; justify-content:center; gap:5px; min-height:44px; padding:8px 10px; border:1px solid var(--line); border-radius:9px; background:var(--surface-soft); color:var(--ocean); font:inherit; font-size:10px; font-weight:650; white-space:nowrap; cursor:pointer; }.recent-list button:hover { border-color:var(--ocean); background:var(--light-blue); }
+.recent-icon { display:grid; place-items:center; width:30px; height:30px; border-radius:9px; color:var(--ocean); background:var(--light-blue); }.recent-list strong { display:flex; align-items:center; flex-wrap:wrap; gap:5px; font-size: var(--text-label); line-height:1.6; overflow-wrap:anywhere; }.recent-list strong svg { color:var(--muted); flex-shrink:0; }
+.recent-list p { display:flex; flex-wrap:wrap; gap:5px 10px; margin:5px 0 0; font-size: var(--text-caption); color:var(--muted); }.recent-list p span { display:flex; align-items:center; gap:4px; }.recent-list p svg { flex-shrink:0; }
+.recent-list button { display:flex; align-items:center; justify-content:center; gap:5px; min-height:44px; padding:8px 10px; border:1px solid var(--line); border-radius:9px; background:var(--surface-soft); color:var(--ocean); font:inherit; font-size: var(--text-caption); font-weight:650; white-space:nowrap; cursor:pointer; }.recent-list button:hover { border-color:var(--ocean); background:var(--light-blue); }
 @container passenger (max-width:360px) { .recent-list article { grid-template-columns:30px minmax(0,1fr); }.recent-list button { grid-column:2; justify-self:start; }.essentials-grid { grid-template-columns:1fr; } }
 @media(prefers-reduced-motion:reduce) { .essentials-grid a { transition:none; } }
 .home-advisories { margin: 26px 0 0; }
@@ -315,8 +327,8 @@ onIonViewDidLeave(() => { boardActive.value = false; });
 .home-advisories :deep(article > .app-icon) { box-sizing: content-box; padding: 9px; border-radius: 10px; background: var(--light-blue); font-size: 18px; }
 .home-advisories :deep(.high > .app-icon) { background: #fff0d4; color: #986009; }
 .home-advisories :deep(h3) { font-size: 13px; font-weight: 600; }
-.home-advisories :deep(article p) { font-size: 12px; }
-.home-error { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 12px; margin-bottom: 18px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); color: var(--danger); font-size: 12px; line-height: 1.6; }
+.home-advisories :deep(article p) { font-size: var(--text-label); }
+.home-error { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 12px; margin-bottom: 18px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); color: var(--danger); font-size: var(--text-label); line-height: 1.6; }
 .home-error button { border: 0; background: transparent; color: var(--ocean); font-weight: 600; cursor: pointer; }
 a:focus-visible, button:focus-visible { outline: 2px solid var(--ocean); outline-offset: 3px; }
 @container passenger (max-width: 420px) {
@@ -337,4 +349,10 @@ a:focus-visible, button:focus-visible { outline: 2px solid var(--ocean); outline
   .quick-icon { width: 34px; height: 34px; font-size: 17px; }
   .recent-list article { flex-wrap: wrap; }
 }
+</style>
+
+<style scoped>
+.journey-payment-guidance { line-height:1.6; }.journey-amount { color:var(--ink); }.upcoming-block { margin:0 0 24px; }
+.upcoming-route { grid-template-columns:minmax(0,1fr) 24px minmax(0,1fr); gap:12px; margin-top:20px; }
+.upcoming-route > .app-icon { justify-self:center; }
 </style>

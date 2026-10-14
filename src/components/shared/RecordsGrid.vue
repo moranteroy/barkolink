@@ -1,7 +1,7 @@
 <template>
   <section class="records-grid" :class="{ 'dense-grid': density === 'compact' }" :aria-label="title">
     <div class="grid-tools">
-      <div class="grid-summary"><Badge>{{ visibleCount }} of {{ rows.length }} records</Badge><span>Sort and filter the loaded page.</span></div>
+      <div class="grid-summary"><Badge>{{ visibleCount }} of {{ rows.length }} records</Badge><span>Column filters and sorting apply to this page. Use the search above to find records.</span></div>
       <div>
         <DropdownMenu>
           <DropdownMenuTrigger as-child><Button variant="outline" :disabled="!compact && !api"><Columns3 />Columns</Button></DropdownMenuTrigger>
@@ -38,7 +38,7 @@
               :row="row"
               :index="index"
               :value="row.cells[index]"
-              ><Badge v-if="row.statusIndex === index" :variant="statusVariant(row.cells[index])">{{ row.cells[index] }}</Badge><span v-else>{{ row.cells[index] }}</span></slot
+              ><Badge v-if="row.statusIndex === index" :variant="statusVariant(row.cells[index])">{{ statusLabel(row.cells[index]) }}</Badge><span v-else>{{ row.cells[index] }}</span></slot
             >
           </div>
         </div>
@@ -79,6 +79,7 @@
   </section>
 </template>
 <script setup lang="ts">
+import { statusLabel } from "../../data/statusPresentation";
 import {
   computed,
   defineComponent,
@@ -204,7 +205,7 @@ const gridTheme = themeQuartz.withParams({
   rowHoverColor: "var(--light-blue)",
   oddRowBackgroundColor: "var(--surface-soft)",
   fontFamily: "inherit",
-  fontSize: 12,
+  fontSize: 14,
   borderRadius: 12,
   wrapperBorderRadius: 12,
   spacing: 6,
@@ -250,7 +251,7 @@ function renderer(index: number, actions = false) {
             ? slots.actions?.({ row })
             : slots.cell?.({ row, index, value: row.cells[index] }) ||
               (row.statusIndex === index
-                ? h(Badge, { variant: statusVariant(row.cells[index]) }, () => String(row.cells[index] ?? ""))
+                ? h(Badge, { variant: statusVariant(row.cells[index]) }, () => statusLabel(row.cells[index] ?? ""))
                 : h("span", String(row.cells[index] ?? "")));
           return h(
             "div",
@@ -339,7 +340,7 @@ defineExpose({ getApi: () => api.value, resetView, fitColumns });
   gap: 12px;
   padding: 12px 18px;
   color: var(--muted);
-  font-size: 11px;
+  font-size: var(--text-caption);
 }
 .grid-tools > div {
   display: flex;
@@ -352,7 +353,7 @@ defineExpose({ getApi: () => api.value, resetView, fitColumns });
   background: var(--surface);
   color: var(--ocean);
   font: inherit;
-  font-size: 11px;
+  font-size: var(--text-caption);
   cursor: pointer;
 }
 .grid-tools button:disabled {
@@ -374,7 +375,7 @@ defineExpose({ getApi: () => api.value, resetView, fitColumns });
   border-radius: 6px;
   background: var(--light-blue);
   color: var(--ocean);
-  font-size: 10px;
+  font-size: var(--text-caption);
   font-weight: 650;
 }
 .mobile-records {
@@ -391,11 +392,11 @@ defineExpose({ getApi: () => api.value, resetView, fitColumns });
   align-items: start;
   gap: 14px;
   padding: 7px 0;
-  font-size: 12px;
+  font-size: var(--text-label);
 }
 .mobile-field > small {
   color: var(--muted);
-  font-size: 10px;
+  font-size: var(--text-caption);
   flex: none;
   max-width: 90px;
 }
@@ -408,7 +409,7 @@ defineExpose({ getApi: () => api.value, resetView, fitColumns });
 .mobile-records > p {
   padding: 24px 0;
   color: var(--muted);
-  font-size: 12px;
+  font-size: var(--text-label);
 }
 .grid-tools span {
   line-height: 1.5;
@@ -432,5 +433,5 @@ defineExpose({ getApi: () => api.value, resetView, fitColumns });
 .dense-grid :deep(.grid-cell-content) { padding: 6px 0; line-height: 1.5; }
 .dense-grid .mobile-records { gap: 7px; padding: 10px; }
 .dense-grid .mobile-record { padding: 10px 12px; }
-.dense-grid .mobile-field { padding: 3px 0; font-size: 11px; }
+.dense-grid .mobile-field { padding: 3px 0; font-size: var(--text-caption); }
 </style>

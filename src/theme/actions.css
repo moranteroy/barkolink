@@ -37,7 +37,7 @@
 }
 :root body [data-slot="button"][data-variant][data-size][data-size="sm"] {
   padding: 7px 10px;
-  font-size: 11px;
+  font-size: var(--text-caption);
 }
 :root body [data-slot="button"][data-variant][data-size][data-size="icon"] {
   width: var(--button-height);

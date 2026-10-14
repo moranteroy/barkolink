@@ -91,6 +91,7 @@
   </section>
 </template>
 <script setup lang="ts">
+import { notifyError, notifySuccess } from '@/composables/toast';
 import { voucherCode } from '../../data/recordCodes';
 import { activeFirst } from '../../data/statusOrder';
 import '../../theme/admin-vouchers.css';
@@ -117,7 +118,7 @@ async function loadLoyalty() {
   if (loyaltyLoading.value || loyaltySaving.value) return;
   loyaltyLoading.value = true; loyaltyError.value = '';
   try { loyaltySettings.value = (await adminLoyaltySettings(requireSupabase())).data.settings; Object.assign(loyaltyDraft, loyaltySettings.value); }
-  catch (cause) { loyaltyError.value = databaseRequestError(cause, 'Could not load loyalty settings.'); }
+  catch (cause) { loyaltyError.value = notifyError(databaseRequestError(cause, 'Could not load loyalty settings.')); }
   finally { loyaltyLoading.value = false; }
 }
 async function saveLoyalty() {
@@ -127,8 +128,8 @@ async function saveLoyalty() {
     loyaltyError.value = 'Use positive whole numbers and increasing reward amounts within the field limits.'; return;
   }
   loyaltySaving.value = true;
-  try { loyaltySettings.value = (await saveLoyaltySettings(requireSupabase(), { ...loyaltyDraft })).data.settings; Object.assign(loyaltyDraft, loyaltySettings.value); loyaltyNotice.value = 'Loyalty milestones saved.'; }
-  catch (cause) { loyaltyError.value = databaseRequestError(cause, 'Could not save loyalty settings.'); }
+  try { loyaltySettings.value = (await saveLoyaltySettings(requireSupabase(), { ...loyaltyDraft })).data.settings; Object.assign(loyaltyDraft, loyaltySettings.value); loyaltyNotice.value = notifySuccess('Loyalty milestones saved.'); }
+  catch (cause) { loyaltyError.value = notifyError(databaseRequestError(cause, 'Could not save loyalty settings.')); }
   finally { loyaltySaving.value = false; }
 }
 let clock: ReturnType<typeof setInterval> | undefined;
@@ -159,7 +160,7 @@ async function load() {
   if (loading.value) return;
   loading.value = true; error.value = '';
   try { vouchers.value = (await listVouchers(requireSupabase())).data.vouchers; now.value = Date.now(); }
-  catch (cause) { error.value = databaseRequestError(cause, 'Could not load vouchers.'); }
+  catch (cause) { error.value = notifyError(databaseRequestError(cause, 'Could not load vouchers.')); }
   finally { loading.value = false; }
 }
 async function create() {
@@ -173,15 +174,15 @@ async function create() {
   busy.value = true;
   try {
     await saveVoucher(requireSupabase(), { ...form, startsAt: new Date(startsAt).toISOString(), expiresAt: new Date(expiresAt).toISOString(), isActive: true });
-    form.code = ''; showCreate.value = false; notice.value = 'Voucher created.'; resetFilters(); await load();
-  } catch (cause) { formError.value = databaseRequestError(cause, 'Could not save voucher. Check code, amount, and dates.'); }
+    form.code = ''; showCreate.value = false; notice.value = notifySuccess('Voucher created.'); resetFilters(); await load();
+  } catch (cause) { formError.value = notifyError(databaseRequestError(cause, 'Could not save voucher. Check code, amount, and dates.')); }
   finally { busy.value = false; }
 }
 async function toggle(voucher: Voucher) {
   if (busy.value) return;
   busy.value = true; pendingId.value = voucher.id; error.value = ''; notice.value = '';
-  try { await saveVoucher(requireSupabase(), { id: voucher.id, isActive: !voucher.isActive }); notice.value = `${voucher.code} ${voucher.isActive ? 'paused' : 'activated'}.`; await load(); }
-  catch (cause) { error.value = databaseRequestError(cause, 'Could not update voucher.'); }
+  try { await saveVoucher(requireSupabase(), { id: voucher.id, isActive: !voucher.isActive }); notice.value = notifySuccess(`${voucher.code} ${voucher.isActive ? 'paused' : 'activated'}.`); await load(); }
+  catch (cause) { error.value = notifyError(databaseRequestError(cause, 'Could not update voucher.')); }
   finally { busy.value = false; pendingId.value = ''; }
 }
 onMounted(() => { void load(); void loadLoyalty(); clock = setInterval(() => { now.value = Date.now(); }, 60000); });

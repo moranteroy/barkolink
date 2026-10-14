@@ -88,6 +88,7 @@
   </section>
 </template>
 <script setup lang="ts">
+import { notifyError, notifySuccess } from '@/composables/toast';
 import { computed, onMounted, reactive, ref } from "vue";
 import PublishedFerryReferences from './PublishedFerryReferences.vue';
 import referenceCatalog from '@/data/ferryReferenceCatalog.json';
@@ -182,7 +183,7 @@ async function load() {
     rows.value = a.data.accommodations;
     vessels.value = v.data.vessels.filter(v => v.isActive && v.passengerCapacity != null).map(v => ({ id: v.id, name: v.name, passengerCapacity: v.passengerCapacity! }));
   } catch (e) {
-    error.value = databaseRequestError(e, "Could not load accommodations.");
+    error.value = notifyError(databaseRequestError(e, "Could not load accommodations."));
   } finally {
     loading.value = false;
   }
@@ -201,9 +202,9 @@ async function save() {
     busy.value = false;
     editing.value = false;
     await load();
-    notice.value = "Accommodation saved.";
+    notice.value = notifySuccess("Accommodation saved.");
   } catch (e) {
-    formError.value = databaseRequestError(e, "Could not save accommodation.");
+    formError.value = notifyError(databaseRequestError(e, "Could not save accommodation."));
   } finally {
     busy.value = false;
   }
@@ -213,55 +214,55 @@ onMounted(load);
 <style scoped>
 .accommodation-workspace { display: grid; gap: 16px; min-width: 0; font-family: var(--ion-font-family); }
 .directory-filters { display: grid; grid-template-columns: minmax(0, 1fr) 130px 190px auto; align-items: end; gap: 12px; padding: 12px 16px; border: 1px solid var(--line); border-radius: 14px; background: var(--surface); }
-label { display: grid; gap: 8px; min-width: 0; font-size: 12px; font-weight: 600; color: var(--muted); }
-input:not([type="checkbox"]), select, textarea { width: 100%; min-width: 0; min-height: 40px; padding: 8px 12px; border: 1px solid var(--line); border-radius: 9px; background: var(--surface-soft); color: var(--ink); font: inherit; font-size: 12px; }
+label { display: grid; gap: 8px; min-width: 0; font-size: var(--text-label); font-weight: 600; color: var(--muted); }
+input:not([type="checkbox"]), select, textarea { width: 100%; min-width: 0; min-height: 40px; padding: 8px 12px; border: 1px solid var(--line); border-radius: 9px; background: var(--surface-soft); color: var(--ink); font: inherit; font-size: var(--text-label); }
 textarea { resize: vertical; line-height: 1.5; }
 .directory-search { grid-column: 1 / -1; }
 .search-input { display: flex; align-items: center; gap: 8px; padding-left: 12px; border: 1px solid var(--line); border-radius: 9px; background: var(--surface-soft); }
 .search-input input { border: 0; background: transparent; outline: none; }
 .search-input .app-icon { flex: none; font-size: 17px; }
 .search-input:focus-within { outline: 2px solid var(--ocean); outline-offset: 2px; }
-.accommodation-workspace button, .accommodation-dialog button { display: inline-flex; align-items: center; justify-content: center; gap: 7px; min-height: 40px; font-family: inherit; font-size: 12px; }
+.accommodation-workspace button, .accommodation-dialog button { display: inline-flex; align-items: center; justify-content: center; gap: 7px; min-height: 40px; font-family: inherit; font-size: var(--text-label); }
 .accommodation-directory { border: 1px solid var(--line); border-radius: 14px; overflow: hidden; background: var(--surface); min-width: 0; }
 .directory-heading { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 14px 16px; border-bottom: 1px solid var(--line); }
 .directory-heading > button { flex: none; }
 .directory-heading > button .app-icon { font-size: 17px; }
-.eyebrow { margin: 0 0 6px; font-size: 10px; font-weight: 800; letter-spacing: .1em; color: var(--ocean); }
+.eyebrow { margin: 0 0 6px; font-size: var(--text-caption); font-weight: 800; letter-spacing: .1em; color: var(--ocean); }
 h2 { margin: 0; font-size: 17px; color: var(--ink); }
-.directory-hint { margin: 5px 0 0; color: var(--muted); font-size: 11px; line-height: 1.5; }
+.directory-hint { margin: 5px 0 0; color: var(--muted); font-size: var(--text-caption); line-height: 1.5; }
 .accommodation-directory :deep(.grid-tools) { padding: 8px 16px; border-bottom: 1px solid var(--line); background: var(--surface); }
 .accommodation-directory :deep(.grid-tools button) { min-height: 34px; padding: 6px 8px; }
 .accommodation-directory :deep(.desktop-grid) { padding: 8px; }
-.accommodation-directory :deep(.grid-cell-content) { padding: 7px 0; font-size: 12px; line-height: 1.5; }
+.accommodation-directory :deep(.grid-cell-content) { padding: 7px 0; font-size: var(--text-label); line-height: 1.5; }
 .accommodation-directory :deep(.grid-row-actions) { display: flex; align-items: center; min-height: 44px; padding: 7px 0; }
-.accommodation-workspace .class-edit { min-height: 32px; padding: 5px 10px; border: 1px solid var(--line); border-radius: 7px; background: var(--surface); color: var(--ocean); font-size: 11px; cursor: pointer; }
-.class-name, .vessel-name { font-size: 12px; font-weight: 650; }
+.accommodation-workspace .class-edit { min-height: 32px; padding: 5px 10px; border: 1px solid var(--line); border-radius: 7px; background: var(--surface); color: var(--ocean); font-size: var(--text-caption); cursor: pointer; }
+.class-name, .vessel-name { font-size: var(--text-label); font-weight: 650; }
 .class-number { white-space: nowrap; font-variant-numeric: tabular-nums; }
 .class-description { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.directory-footer { margin: 0; padding: 10px 16px; border-top: 1px solid var(--line); color: var(--muted); font-size: 11px; line-height: 1.5; }
-.form-note { margin: 0; font-size: 11px; color: var(--muted); line-height: 1.6; }
+.directory-footer { margin: 0; padding: 10px 16px; border-top: 1px solid var(--line); color: var(--muted); font-size: var(--text-caption); line-height: 1.5; }
+.form-note { margin: 0; font-size: var(--text-caption); color: var(--muted); line-height: 1.6; }
 .form-note a { color: var(--ocean); }
 .accommodation-modal { --width: min(640px, calc(100vw - 32px)); --height: auto; --max-height: calc(100dvh - 40px); --border-radius: 16px; --background: var(--surface); }
 .accommodation-dialog { display: flex; flex-direction: column; min-height: 0; max-height: calc(100dvh - 40px); overflow: hidden; background: var(--surface); color: var(--ink); font-family: var(--ion-font-family); }
 .dialog-heading { display: flex; align-items: center; gap: 12px; padding: 18px 20px; border-bottom: 1px solid var(--line); flex: none; }
 .dialog-symbol { display: grid; place-items: center; width: 40px; height: 40px; flex: none; border-radius: 10px; background: var(--light-blue); color: var(--ocean); font-size: 22px; }
-.dialog-subtitle { margin: 6px 0 0; color: var(--muted); font-size: 12px; line-height: 1.5; }
+.dialog-subtitle { margin: 6px 0 0; color: var(--muted); font-size: var(--text-label); line-height: 1.5; }
 .accommodation-dialog .dialog-close { display: grid; place-items: center; width: 44px; height: 44px; flex: none; margin-left: auto; border: 1px solid var(--line); border-radius: 10px; background: var(--surface-soft); color: var(--muted); font-size: 22px; cursor: pointer; }
 .accommodation-form { display: flex; flex: 1 1 auto; flex-direction: column; min-height: 0; overflow: hidden; }
 .accommodation-scroll { flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; scrollbar-color: var(--muted) var(--surface); }
 .accommodation-fields { border: 0; margin: 0; min-width: 0; padding: 16px 20px; }
 .accommodation-field-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; gap: 16px; margin-top: 12px; }
 .description-field { grid-column: 1 / -1; }
-.accommodation-fields label small { font-size: 11px; line-height: 1.5; font-weight: 400; }
+.accommodation-fields label small { font-size: var(--text-caption); line-height: 1.5; font-weight: 400; }
 .capacity-note { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 10px; background: var(--light-blue); color: var(--ocean); margin: 14px 0 0; }
 .capacity-note .app-icon { font-size: 20px; flex: none; }
 .capacity-note span { display: grid; gap: 4px; }
-.capacity-note strong { font-size: 12px; font-weight: 650; }
-.capacity-note small { font-size: 11px; line-height: 1.5; color: var(--muted); }
+.capacity-note strong { font-size: var(--text-label); font-weight: 650; }
+.capacity-note small { font-size: var(--text-caption); line-height: 1.5; color: var(--muted); }
 .accommodation-availability { display: flex; align-items: center; gap: 10px; margin-top: 14px; padding: 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface-soft); color: var(--ink); }
 .accommodation-availability input { width: 17px; height: 17px; flex: none; accent-color: var(--ocean); }
 .dialog-footer { display: flex; justify-content: flex-end; gap: 10px; flex: none; padding: 14px 20px; border-top: 1px solid var(--line); background: var(--surface-soft); }
-.form-error { margin: 12px 20px 0; padding: 12px; border-radius: 9px; background: var(--danger-soft); color: var(--danger); font-size: 12px; line-height: 1.5; flex: none; }
+.form-error { margin: 12px 20px 0; padding: 12px; border-radius: 9px; background: var(--danger-soft); color: var(--danger); font-size: var(--text-label); line-height: 1.5; flex: none; }
 input:focus-visible, select:focus-visible, textarea:focus-visible, button:focus-visible { outline: 2px solid var(--ocean); outline-offset: 2px; }
 button:disabled, input:disabled, select:disabled { opacity: .6; }
 @media (max-width: 1000px) {

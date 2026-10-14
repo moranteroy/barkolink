@@ -61,7 +61,7 @@
   background: var(--action);
   color: #fff;
   font: inherit;
-  font-size: 12px;
+  font-size: var(--text-label);
   font-weight: 600;
   cursor: pointer;
   text-decoration: none;
@@ -93,7 +93,7 @@
   border-radius: 999px;
   background: var(--light-blue);
   color: var(--ocean);
-  font-size: 10px;
+  font-size: var(--text-caption);
   font-weight: 650;
   line-height: 1.5;
 }
@@ -123,10 +123,10 @@
   color: var(--ink);
   box-shadow: 0 12px 36px #0002;
 }
-.ui-menu-item { display: flex; align-items: center; gap: 9px; padding: 10px; border-radius: 7px; font-size: 12px; cursor: pointer; outline: none; }
+.ui-menu-item { display: flex; align-items: center; gap: 9px; padding: 10px; border-radius: 7px; font-size: var(--text-label); cursor: pointer; outline: none; }
 .ui-menu-item[data-highlighted] { background: var(--light-blue); }
 .ui-menu-item svg { width: 16px; height: 16px; }
-.ui-menu-label { padding: 8px 10px; font-size: 11px; color: var(--muted); font-weight: 600; }
+.ui-menu-label { padding: 8px 10px; font-size: var(--text-caption); color: var(--muted); font-weight: 600; }
 
 /* All passenger browser routes use the same compact app canvas. */
 :root body ion-app.passenger-preview > ion-router-outlet {

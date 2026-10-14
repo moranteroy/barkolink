@@ -26,8 +26,8 @@ defineProps<{ routes: number; vessels: number; loading: boolean }>();
 .hero-crew-portraits .barko-mascot { width: 36px; border: 2px solid #d2eff7; }
 .hero-crew-portraits .barko-mascot + .barko-mascot { margin-left: -8px; }
 .hero-crew > span:nth-child(2) { flex: 1; min-width: 0; }
-.hero-crew strong { display: block; font-size: 12px; line-height: 1.5; }
-.hero-crew small { display: block; color: #d4e9f0; font-size: 11px; line-height: 1.6; margin-top: 2px; }
+.hero-crew strong { display: block; font-size: var(--text-label); line-height: 1.5; }
+.hero-crew small { display: block; color: #d4e9f0; font-size: var(--text-caption); line-height: 1.6; margin-top: 2px; }
 .hero-stats > div:last-child strong { font-size: 19px; }
 @media (prefers-reduced-motion: reduce) { .hero-crew { transition: none; } }
 </style>
