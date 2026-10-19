@@ -3,8 +3,8 @@
     <PassengerHeader />
     <router-link class="back" to="/home"><BackIcon /> Back to home</router-link>
     <section class="assistant-intro" :class="{ 'is-chatting': turns.length }">
-      <BarkoMascot class="intro-mascot" />
-      <div class="intro-details"><p class="eyebrow">YOUR BARKOLINK GUIDE</p><h1>Ahoy! How can I help?</h1>
+      <BarkoMascot class="intro-mascot" :portrait="turns.length>0" />
+      <div class="intro-details"><p class="eyebrow">YOUR BARKOLINK GUIDE</p><h1>{{ turns.length ? 'BarkoLink assistant' : 'Ahoy! How can I help?' }}</h1>
       <p class="intro-copy">Ask about sailings, bookings, or boarding.<br />English, Tagalog, o Taglish—puwede lahat.</p>
       <span class="data-badge"><AppIcon :icon="shieldCheckmarkOutline" aria-hidden="true" /> Answers backed by your trip details</span></div>
     </section>
@@ -16,28 +16,33 @@
         <p v-if="turn.role==='user'">{{ turn.content }}</p>
         <p v-else class="message-body"><template v-for="(part,partIndex) in assistantMessage(turn.content, turn.reply?.links)" :key="partIndex"><router-link v-if="part.path" :to="part.path">{{ part.text }}</router-link><strong v-else-if="part.bold">{{ part.text }}</strong><template v-else>{{ part.text }}</template></template></p>
         <div v-if="turn.reply?.configured===false" class="setup-note">AI setup is still in progress.</div>
-        <details v-for="(source,sourceIndex) in turn.reply?.sources || []" :key="sourceIndex" class="source-details" :open="sourceIndex===0">
-          <summary><span>{{ sourceTitle(source.topic) }}</span><small>Checked {{ checkedTime(source.checkedAt) }}</small></summary>
-          <p v-if="source.totalMatches!==undefined" class="scope">{{ source.totalMatches }} matching record{{ source.totalMatches===1?'':'s' }}<template v-if="source.totalMatches>(source.limit || 6)"> · Showing the first {{ source.limit || 6 }}</template></p>
+        <details v-for="(source,sourceIndex) in turn.reply?.sources || []" :key="sourceIndex" class="source-details">
+          <summary><span>{{ sourceTitle(source.topic) }}</span><small>{{ source.totalMatches===0 ? (source.topic==='get_sailings' ? 'No sailings found for this search' : 'No matching records') : 'View checked details' }}</small></summary>
+          <p class="scope">Checked {{ checkedTime(source.checkedAt) }} · Philippine time</p>
+          <p v-if="source.totalMatches!==undefined && source.totalMatches>0" class="scope">{{ source.totalMatches }} matching record{{ source.totalMatches===1?'':'s' }}<template v-if="source.totalMatches>(source.limit || 6)"> · Showing the first {{ source.limit || 6 }}</template></p>
           <p v-if="source.currentTier">{{ source.currentTier }} · {{ source.completedTrips }} completed trips · {{ source.tripsToNextReward }} trips to next reward (₱{{ source.nextRewardValue }})</p>
           <div v-for="(record,recordIndex) in source.records" :key="recordIndex" class="source-record"><dl><template v-for="(value,key) in record" :key="key"><template v-if="value!==null && value!==undefined"><dt>{{ fieldLabel(String(key)) }}</dt><dd>{{ fieldValue(String(key),value) }}</dd></template></template></dl></div>
-          <p v-if="!source.records.length && source.topic!=='get_help'" class="empty-source">{{ source.topic==='get_sailings' ? 'No sailings matched this search. Try another date or route.' : 'No matching records found.' }}</p>
         </details>
         <div v-if="turn.reply?.links.length" class="answer-links"><template v-for="link in turn.reply.links" :key="`${link.path}-${link.label}`"><router-link v-if="assistantPath(link.path)" :to="assistantDestination(link)">{{ link.label }} <AppIcon :icon="arrowForwardOutline" aria-hidden="true" /></router-link></template></div>
       </article>
       <div v-if="busy" class="chat-status" role="status"><BarkoMascot portrait /><div><strong>Checking your trip details</strong><span>Sandali lang, tinitingnan ko…</span></div><span class="typing-dots" aria-hidden="true"><i></i><i></i><i></i></span></div>
     </section>
-    <p v-if="error" class="chat-error" role="alert">{{ error }}</p>
-    <form class="composer" @submit.prevent="send()"><div class="composer-heading"><label for="chat-question">{{ turns.length ? 'Ask a follow-up / Tanong pa' : 'Your question / Tanong mo' }}</label><span>{{ question.length }}/1200</span></div><textarea id="chat-question" v-model="question" :disabled="busy" maxlength="1200" rows="2" placeholder="Hal. May biyahe ba bukas to Calapan?" @keydown.enter.exact="onEnter"></textarea><div class="composer-actions"><small class="keyboard-hint">Enter to send<br />Shift+Enter for a new line</small><button data-slot="button" data-variant="default" data-size="default" :disabled="busy || !question.trim()" type="submit"><span>{{ busy?'Checking…':'Send question' }}</span><AppIcon :icon="sendOutline" aria-hidden="true" /></button></div></form>
     <details class="data-notice"><summary><AppIcon :icon="informationCircleOutline" aria-hidden="true" /> About your data</summary><p>Your question and relevant trip or booking details are sent to Cloudflare AI to prepare a response. Avoid sharing passwords, ID numbers, or payment details.</p></details>
-    <p class="assistant-note">AI responses may contain mistakes. Check the verified details below each answer and confirm important travel information with your operator.</p>
-  </main><PassengerBottomNav /></ion-content></ion-page>
+    <p class="assistant-note">AI can make mistakes. Check the source details and confirm travel updates with your operator.</p>
+  </main></ion-content>
+  <ion-footer class="assistant-footer ion-no-border">
+    <div class="composer-dock">
+    <p v-if="error" class="chat-error" role="alert">{{ error }}</p>
+    <form class="composer" @submit.prevent="send()"><div class="composer-heading"><label for="chat-question">{{ turns.length ? 'Tanong pa / Ask a follow-up' : 'Your question / Tanong mo' }}</label><span>{{ question.length }}/1200</span></div><textarea id="chat-question" v-model="question" :disabled="busy" maxlength="1200" rows="1" placeholder="Hal. May biyahe ba bukas?" @keydown.enter.exact="onEnter"></textarea><div class="composer-actions"><small class="keyboard-hint">Enter to send; Shift+Enter for a new line</small><button data-slot="button" data-variant="default" data-size="default" :disabled="busy || !question.trim()" type="submit"><span>{{ busy?'Checking…':'Send question' }}</span><AppIcon :icon="sendOutline" aria-hidden="true" /></button></div></form>
+    </div>
+    <PassengerBottomNav />
+  </ion-footer></ion-page>
 </template>
 <script setup lang="ts">
 import { notifyError } from '@/composables/toast';
 import BackIcon from "@/components/ui/icon/BackIcon.vue";
 import { ref, nextTick } from 'vue';
-import { IonPage, IonContent, onIonViewDidLeave } from '@ionic/vue';
+import { IonPage, IonContent, IonFooter, onIonViewDidLeave } from '@ionic/vue';
 import AppIcon from "@/components/ui/icon/AppIcon.vue";
 import { shieldCheckmarkOutline, informationCircleOutline, boatOutline, ticketOutline, giftOutline, qrCodeOutline, arrowForwardOutline, sendOutline } from 'ionicons/icons';
 import PassengerHeader from '../../components/passenger/PassengerHeader.vue';
@@ -110,30 +115,32 @@ function fieldValue(key:string,value:string|number|boolean) {
 .conversation { display: grid; gap: 16px; margin-bottom: 20px; }
 .conversation:empty { display: none; margin: 0; }
 .chat-turn { padding: 18px; border: 1px solid var(--line); border-radius: 18px 18px 18px 5px; background: var(--surface); min-width: 0; scroll-margin-top: 18px; animation: message-arrive .28s ease-out both; }
-.chat-turn.user { margin-left: 32px; border-radius: 16px 16px 4px 16px; background: var(--light-blue); }
+.chat-turn.user { justify-self: end; max-width: 88%; padding: 12px 16px; border-radius: 16px 16px 4px 16px; background: var(--light-blue); }
 .turn-heading { display: flex; align-items: center; gap: 8px; }
 .turn-heading .barko-mascot { width: 28px; }
 .turn-heading > strong { font-size: var(--text-caption); color: var(--ocean); }
-.chat-turn > p { white-space: pre-wrap; overflow-wrap: anywhere; font-size: 13px; line-height: 1.8; margin: 9px 0; }
+.chat-turn > p { white-space: pre-wrap; overflow-wrap: anywhere; font-size: 16px; line-height: 1.75; margin: 10px 0 0; }
 .source-details { margin-top: 14px; padding: 12px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface-soft); font-size: var(--text-caption); line-height: 1.6; }
 .source-details summary { cursor: pointer; min-height: 44px; font-weight: 700; overflow-wrap: anywhere; }
 .source-details summary span { font-size: var(--text-label); }
-.source-details summary small { display: block; margin: 4px 0 0 15px; color: var(--muted); font-size: var(--text-caption); font-weight: 400; }
+.source-details summary small { display: block; margin: 4px 0 0 15px; color: var(--muted); font-size: 13px; font-weight: 400; }
 .source-record { padding-top: 8px; border-top: 1px solid var(--line); margin-top: 10px; }
 dl { display: grid; grid-template-columns: minmax(85px, 1fr) minmax(0, 1.8fr); gap: 6px 12px; margin: 8px 0; }
 dt { color: var(--muted); } dd { margin: 0; overflow-wrap: anywhere; }
 .scope { color: var(--muted); }
 .answer-links { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
 .answer-links a { display: inline-flex; align-items: center; min-height: 44px; padding: 8px 12px; border-radius: 9px; background: var(--light-blue); color: var(--ocean); font-size: var(--text-label); text-decoration: none; }
-.composer { position: relative; padding: 16px; border: 1px solid var(--line); border-radius: 18px; background: var(--surface); box-shadow: 0 6px 28px #071a3018; scroll-margin-bottom: calc(100px + env(safe-area-inset-bottom)); }
+.assistant-footer { background: var(--surface); border-top: 1px solid var(--line); box-shadow: 0 -8px 28px #071a3010; }
+.composer-dock { max-width: 560px; margin: 0 auto; padding: 12px 16px 10px; }
+.composer { position: relative; padding: 0; border: 0; background: var(--surface); }
 .composer-heading { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 10px; }
 .composer-heading > span { font-size: var(--text-caption); color: var(--muted); font-variant-numeric: tabular-nums; }
 .composer label { display: block; font-size: var(--text-label); font-weight: 700; }
-.composer textarea { display: block; box-sizing: border-box; resize: vertical; width: 100%; min-height: 74px; max-height: 180px; padding: 12px; border: 1px solid var(--line); border-radius: 11px; background: var(--surface-soft); color: var(--ink); font: inherit; font-size: 16px; line-height: 1.6; }
+.composer textarea { display: block; box-sizing: border-box; resize: vertical; width: 100%; min-height: 50px; max-height: 100px; padding: 12px; border: 1px solid var(--line); border-radius: 11px; background: var(--surface-soft); color: var(--ink); font: inherit; font-size: 16px; line-height: 1.6; }
 .composer textarea::placeholder { color: var(--muted); opacity: .85; }
 .composer-actions { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-top: 12px; }
-.composer small { display: grid; gap: 3px; font-size: var(--text-caption); color: var(--muted); line-height: 1.5; }
-.composer button { display: inline-flex; align-items: center; justify-content: center; gap: 8px; flex-shrink: 0; min-height: 44px; padding: 10px 14px; border: 0; border-radius: 11px; background: var(--action); color: white; font: inherit; font-size: var(--text-caption); font-weight: 700; cursor: pointer; }
+.composer small { max-width: 160px; font-size: 12px; color: var(--muted); line-height: 1.5; }
+.composer button { margin-left: auto; display: inline-flex; align-items: center; justify-content: center; gap: 8px; flex-shrink: 0; min-height: 44px; padding: 10px 14px; border: 0; border-radius: 11px; background: var(--action); color: white; font: inherit; font-size: 14px; font-weight: 700; cursor: pointer; }
 .composer button .app-icon { font-size: 16px; }
 button:disabled { opacity: .55; cursor: default; }
 button:focus-visible, a:focus-visible, summary:focus-visible, textarea:focus-visible { outline: 2px solid var(--ocean); outline-offset: 3px; }
@@ -149,23 +156,27 @@ button:focus-visible, a:focus-visible, summary:focus-visible, textarea:focus-vis
 .typing-dots i:nth-child(2) { animation-delay: .15s; } .typing-dots i:nth-child(3) { animation-delay: .3s; }
 .conversation-heading { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; margin: 24px 0 14px; }
 .conversation-heading h2 { font-size: 13px; margin: 0; } .conversation-heading > span { font-size: var(--text-caption); color: var(--muted); }
-.assistant-intro.is-chatting { padding: 14px; }
-.is-chatting .intro-mascot { width: 64px; animation: none; }
-.is-chatting h1 { font-size: 21px; margin-bottom: 6px; }
+.assistant-intro.is-chatting { padding: 12px 14px; gap: 12px; margin-bottom: 16px; }
+.is-chatting .intro-mascot { width: 40px; animation: none; }
+.assistant-intro.is-chatting h1 { font-size: 18px; margin: 0; letter-spacing: -.02em; }
+.is-chatting .eyebrow { display: none; }
 .is-chatting .data-badge { display: none; }
-.is-chatting .intro-copy { font-size: var(--text-caption); }
+.is-chatting .intro-copy { display: none; }
 .message-body a { color: var(--ocean); text-decoration: underline; text-underline-offset: 3px; font-weight: 600; }
 .message-body strong { font-weight: 700; }
 .answer-links a { gap: 8px; font-weight: 600; border: 1px solid var(--line); }
 .answer-links a:hover { border-color: var(--ocean); }
 .empty-source { color: var(--muted); }
-.composer:focus-within { border-color: var(--ocean); }
+.composer textarea:focus { border-color: var(--ocean); }
 .composer button { transition: transform .15s ease, background .15s ease; }
 .composer button:active:not(:disabled) { transform: scale(.97); }
 @keyframes captain-greeting { 0% { opacity: 0; transform: translateY(8px) rotate(-5deg); } 45% { opacity: 1; transform: translateY(-3px) rotate(3deg); } 75% { transform: translateY(0) rotate(-2deg); } 100% { transform: none; } }
 @keyframes message-arrive { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
 @keyframes typing-bounce { 0%, 70%, 100% { transform: translateY(0); opacity: .45; } 35% { transform: translateY(-4px); opacity: 1; } }
 .assistant-note { margin: 14px 6px 0; text-align: center; font-size: var(--text-caption); line-height: 1.7; color: var(--muted); }
+/* The footer owns its navigation row; Ionic reserves space for both rows. */
+.assistant-footer :deep(.bottom-nav) { position: relative; }
+@media (max-height: 600px) { .composer-dock { padding-block: 8px; } .composer-heading { margin-bottom: 6px; } .composer-actions { margin-top: 6px; } }
 @media (max-width: 360px) { .suggestions button { padding: 12px 10px; gap: 6px; } .suggestions button > .app-icon { font-size: 16px; } .keyboard-hint { display: none; } .composer-actions { gap: 8px; } }
 @container passenger (max-width: 380px) { .assistant-intro { gap: 12px; padding: 16px 10px; } .intro-mascot { width: 76px; } .assistant-intro h1 { font-size: 22px; } .data-badge { align-items: flex-start; line-height: 1.5; border-radius: 10px; } .data-badge .app-icon { flex-shrink: 0; margin-top: 1px; } }
 @media (prefers-reduced-motion: reduce) { .intro-mascot, .chat-turn, .chat-status, .typing-dots i { animation: none; } .suggestions button, .composer button { transition: none; } }

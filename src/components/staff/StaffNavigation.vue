@@ -88,15 +88,15 @@ const items = computed(() =>
 <style scoped>
 .staff-navigation {
   display: grid;
-  gap: 5px;
+  gap: 3px;
   align-content: start;
   flex: 1;
   min-height: 0;
   overflow: auto;
-  margin-top: 26px;
+  margin-top: 14px;
 }
 .staff-navigation p {
-  margin: 16px 12px 6px;
+  margin: 6px 12px;
   font-size: var(--text-caption);
   letter-spacing: 0.1em;
   color: #8199b0;
@@ -105,9 +105,9 @@ const items = computed(() =>
 .staff-navigation a {
   display: flex;
   align-items: center;
-  gap: 12px;
-  min-height: 41px;
-  padding: 11px 12px;
+  gap: 10px;
+  min-height: 38px;
+  padding: 8px 12px;
   border-radius: 9px;
   color: #b7c9d9;
   text-decoration: none;
@@ -122,8 +122,11 @@ const items = computed(() =>
   background: #2196f3;
   color: white;
 }
-.staff-navigation a:hover {
+.staff-navigation a:hover:not(.active) {
   background: #ffffff12;
   color: white;
+}
+@media (max-width: 800px) {
+  .staff-navigation a { min-height: 44px; }
 }
 </style>

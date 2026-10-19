@@ -3,6 +3,7 @@ import { flushPromises, mount } from '@vue/test-utils'
 import SettingsPage from '../../src/views/shared/SettingsPage.vue'
 import ProfilePage from '../../src/views/passenger/ProfilePage.vue'
 import StaffSettingsPage from '../../src/views/shared/StaffSettingsPage.vue'
+import { clearToasts, toastMessages } from '../../src/composables/toast'
 const mocks = vi.hoisted(() => ({
   route: { path: '/settings/profile', params: {} as Record<string,string> }, enter: undefined as (() => void) | undefined,
   profile: vi.fn(), save: vi.fn(), sync: vi.fn(), reauth: vi.fn(), password: vi.fn(), logout: vi.fn(), replace: vi.fn(), clear: vi.fn(),
@@ -18,10 +19,11 @@ vi.mock('../../src/services/database/passenger', () => ({ myProfile: mocks.profi
 vi.mock('../../src/services/auth', () => ({ syncAccountProfileName: mocks.sync, PasswordAuthProvider: { credential: (email: string, password: string) => ({ email, password }) }, reauthenticateWithCredential: mocks.reauth, updatePassword: mocks.password, signOut: mocks.logout }))
 vi.mock('../../src/composables/sessionViews', () => ({ clearSessionViews: mocks.clear }))
 vi.mock('../../src/components/shared/ThemeSwitcher.vue', () => ({ default: { template: '<div />' } }))
-const options = { global: { stubs: { StaffWorkspaceHeader: true, PassengerHeader: true, PassengerBottomNav: true, BrandMark: true, ThemeSwitcher: true, RouterLink: { props: ['to'], template: '<a :href="to"><slot /></a>' } } } }
+const options = { global: { stubs: { AdminSidebar: true, AdminWorkspaceHeader: true, StaffWorkspaceHeader: true, PassengerHeader: true, PassengerBottomNav: true, BrandMark: true, ThemeSwitcher: true, RouterLink: { props: ['to'], template: '<a :href="to"><slot /></a>' } } } }
 const original = { fullName: 'Passenger One', email: 'owner@example.invalid', phone: '09123456789' }
 describe('Passenger profile and settings', () => {
   beforeEach(() => {
+    clearToasts()
     vi.clearAllMocks(); mocks.route.path = '/settings/profile'
     mocks.profile.mockResolvedValue({ data: { user: original } }); mocks.save.mockResolvedValue({ data: {} })
     mocks.reauth.mockResolvedValue(undefined); mocks.password.mockResolvedValue(undefined); mocks.logout.mockResolvedValue(undefined)
@@ -49,7 +51,8 @@ describe('Passenger profile and settings', () => {
     expect(mocks.save.mock.calls[0][1]).toEqual({ fullName: 'Maria Santos', phone: '+639123456789' })
     finish({ data: {} }); await flushPromises()
     expect(mocks.sync).toHaveBeenCalledWith('owner', 'Maria Santos')
-    expect(wrapper.text()).toContain('Your profile has been updated.')
+    expect(toastMessages.value.filter(toast => toast.message === 'Your profile has been updated.')).toHaveLength(1)
+    expect(wrapper.text()).not.toContain('Your profile has been updated.')
     expect(wrapper.text()).toContain('Your saved details are up to date.')
     wrapper.unmount()
   })
@@ -104,6 +107,9 @@ describe('All-role settings', () => {
   it('allows administrators to edit their own profile and open security settings', async () => {
     mocks.route.path = '/admin/settings/profile'
     const wrapper = mount(SettingsPage, options); await flushPromises()
+    expect(wrapper.find('admin-sidebar-stub').exists()).toBe(true)
+    expect(wrapper.find('admin-workspace-header-stub').exists()).toBe(true)
+    expect(wrapper.find('.settings-header').exists()).toBe(false)
     await wrapper.get('input[autocomplete="name"]').setValue('Administrator One')
     await wrapper.get('form').trigger('submit'); await flushPromises()
     expect(mocks.save.mock.calls[0][1].fullName).toBe('Administrator One')

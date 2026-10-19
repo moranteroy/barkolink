@@ -69,7 +69,7 @@ async function save(user: Staff) {
     await executeDatabase(staffDatabase, 'AdminAssignStaffPort', { uid: user.uid, portId });
     user = staff.value.find(current => current.uid === user.uid) || user;
     user.assignedPortId = portId; user.assignedPort = ports.value.find(p => p.id === portId) || null;
-    notice.value = notifySuccess(`${user.fullName} is assigned to ${user.assignedPort?.name}.`);
+    notifySuccess(`${user.fullName} is assigned to ${user.assignedPort?.name}.`);
   } catch (cause) { error.value = notifyError(databaseRequestError(cause, 'Could not save the staff port assignment.')); }
   finally { busy.value = ''; }
 }

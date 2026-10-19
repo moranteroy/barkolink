@@ -1,12 +1,14 @@
 ﻿import { createRouter, createWebHistory } from "@ionic/vue-router";
 import { RouteRecordRaw } from "vue-router";
 import { nextTick } from "vue";
+import { loadMfaSettings } from "../services/mfaSecurity";
 import { auth, database, supabaseConfigured } from "../services/session";
 import { myProfile } from "../services/database/passenger";
 import { resolveAccountRole, roleDestination } from "../data/sessionRole";
 import { databaseRequestError } from "../data/databaseErrors";
 
 const routes: Array<RouteRecordRaw> = [
+  { path: '/verify-staff', component: () => import('../views/auth/MfaPage.vue') },
   { path: '/port-display', component: () => import('../views/public/PortDisplayPage.vue') },
   { path: '/verify-email', component: () => import('../views/auth/VerifyEmailPage.vue') },
   {
@@ -301,6 +303,7 @@ router.beforeEach(async (to) => {
   await authInstance.ready();
   const user = authInstance.currentUser;
   if (!user) return { path: "/login", query: { redirect: to.fullPath } };
+  if (path === '/verify-staff') return true;
   if (role || protectedPassenger.includes(path)) {
     let assignedRole = "";
     try {
@@ -313,6 +316,11 @@ router.beforeEach(async (to) => {
         tokenResult.claims.role,
         profile?.data.user?.role,
       );
+      if (['ADMIN','TICKETING','BOARDING'].includes(assignedRole) && database) {
+        const { data, error } = await database.auth.mfa.getAuthenticatorAssuranceLevel();
+        if (error) throw error;
+        if (data.currentLevel !== 'aal2' && (await loadMfaSettings()).mfaRequired) return '/verify-staff';
+      }
     } catch (error) {
       return {
         path: "/login",

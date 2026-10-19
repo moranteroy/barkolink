@@ -2,6 +2,7 @@ import { flushPromises, mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import AdminWorkspacePage from '../../src/views/admin/AdminWorkspacePage.vue'
 import { recordsGridStub } from '../support/recordsGridStub'
+import { clearToasts, toastMessages } from '../../src/composables/toast'
 
 vi.mock('../../src/services/database/workspaces', () => ({ routes: vi.fn(async () => ({data:{routes:[]}})) }))
 vi.mock('../../src/composables/confirmation', () => ({ confirmAction: vi.fn(async () => true) }))
@@ -57,6 +58,7 @@ async function load(section = 'trips') {
   return wrapper
 }
 beforeEach(() => {
+  clearToasts()
   vi.clearAllMocks()
   mocks.reports.mockResolvedValue({ data: { sailings: [] } })
   mocks.generatePassword.mockResolvedValue({ data: { password: 'Generated-password123' } })
@@ -77,8 +79,8 @@ beforeEach(() => {
 describe('admin navigation accordion', () => {
   it('groups pricing separately, matches the page category and toggles one accessible panel at a time', async () => {
     const wrapper = await load('fares')
-    const pricing = wrapper.findAll('.nav-group').find(group => group.find('.nav-group-toggle').exists() && group.find('.nav-group-toggle').text() === 'PRICING & PROMOS')!
-    const fleet = wrapper.findAll('.nav-group').find(group => group.find('.nav-group-toggle').exists() && group.find('.nav-group-toggle').text() === 'FLEET SETUP')!
+    const pricing = wrapper.findAll('.nav-group').find(group => group.find('.nav-group-toggle').exists() && group.find('.nav-group-toggle').text() === 'Pricing & promos')!
+    const fleet = wrapper.findAll('.nav-group').find(group => group.find('.nav-group-toggle').exists() && group.find('.nav-group-toggle').text() === 'Fleet setup')!
     expect(pricing.findAll('a').map(link => link.text())).toEqual(['Fares & discounts', 'Vouchers'])
     expect(fleet.findAll('a').map(link => link.text())).toEqual(['Ports', 'Routes', 'Vessels', 'Accommodation'])
     expect(pricing.find('.nav-group-toggle').attributes('aria-expanded')).toBe('true')
@@ -284,7 +286,8 @@ describe('admin boarding actions', () => {
     expect(button.attributes('disabled')).toBeUndefined()
     await button.trigger('click'); await flushPromises()
     expect(mocks.board).toHaveBeenCalledWith({}, { passengerId: 'passenger' })
-    expect(wrapper.text()).toContain('Test Passenger boarded for TRP2026-1002001.')
+    expect(toastMessages.value.filter(toast => toast.message === 'Test Passenger boarded for TRP2026-1002001.')).toHaveLength(1)
+    expect(wrapper.text()).not.toContain('Test Passenger boarded for TRP2026-1002001.')
     expect(wrapper.findAll('button').find(button => button.text() === 'Boarded')!.attributes('disabled')).toBeDefined()
     confirm.mockRestore(); wrapper.unmount()
   })
@@ -385,7 +388,8 @@ describe('admin fare flow', () => {
     await wrapper.find('textarea[placeholder="Confirmed by the operator or terminal"]').setValue('Confirmed by the terminal supervisor')
     await wrapper.find('main form, .modal-body form').trigger('submit'); await flushPromises()
     expect(mocks.createTrip).toHaveBeenCalledWith({}, expect.objectContaining({ regularFare: 1000, studentFare: 800, seniorFare: 700, childFare: 500, pwdFare: 750 }))
-    expect(wrapper.text()).toContain('TRP2026-1002002 created.')
+    expect(toastMessages.value.filter(toast => toast.message === 'TRP2026-1002002 created.')).toHaveLength(1)
+    expect(wrapper.text()).not.toContain('TRP2026-1002002 created.')
     wrapper.unmount()
   })
   it('saves rates from the sidebar page with a live preview', async () => {
@@ -394,7 +398,8 @@ describe('admin fare flow', () => {
     expect(wrapper.find('.fare-preview').text()).toContain('PHP 1,600')
     await wrapper.find('main form, .modal-body form').trigger('submit'); await flushPromises()
     expect(mocks.saveSettings).toHaveBeenCalledWith({}, expect.objectContaining({ vesselId: 'vessel', regularFare: 2000, studentDiscount: 20, seniorDiscount: 30, childDiscount: 50, pwdDiscount: 25, pregnantDiscount: 0 }))
-    expect(wrapper.text()).toContain('New trips for this vessel will use these rates.')
+    expect(toastMessages.value.some(toast => toast.message.includes('New trips for this vessel will use these rates.'))).toBe(true)
+    expect(wrapper.text()).not.toContain('New trips for this vessel will use these rates.')
     wrapper.unmount()
   })
   it('blocks creation when saved rates cannot be loaded', async () => {

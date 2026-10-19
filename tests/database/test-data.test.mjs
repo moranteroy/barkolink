@@ -15,8 +15,9 @@ async function rpc(role, operation, args = {}) {
   return (await db.query('select public.barkolink_execute($1,$2::jsonb) as data', [operation, JSON.stringify(args)])).rows[0].data
 }
 before(async () => {
-  db = new PGlite()
-  await db.exec(`create role anon; create role authenticated; create role service_role bypassrls;
+  db = new PGlite();
+    await db.exec(`select set_config('request.jwt.claims','{"aal":"aal2"}',false)`);
+await db.exec(`create role anon; create role authenticated; create role service_role bypassrls;
     create schema auth; create table auth.users(id uuid primary key,email text unique not null,raw_user_meta_data jsonb default '{}',raw_app_meta_data jsonb default '{}');
     create function auth.uid() returns uuid language sql stable as $$select nullif(current_setting('request.jwt.claim.sub',true),'')::uuid$$;
     grant usage on schema public,auth to anon,authenticated,service_role; grant execute on function auth.uid() to anon,authenticated,service_role;`)
@@ -95,7 +96,9 @@ it('supports a new reservation with saved travelers and capacity checks', async 
     await db.query("insert into barkolink_private.vessel_port_observation(vessel_id,port_id,observed_at,confirmed_by_uid,note) select vessel_id,origin_port_id,departure_at-interval '1 second',$1,'Synthetic terminal observation for isolated reservation fixture.' from public.sailing where code='TEST-EMPTY'",[ids.ADMIN]);
     await rpc('PASSENGER', 'ReserveSailing2', { sailingCode: 'TEST-EMPTY', reference: 'TEST-NEW-RESERVATION',
       accommodationId: 'eeeeeeee-0000-4000-8000-000000000201', passenger1Name: 'TEST New Adult', passenger1Type: 'REGULAR',
-      passenger2Name: 'TEST New Student', passenger2Type: 'STUDENT' })
+      passenger1BirthDate:'1990-01-01',passenger1Sex:'Male',passenger1Phone:'09123456789',passenger1Nationality:'Filipino',
+      passenger2Name: 'TEST New Student', passenger2Type: 'STUDENT',
+      passenger2BirthDate:'2005-01-01',passenger2Sex:'Male',passenger2Phone:'09123456789',passenger2Nationality:'Filipino' })
     const booking = (await db.query("select passenger_count,total from public.booking where reference='TEST-NEW-RESERVATION'")).rows[0]
     assert.equal(booking.passenger_count, 2)
     assert.equal(booking.total, 1080)

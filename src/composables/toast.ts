@@ -8,8 +8,9 @@ export const toastMessages = readonly(messages);
 
 /** Return the message so existing persistent feedback can remain available. */
 export function notify(message: string, tone: ToastTone = 'info'): string {
-  if (!message.trim() || messages.value.some(item => item.message === message && item.tone === tone)) return message;
-  messages.value.push({ id: ++nextId, message, tone, duration: tone === 'error' ? 8000 : 4500 });
+  const text = message.trim();
+  if (!text || messages.value.some(item => item.message === text && item.tone === tone)) return message;
+  messages.value.push({ id: ++nextId, message: text, tone, duration: tone === 'error' ? 8000 : 4500 });
   return message;
 }
 export const notifySuccess = (message: string) => notify(message, 'success');

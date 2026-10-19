@@ -1,6 +1,6 @@
 <template><section class="notification-inbox">          <section class="notification-toolbar" aria-label="Inbox overview">
             <span class="inbox-icon"><AppIcon :icon="notificationsOutline" aria-hidden="true" /></span>
-            <div><strong>{{ unreadCount ? `${unreadCount} unread ${unreadCount === 1 ? 'update' : 'updates'}` : 'You are all caught up' }}</strong><p>{{ unreadCount ? 'Keep track of your latest account and operational updates.' : 'Your account notices and operational updates stay here.' }}</p></div>
+            <div><strong>{{ unreadCount ? `${unreadCount} unread ${unreadCount === 1 ? 'update' : 'updates'}` : 'You are all caught up' }}</strong></div>
             <button :disabled="noticeBusy || !!noticeUpdating || !unreadCount" @click="markAllRead"><AppIcon :icon="checkmarkOutline" aria-hidden="true" />{{ noticeBusy ? 'Updating...' : 'Mark all read' }}</button>
           </section>
 <div class="inbox-actions"><label>Search notifications<input v-model="query" type="search" placeholder="Title or message" /></label><button :disabled="loading || !!busy" @click="load">Refresh inbox</button><router-link v-if="showBroadcast" to="/admin/notifications">Send a broadcast</router-link></div>
@@ -9,7 +9,7 @@
             <button :aria-pressed="!unreadOnly" :class="{ selected: !unreadOnly }" @click="unreadOnly = false">All updates <small>{{ notices.length }}</small></button>
             <button :aria-pressed="unreadOnly" :class="{ selected: unreadOnly }" @click="unreadOnly = true">Unread <small>{{ unreadCount }}</small></button>
           </div>
-          <div class="notification-filters" role="group" aria-label="Notification category">
+          <div class="notification-filters" tabindex="0" role="group" aria-label="Notification category">
             <button v-for="category in notificationCategories" :key="category" :aria-pressed="notificationFilter === category" :aria-label="notificationCategoryLabel(category)" :class="{ active: notificationFilter === category }" @click="notificationFilter = category">
               <AppIcon :icon="noticeIcon(category)" aria-hidden="true" />{{ notificationCategoryLabel(category) }}<small aria-hidden="true">{{ notificationCategoryCount(category) }}</small>
             </button>
@@ -153,3 +153,5 @@ onMounted(load);
 
 @media(max-width:600px) { .notification-inbox .notification-toolbar { grid-template-columns:44px minmax(0,1fr); } .notification-inbox .notification-toolbar button { grid-column:2; } .inbox-actions label { flex-basis:100%; } .inbox-actions input { font-size:16px; min-height:44px; } .notification-inbox button { min-height:44px; } }
 </style>
+
+<style scoped src="@/theme/notification-inbox.css"></style>

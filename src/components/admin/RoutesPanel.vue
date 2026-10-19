@@ -163,7 +163,7 @@ async function save() {
     busy.value = false;
     editing.value = false;
     await load();
-    notice.value = notifySuccess("Route saved.");
+    notifySuccess("Route saved.");
   } catch (e) {
     formError.value = notifyError(databaseRequestError(e, "Could not save route."));
   } finally {

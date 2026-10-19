@@ -18,7 +18,7 @@ describe('PayMongo Edge Function authorization and confirmation', () => {
       auth: { getUser: async token => ({ data: { user: token === 'valid' ? { id } : null }, error: null }) },
       from: table => ({ select: () => ({ eq: () => ({ maybeSingle: async () => ({ data: table === 'booking' ? { id, owner_uid: owner, payment_status: 'UNPAID' }
         : { id, session_id: 'cs_test', amount: 60000 }, error: null }) }) }) }),
-      rpc: async (name, args) => { rpcCalls.push({ name, args }); return { data: { status: 'PAID' }, error: null }; },
+      rpc: async (name, args) => { if(name === "consume_api_allowance") return {data:true,error:null}; rpcCalls.push({ name, args }); return { data: { status: 'PAID' }, error: null }; },
     });
     globalThis.fetch = async () => {
       providerCalls++;
@@ -27,7 +27,8 @@ describe('PayMongo Edge Function authorization and confirmation', () => {
       } } }), { status: 200, headers: { 'Content-Type': 'application/json' } });
     };
     const shared = moduleUrl(fs.readFileSync('supabase/functions/paymongo/shared.ts', 'utf8'));
-    const source = fs.readFileSync('supabase/functions/paymongo/index.ts', 'utf8')
+    const security = 'data:text/javascript;base64,' + Buffer.from(ts.transpileModule(fs.readFileSync('supabase/functions/_shared/security.ts','utf8'),{compilerOptions:{target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.ESNext}}).outputText).toString('base64');
+    const source = fs.readFileSync('supabase/functions/paymongo/index.ts', 'utf8').replace("'../_shared/security.ts'", JSON.stringify(security))
       .replace(/import \{ createClient \} from 'npm:[^']+';/, 'const createClient = globalThis.__paymongoClient;')
       .replace("'./shared.ts'", JSON.stringify(shared));
     await import(moduleUrl(source));

@@ -1,4 +1,5 @@
 import fs from 'node:fs';
+import {edgeFunctionSource} from './edge-function-source.mjs';
 
 function env(path) {
   return Object.fromEntries(fs.readFileSync(path, 'utf8').split(/\r?\n/).filter(line => /^\w+\s*=/.test(line)).map(line => {
@@ -80,8 +81,7 @@ if (mode === 'inspect') {
     { name: 'PAYMONGO_SECRET_KEY', value: key }, { name: 'PAYMONGO_RETURN_ORIGIN', value: new URL(returnOrigin).origin },
     { name: 'PAYMONGO_WEBHOOK_SECRET', value: secret },
   ]) });
-  const shared = fs.readFileSync('supabase/functions/paymongo/shared.ts', 'utf8').replace(/^export /gm, '');
-  const source = fs.readFileSync('supabase/functions/paymongo/index.ts', 'utf8').replace(/import \{ testSecret, verifiedPayment, verifySignature \} from '.\/shared.ts';/, shared);
+  const source = edgeFunctionSource('paymongo');
   const form = new FormData();
   form.append('metadata', JSON.stringify({ name: 'paymongo', entrypoint_path: 'index.ts', verify_jwt: false }));
   form.append('file', new Blob([source], { type: 'application/typescript' }), 'index.ts');

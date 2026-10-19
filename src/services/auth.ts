@@ -1,6 +1,7 @@
 import { shallowRef } from "vue";
 import type { User } from "@supabase/supabase-js";
 import { requireSupabase, supabase } from "./supabase";
+import { validEmail, validName } from '../data/securityValidation';
 
 export type AccountUser = {
   uid: string;
@@ -34,6 +35,9 @@ const initialized = supabase
   : Promise.resolve();
 supabase?.auth.onAuthStateChange((_event, session) => {
   current.value = session ? accountUser(session.user) : null;
+  if (_event === 'SIGNED_OUT') {
+    for (const key of ['barkolink-booking-draft','barkolink-booking-intent','barkolink-pending-walk-in','barkolink-password-recovery','barkolink-pending-email']) sessionStorage.removeItem(key);
+  }
   if (_event === 'PASSWORD_RECOVERY' && session) {
     sessionStorage.setItem('barkolink-password-recovery', JSON.stringify({ uid: session.user.id, verifiedAt: Date.now() }));
   }
@@ -84,6 +88,8 @@ export async function registerAccount(
   password: string,
   fullName: string,
 ) {
+  if (!validEmail(email) || !validName(fullName) || password.length < 8 || password.length > 128)
+    throw new Error('Enter a valid name, email, and password using 8 to 128 characters.');
   return withAccountAccess(async () => {
     await requireSignedOut();
     const { data, error } = await requireSupabase().auth.signUp({
@@ -108,6 +114,7 @@ export async function signInWithPassword(
   email: string,
   password: string,
 ) {
+  if (!validEmail(email) || !password || password.length > 128) throw new Error('Enter a valid email and password.');
   return withAccountAccess(async () => {
     await requireSignedOut();
     const { data, error } = await requireSupabase().auth.signInWithPassword({
@@ -128,6 +135,7 @@ export async function sendPasswordResetEmail(
   _auth: NonNullable<typeof auth>,
   email: string,
 ) {
+  if (!validEmail(email)) throw new Error('Enter a valid email address.');
   const { error } = await requireSupabase().auth.resetPasswordForEmail(email, {
     redirectTo: `${location.origin}/reset-password`,
   });
@@ -194,6 +202,7 @@ export async function reauthenticateWithCredential(
   }
 }
 export async function updatePassword(_user: AccountUser, password: string) {
+  if (password.length < 8 || password.length > 128) throw new Error('Use a password with 8 to 128 characters.');
   const { error } = await requireSupabase().auth.updateUser({ password });
   if (error) throw error;
 }

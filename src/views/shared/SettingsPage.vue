@@ -1,9 +1,14 @@
 <template>
   <ion-page>
     <ion-content ref="settingsScroller" :fullscreen="true">
-      <main class="settings-page">
+      <div :class="{ 'admin-account-shell design-workspace': isAdmin }">
+        <button v-if="isAdmin && adminMenuOpen" class="admin-settings-scrim" aria-label="Close menu" @click="adminMenuOpen = false"></button>
+        <AdminSidebar v-if="isAdmin" :menu-open="adminMenuOpen" section="account-settings" @navigate="adminMenuOpen = false" />
+        <div :class="{ 'admin-account-workspace': isAdmin }">
+          <AdminWorkspaceHeader v-if="isAdmin" :menu-open="adminMenuOpen" section="account-settings" @open-menu="adminMenuOpen = true" />
+      <main class="settings-page" :class="{ 'workplace-settings': !isPassenger }">
         <PassengerHeader v-if="isPassenger" />
-        <header v-else class="settings-header">
+        <header v-else-if="!isAdmin" class="settings-header">
           <router-link
             :to="backPath"
             class="back"
@@ -14,7 +19,7 @@
                   ? 'Back to staff workspace'
                   : 'Back to home'
             "
-            ><BackIcon /></router-link>
+            ><BackIcon /><span>{{ isAdmin ? 'Back to dashboard' : 'Back to workspace' }}</span></router-link>
           <BrandMark />
           <span class="page-mode"
             ><AppIcon :icon="settingsOutline" /> Account settings</span
@@ -48,7 +53,7 @@
                 route.path === `${settingsPath}/password` ? 'page' : undefined
               "
               @click="navigateSection($event, `${settingsPath}/password`)"
-              ><AppIcon :icon="shieldCheckmarkOutline" />Password</a
+              ><AppIcon :icon="shieldCheckmarkOutline" />{{ isAdmin ? 'Security' : 'Password' }}</a
             >
             <a
               v-if="isPassenger"
@@ -58,7 +63,7 @@
             >
           </nav>
           <section class="settings-content">
-            <p class="kicker">ACCOUNT PREFERENCES</p>
+            <p v-if="isPassenger" class="kicker">ACCOUNT PREFERENCES</p>
             <h1>{{ sectionTitle }}</h1>
             <p class="intro">
               Manage your account details, password, and appearance.
@@ -79,7 +84,7 @@
             </p>
 
             <article v-if="showProfile" id="personal-info" class="setting-card">
-              <p class="kicker">PERSONAL INFORMATION</p>
+              <p v-if="isPassenger" class="kicker">PERSONAL INFORMATION</p>
               <h2>Profile details</h2>
               <p class="card-intro">
                 Keep your name and contact number up to date.
@@ -95,7 +100,7 @@
                   :disabled="profileLoading || !profileLoaded || savingProfile"
                 >
                   <legend class="sr-only">Personal information</legend>
-                  <label
+                  <label class="name-field"
                     >Full name<input
                       v-model.trim="profile.name"
                       autocomplete="name"
@@ -109,7 +114,7 @@
                       autocomplete="email"
                       readonly
                     /><small
-                      >Your sign-in email is managed by your account.</small
+                      >Your sign-in email cannot be changed here.</small
                     ></label
                   >
                   <label
@@ -155,15 +160,16 @@
               </form>
             </article>
 
+            <TwoFactorSettings ref="mfaSettingsRef" v-if="isAdmin && showPassword" />
             <article v-if="showPassword" id="password" class="setting-card">
-              <p class="kicker">SECURITY</p>
+              <p v-if="isPassenger" class="kicker">SECURITY</p>
               <h2>Change password</h2>
               <p class="card-intro">
                 Enter your current password to confirm this change.
               </p>
               <form class="setting-form" @submit.prevent="changePassword">
                 <label
-                  >Current password<input
+                  class="current-password-field">Current password<input
                     v-model="password.current"
                     :disabled="savingPassword"
                     :type="showPasswords ? 'text' : 'password'"
@@ -207,7 +213,7 @@
               id="appearance"
               class="setting-card appearance-card"
             >
-              <p class="kicker">APPEARANCE</p>
+              <p v-if="isPassenger" class="kicker">APPEARANCE</p>
               <h2>Color theme</h2>
               <p class="card-intro">
                 Choose how BarkoLink looks on this device.
@@ -223,6 +229,8 @@
         </section>
       </main>
       <PassengerBottomNav v-if="isPassenger" />
+        </div>
+      </div>
     </ion-content>
   </ion-page>
 </template>
@@ -252,15 +260,20 @@ import { IonButton, IonContent, IonPage, onIonViewDidEnter, onIonViewWillEnter, 
 import AppIcon from "@/components/ui/icon/AppIcon.vue";
 import { contrastOutline, informationCircleOutline, notificationsOutline, personOutline, settingsOutline, shieldCheckmarkOutline } from "ionicons/icons";
 import BrandMark from "../../components/shared/BrandMark.vue";
+import AdminSidebar from '../../components/admin/AdminSidebar.vue';
+import AdminWorkspaceHeader from '../../components/admin/AdminWorkspaceHeader.vue';
 import PassengerHeader from "../../components/passenger/PassengerHeader.vue";
 import PassengerBottomNav from "../../components/passenger/PassengerBottomNav.vue";
 import ThemeSwitcher from "../../components/shared/ThemeSwitcher.vue";
+import TwoFactorSettings from "../../components/shared/TwoFactorSettings.vue";
 import AppearancePreview from "../../components/shared/AppearancePreview.vue";
 import { myProfile, updateMyProfile } from "../../services/database/passenger";
 import { auth, database } from "../../services/session";
 
 const route = useRoute();
+const mfaSettingsRef=ref<InstanceType<typeof TwoFactorSettings>|null>(null);
 const ionRouter = useIonRouter();
+const adminMenuOpen = ref(false);
 const isAdmin = computed(() => route.path.startsWith("/admin"));
 const isStaff = computed(() => route.path.startsWith("/staff/"));
 const isPassenger = computed(() => !isAdmin.value && !isStaff.value);
@@ -358,6 +371,8 @@ async function loadProfile() {
 }
 onMounted(loadProfile);
 onIonViewWillEnter(() => {
+  void mfaSettingsRef.value?.refresh();
+  adminMenuOpen.value = false;
   password.current = "";
   password.next = "";
   password.confirm = "";
@@ -372,7 +387,7 @@ onBeforeUnmount(() => {
 });
 
 onIonViewDidEnter(() => {
-  void scrollToRouteSection();
+  if (isPassenger.value) void scrollToRouteSection();
 });
 
 function navigateSection(event: MouseEvent, path: string) {
@@ -385,8 +400,9 @@ function navigateSection(event: MouseEvent, path: string) {
   )
     return;
   event.preventDefault();
+  adminMenuOpen.value = false;
   if (route.path === path) {
-    void scrollToRouteSection();
+    if (isPassenger.value) void scrollToRouteSection();
     return;
   }
   ionRouter.navigate(path, "root", "push");
@@ -457,7 +473,7 @@ async function saveProfile() {
     });
     savedProfile.value = { ...profile };
     syncAccountProfileName(user.uid, values.fullName);
-    successMessage.value = notifySuccess("Your profile has been updated.");
+    notifySuccess("Your profile has been updated.");
   } catch (cause) {
     loadError.value = notifyError(databaseRequestError(
       cause,
@@ -502,7 +518,7 @@ async function changePassword() {
     password.current = "";
     password.next = "";
     password.confirm = "";
-    successMessage.value = notifySuccess("Your password has been changed.");
+    notifySuccess("Your password has been changed.");
   } catch (error) {
     const code = (error as { code?: string }).code;
     loadError.value =
@@ -656,6 +672,7 @@ async function changePassword() {
   color: var(--ink);
   font: inherit;
   font-size: var(--text-label);
+  font-weight: 400;
 }
 .setting-form input:focus {
   outline: 2px solid color-mix(in srgb, var(--ocean) 35%, transparent);
@@ -803,6 +820,7 @@ async function changePassword() {
 .setting-form small {
   font-size: var(--text-caption);
   color: var(--muted);
+  font-weight: 400;
 }
 .password-toggle {
   display: flex !important;
@@ -846,5 +864,78 @@ async function changePassword() {
   .page-mode {
     display: none;
   }
+}
+</style>
+
+<style scoped>
+.admin-account-shell { display: flex; min-height: 100dvh; background: var(--cloud); color: var(--ink); }
+.admin-account-workspace { flex: 1; min-width: 0; }
+.admin-account-workspace .settings-page { max-width: 1100px; width: 100%; margin-inline: auto; padding: 24px 32px 32px; }
+.admin-account-workspace .settings-layout { margin-top: 0; }
+.admin-settings-scrim { display: none; }
+@media (max-width: 950px) {
+  .admin-settings-scrim { display: block; position: fixed; z-index: 19; inset: 0; width: 100%; height: 100%; border: 0; background: #0009; }
+}
+@media (max-width: 700px) {
+  .admin-account-workspace .settings-page { padding: 20px 16px 28px; }
+}
+.workplace-settings { max-width: 1000px; padding: 24px 32px 32px; color: var(--ink); }
+.workplace-settings .settings-header { position: relative; min-height: 52px; padding-bottom: 20px; border-bottom: 1px solid var(--line); }
+.workplace-settings .settings-header > :deep(.brand-mark) { position: absolute; left: 50%; transform: translateX(-50%); }
+.workplace-settings .back { display: inline-flex; width: auto; height: 40px; gap: 8px; padding: 0 10px; border: 0; background: transparent; color: var(--muted); font-size: 13px; }
+.back span { display: none; }
+.workplace-settings .back span { display: inline; }
+.workplace-settings .back:hover { color: var(--ocean); background: var(--light-blue); }
+.workplace-settings .page-mode { padding: 7px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); font-size: 12px; }
+.workplace-settings .settings-layout { display: flex; flex-direction: column; gap: 22px; margin-top: 22px; }
+.workplace-settings .settings-nav { position: static; display: flex; flex-wrap: wrap; gap: 4px; width: fit-content; max-width: 100%; height: auto; padding: 4px; border-radius: 10px; background: var(--surface-soft); }
+.workplace-settings .settings-nav .kicker { display: none; }
+.workplace-settings .settings-nav a { min-height: 42px; padding: 10px 16px; border: 1px solid transparent; font-size: 13px; font-weight: 500; }
+.workplace-settings .settings-nav a.active { border-color: var(--line); background: var(--surface); color: var(--ocean); box-shadow: var(--card-shadow); }
+.workplace-settings .settings-content h1 { margin: 0 0 6px; font-size: 27px; font-weight: 650; letter-spacing: -.035em; }
+.workplace-settings .intro { font-size: 13px; }
+.workplace-settings .setting-card { margin-top: 20px; padding: 24px; border-radius: 14px; box-shadow: var(--card-shadow); }
+.workplace-settings .setting-card h2 { margin: 0 0 6px; font-size: 17px; font-weight: 600; letter-spacing: -.02em; }
+.workplace-settings .card-intro { font-size: 13px; }
+.workplace-settings .setting-form { gap: 14px; margin-top: 22px; }
+.workplace-settings .setting-form fieldset { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
+.workplace-settings .name-field, .workplace-settings .profile-actions { grid-column: 1 / -1; }
+.workplace-settings .setting-form label { align-content: start; font-size: 13px; font-weight: 500; gap: 8px; min-width: 0; }
+.workplace-settings .setting-form input { height: 44px; font-size: 14px; font-weight: 400; background: var(--surface-soft); }
+.workplace-settings .setting-form input[readonly] { opacity: 1; color: var(--muted); }
+.workplace-settings .setting-form small { font-size: 12px; line-height: 1.5; }
+.workplace-settings .profile-actions { gap: 10px; margin-top: 2px; padding-top: 18px; border-top: 1px solid var(--line); }
+.workplace-settings .primary { min-height: 42px; height: 42px; margin: 0; font-size: 13px; font-weight: 600; }
+.workplace-settings .discard { min-height: 42px; padding: 10px 14px; color: var(--ink); font: inherit; font-size: 13px; font-weight: 500; }
+.workplace-settings .discard:disabled { cursor: default; }
+.workplace-settings .profile-hint { margin: 0; font-size: 12px; font-weight: 400; }
+.workplace-settings #password .setting-form { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
+.workplace-settings .current-password-field, .workplace-settings .password-toggle, .workplace-settings #password .primary { grid-column: 1 / -1; }
+.workplace-settings .current-password-field { max-width: calc(50% - 9px); }
+.workplace-settings .password-toggle input { height: 18px; width: 18px; }
+.workplace-settings .notice { border: 1px solid var(--line); background: var(--surface); color: var(--ink); }
+.workplace-settings .notice.error { border-left: 3px solid #d65a66; }
+.workplace-settings .notice.success { border-left: 3px solid #2e9b78; }
+.workplace-settings a:focus-visible, .workplace-settings button:focus-visible { outline: 2px solid var(--ocean); outline-offset: 3px; }
+@media (min-width: 901px) {
+  .workplace-settings .setting-form fieldset { grid-template-columns: 1fr 1.25fr 1fr; }
+  .workplace-settings .name-field { grid-column: auto; }
+}
+@media (max-width: 700px) {
+  .workplace-settings { padding: 16px 16px 28px; }
+  .workplace-settings .settings-header { padding-bottom: 14px; }
+  .workplace-settings .settings-header > :deep(.brand-mark) { position: static; transform: none; }
+  .workplace-settings .page-mode { display: none; }
+  .workplace-settings .back { padding-left: 0; }
+  .workplace-settings .back span { display: none; }
+  .workplace-settings .settings-layout { gap: 20px; margin-top: 16px; }
+  .workplace-settings .settings-nav { width: 100%; flex-wrap: nowrap; }
+  .workplace-settings .settings-nav a { flex: 1; min-width: 0; justify-content: center; gap: 6px; padding: 8px; font-size: 12px; line-height: 1.4; }
+  .workplace-settings .settings-content h1 { font-size: 24px; }
+  .workplace-settings .setting-card { padding: 18px; }
+  .workplace-settings .setting-form fieldset, .workplace-settings #password .setting-form { grid-template-columns: 1fr; gap: 16px; }
+  .workplace-settings .current-password-field { max-width: none; }
+  .workplace-settings .profile-actions { flex-wrap: nowrap; gap: 8px; }
+  .workplace-settings .profile-actions > * { flex: 1; min-width: 0; }
 }
 </style>

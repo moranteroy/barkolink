@@ -7,6 +7,8 @@ const cal = '76a29980-5c27-4c4b-9ead-cae943202001';
 const btg = '76a29980-5c27-4c4b-9ead-cae943202002';
 before(async () => {
   db = new PGlite();
+    await db.exec(`select set_config('request.jwt.claims','{"aal":"aal2"}',false)`);
+
   await db.exec(`create role anon; create role authenticated; create role service_role bypassrls;
     create schema auth; create table auth.users(id uuid primary key,email text unique not null,raw_user_meta_data jsonb default '{}',raw_app_meta_data jsonb default '{}');
     create function auth.uid() returns uuid language sql stable as $$select nullif(current_setting('request.jwt.claim.sub',true),'')::uuid$$;

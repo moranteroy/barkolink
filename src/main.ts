@@ -40,6 +40,7 @@ import './theme/ui.css';
 import './theme/selects.css';
 import './theme/actions.css';
 import './theme/experience.css';
+import './theme/workspace-density.css';
 
 const app = createApp(App)
   .use(IonicVue)

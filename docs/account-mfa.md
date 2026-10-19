@@ -1,0 +1,16 @@
+# Account two-factor authentication
+
+Admin: Account settings > Security (`/admin/settings/password`). Staff: Settings > Security (`/staff/ticketing/settings/security` or `/staff/boarding/settings/security`).
+
+The account toggle asks for the existing authenticator code when switching either on or off. QR setup is used only when no verified authenticator is linked; after first setup the account preference is activated and the user returns to Security settings. Unfinished optional setup can be cancelled. Return destinations are restricted to the signed-in role's own security page.
+
+Turning 2FA on or off requires a successful authenticator challenge and saves a private application preference. Off pauses the application sign-in requirement without unenrolling the TOTP factor. The same authenticator can be used to turn it on again. The server requires recent AAL2/TOTP proof, rejects proof reuse, and enforces staff policy in the same transaction. Accounts with the application preference On continue to require AAL2 even when staff policy is optional. A linked authenticator with preference Off does not force application step-up unless staff policy requires it. Policy errors and verification failures do not remove factors. No TOTP secret is stored in application tables.
+
+Only administrators can update the **Require 2FA for staff** toggle. It saves immediately, shows the last saved state during the request, and retains that state if saving fails. The account toggle stays on while disable verification is pending; cancelling leaves 2FA enabled. The initial value is true, preserving the existing staff requirement. Administrators choose their own 2FA setting; an administrator who has enabled it must verify before changing policy or managing accounts. Staff cannot override a required policy. Policy writes are audited. The SQL dispatcher, standalone payment RPC, route guard, and account-management Edge Function use the same rule.
+
+Migration `046_optional_account_mfa.sql` adds the private policy and restricted settings RPCs without removing existing factors or modifying accounts. Deploy the updated `manage-account` function as well. The `my_mfa_settings` endpoint is readable by the signed-in account before step-up so login can distinguish optional and required MFA. The service-only `admin_mfa_requirement` endpoint is restricted to trusted account-management code.
+
+
+Migration `047_preserve_authenticator_on_toggle.sql` separates the application requirement from the linked Auth factor. It does not remove or recreate factors. Previously unenrolled authenticators cannot be recovered from their old app entry; they must be linked once again through QR setup. Policy-required staff accounts cannot pause 2FA; policy takes precedence over a paused preference. A code is verified in Supabase Auth before the preference RPC. The backend checks the signed JWT's recent TOTP AMR timestamp and rejects reuse. Authenticator secrets remain solely in Supabase Auth.
+
+Authenticator setup QR images are generated from the exact Auth enrollment URI with black modules, a white background, a four-module quiet zone, and an integral display scale. Short laptop layouts retain the larger QR. The browser audit decodes the displayed QR at laptop and mobile sizes in both themes; manual setup instructions specify a Time-based key.

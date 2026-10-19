@@ -41,6 +41,10 @@ const reserveArgs = (reference = "BK-TEST", count = 1) => ({
     Array.from({ length: count }, (_, i) => [
       [`passenger${i + 1}Name`, `Passenger ${i + 1}`],
       [`passenger${i + 1}Type`, i ? "STUDENT" : "REGULAR"],
+      [`passenger${i + 1}BirthDate`, '1990-01-01'],
+      [`passenger${i + 1}Sex`, 'Male'],
+      [`passenger${i + 1}Phone`, '09123456789'],
+      [`passenger${i + 1}Nationality`, 'Filipino'],
     ]).flat(),
   ),
 });
@@ -56,6 +60,77 @@ async function reserve(reference = "BK-TEST", count = 1, firstName) {
 }
 
 describe("Supabase PostgreSQL migrations and business rules", () => {
+  it('limits unpaid seats per account and sailing while preserving retries and cancellation',async()=>{
+    await db.exec("update public.sailing set available_seats=40 where code='TEST-TRIP'");
+    await reserve('HOLD-8',8);
+    await call('passenger','ReserveSailing8',reserveArgs('HOLD-8',8));
+    await assert.rejects(call('passenger','ReserveSailing1',{...reserveArgs('HOLD-9'),passenger1Name:'Different passenger'}),/at most 8 unpaid seats/);
+    assert.equal((await db.query("select available_seats from public.sailing where code='TEST-TRIP'")).rows[0].available_seats,32);
+    await call('other','ReserveSailing1',{...reserveArgs('OTHER-HOLD'),passenger1Name:'Other account'});
+    const booking=(await call('passenger','MyBookings')).bookings[0];
+    await call('passenger','CancelMyBooking',{bookingId:booking.id});
+    await call('passenger','ReserveSailing1',{...reserveArgs('NEW-HOLD'),passenger1Name:'New passenger'});
+  });
+  it('enforces staff MFA on both dispatcher and independently exposed payment RPC',async()=>{
+    await db.exec(`select set_config('request.jwt.claims','{"aal":"aal1"}',false)`);
+    try{
+      await assert.rejects(call('admin','AdminUsers'),/authenticator code/);
+      await assert.rejects(call('ticketing','StaffBookings'),/authenticator code/);
+      await assert.rejects(call('boarding','BoardingManifest',{sailingCode:'TEST-TRIP'}),/authenticator code/);
+      await call('passenger','MyBookings');
+      await db.query("select set_config('request.jwt.claim.sub',$1,false)",[ids.ticketing]);
+      await db.exec('set role authenticated');
+      try{await assert.rejects(db.query('select public.verify_online_payment($1)',[ids.passenger]),/authenticator code/);}
+      finally{await db.exec('reset role');}
+    }finally{await db.exec(`select set_config('request.jwt.claims','{"aal":"aal2"}',false)`);}
+  });
+  it('caps unpaid seat holds across different vessels and sailings',async()=>{
+    await db.exec("update public.sailing set available_seats=40 where code='TEST-TRIP'");
+    for(const code of ['SECOND-TRIP','THIRD-TRIP']){
+      const newVessel=(await db.query("insert into public.vessel(code,name,passenger_capacity) values($1,$1,40) returning id",[code])).rows[0].id;
+      await db.query("insert into public.fare_settings(code,regular_fare,student_discount,senior_discount,child_discount,pwd_discount) values($1,600,20,20,50,20)",[newVessel]);
+      await db.query(`insert into public.sailing select (jsonb_populate_record(null::public.sailing,to_jsonb(s)||jsonb_build_object('code',$1::text,'vessel_id',$2::text))).* from public.sailing s where code='TEST-TRIP'`,[code,newVessel]);
+      await db.query("insert into barkolink_private.vessel_port_observation(vessel_id,port_id,observed_at,confirmed_by_uid,note) values($1,$2,now(),$3,'Security fixture.')",[newVessel,origin,ids.admin]);
+    }
+    await reserve('FIRST-HOLD',8);
+    await call('passenger','ReserveSailing8',{...reserveArgs('SECOND-HOLD',8),sailingCode:'SECOND-TRIP'});
+    await assert.rejects(call('passenger','ReserveSailing1',{...reserveArgs('THIRD-HOLD'),sailingCode:'THIRD-TRIP'}),/at most 16 unpaid seats/);
+    assert.equal((await call('passenger','MyBookings')).bookings.length,2);
+  });
+  it('rejects invalid passenger fields through direct RPC calls without writing records',async()=>{
+    for(const fields of [
+      {passenger1Name:'x'.repeat(121)},{passenger1Name:'Name\u0000bad'},{passenger1Name:{}},
+      {passenger1Phone:'123'},{passenger1Phone:'1'.repeat(16)},{passenger1BirthDate:'2099-01-01'},
+      {passenger1BirthDate:'2020-02-31'},{passenger1Sex:'INVALID'},{passenger1Nationality:'x'.repeat(81)},
+    ])await assert.rejects(call('passenger','ReserveSailing1',{...reserveArgs(),...fields}));
+    for(const key of ['passenger1Name','passenger1Type','passenger1BirthDate','passenger1Sex','passenger1Phone','passenger1Nationality']) {
+      await assert.rejects(call('passenger','ReserveSailing1',{...reserveArgs(),[key]:null}),/Complete every passenger/);
+    }
+    await assert.rejects(call('passenger','MyBookings',{padding:'x'.repeat(33000)}),/oversized/);
+    assert.equal((await call('passenger','MyBookings')).bookings.length,0);
+    assert.equal((await db.query("select available_seats from public.sailing where code='TEST-TRIP'")).rows[0].available_seats,2);
+  });
+  it('keeps quotas service-only, isolates callers and resets windows',async()=>{
+    await db.exec('truncate barkolink_private.api_usage');
+    await db.exec('set role authenticated');
+    try{await assert.rejects(db.query("select public.consume_api_allowance($1,'paymongo')",[ids.passenger]),/permission denied/);}
+    finally{await db.exec('reset role');}
+    await db.exec('set role service_role');
+    try{
+      for(let n=0;n<30;n++)assert.equal((await db.query("select public.consume_api_allowance($1,'paymongo') as allowed",[ids.passenger])).rows[0].allowed,true);
+      assert.equal((await db.query("select public.consume_api_allowance($1,'paymongo') as allowed",[ids.passenger])).rows[0].allowed,false);
+      assert.equal((await db.query("select public.consume_api_allowance($1,'paymongo') as allowed",[ids.other])).rows[0].allowed,true);
+    }finally{await db.exec('reset role');}
+    await db.exec("update barkolink_private.api_usage set window_at=now()-interval '2 minutes'");
+    assert.equal((await db.query("select public.consume_api_allowance($1,'paymongo') as allowed",[ids.passenger])).rows[0].allowed,true);
+  });
+  it('public browsing does not perform reservation expiry writes',async()=>{
+    const booking=await reserve();
+    await db.query("update public.booking set payment_deadline=now()-interval '1 minute' where id=$1",[booking.id]);
+    await call(null,'BrowseSailings',{},'anon');
+    assert.equal((await db.query('select status from public.booking where id=$1',[booking.id])).rows[0].status,'PENDING');
+    assert.equal((await call('passenger','MyBookings')).bookings[0].status,'EXPIRED');
+  });
   it('persists chatbot limits per passenger and rejects anonymous/staff access', async () => {
     const allowance=async(role)=>{
       await db.query("select set_config('request.jwt.claim.sub', $1, false)",[ids[role] || '']);
@@ -74,6 +149,8 @@ describe("Supabase PostgreSQL migrations and business rules", () => {
   });
   before(async () => {
     db = new PGlite();
+    await db.exec(`select set_config('request.jwt.claims','{"aal":"aal2"}',false)`);
+
     await db.exec(`
       create role anon; create role authenticated; create role service_role bypassrls;
       create schema auth;
@@ -401,6 +478,7 @@ describe("Supabase PostgreSQL migrations and business rules", () => {
       reference: "CUSTOM-WALK",
       ticketCode: "88888888-8888-4888-8888-888888888888",
       passengerName: "Custom Guest",
+      birthDate:'1990-01-01',sex:'Male',nationality:'Filipino',
       passengerType: custom.name,
       method: "CASH",
     };
@@ -756,7 +834,7 @@ describe("Supabase PostgreSQL migrations and business rules", () => {
       ['ticketing','CollectBookingPayment',{bookingId:booking.id}],
       ['ticketing','RefundBooking',{bookingId:booking.id,note:'Receipt123'}],
       ['ticketing','VerifyPassengerDiscount',{passengerId:person.id,note:'Verified'}],
-      ['ticketing','TicketingCreateGuestWalkIn',{sailingCode:'TEST-TRIP'}],
+        ['ticketing','TicketingCreateGuestWalkIn',{sailingCode:'TEST-TRIP',passengerName:'Test Guest',passengerType:'REGULAR',birthDate:'1990-01-01',sex:'Male',nationality:'Filipino'}],
       ['boarding','BoardingManifest',{sailingCode:'TEST-TRIP'}],
       ['boarding','BoardingActivity',{sailingCode:'TEST-TRIP'}],
       ['boarding','StaffNoShows',{sailingCode:'TEST-TRIP'}],
@@ -1244,6 +1322,7 @@ describe("Supabase PostgreSQL migrations and business rules", () => {
       reference: "BK-GUEST-CLASS",
       ticketCode: "66666666-6666-4666-8666-666666666666",
       passengerName: "Guest",
+      birthDate:'1990-01-01',sex:'Male',nationality:'Filipino',
       passengerType: "REGULAR",
       method: "CASH",
     };
@@ -1283,7 +1362,7 @@ describe("Supabase PostgreSQL migrations and business rules", () => {
         code: "INVALID",
         destinationPortId: origin,
       }),
-      /check constraint/,
+      /check constraint|valid name/,
     );
     await assert.rejects(call("ticketing", "AdminRoutes"), /Administrator/);
     await assert.rejects(call("boarding", "StaffPassengers"), /Ticketing/);
@@ -1460,7 +1539,7 @@ describe("Supabase PostgreSQL migrations and business rules", () => {
         ...reserveArgs("BK-BAD", 2),
         passenger2Name: "",
       }),
-      /check constraint/,
+      /valid full name/,
     );
     assert.equal((await call("passenger", "MyBookings")).bookings.length, 0);
     assert.equal(
@@ -1488,7 +1567,7 @@ describe("Supabase PostgreSQL migrations and business rules", () => {
     const b=await reserve('CANCEL-ME');
     await call('passenger','CancelMyBooking',{id:b.id});
     await reserve('REPLACEMENT');
-    await call('passenger','ReserveSailing1',{...reserveArgs('OTHER-PERSON'),passenger1BirthDate:'1990-01-01'});
+    await call('passenger','ReserveSailing1',{...reserveArgs('OTHER-PERSON'),passenger1BirthDate:'1991-01-01'});
     assert.equal((await db.query('select count(*)::integer as n from public.booking')).rows[0].n,3);
   });
   it('rejects a second submission with a different reference and leaves a single booking', async () => {
@@ -1654,6 +1733,7 @@ describe("Supabase PostgreSQL migrations and business rules", () => {
       reference: "BK-GUEST",
       ticketCode: "66666666-6666-4666-8666-666666666666",
       passengerName: "Guest Passenger",
+      birthDate:'1990-01-01',sex:'Male',nationality:'Filipino',
       passengerType: "REGULAR",
       method: "CASH",
     });
@@ -1693,7 +1773,7 @@ describe("Supabase PostgreSQL migrations and business rules", () => {
   it("expires unpaid reservations exactly once and restores seats and notifies their owner", async () => {
     const b = await reserve();
     const remaining = Date.parse(b.paymentDeadline) - Date.now();
-    assert.ok(remaining > 23.9 * 3600000 && remaining <= 24 * 3600000);
+    assert.ok(remaining > 29 * 60000 && remaining <= 30 * 60000);
     await db.query(
       "update public.booking set payment_deadline=now()-interval '1 second' where id=$1",
       [b.id],
@@ -1864,6 +1944,7 @@ describe("Supabase PostgreSQL migrations and business rules", () => {
       reference: "BK-VERIFIED",
       ticketCode: "66666666-6666-4666-8666-666666666666",
       passengerName: "Walk-in Student",
+      birthDate:'1990-01-01',sex:'Male',nationality:'Filipino',
       passengerType: "STUDENT",
       method: "CASH",
     };

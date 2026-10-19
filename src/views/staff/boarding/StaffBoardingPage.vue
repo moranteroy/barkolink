@@ -123,7 +123,7 @@
                   v-if="selectedSailing"
                   class="sailing-status"
                   :class="selectedSailing.status.toLowerCase()"
-                  >{{ selectedSailing.status }}</span
+                  >{{ sailingStatusLabel(selectedSailing.status) }}</span
                 >
               </div>
               <BoardingProgress
@@ -138,8 +138,7 @@
               class="gate-note"
             >
               <AppIcon :icon="informationCircleOutline" /><span
-                >Check-in is open. Boarding starts when the administrator sets
-                this sailing to BOARDING.</span
+                >{{ selectedSailing.status === 'DELAYED' ? 'This sailing is delayed. Ask the administrator for an updated schedule before boarding.' : 'Check-in is open. Boarding opens automatically at the confirmed boarding time. Contact the administrator if no boarding time is set.' }}</span
               >
             </div>
 
@@ -503,6 +502,7 @@
 </template>
 
 <script setup lang="ts">
+import { statusLabel as sailingStatusLabel } from "@/data/statusPresentation";
 import { notifyError, notifySuccess } from '@/composables/toast';
 import QueueFreshness from "../../../components/shared/QueueFreshness.vue";
 import StaffPortRequired from '../../../components/staff/StaffPortRequired.vue';
@@ -835,7 +835,7 @@ async function updateSelectedTicket() {
       await checkInTicket(staffDatabase, { passengerId: person.id });
     else await boardTicket(staffDatabase, { passengerId: person.id });
     await loadData();
-    success.value = notifySuccess(`${person.name} ${person.status === "ISSUED" ? "checked in" : "marked as boarded"}.`);
+    notifySuccess(`${person.name} ${person.status === "ISSUED" ? "checked in" : "marked as boarded"}.`);
   } catch (cause) {
     error.value = notifyError(databaseRequestError(
       cause,

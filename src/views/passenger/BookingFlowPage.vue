@@ -481,6 +481,7 @@
 </template>
 
 <script setup lang="ts">
+import { validName, validPhone, validNationality } from '../../data/securityValidation';
 import { notifyError, notifySuccess } from '@/composables/toast';
 import BackIcon from "@/components/ui/icon/BackIcon.vue";
 import { bookingReference } from '@/data/recordCodes';
@@ -842,11 +843,11 @@ function go(name: string) {
 }
 const attempted = ref(false);
 function invalidField(person: Passenger): string {
-  if (!person.name.trim()) return "name";
+  if (!validName(person.name)) return "name";
   if (!validBirthDate(person.birthDate)) return "birthDate";
   if (!person.sex) return "sex";
-  if (!/^[+()\d\s-]{7,30}$/.test(person.phone.trim()) || person.phone.replace(/\D/g, "").length < 7) return "phone";
-  if (!person.nationality.trim()) return "nationality";
+  if (!validPhone(person.phone)) return "phone";
+  if (!validNationality(person.nationality)) return "nationality";
   return "";
 }
 async function focusInvalidPassenger() {
@@ -856,11 +857,11 @@ async function focusInvalidPassenger() {
   field?.focus({ preventScroll: true });
 }
 function passengerError(person: Passenger): string {
-  if (!person.name.trim()) return "Enter the full name.";
+  if (!validName(person.name)) return "Enter the full name using 1 to 120 characters.";
   if (!validBirthDate(person.birthDate)) return "Enter a valid birth date that is not in the future.";
   if (!person.sex) return "Select sex.";
-  if (!/^[+()\d\s-]{7,30}$/.test(person.phone.trim()) || person.phone.replace(/\D/g, "").length < 7) return "Enter a valid contact number.";
-  if (!person.nationality.trim()) return "Enter nationality.";
+  if (!validPhone(person.phone)) return "Enter a valid contact number with 7 to 15 digits.";
+  if (!validNationality(person.nationality)) return "Enter nationality using 1 to 80 characters.";
   return "";
 }
 const bookingIntentKey = "barkolink-booking-intent";

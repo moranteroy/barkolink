@@ -1,6 +1,12 @@
 # BarkoLink AI assistant setup
 
+Verified on October 15, 2026: the production passenger page accepted typed questions at 390px and 1440px widths and rendered real replies from the deployed Cloudflare-backed chatbot. The mobile Send button, desktop Enter, Shift+Enter newline, verified source cards, and input re-enabling after a reply passed. A disposable passenger account was used and removed afterward without sending email. The provider also passed separate English, Tagalog, and Taglish checks using fictional trip data.
+
+The live check found a misleading QR screenshot answer. Chatbot version 2 is now deployed with explicit saved-QR guidance and topic-specific help context. A readable QR from a saved copy can be scanned; staff determine validity from the live ticket record. The assistant must not invent a screenshot ban or accepted-ID list. Verified guide instructions now appear in source records. The updated live reply passed this check. Evidence is in the ignored `.audit/chatbot-live/` folder; rerun with `node scripts/verify-passenger-chat-live.mjs` using authorized local management credentials and a headless browser. This script creates and removes only its disposable test account and never prints keys or session tokens.
+
 Open `/assistant` or the chat icon in passenger headers. English, Tagalog and Taglish are interpreted by an LLM, not keyword rules. Conversation context is bounded and kept in page memory; leaving the page clears it. Cloudflare credentials belong in server-side secrets and are required for activation.
+
+The passenger chat UI now places the composer and navigation in an Ionic footer, which reserves space below the conversation. Replies use 16px text, the introduction becomes compact after the first question, and verified sources start collapsed with a short empty-result status. The production build and CSP check passed. Run `node scripts/verify-assistant-ui.mjs` to serve the build locally with its CSP and verify 320px, 390px and 1440px layouts in dark/light themes using mocked replies. The checks cover footer visibility while scrolling and at a reduced 540px viewport height, source expansion, no-result responses, Enter/Shift+Enter, failure recovery and conversation cleanup. These browser checks do not replace testing the native keyboard on an Android device. Screenshots are saved under ignored `.audit/assistant/`; these frontend changes still require the normal web/Android release.
 
 ## Activate when an account is available
 

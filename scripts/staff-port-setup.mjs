@@ -1,4 +1,5 @@
 import fs from 'node:fs';
+import {edgeFunctionSource} from './edge-function-source.mjs';
 const env = file => Object.fromEntries(fs.readFileSync(file,'utf8').split(/\r?\n/).filter(line=>/^\w+\s*=/.test(line)).map(line=>{
   const at=line.indexOf('='); return [line.slice(0,at).trim(),line.slice(at+1).trim().replace(/^['"]|['"]$/g,'')];
 }));
@@ -29,7 +30,7 @@ if(process.argv.includes('--apply')) {
   }
   const form=new FormData();
   form.append('metadata',JSON.stringify({name:'manage-account',entrypoint_path:'index.ts',verify_jwt:false}));
-  form.append('file',new Blob([fs.readFileSync('supabase/functions/manage-account/index.ts','utf8')],{type:'application/typescript'}),'index.ts');
+  form.append('file',new Blob([edgeFunctionSource('manage-account')],{type:'application/typescript'}),'index.ts');
   const deployed=await request('/functions/deploy?slug=manage-account',{method:'POST',body:form});
   if(deployed.status!=='ACTIVE') throw new Error('Account function deployment did not become active.');
   state=(await sql(inspect))[0];

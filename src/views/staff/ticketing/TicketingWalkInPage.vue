@@ -376,6 +376,7 @@
 </template>
 
 <script setup lang="ts">
+import { validName, validPhone, validNationality } from '../../../data/securityValidation';
 import { notifyError, notifySuccess } from '@/composables/toast';
 import BackIcon from "@/components/ui/icon/BackIcon.vue";
 import { bookingReference } from '@/data/recordCodes';
@@ -585,6 +586,10 @@ onIonViewWillEnter(() => {
 });
 
 function prepareTicket() {
+  if (!validName(form.passengerName) || !validNationality(form.nationality) || (form.passengerPhone.trim() && !validPhone(form.passengerPhone))) {
+    errorMessage.value = 'Enter a valid passenger name, nationality, and contact number.';
+    return;
+  }
   if (
     !selectedSailing.value ||
     !form.passengerName.trim() ||
@@ -616,6 +621,10 @@ function prepareTicket() {
   confirming.value = true;
 }
 async function issueTicket() {
+  if (!pendingSale.value && (!validName(form.passengerName) || !validNationality(form.nationality) || !validBirthDate(form.birthDate) || (form.passengerPhone.trim() && !validPhone(form.passengerPhone)))) {
+    errorMessage.value = 'Enter valid passenger details before issuing a ticket.';
+    return;
+  }
   if (pendingSale.value) { await retrySale(); return; }
   const sailing = selectedSailing.value;
   if (

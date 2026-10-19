@@ -1,5 +1,6 @@
 import { createClient } from 'npm:@supabase/supabase-js@2';
 import { testSecret, verifiedPayment, verifySignature } from './shared.ts';
+import { readBody, jsonObject, allowance, RequestError } from '../_shared/security.ts';
 
 const cors = {
   'Access-Control-Allow-Origin': '*',
@@ -39,7 +40,7 @@ Deno.serve(async request => {
       if (error) throw new Error(error.message);
       return { ...data, session };
     };
-    const raw = await request.text();
+    const raw = await readBody(request, request.headers.has('Paymongo-Signature') ? 262144 : 16384);
     const signature = request.headers.get('Paymongo-Signature');
     if (signature) {
       const secret = Deno.env.get('PAYMONGO_WEBHOOK_SECRET');
@@ -59,11 +60,12 @@ Deno.serve(async request => {
     if (!token) return reply(401, { error: 'Sign in first.' });
     const { data: { user }, error: authError } = await admin.auth.getUser(token);
     if (authError || !user) return reply(401, { error: 'Your session expired. Sign in again.' });
-    const { action, bookingId } = JSON.parse(raw);
-    if (!['checkout','status','close'].includes(action) || typeof bookingId !== 'string' || !/^[a-f0-9-]{36}$/i.test(bookingId))
+    const { action, bookingId } = jsonObject(raw);
+    if (!['checkout','status','close'].includes(action) || typeof bookingId !== 'string' || !/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i.test(bookingId))
       return reply(400, { error: 'Invalid payment request.' });
     const { data: booking, error: bookingError } = await admin.from('booking').select('id,owner_uid,payment_status').eq('id', bookingId).maybeSingle();
     if (bookingError || !booking || booking.owner_uid !== user.id) return reply(404, { error: 'Booking was not found.' });
+    await allowance(admin, user.id, 'paymongo');
     if (action === 'checkout') {
       const origin = Deno.env.get('PAYMONGO_RETURN_ORIGIN');
       if (!origin || !/^https?:\/\//.test(origin)) throw new Error('Set the website return URL before using sandbox checkout.');
@@ -110,6 +112,7 @@ Deno.serve(async request => {
     }
     return reply(200, { status: result.status });
   } catch (error) {
+    if (error instanceof RequestError) return reply(error.status, { error: error.message });
     return reply(400, { error: error instanceof Error ? error.message : 'Payment request failed.' });
   }
 });

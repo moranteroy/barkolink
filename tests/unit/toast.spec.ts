@@ -7,11 +7,12 @@ import { clearToasts, dismissToast, notifyError, notifySuccess, toastMessages } 
 describe('shared action feedback', () => {
   beforeEach(() => { clearToasts(); vi.useFakeTimers(); });
   afterEach(() => { clearToasts(); vi.useRealTimers(); });
-  const mountHost = () => mount(ToastHost, { global: { stubs: { AppIcon: true, Transition: true } } });
+  const mountHost = () => mount(ToastHost, { global: { stubs: { AppIcon: true, Transition: true, Teleport: true } } });
   it('queues errors after success and suppresses duplicate pending messages', async () => {
     const wrapper = mountHost();
     expect(notifySuccess('Traveler saved.')).toBe('Traveler saved.');
     notifySuccess('Traveler saved.');
+    notifySuccess('  Traveler saved.  ');
     notifyError('Could not delete traveler.');
     await nextTick();
     expect(toastMessages.value).toHaveLength(2);
@@ -49,6 +50,24 @@ describe('shared action feedback', () => {
     await nextTick();
     expect(wrapper.find('.app-toast').exists()).toBe(false);
     dismissToast(999);
+    wrapper.unmount();
+  });
+  it('shows queued messages one at a time in order when dismissed rapidly', async () => {
+    const wrapper = mountHost();
+    notifySuccess('First action saved.');
+    notifyError('Second action failed.');
+    notifySuccess('Third action saved.');
+    await nextTick();
+    expect(wrapper.findAll('.app-toast')).toHaveLength(1);
+    expect(wrapper.text()).toContain('First action saved.');
+    await wrapper.get('button').trigger('click');
+    expect(wrapper.findAll('.app-toast')).toHaveLength(1);
+    expect(wrapper.text()).toContain('Second action failed.');
+    await wrapper.get('button').trigger('click');
+    expect(wrapper.findAll('.app-toast')).toHaveLength(1);
+    expect(wrapper.text()).toContain('Third action saved.');
+    await vi.advanceTimersByTimeAsync(4500);
+    expect(wrapper.find('.app-toast').exists()).toBe(false);
     wrapper.unmount();
   });
 });

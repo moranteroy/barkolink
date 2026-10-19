@@ -1,3 +1,4 @@
+import { clearToasts, toastMessages } from '../../src/composables/toast';
 import { flushPromises, mount } from '@vue/test-utils';
 import { readFileSync } from 'node:fs';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -19,7 +20,7 @@ const records = [voucher,
   { ...voucher, id: 'four', code: 'COMING', startsAt: '2026-10-20T00:00:00Z' },
   { ...voucher, id: 'five', code: 'EXPIRED', expiresAt: '2026-10-02T00:00:00Z' },
 ];
-beforeEach(() => {
+beforeEach(() => { clearToasts();
   vi.clearAllMocks();
   vi.useFakeTimers({ toFake: ['Date', 'setInterval', 'clearInterval'] });
   vi.setSystemTime(new Date('2026-10-08T12:00:00Z'));
@@ -98,7 +99,8 @@ describe('voucher management', () => {
     await wrapper.find('form.voucher-dialog').trigger('submit'); await flushPromises();
     expect(mocks.save).toHaveBeenCalledWith({}, expect.objectContaining({ code: generated, startsAt: '2026-10-09T00:00:00.000Z', expiresAt: '2026-10-19T00:00:00.000Z', isActive: true }));
     expect(wrapper.find('.voucher-dialog').exists()).toBe(false);
-    expect(wrapper.find('[role="status"]').text()).toContain('Voucher created.');
+    expect(toastMessages.value.filter(toast => toast.message === 'Voucher created.')).toHaveLength(1);
+    expect(wrapper.text()).not.toContain('Voucher created.');
     expect(mocks.list).toHaveBeenCalledTimes(2);
     wrapper.unmount();
   });

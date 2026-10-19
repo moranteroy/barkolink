@@ -1,6 +1,7 @@
 <template>
+  <Teleport to="body">
   <div class="toast-host" aria-label="Notifications">
-    <Transition name="toast">
+    <Transition name="toast" mode="out-in">
       <div v-if="current" :key="current.id" class="app-toast" :class="current.tone"
         :role="current.tone === 'error' ? 'alert' : 'status'" aria-atomic="true"
         @mouseenter="pause" @mouseleave="resume" @focusin="pause" @focusout="resume">
@@ -10,6 +11,7 @@
       </div>
     </Transition>
   </div>
+  </Teleport>
 </template>
 <script setup lang="ts">
 import { computed, onUnmounted, watch } from 'vue';
@@ -39,19 +41,23 @@ watch(() => current.value?.id, () => {
 onUnmounted(() => { if (timer) clearTimeout(timer); });
 </script>
 <style scoped>
-.toast-host { position: fixed; z-index: 100000; top: calc(env(safe-area-inset-top, 0px) + 16px); left: 50%; transform: translateX(-50%); width: min(520px, calc(100% - 32px)); pointer-events: none; }
+.toast-host { position: fixed; z-index: 100000; top: calc(env(safe-area-inset-top, 0px) + 16px); right: calc(env(safe-area-inset-right, 0px) + 16px); width: min(400px, calc(100vw - 32px)); pointer-events: none; font-family: var(--ion-font-family); }
 .app-toast { pointer-events: auto; display: flex; align-items: flex-start; gap: 12px; padding: 14px; border: 1px solid var(--line); border-left: 4px solid var(--ocean); border-radius: 14px; background: var(--surface); color: var(--ink); box-shadow: 0 8px 32px #0003; }
 .app-toast > .app-icon { flex-shrink: 0; width: 24px; height: 24px; color: var(--ocean); }
 .app-toast.success { border-left-color: #249779; }
 .app-toast.success > .app-icon { color: #249779; }
-.app-toast.error { border-left-color: var(--danger); }
-.app-toast.error > .app-icon { color: var(--danger); }
+.app-toast.error { border-left-color: var(--danger, #d63f50); }
+.app-toast.error > .app-icon { color: var(--danger, #d63f50); }
 .app-toast div { flex: 1; min-width: 0; }
 .app-toast strong { font-size: 14px; }
 .app-toast p { margin: 4px 0 0; font-size: 14px; line-height: 1.5; overflow-wrap: anywhere; max-height: 30vh; overflow-y: auto; }
 .app-toast button { display: grid; place-items: center; flex-shrink: 0; width: 44px; height: 44px; margin: -8px -8px 0 0; border: 0; border-radius: 8px; color: var(--ink); background: transparent; cursor: pointer; }
 .app-toast button:focus-visible { outline: 2px solid var(--ocean); outline-offset: 2px; }
 .toast-enter-active, .toast-leave-active { transition: opacity .18s, translate .18s; }
-.toast-enter-from, .toast-leave-to { opacity: 0; translate: 0 -8px; }
+.toast-leave-active { pointer-events: none; }
+.toast-enter-from, .toast-leave-to { opacity: 0; translate: 8px 0; }
+@media (max-width: 600px) {
+  .toast-host { top: calc(env(safe-area-inset-top, 0px) + 12px); right: calc(env(safe-area-inset-right, 0px) + 12px); width: calc(100vw - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px) - 24px); }
+}
 @media (prefers-reduced-motion: reduce) { .toast-enter-active, .toast-leave-active { transition: none; } }
 </style>

@@ -1,4 +1,5 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
+import { readBody, jsonObject, allowance, requireAdminMfa, RequestError } from '../_shared/security.ts';
 
 const cors = {
   "Access-Control-Allow-Origin": "*",
@@ -36,7 +37,9 @@ Deno.serve(async (request) => {
   if (user.app_metadata.role !== "ADMIN")
     return reply(403, { error: "Administrator access required." });
   try {
-    const { action, input } = await request.json();
+    await requireAdminMfa(admin, token, user.id);
+    await allowance(admin, user.id, 'manage-account');
+    const { action, input } = jsonObject(await readBody(request));
     if (action === "generateTemporaryPassword") {
       const bytes = crypto.getRandomValues(new Uint8Array(18));
       return reply(200, {
@@ -47,15 +50,20 @@ Deno.serve(async (request) => {
     }
     if (action !== "createManagedUser")
       return reply(400, { error: "Unknown account action." });
-    const fullName = String(input?.fullName || "").trim();
-    const email = String(input?.email || "")
+    if (!input || Array.isArray(input) || typeof input !== 'object' ||
+      ['fullName','email','password','role'].some(key => typeof input[key] !== 'string') ||
+      (input.phone !== undefined && typeof input.phone !== 'string')) return reply(400, { error: 'Enter valid account details.' });
+    const fullName = input.fullName.trim();
+    const email = input.email
       .trim()
       .toLowerCase();
-    const password = String(input?.password || "");
-    const role = String(input?.role || "").toUpperCase();
-    const phone = String(input?.phone || "").trim();
+    const password = input.password;
+    const role = input.role.toUpperCase();
+    const phone = (input.phone || '').trim().replace(/[-()\s]/g, '');
     if (
       !fullName ||
+      /[\u0000-\u001f\u007f]/.test(fullName) ||
+      (phone && !/^\+?\d{7,15}$/.test(phone)) ||
       fullName.length > 120 ||
       !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) ||
       email.length > 254 ||
@@ -83,7 +91,7 @@ Deno.serve(async (request) => {
     if (phone) {
       const { error: profileError } = await admin
         .from("app_user")
-        .update({ phone: phone.slice(0, 40) })
+        .update({ phone })
         .eq("uid", data.user.id);
       if (profileError) {
         await admin.auth.admin.deleteUser(data.user.id);
@@ -94,7 +102,8 @@ Deno.serve(async (request) => {
       }
     }
     return reply(200, { uid: data.user.id, email, fullName, role });
-  } catch {
+  } catch (error) {
+    if (error instanceof RequestError) return reply(error.status, { error: error.message });
     return reply(400, { error: "Invalid account request." });
   }
 });

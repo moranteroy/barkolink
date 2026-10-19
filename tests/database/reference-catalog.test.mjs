@@ -7,7 +7,9 @@ let db;
 const admin='33333333-3333-4333-8333-333333333333';
 describe('Verified nationwide ferry reference catalog', () => {
 before(async()=>{
-  db=new PGlite();
+  db = new PGlite();
+    await db.exec(`select set_config('request.jwt.claims','{"aal":"aal2"}',false)`);
+
   await db.exec(`create role anon;create role authenticated;create role service_role bypassrls;
     create schema auth;create table auth.users(id uuid primary key,email text unique not null,raw_user_meta_data jsonb default '{}',raw_app_meta_data jsonb default '{}');
     create function auth.uid() returns uuid language sql stable as $$select nullif(current_setting('request.jwt.claim.sub',true),'')::uuid$$;

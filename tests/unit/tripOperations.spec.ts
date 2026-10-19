@@ -1,3 +1,4 @@
+import { clearToasts, toastMessages } from '../../src/composables/toast';
 import { flushPromises, mount } from '@vue/test-utils';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import TripOperationsPanel from '../../src/components/admin/TripOperationsPanel.vue';
@@ -17,7 +18,7 @@ const mountPanel = () => mount(TripOperationsPanel, { props: { embedded: true },
 async function selectTab(wrapper: ReturnType<typeof mountPanel>, name: string) {
   await wrapper.findAll('nav button').find(b => b.text().startsWith(name))!.trigger('click');
 }
-beforeEach(() => {
+beforeEach(() => { clearToasts();
   vi.clearAllMocks();
   mocks.list.mockResolvedValue({ data: { sailings: [sailing], totalCount: 1 } });
   mocks.operations.mockResolvedValue({ data });
@@ -87,7 +88,8 @@ describe('sailing workspace', () => {
     await wrapper.find('.cancel-trip').trigger('click');await flushPromises();
     expect(mocks.update).toHaveBeenCalledWith({}, {code:'TRP1',status:'CANCELLED',reason:'Weather disruption'});
     expect(wrapper.find('.status-actions').exists()).toBe(false);
-    expect(wrapper.find('[role="status"]').text()).toContain('refunds');
+    expect(toastMessages.value.some(toast => toast.message.includes('refunds'))).toBe(true);
+    expect(wrapper.text()).not.toContain('Trip cancelled. Review paid bookings for refunds.');
     wrapper.unmount();
   });
 

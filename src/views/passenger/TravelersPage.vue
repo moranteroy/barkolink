@@ -88,6 +88,8 @@
   ></ion-page>
 </template>
 <script setup lang="ts">
+import { validName, validPhone, validNationality } from '../../data/securityValidation';
+import { validBirthDate } from '../../data/travelDate';
 import { notifyError, notifySuccess } from '@/composables/toast';
 import { confirmAction } from "../../composables/confirmation";
 import { onMounted, reactive, ref } from "vue";
@@ -147,6 +149,10 @@ async function load() {
 }
 async function save() {
   if (!database || busy.value) return;
+  if (!validName(form.fullName) || !validPhone(form.phone) || !validNationality(form.nationality) || !validBirthDate(form.birthDate)) {
+    error.value = 'Enter a valid name, birth date, contact number, and nationality.';
+    return;
+  }
   busy.value = true;
   error.value = "";
   notice.value = "";

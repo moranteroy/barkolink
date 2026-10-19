@@ -271,8 +271,7 @@ async function save() {
     reset();
     busy.value = false; editing.value = false;
     await load();
-    notice.value =
-      notifySuccess("Advisory saved. Published advisories appear during their effective period.");
+    notifySuccess("Advisory saved. Published advisories appear during their effective period.");
   } catch (cause) {
     formError.value = notifyError(databaseRequestError(cause, "Could not save advisory."));
   } finally {

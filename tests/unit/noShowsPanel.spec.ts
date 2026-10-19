@@ -1,3 +1,4 @@
+import { clearToasts, toastMessages } from '../../src/composables/toast';
 import { flushPromises, mount } from '@vue/test-utils';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import NoShowsPanel from '../../src/components/admin/NoShowsPanel.vue';
@@ -13,7 +14,7 @@ vi.mock('../../src/components/shared/RecordsGrid.vue', () => ({ default: {
 } }));
 const sailing = { code: 'TRP1', status: 'COMPLETED', origin: { name: 'Batangas' }, destination: { name: 'Calapan' } };
 const passenger = { id: 'p1', fullName: 'Test Passenger', ticketStatus: 'CHECKED_IN', noShow: false, booking: { reference: 'BOOK1' } };
-beforeEach(() => {
+beforeEach(() => { clearToasts();
   vi.clearAllMocks();
   mocks.trips.mockResolvedValue({ data: { sailings: [sailing], totalCount: 1 } });
   mocks.list.mockResolvedValue({ data: { sailing, passengers: [passenger] } });
@@ -42,7 +43,8 @@ describe('no-show attendance review', () => {
     await flushPromises();
     expect(mocks.confirm).toHaveBeenCalled();
     expect(mocks.mark).toHaveBeenCalledWith({}, 'TRP1', undefined);
-    expect(wrapper.text()).toContain('1 no-show records added.');
+    expect(toastMessages.value.filter(toast => toast.message === '1 no-show records added.')).toHaveLength(1);
+    expect(wrapper.text()).not.toContain('1 no-show records added.');
     wrapper.unmount();
   });
   it('keeps recording disabled for an incomplete trip', async () => {

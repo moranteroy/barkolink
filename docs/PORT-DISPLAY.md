@@ -1,18 +1,15 @@
-# Port television display
+# Terminal display
 
-Open **Admin → Port Display (TV)** at the top of the sidebar, or **Trips & schedules → Open port display**, choose a port and click **Copy TV link**.
-Open that link in the television browser or a computer connected to the television by HDMI. Select **Fullscreen** (or use the browser fullscreen command). The television does not need an admin login.
+Links use readable names such as `/port-display?port=batangas-port`. Legacy UUID links still work and are replaced with the short name after loading. Port names must be unique; ambiguous names keep their IDs to prevent selecting the wrong terminal. The public feed resolves names without private table access or a database migration.
 
-The link is `/port-display?port=<port UUID>&screen=1`. The `screen=1` option hides setup controls initially. **Display controls** reopens them.
+Open `/port-display`, select the terminal port under **Display controls**, and choose **Copy TV link**. The copied URL includes the port and `screen=1`, which hides the configuration button. **TV mode** also hides controls; press **Esc** to open them again. Choose **Fullscreen** or the browser's fullscreen command on the terminal screen. Browser security requires a person to initiate fullscreen.
 
-The display shows today's scheduled departures and arrivals in Philippine time, including overnight arrivals. Pages rotate every 12 seconds and data refreshes every 30 seconds. Status comes from existing trip operations. Cancelled and delayed trips remain visible. Published, currently effective global advisories and advisories for sailings at the selected port rotate below the schedules. Update those through the existing Admin Advisories page.
+Departures and arrivals use Philippine dates and scheduled times. Both boards keep the same row height, including when they have different numbers of sailings. Arrival rows with a `BOARDING` status explicitly say **Boarding at origin**, with the origin city below; they never trigger a local boarding banner. The boarding banner rotates through local departures whose operational status is `BOARDING`. Active departures more than 15 minutes past their scheduled time direct passengers to the **boarding desk**; the page never infers that a vessel has departed or invents a revised departure time. Gate assignments and revised times are not included in the current public feed.
 
-When disconnected, the last received data is labelled with a warning; yesterday's trips are removed at midnight. Schedules and notices come from the system, not the photographed sample board.
+The administrator owns trip schedule/status corrections and published travel advisories. Boarding desk staff confirm the actual boarding conditions and report necessary corrections to the administrator; they do not receive administrator permissions from this display. Automatic status transitions continue to follow the configured operator policy and confirmed trip boarding time. The system administrator handles screen and connection problems. **Display controls** explains these responsibilities and lists local active sailings whose scheduled departure is more than 15 minutes overdue. This is a read-only review cue; it does not change a sailing or send a report automatically.
 
-## Database installation
+The board refreshes every 30 seconds and rotates pages every 12 seconds. Row counts adapt to available space. High-priority active advisories remain visible ahead of routine reminders. A failed refresh or data older than 90 seconds displays an update warning and labels retained boarding information **Last reported**. Yesterday's sailings are removed at Philippine midnight. The feed contains public sailing information, not passenger or booking records.
 
-For an existing hosted database, apply only `supabase/migrations/042_port_display.sql` after migrations 001–041. Do not rerun `setup.sql` on an existing database. Fresh installations can use the regenerated `supabase/setup.sql`.
+Verification: `npm run test:unit -- --configLoader native tests/unit/portDisplay.spec.ts` and `node scripts/verify-port-display-ui.mjs`. The browser script serves the production build with its CSP and mocks only the public feed. It checks 1920×1080, 1366×768, 1240×580 and 390×844 layouts, long vessel names, rotation, urgent advisories, kiosk controls, port selection, fullscreen and connection recovery. Screenshots are saved in ignored `.audit/port-display/`. Set `BARKOLINK_UI_URL` to test a running dev server instead. These frontend changes require the normal website release before they appear on a hosted terminal display.
 
-With the existing local Supabase management credentials, `node scripts/apply-port-display.mjs --apply` installs the migration transactionally and verifies the anonymous live API. Reruns verify the existing installation.
-
-The `port_display` RPC permits anonymous access to a fixed set of schedule, active port, vessel name/operator, and published advisory fields. It exposes no passenger, account, manifest, booking or payment data. Existing table permissions stay unchanged.
+Status badges use centered text labels: Scheduled (blue), Boarding (teal), Completed (green), Delayed (amber), Cancelled (red). An arrival still boarding at its origin uses violet, identifies the origin, and never announces local boarding.

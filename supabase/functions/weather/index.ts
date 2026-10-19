@@ -1,4 +1,5 @@
 import { createClient } from 'npm:@supabase/supabase-js@2';
+import { readBody, jsonObject, allowance, RequestError } from '../_shared/security.ts';
 import { normalizeOpenMeteo, openMeteoUrl, weatherCoordinates, departureForecast, type WeatherPayload } from './shared.ts';
 const cors={'Access-Control-Allow-Origin':'*','Access-Control-Allow-Headers':'authorization, x-client-info, apikey, content-type','Access-Control-Allow-Methods':'POST, OPTIONS'};
 const reply=(status:number,body:object)=>new Response(JSON.stringify(body),{status,headers:{...cors,'Content-Type':'application/json'}});
@@ -12,7 +13,8 @@ Deno.serve(async request=>{
     if(!token)return reply(401,{error:'Sign in to see trip weather.'});
     const {data:{user},error:authError}=await admin.auth.getUser(token);
     if(authError || !user)return reply(401,{error:'Your session expired. Sign in again.'});
-    const {sailingCode,portId}=await request.json();
+    const {sailingCode,portId}=jsonObject(await readBody(request));
+    await allowance(admin,user.id,'weather');
     const portMode=portId!==undefined;
     let trip:any=null, ports:any[]=[];
     if(portMode){
@@ -58,5 +60,5 @@ Deno.serve(async request=>{
     };
     const ordered=portMode?ports:[trip.origin_port_id,trip.destination_port_id].map(id=>ports.find(port=>port.id===id)).filter(Boolean);
     return reply(200,{configured:true,departureAt:trip?.departure_at,ports:await Promise.all(ordered.map(load))});
-  }catch{return reply(503,{error:'Weather updates are temporarily unavailable. Please try again later.'});}
+  }catch(error){if(error instanceof RequestError)return reply(error.status,{error:error.message});return reply(503,{error:'Weather updates are temporarily unavailable. Please try again later.'});}
 });

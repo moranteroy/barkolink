@@ -58,7 +58,7 @@ onIonViewWillEnter(async () => {
 async function save() {
   if (busy.value || !recoveryReady.value) return;
   failed.value = false;
-  if (password.value.length < 8) { message.value = 'Use at least 8 characters.'; failed.value = true; return; }
+  if (password.value.length < 8 || password.value.length > 128) { message.value = 'Use 8 to 128 characters.'; failed.value = true; return; }
   if (password.value !== confirm.value) {
     message.value = "Passwords do not match.";
     failed.value = true;

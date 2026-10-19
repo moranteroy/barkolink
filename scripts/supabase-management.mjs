@@ -1,4 +1,5 @@
 import fs from 'node:fs'
+import {edgeFunctionSource} from './edge-function-source.mjs'
 
 const projectRef = 'utobfkfmuepuoseszxks'
 const source = fs.readFileSync('.env.supabase-management', 'utf8')
@@ -245,7 +246,7 @@ if (['inspect-admin-filters', 'upgrade-admin-filters', 'verify-admin-filters'].i
 } else if (mode === 'deploy-function') {
   const form = new FormData()
   form.append('metadata', JSON.stringify({ name: 'manage-account', entrypoint_path: 'index.ts', verify_jwt: false }))
-  form.append('file', new Blob([fs.readFileSync('supabase/functions/manage-account/index.ts', 'utf8')], { type: 'application/typescript' }), 'index.ts')
+  form.append('file', new Blob([edgeFunctionSource('manage-account')], { type: 'application/typescript' }), 'index.ts')
   const result = await management('/functions/deploy?slug=manage-account', { method: 'POST', body: form })
   console.log(JSON.stringify({ deployed: true, slug: result.slug, status: result.status, verifyJwt: result.verify_jwt }))
 } else if (mode === 'verify') {

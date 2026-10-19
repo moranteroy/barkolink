@@ -163,7 +163,7 @@ async function mark(id?: string) {
   try {
     const r = await markNoShow(staffDatabase, code.value, id);
     await load();
-    notice.value = notifySuccess(`${r.data.marked} no-show records added.`);
+    notifySuccess(`${r.data.marked} no-show records added.`);
   } catch (e) {
     error.value = notifyError(databaseRequestError(e, "Could not record attendance."));
   } finally {

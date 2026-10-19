@@ -141,7 +141,7 @@ async function exportManifest() {
     link.download = `manifest-${code}.csv`;
     link.click();
     URL.revokeObjectURL(url);
-    notice.value = notifySuccess(`Exported ${passengers.length} passengers for ${code}.`);
+    notifySuccess(`Exported ${passengers.length} passengers for ${code}.`);
   } catch (e) {
     if (version === request)
       error.value = notifyError(ticketRequestError(

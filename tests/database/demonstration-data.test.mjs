@@ -6,18 +6,20 @@ import {referenceCatalogSql} from '../../scripts/reference-catalog.mjs';
 import {demonstrationSql,demonstrationChecks} from '../../scripts/demonstration-data.mjs';
 let db;
 before(async()=>{
- db=new PGlite();
+ db = new PGlite();
+    await db.exec(`select set_config('request.jwt.claims','{"aal":"aal2"}',false)`);
+
  await db.exec(`create role anon;create role authenticated;create role service_role bypassrls;
  create schema auth;create table auth.users(id uuid primary key,email text unique not null,raw_user_meta_data jsonb default '{}',raw_app_meta_data jsonb default '{}');
  create function auth.uid() returns uuid language sql stable as $$select nullif(current_setting('request.jwt.claim.sub',true),'')::uuid$$;
  grant usage on schema public,auth to anon,authenticated,service_role;grant execute on function auth.uid() to anon,authenticated,service_role;`);
  // Load the historical demonstration batch before installing the new booking guard.
- for(const file of fs.readdirSync('supabase/migrations').filter(file=>!file.startsWith('040_') && !file.startsWith('041_')).sort())await db.exec(fs.readFileSync(`supabase/migrations/${file}`,'utf8'));
+ for(const file of fs.readdirSync('supabase/migrations').filter(file=>Number(file.slice(0,3))<40).sort())await db.exec(fs.readFileSync(`supabase/migrations/${file}`,'utf8'));
  await db.exec(`insert into auth.users(id,email,raw_app_meta_data) values('33333333-3333-4333-8333-333333333333','admin@example.invalid','{"role":"ADMIN"}'),('11111111-1111-4111-8111-111111111111','passenger@example.invalid','{"role":"PASSENGER"}');`);
  await db.exec(referenceCatalogSql());
  await db.exec(`begin;${demonstrationSql()}${demonstrationChecks}commit;`);
- await db.exec(fs.readFileSync('supabase/migrations/040_vessel_position_tracking.sql','utf8'));
- await db.exec(fs.readFileSync('supabase/migrations/041_vessel_tracking_lock_order.sql','utf8'));
+ // Install the tracking guard and its dependent migrations together, in order.
+ for(const file of fs.readdirSync('supabase/migrations').filter(file=>Number(file.slice(0,3))>=40).sort())await db.exec(fs.readFileSync(`supabase/migrations/${file}`,'utf8'));
 });
 after(async()=>await db?.close());
 const manifest=async()=>(await db.query("select manifest from barkolink_private.demonstration_batch")).rows[0].manifest;

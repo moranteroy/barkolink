@@ -148,6 +148,7 @@
   padding-inline: 16px;
   padding-bottom: calc(104px + env(safe-area-inset-bottom));
 }
+:root body ion-app.passenger-preview main.assistant-page { padding-bottom: 24px; }
 :root body ion-app.passenger-preview .passenger-header { gap: 8px; }
 :root body ion-app.passenger-preview .design-passenger-home .quick-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
 :root body ion-app.passenger-preview .design-passenger-home .quick-grid a { min-height: 110px; padding: 16px; }

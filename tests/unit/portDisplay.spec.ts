@@ -1,5 +1,8 @@
-import { describe, expect, it } from 'vitest';
-import { displaySailings, manilaDate, type PortDisplayData } from '../../src/services/portDisplay';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { displaySailings, loadPortDisplay, manilaDate, portDisplayKey, type PortDisplayData } from '../../src/services/portDisplay';
+
+const rpc = vi.hoisted(() => vi.fn());
+vi.mock('../../src/services/supabase', () => ({ requireSupabase: () => ({ rpc }) }));
 
 const data: PortDisplayData = {
   date: '2026-10-11', updatedAt: '2026-10-11T00:00:00Z', portId: 'cal', ports: [], advisories: [],
@@ -23,5 +26,48 @@ describe('terminal schedule day boundaries', () => {
     const rows = displaySailings({ ...data, sailings: [...data.sailings, extra] }, 'departures', data.date);
     expect(rows.map(s => s.code)).toEqual(['EARLY', 'OUT']);
     expect(rows[1].status).toBe('CANCELLED');
+  });
+});
+
+describe('terminal display links', () => {
+  const ports = [
+    { id: 'eeeeeeee-0000-4000-8000-000000000001', name: 'Batangas Port', city: 'Batangas' },
+    { id: 'eeeeeeee-0000-4000-8000-000000000002', name: 'Calapan Port', city: 'Calapan' },
+  ];
+  beforeEach(() => rpc.mockReset());
+  it('uses readable unique port names and keeps ambiguous names as IDs', () => {
+    expect(portDisplayKey(ports[0], ports)).toBe('batangas-port');
+    const duplicate = { ...ports[1], name: ports[0].name };
+    expect(portDisplayKey(ports[0], [ports[0], duplicate])).toBe(ports[0].id);
+    expect(portDisplayKey({ ...ports[0], name: '  Puértó / North  ' }, [{ ...ports[0], name: 'Puértó / North' }])).toBe('puerto-north');
+  });
+  it('keeps legacy UUID links on the direct public RPC', async () => {
+    rpc.mockResolvedValue({ data, error: null });
+    expect(await loadPortDisplay(ports[0].id)).toEqual(data);
+    expect(rpc).toHaveBeenCalledExactlyOnceWith('port_display', { p_port: ports[0].id });
+  });
+  it('resolves a fresh short link to the correct terminal', async () => {
+    const initial = { ...data, ports, portId: ports[0].id };
+    const selected = { ...initial, portId: ports[1].id };
+    rpc.mockResolvedValueOnce({ data: initial, error: null }).mockResolvedValueOnce({ data: selected, error: null });
+    expect(await loadPortDisplay('calapan-port')).toEqual(selected);
+    expect(rpc.mock.calls).toEqual([['port_display', { p_port: null }], ['port_display', { p_port: ports[1].id }]]);
+  });
+  it('reuses the public directory during refresh', async () => {
+    rpc.mockResolvedValue({ data, error: null });
+    await loadPortDisplay('batangas-port', undefined, ports);
+    expect(rpc).toHaveBeenCalledExactlyOnceWith('port_display', { p_port: ports[0].id });
+  });
+  it('rejects unknown or ambiguous names instead of displaying another terminal', async () => {
+    rpc.mockResolvedValue({ data: { ...data, ports, portId: ports[0].id }, error: null });
+    await expect(loadPortDisplay('missing-port')).rejects.toThrow('Port is unavailable');
+    await expect(loadPortDisplay('batangas-port', undefined, [ports[0], { ...ports[1], name: ports[0].name }])).rejects.toThrow('Port is unavailable');
+    expect(rpc).toHaveBeenCalledTimes(1);
+  });
+  it('does not fetch another terminal after cancellation', async () => {
+    const controller = new AbortController();
+    controller.abort();
+    await expect(loadPortDisplay('calapan-port', controller.signal, ports)).rejects.toThrow('Request aborted');
+    expect(rpc).not.toHaveBeenCalled();
   });
 });

@@ -202,7 +202,7 @@ async function save() {
     busy.value = false;
     editing.value = false;
     await load();
-    notice.value = notifySuccess("Accommodation saved.");
+    notifySuccess("Accommodation saved.");
   } catch (e) {
     formError.value = notifyError(databaseRequestError(e, "Could not save accommodation."));
   } finally {

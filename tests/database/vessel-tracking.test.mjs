@@ -5,7 +5,9 @@ import fs from 'node:fs';
 let db;
 const admin='33333333-3333-4333-8333-333333333333',passenger='11111111-1111-4111-8111-111111111111';
 before(async()=>{
-  db=new PGlite();await db.exec(`create role anon;create role authenticated;create role service_role bypassrls;
+  db = new PGlite();
+    await db.exec(`select set_config('request.jwt.claims','{"aal":"aal2"}',false)`);
+await db.exec(`create role anon;create role authenticated;create role service_role bypassrls;
   create schema auth;create table auth.users(id uuid primary key,email text unique not null,raw_user_meta_data jsonb default '{}',raw_app_meta_data jsonb default '{}');
   create function auth.uid() returns uuid language sql stable as $$select nullif(current_setting('request.jwt.claim.sub',true),'')::uuid$$;
   grant usage on schema public,auth to anon,authenticated,service_role;grant execute on function auth.uid() to anon,authenticated,service_role;`);
@@ -22,8 +24,8 @@ async function issue(origin,offset=4,exclude=null){return (await db.query("selec
 async function trip(code,origin,dest,dep,arr){await db.query(`insert into public.sailing(code,vessel_id,origin_port_id,destination_port_id,departure_at,arrival_at,duration_minutes,available_seats,regular_fare,student_fare,senior_fare,child_fare,pwd_fare,pregnant_fare) values($1,$2,$3,$4,now()+make_interval(hours=>$5),now()+make_interval(hours=>$6),60*($6-$5),200,600,480,480,300,480,600)`,[code,vessel,origin,dest,dep,arr]);}
 beforeEach(async()=>{await db.exec('delete from public.booking;delete from public.sailing;delete from barkolink_private.vessel_port_observation;');vessel=(await db.query("select id from public.vessel where code='MIS-001'")).rows[0].id;btg=(await db.query("select id from public.port where code='BTG'")).rows[0].id;cal=(await db.query("select id from public.port where code='CAL'")).rows[0].id;});
 async function confirm(port=btg){return call('AdminConfirmVesselPort',{vesselId:vessel,portId:port,observedAt:new Date(Date.now()-60000).toISOString(),note:'Terminal confirms vessel moored at port.'});}
-it('requires a confirmed port and checks origin instead of passenger location',async()=>{
- assert.match(await issue(cal),/Confirm the vessel port/);
+it('keeps missing itineraries unknown and checks the vessel origin rather than passenger location',async()=>{
+ assert.match(await issue(cal),/Add a saved trip/);
  await confirm();assert.equal(await issue(btg),null);assert.match(await issue(cal),/Batangas/);
  const positions=await call('AdminVesselPositions');assert.equal(positions.vessels[0].position.state,'CONFIRMED');
  const availability=await call('AdminVesselAvailability',{originPortId:cal,departureAt:new Date(Date.now()+4*3600000).toISOString()});assert.match(availability.vessels[0].issue,/Batangas/);
@@ -57,4 +59,49 @@ it('limits location updates to administrators and validates confirmation timesta
  await assert.rejects(call('AdminConfirmVesselPort',{vesselId:vessel,portId:btg,observedAt:new Date(Date.now()+3600000).toISOString(),note:'Confirmed'}),/last 24 hours/);
  await assert.rejects(call('AdminConfirmVesselPort',{vesselId:vessel,portId:btg,observedAt:new Date().toISOString(),note:' '}),/check constraint/);
  await confirm();assert.equal((await db.query("select count(*)::int n from public.activity_log where action='VESSEL_PORT_CONFIRMED'")).rows[0].n>=1,true);
+});
+
+async function estimate(offset=0){return (await db.query("select barkolink_private.vessel_display_position_at($1,now()+make_interval(hours=>$2)) p",[vessel,offset])).rows[0].p;}
+it('estimates origin, underway and destination from times without fabricating confirmation',async()=>{
+ await trip('AUTO',btg,cal,1,3);
+ let p=await estimate(0);assert.equal(p.state,'EXPECTED');assert.equal(p.portId,btg);assert.equal(p.tripCode,'AUTO');
+ p=await estimate(1);assert.equal(p.state,'UNDERWAY');assert.equal(p.originPortId,btg);assert.equal(p.destinationPortId,cal);
+ p=await estimate(3);assert.equal(p.state,'EXPECTED');assert.equal(p.portId,cal);assert.equal(p.basis,'SCHEDULE');assert.equal(p.confirmedAt,undefined);
+ assert.equal((await db.query('select count(*)::int n from barkolink_private.vessel_port_observation')).rows[0].n,0);
+ assert.match(await issue(btg),/Calapan/);
+ const positions=await call('AdminVesselPositions');assert.equal(positions.vessels[0].position.state,'EXPECTED');
+});
+it('does not infer destination from Completed before scheduled arrival or cancelled trips',async()=>{
+ await trip('AUTO',btg,cal,1,3);
+ await db.exec("update public.sailing set status='COMPLETED' where code='AUTO'");
+ assert.equal((await estimate(2)).state,'UNDERWAY');
+ await db.exec("update public.sailing set status='CANCELLED' where code='AUTO'");
+ assert.equal((await estimate(4)).state,'UNKNOWN');
+});
+it('keeps delayed voyages unresolved and detects a broken unconfirmed itinerary',async()=>{
+ await trip('OUT',btg,cal,1,3);await trip('BACK',cal,btg,4,6);
+ await db.exec("update public.sailing set status='DELAYED' where code='OUT'");
+ assert.equal((await estimate(7)).state,'DELAYED');
+ await db.exec("update public.sailing set status='CANCELLED' where code='OUT'");
+ // With no observation, the remaining voyage is the only location evidence.
+ assert.equal((await estimate(0)).portId,cal);
+ await db.exec('delete from public.sailing');
+ await trip('OUT',btg,cal,1,3);await trip('WRONG',btg,cal,4,6);
+ assert.equal((await estimate(5)).state,'CONFLICT');
+});
+it('uses a newer terminal observation ahead of older schedule estimates',async()=>{
+ await trip('OLD',cal,btg,-4,-2);await confirm(cal);
+ const p=await estimate();assert.equal(p.state,'CONFIRMED');assert.equal(p.portId,cal);assert.equal(p.basis,'TERMINAL');
+});
+
+it('opens bookings automatically from a connected itinerary without manual observations',async()=>{
+ await trip('AUTO-OUT',btg,cal,1,3);await trip('AUTO-BACK',cal,btg,4,6);
+ assert.equal(await issue(btg,1,'AUTO-OUT'),null);
+ assert.equal(await issue(cal,4,'AUTO-BACK'),null);
+ assert.equal((await call('BrowseSailings')).sailings.length,2);
+ await db.query(`insert into public.booking(reference,owner_uid,sailing_code,passenger_count,passenger_fare_total,total) values('BKG-AUTO',$1,'AUTO-BACK',1,600,600)`,[passenger]);
+ assert.equal((await db.query('select count(*)::int n from barkolink_private.vessel_port_observation')).rows[0].n,0);
+ await db.exec("update public.sailing set status='DELAYED' where code='AUTO-OUT'");
+ assert.match(await issue(cal,4,'AUTO-BACK'),/delayed/);
+ await assert.rejects(db.query(`insert into public.booking(reference,owner_uid,sailing_code,passenger_count,passenger_fare_total,total) values('BKG-BLOCK',$1,'AUTO-BACK',1,600,600)`,[passenger]),/delayed/);
 });

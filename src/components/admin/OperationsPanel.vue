@@ -62,7 +62,7 @@ async function save() {
   try {
     await saveOperationSettings(staffDatabase, minutes);
     hours.value = minutes / 60;
-    notice.value = notifySuccess("Payment deadline saved for new reservations.");
+    notifySuccess("Payment deadline saved for new reservations.");
   } catch (cause) {
     error.value = notifyError(databaseRequestError(cause, "Could not save the deadline."));
   } finally {

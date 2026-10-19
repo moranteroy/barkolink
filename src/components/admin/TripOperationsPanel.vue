@@ -453,7 +453,7 @@ async function setTripStatus(status: 'DELAYED' | 'CANCELLED') {
   try {
     await adminUpdateSailingStatus(staffDatabase, { code: trip.code, status, reason });
     await load();
-    notice.value = notifySuccess(status === 'CANCELLED' ? 'Trip cancelled. Review paid bookings for refunds.' : 'Trip marked Delayed. Automatic status changes are paused until the schedule is updated and resumed.');
+    notifySuccess(status === 'CANCELLED' ? 'Trip cancelled. Review paid bookings for refunds.' : 'Trip marked Delayed. Automatic status changes are paused until the schedule is updated and resumed.');
   } catch (cause) { error.value = notifyError(databaseRequestError(cause, 'Could not update trip status.')); }
   finally { busy.value = false; }
 }
@@ -506,7 +506,7 @@ async function reconcile() {
   try {
     const result = await reconcileNoShows(staffDatabase, code.value);
     await load();
-    notice.value = notifySuccess(`${result.data.marked} no-show records added.`);
+    notifySuccess(`${result.data.marked} no-show records added.`);
   } catch (cause) {
     error.value = notifyError(databaseRequestError(cause, "Could not reconcile no-shows."));
   } finally {

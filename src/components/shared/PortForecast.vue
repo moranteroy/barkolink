@@ -142,23 +142,26 @@ h2 svg { color: var(--ocean); flex-shrink: 0; }
 .current-description { flex: 1; min-width: 110px; }
 .current-description b { display: block; font-size: 13px; line-height: 1.5; }
 .current-description > span { display: flex; align-items: center; gap: 5px; margin-top: 6px; font-size: var(--text-caption); color: var(--muted); }
-.daily-heading { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 10px; }
+.daily-heading { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin: 22px 0 12px; }
 h3 { margin: 0; font-size: var(--text-label); }
-.daily-heading > span { display: flex; align-items: center; gap: 4px; font-size: var(--text-caption); color: var(--muted); }
-.forecast-scroll { display: flex; align-items: flex-start; gap: 8px; overflow-x: auto; padding: 3px 2px 10px; scrollbar-width: thin; scrollbar-color: var(--line) transparent; scroll-snap-type: x proximity; }
-.forecast-day { box-sizing: border-box; flex: 0 0 98px; height: 174px; display: flex; align-items: center; flex-direction: column; gap: 0; margin: 0; padding: 10px 6px; background: var(--surface-soft); color: var(--ink); border: 1px solid var(--line); border-radius: 12px; scroll-snap-align: start; font: inherit; cursor: pointer; transition: border-color .18s ease, background .18s ease, transform .18s ease; }
+.daily-heading > span { display: flex; align-items: center; gap: 4px; font-size: 12px; color: var(--muted); }
+.forecast-scroll { display: flex; align-items: stretch; gap: 10px; overflow-x: auto; padding: 4px 3px 16px; scrollbar-width: none; scroll-padding-inline: 3px; overscroll-behavior-x: contain; scroll-snap-type: x proximity; }
+.forecast-day { box-sizing: border-box; flex: 0 0 120px; min-width: 0; height: 220px; display: flex; align-items: center; flex-direction: column; gap: 0; margin: 0; padding: 14px 10px 12px; background: var(--surface-soft); color: var(--ink); border: 1px solid var(--line); border-radius: 14px; scroll-snap-align: start; font: inherit; cursor: pointer; transition: border-color .18s ease, background .18s ease, transform .18s ease; }
 .forecast-day.is-today .day-date b { color: var(--ocean); }
-.forecast-day:hover, .forecast-day.is-selected { border-color: var(--ocean); background: color-mix(in srgb, var(--ocean) 8%, var(--surface-soft)); }
+.forecast-scroll::-webkit-scrollbar { display: none; }
+.forecast-day.is-selected { border-color: var(--ocean); background: color-mix(in srgb, var(--ocean) 16%, var(--surface-soft)); box-shadow: inset 0 0 0 1px var(--ocean), 0 3px 12px color-mix(in srgb, var(--ocean) 12%, transparent); }
+.forecast-day.is-selected .day-date b { color: var(--ocean); }
+.forecast-day:hover:not(.is-selected) { border-color: var(--ocean); background: color-mix(in srgb, var(--ocean) 8%, var(--surface-soft)); }
 .forecast-day:hover .day-icon { transform: translateY(-2px); }
 .forecast-day:active { transform: scale(.97); }
 .day-date { display: flex; align-items: center; flex-direction: column; gap: 4px; }
-.day-date b { font-size: var(--text-label); } .day-date small { color: var(--muted); font-size: var(--text-caption); }
+.day-date b { font-size: 14px; line-height: 1.4; } .day-date small { color: var(--muted); font-size: 13px; line-height: 1.4; }
 .is-today .day-date b { color: var(--ocean); }
-.day-icon { width: 40px; height: 40px; padding: 4px; box-sizing: border-box; margin: 8px 0 5px; transition: transform .18s ease; }
-.condition-label { font-size: var(--text-caption); text-align: center; line-height: 1.3; min-height: 28px; display: grid; place-items: center; }
-.tile-temperatures { display: flex; align-items: baseline; justify-content: center; gap: 8px; margin-top: 5px; font-size: 13px; }
-.tile-temperatures > span { color: var(--muted); font-size: var(--text-caption); }
-.tile-rain { display: flex; align-items: center; justify-content: center; gap: 3px; margin-top: 6px; font-size: var(--text-caption); color: var(--muted); white-space: nowrap; }
+.day-icon { width: 46px; height: 46px; padding: 5px; box-sizing: border-box; margin: 10px 0 8px; transition: transform .18s ease; }
+.condition-label { width: 100%; min-width: 0; font-size: 13px; font-weight: 650; text-align: center; line-height: 1.4; height: 37px; flex-shrink: 0; display: grid; place-items: center; white-space: normal; overflow-wrap: anywhere; }
+.tile-temperatures { display: flex; align-items: baseline; justify-content: center; gap: 9px; margin-top: 6px; font-size: 16px; line-height: 1.4; }
+.tile-temperatures > span { color: var(--muted); font-size: 14px; }
+.tile-rain { display: flex; align-items: center; justify-content: center; gap: 4px; margin-top: auto; font-size: 12px; line-height: 1.5; color: var(--muted); white-space: nowrap; }
 .tile-rain svg { color: #42a7eb; }
 .selected-forecast { margin: 4px 0 10px; padding: 12px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface-soft); animation: detail-arrive .2s ease-out; }
 .selected-heading { display: flex; align-items: center; gap: 8px; justify-content: space-between; }
@@ -170,7 +173,7 @@ h3 { margin: 0; font-size: var(--text-label); }
 .selected-forecast dd { display: flex; align-items: center; flex-wrap: wrap; gap: 4px; margin: 4px 0 0; font-size: var(--text-caption); font-weight: 600; }
 .selected-forecast dd svg { color: var(--ocean); }
 @keyframes detail-arrive { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
-.forecast-note { margin: 2px 0 0; color: var(--muted); font-size: var(--text-caption); line-height: 1.6; }
+.forecast-note { margin: 2px 0 0; color: var(--muted); font-size: 12px; line-height: 1.6; }
 .message { margin: 14px 0; color: var(--muted); font-size: var(--text-label); line-height: 1.6; }
 button { margin-left: 8px; min-height: 44px; border: 0; background: transparent; color: var(--ocean); cursor: pointer; }
 footer { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 6px 12px; margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--line); font-size: var(--text-caption); line-height: 1.6; color: var(--muted); }

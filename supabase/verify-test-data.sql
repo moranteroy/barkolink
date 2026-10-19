@@ -6,6 +6,8 @@ declare actor text; role_name text; operation_name text; result jsonb; row recor
   args jsonb:=jsonb_build_object('sailingCode','TEST-BOARDING','code','TEST-BOARDING','offset',0,'pageSize',30,
     'audience','ALL','startAt',now()-interval '8 months','endAt',now()+interval '5 days');
 begin
+  -- Management-only rollback fixture models an MFA-verified staff session.
+  perform set_config('request.jwt.claims','{"aal":"aal2"}',true);
   -- This script must be rolled back, including these temporary test assignments.
   update public.app_user set assigned_port_id=(select origin_port_id from public.sailing where code='TEST-BOARDING') where role in ('TICKETING','BOARDING');
   for row in select * from (values
@@ -49,7 +51,9 @@ begin
   perform set_config('request.jwt.claim.sub',actor,true);
   perform public.barkolink_execute('ReserveSailing2',jsonb_build_object('sailingCode','TEST-EMPTY','reference','TEST-VERIFY-ROLLBACK',
     'accommodationId','eeeeeeee-0000-4000-8000-000000000201','passenger1Name','TEST New Adult','passenger1Type','REGULAR',
-    'passenger2Name','TEST New Student','passenger2Type','STUDENT'));
+    'passenger1BirthDate','1990-01-01','passenger1Sex','Male','passenger1Phone','09123456789','passenger1Nationality','Filipino',
+    'passenger2Name','TEST New Student','passenger2Type','STUDENT',
+    'passenger2BirthDate','2005-01-01','passenger2Sex','Male','passenger2Phone','09123456789','passenger2Nationality','Filipino'));
   select id into strict booking_id from public.booking where reference='TEST-CANCEL-READY';
   perform public.barkolink_execute('CancelMyBooking',jsonb_build_object('bookingId',booking_id));
   if not exists(select 1 from public.booking where id=booking_id and status='CANCELLED') then raise exception 'Test cancellation failed'; end if;

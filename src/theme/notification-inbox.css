@@ -1,0 +1,46 @@
+/* Shared by passenger, admin, ticketing and boarding inboxes. */
+:is(.notifications-page, .notification-inbox) .notification-toolbar {
+  display: grid;
+  grid-template-columns: 36px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+  padding: 12px;
+  border-radius: 14px;
+}
+:is(.notifications-page, .notification-inbox) .inbox-icon { width: 36px; height: 36px; font-size: 21px; border-radius: 10px; }
+:is(.notifications-page, .notification-inbox) .notification-toolbar strong { font-size: 14px; line-height: 1.5; }
+:is(.notifications-page, .notification-inbox) .notification-toolbar button { grid-column: auto; justify-self: end; min-height: 44px; padding: 8px 10px; font-size: 13px; white-space: nowrap; }
+:is(.notifications-page, .notification-inbox) .notification-view { margin-bottom: 8px; padding: 4px; }
+:is(.notifications-page, .notification-inbox) .notification-filters {
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scrollbar-width: thin;
+  scrollbar-color: var(--line) transparent;
+  gap: 8px;
+  margin-bottom: 10px;
+  padding: 3px 2px 6px;
+}
+:is(.notifications-page, .notification-inbox) .notification-filters button { flex: none; min-height: 44px; font-size: 13px; white-space: nowrap; }
+:is(.notifications-page, .notification-inbox) .notification-filters:focus-visible { outline: 2px solid var(--ocean); outline-offset: 2px; border-radius: 10px; }
+:is(.notifications-page, .notification-inbox) .notification-results { margin-bottom: 10px; font-size: 13px; }
+:is(.notifications-page, .notification-inbox) .notifications { gap: 10px; padding-bottom: 12px; }
+:is(.notifications-page, .notification-inbox) .notifications article { grid-template-columns: 32px minmax(0, 1fr); gap: 12px; padding: 16px; border-radius: 14px; }
+:is(.notifications-page, .notification-inbox) .notice-icon { width: 32px; height: 32px; font-size: 18px; border-radius: 9px; }
+:is(.notifications-page, .notification-inbox) .notice-copy h2 { font-size: 16px; line-height: 1.5; }
+:is(.notifications-page, .notification-inbox) .notice-copy p { margin: 6px 0 12px; font-size: 14px; line-height: 1.7; }
+:is(.notifications-page, .notification-inbox) .notice-eyebrow { font-size: 12px; gap: 10px; }
+:is(.notifications-page, .notification-inbox) .notice-eyebrow i { width: 7px; height: 7px; }
+:is(.notifications-page, .notification-inbox) .notice-footer button { margin-left: auto; min-height: 44px; font-size: 13px; }
+:is(.notifications-page, .notification-inbox) .notice-footer time { font-size: 12px; }
+.notifications-page .page-title { margin: 18px 0 14px; }
+.notifications-page .page-title h1 { font-size: 26px; }
+.notification-inbox .inbox-actions { gap: 8px; margin-bottom: 12px; }
+.notification-inbox .inbox-actions label { gap: 4px; }
+.notification-inbox .inbox-actions button, .notification-inbox .inbox-actions a { min-height: 44px; }
+@media (max-width: 380px) {
+  :is(.notifications-page, .notification-inbox) .notification-toolbar { grid-template-columns: minmax(0, 1fr) auto; gap: 8px; }
+  :is(.notifications-page, .notification-inbox) .inbox-icon { display: none; }
+  :is(.notifications-page, .notification-inbox) .notifications article { padding: 12px; gap: 8px; }
+}

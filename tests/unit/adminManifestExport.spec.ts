@@ -1,3 +1,4 @@
+import { clearToasts, toastMessages } from '../../src/composables/toast';
 import { Blob } from 'node:buffer'
 import { flushPromises, mount } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -8,7 +9,7 @@ vi.mock('../../src/services/session', () => ({ staffDatabase: {} }))
 vi.mock('../../src/services/database/staff', () => ({ adminExportManifest: mocks.query }))
 const sailing = { ...Object.fromEntries(reportNumberFields.map(k => [k,0])), code: 'TRP1', departureAt: '2026-10-02T08:00:00Z', status: 'SCHEDULED', originId: 'a', origin: 'A', destinationId: 'b', destination: 'B', vesselId: 'v', vessel: 'Ferry' } as ReportSailing
 const passenger = { fullName: 'Test Passenger', sex: 'F', passengerType: 'REGULAR', ticketStatus: 'ISSUED', boardedAt: null, booking: { reference: 'BOOK1', sailing: { code: 'TRP1' } } }
-beforeEach(() => {
+beforeEach(() => { clearToasts();
   vi.clearAllMocks()
   vi.stubGlobal('Blob',Blob)
   vi.stubGlobal('URL',{ createObjectURL: mocks.url.mockReturnValue('blob:manifest'), revokeObjectURL: mocks.revoke })
@@ -49,7 +50,8 @@ describe('manifest export in reports', () => {
     const csv = await (mocks.url.mock.calls[0][0] as Blob).text()
     expect(csv.split('\r\n')).toHaveLength(502)
     expect(csv).toContain('Last Passenger')
-    expect(wrapper.text()).toContain('Exported 501 passengers for TRP1.')
+    expect(toastMessages.value.filter(toast => toast.message === 'Exported 501 passengers for TRP1.')).toHaveLength(1)
+    expect(wrapper.text()).not.toContain('Exported 501 passengers for TRP1.')
     wrapper.unmount()
   })
   it('does not download an empty manifest and resets invalid sailing selections', async () => {

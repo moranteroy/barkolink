@@ -1,3 +1,4 @@
+import { clearToasts, toastMessages } from '../../src/composables/toast';
 import { mount, flushPromises } from '@vue/test-utils';
 import { beforeEach, expect, it, vi } from 'vitest';
 import DailySchedulesPanel from '../../src/components/admin/DailySchedulesPanel.vue';
@@ -7,7 +8,7 @@ vi.mock('../../src/services/session', () => ({ staffDatabase: {} }));
 vi.mock('../../src/services/database/dailySchedules', () => ({ dailySchedules: mocks.list, setDailyScheduleActive: mocks.toggle, saveDailySchedule: vi.fn() }));
 const schedule = { id:'daily-1', operator:'FastCat', routeId:'route-1', routeCode:'BTG-CAL', origin:'Batangas', destination:'Calapan', departureTimes:['09:00'], durationMinutes:120, isActive:true, routeActive:true };
 const data = (item = schedule) => ({ schedules:[item], routes:[{id:'route-1', code:'BTG-CAL', origin:'Batangas', destination:'Calapan', isActive:item.routeActive, operators:['FastCat']}] });
-beforeEach(() => { vi.setSystemTime(new Date('2026-10-11T00:00:00+08:00')); vi.clearAllMocks(); mocks.list.mockResolvedValue({data:data()}); mocks.toggle.mockImplementation(async (_client, _id, isActive) => ({data:data({...schedule,isActive})})); });
+beforeEach(() => { clearToasts(); vi.setSystemTime(new Date('2026-10-11T00:00:00+08:00')); vi.clearAllMocks(); mocks.list.mockResolvedValue({data:data()}); mocks.toggle.mockImplementation(async (_client, _id, isActive) => ({data:data({...schedule,isActive})})); });
 it('keeps a paused card visible under the Active filter until the filter changes', async () => {
   const wrapper = mount(DailySchedulesPanel); await flushPromises();
   await wrapper.get('[aria-label="Schedule status"]').setValue('ACTIVE');
@@ -19,7 +20,8 @@ it('keeps a paused card visible under the Active filter until the filter changes
   await resume.trigger('click'); await flushPromises();
   expect(mocks.toggle).toHaveBeenLastCalledWith({},'daily-1',true);
   expect(wrapper.findAll('article')).toHaveLength(1);
-  expect(wrapper.text()).toContain('Daily schedule resumed.');
+  expect(toastMessages.value.filter(toast => toast.message === 'Daily schedule resumed.')).toHaveLength(1);
+  expect(wrapper.text()).not.toContain('Daily schedule resumed.');
   wrapper.unmount();
 });
 it('explains why an inactive route cannot resume', async () => {

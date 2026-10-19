@@ -1,7 +1,7 @@
 <template>
   <section class="records-grid" :class="{ 'dense-grid': density === 'compact' }" :aria-label="title">
     <div class="grid-tools">
-      <div class="grid-summary"><Badge>{{ visibleCount }} of {{ rows.length }} records</Badge><span>Column filters and sorting apply to this page. Use the search above to find records.</span></div>
+      <div class="grid-summary"><Badge>{{ visibleCount }} of {{ rows.length }} records</Badge><details class="grid-help"><summary>Table help</summary><p>Column filters and sorting apply to this page. Use the search above to find records.</p></details></div>
       <div>
         <DropdownMenu>
           <DropdownMenuTrigger as-child><Button variant="outline" :disabled="!compact && !api"><Columns3 />Columns</Button></DropdownMenuTrigger>
@@ -211,7 +211,7 @@ const gridTheme = themeQuartz.withParams({
   spacing: 6,
 });
 const gridHeight = computed(
-  () => `${Math.min(props.maxGridHeight, Math.max(250, props.rows.length * (props.density === "compact" ? 44 : 60) + 48))}px`,
+  () => `${Math.min(props.maxGridHeight, Math.max(props.density === "compact" ? 150 : 250, props.rows.length * (props.density === "compact" ? 44 : 60) + 48))}px`,
 );
 const defaultColDef: ColDef<RecordGridRow> = {
   sortable: true,
@@ -338,14 +338,19 @@ defineExpose({ getApi: () => api.value, resetView, fitColumns });
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  padding: 12px 18px;
+  padding: 8px 16px;
   color: var(--muted);
   font-size: var(--text-caption);
 }
 .grid-tools > div {
   display: flex;
+  flex-wrap: wrap;
   gap: 8px;
+  min-width: 0;
 }
+.grid-help { font-size: var(--text-caption); max-width: 310px; }
+.grid-help summary { cursor: pointer; padding: 6px 0; color: var(--muted); }
+.grid-help p { margin: 4px 0; line-height: 1.5; }
 .grid-tools button {
   padding: 7px 10px;
   border: 1px solid var(--line);
@@ -418,9 +423,7 @@ defineExpose({ getApi: () => api.value, resetView, fitColumns });
   .grid-tools {
     padding: 12px 16px;
   }
-  .grid-tools span {
-    display: none;
-  }
+  .grid-tools button { min-height: 44px; }
 }
 .grid-summary { align-items: center; flex-wrap: wrap; }
 .grid-summary [data-slot="badge"] { display: inline-flex; }

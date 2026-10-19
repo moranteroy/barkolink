@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import ts from "typescript";
 
-let handler, verifiedUser, lastCreate, creates, lastProfile, portExists, profileFails, deletes;
+let handler, verifiedUser, lastCreate, creates, lastProfile, portExists, profileFails, deletes, aal, allowed, mfaRequired;
 const previousDeno = globalThis.Deno;
 const previousFactory = globalThis.__barkolinkCreateClient;
 describe("Supabase account Edge Function", () => {
@@ -15,7 +15,9 @@ describe("Supabase account Edge Function", () => {
       },
     };
     globalThis.__barkolinkCreateClient = () => ({
+      rpc: async (operation) => ({ data: operation==='admin_mfa_requirement' ? mfaRequired : allowed, error: null }),
       auth: {
+        getClaims: async () => ({data:{claims:{sub:verifiedUser.id,aal}},error:null}),
         getUser: async (token) => ({
           data: { user: token === "valid-token" ? verifiedUser : null },
           error: null,
@@ -41,8 +43,10 @@ describe("Supabase account Edge Function", () => {
         return query;
       },
     });
+    const security = 'data:text/javascript;base64,' + Buffer.from(ts.transpileModule(fs.readFileSync('supabase/functions/_shared/security.ts','utf8'),{compilerOptions:{target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.ESNext}}).outputText).toString('base64');
     const source = fs
       .readFileSync("supabase/functions/manage-account/index.ts", "utf8")
+      .replace("'../_shared/security.ts'", JSON.stringify(security))
       .replace(
         /import\s*\{\s*createClient\s*\}\s*from\s*(['"])npm:[^'"]+\1\s*;?/,
         "const createClient = globalThis.__barkolinkCreateClient",
@@ -63,6 +67,7 @@ describe("Supabase account Edge Function", () => {
   });
   beforeEach(() => {
     verifiedUser = { id: "admin-user", app_metadata: { role: "ADMIN" } };
+    aal='aal2';allowed=true;mfaRequired=true;
     lastCreate = null;
     creates = 0;
     lastProfile = null; portExists = true; profileFails = false; deletes = 0;
@@ -80,6 +85,21 @@ describe("Supabase account Edge Function", () => {
     assert.equal((await handler(request({}, null))).status, 401);
     assert.equal((await handler(request({}, "invalid-token"))).status, 401);
     assert.equal(creates, 0);
+  });
+  it('requires verified MFA and enforces quota before account creation',async()=>{
+    aal='aal1';assert.equal((await handler(request({action:'generateTemporaryPassword'}))).status,403);
+    aal='aal2';allowed=false;assert.equal((await handler(request({action:'generateTemporaryPassword'}))).status,429);assert.equal(creates,0);
+  });
+  it('allows an administrator with 2FA off without skipping request protection',async()=>{
+    aal='aal1';mfaRequired=false;assert.equal((await handler(request({action:'generateTemporaryPassword'}))).status,200);
+    allowed=false;assert.equal((await handler(request({action:'generateTemporaryPassword'}))).status,429);
+  });
+  it('rejects coercible objects, invalid phone numbers and oversized bodies',async()=>{
+    const input={fullName:'Valid Name',email:'valid@example.invalid',password:'Password123',role:'TICKETING'};
+    for(const changed of [{fullName:{}},{phone:'123'},{email:[]},{fullName:'bad\u0001name'}]) {
+      assert.equal((await handler(request({action:'createManagedUser',input:{...input,...changed}}))).status,400);
+    }
+    assert.equal((await handler(request({padding:'x'.repeat(17000)}))).status,413);assert.equal(creates,0);
   });
   it("rejects non-admin callers even if they send an ADMIN role", async () => {
     verifiedUser = {

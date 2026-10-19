@@ -116,7 +116,7 @@
                   :columns="gridColumns"
                   :rows="gridRows"
                   :loading="loading"
-                  :density="['passengers', 'trips'].includes(section) ? 'compact' : 'comfortable'"
+                  density="compact"
                   ><template #cell="{ row, index, value }"
                     ><router-link
                       v-if="

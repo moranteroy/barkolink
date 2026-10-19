@@ -8,98 +8,9 @@
           aria-label="Close menu"
           @click="menuOpen = false"
         ></button>
-        <aside id="admin-sidebar" class="sidebar" :class="{ open: menuOpen }">
-          <BrandMark />
-          <nav aria-label="Admin navigation">
-            <div class="nav-group port-display-shortcut">
-              <router-link to="/port-display" target="_blank" rel="noopener" @click="menuOpen = false">
-                <Monitor class="app-icon" :size="20" aria-hidden="true" />Port Display (TV)
-              </router-link>
-            </div>
-            <div
-              v-for="group in navigation"
-              :key="group.label"
-              class="nav-group"
-            >
-              <button
-                class="nav-group-toggle"
-                :id="`admin-nav-toggle-${group.items[0].key}`"
-                type="button"
-                :aria-expanded="expandedNavigation === group.label"
-                :aria-controls="`admin-nav-${group.items[0].key}`"
-                @click="expandedNavigation = expandedNavigation === group.label ? '' : group.label"
-              >
-                <span class="nav-group-label">
-                  <AppIcon :icon="group.icon" aria-hidden="true" />
-                  {{ group.label }}
-                </span>
-                <AppIcon class="nav-group-chevron" :icon="chevronDownOutline" aria-hidden="true" />
-              </button>
-              <div
-                v-show="expandedNavigation === group.label"
-                :id="`admin-nav-${group.items[0].key}`"
-                class="nav-group-items"
-                role="region"
-                :aria-labelledby="`admin-nav-toggle-${group.items[0].key}`"
-              >
-              <router-link
-                v-for="item in group.items"
-                :key="item.key"
-                :to="item.key === 'dashboard' ? '/admin' : `/admin/${item.key}`"
-                :class="{ active: navigationSection === item.key }"
-                :aria-current="navigationSection === item.key ? 'page' : undefined"
-                @click="menuOpen = false"
-                ><AppIcon :icon="item.icon" aria-hidden="true" />{{
-                  item.label
-                }}</router-link
-              >
-              </div>
-            </div>
-          </nav>
-        </aside>
+        <AdminSidebar :menu-open="menuOpen" :section="section" @navigate="menuOpen = false" />
         <div class="workspace">
-          <header class="topbar glass-toolbar">
-            <button
-              class="menu-button"
-              :aria-expanded="menuOpen"
-              aria-controls="admin-sidebar"
-              aria-label="Open menu"
-              @click="menuOpen = true"
-            >
-              <AppIcon :icon="menuOutline" />
-            </button>
-            <div class="admin-breadcrumbs">
-              <strong>Admin workspace</strong>
-            </div>
-            <form
-              class="admin-global-search"
-              @submit.prevent="
-                router.push({
-                  path: '/admin/bookings',
-                  query: { search: globalSearch },
-                })
-              "
-            >
-              <AppIcon :icon="searchOutline" /><input
-                v-model.trim="globalSearch"
-                type="search"
-                placeholder="Search bookings..."
-                aria-label="Search all bookings"
-              />
-            </form>
-            <div class="admin-header-actions">
-            <router-link
-              to="/admin/inbox"
-              :aria-current="section === 'inbox' ? 'page' : undefined"
-              class="admin-bell"
-              :aria-label="notificationUnreadCount ? `Notifications, ${notificationUnreadCount} unread` : 'Notifications'"
-              title="Notifications"
-              ><AppIcon :icon="notificationsOutline" aria-hidden="true" />
-              <span v-if="notificationUnreadCount" class="admin-unread-badge" aria-hidden="true">{{ notificationUnreadCount > 99 ? '99+' : notificationUnreadCount }}</span>
-            </router-link>
-            <AdminAccountMenu />
-            </div>
-          </header>
+          <AdminWorkspaceHeader :menu-open="menuOpen" :section="section" @open-menu="menuOpen = true" />
           <main class="content" :class="{ 'staff-port-content': section === 'staff-ports' }">
             <p v-if="route.query.returnTo === '/admin/trips'" class="setup-guidance">Your trip draft is saved. <router-link to="/admin/trips">Return to the trip draft</router-link> after completing setup.</p>
             <div class="heading">
@@ -551,17 +462,19 @@
                   </option>
                 </select>
               </div>
-              <label v-if="['bookings','trips','users','passengers','check-in','boarding','manifest'].includes(section) && (section !== 'trips' || tripTab === 'trips')" class="directory-global-sort">Sort all matching records<select v-model="directorySort"><option value="">Default order</option><template v-if="section === 'bookings'"><option value="reference:asc">Reference: A–Z</option><option value="amount:desc">Amount: highest first</option><option value="departure:asc">Departure: earliest first</option></template><template v-else-if="section === 'trips'"><option value="departure:asc">Departure: earliest first</option><option value="departure:desc">Departure: latest first</option><option value="name:asc">Vessel: A–Z</option></template><template v-else><option value="name:asc">Name: A–Z</option><option value="name:desc">Name: Z–A</option></template></select><small>Orders every matching record before pagination. Column controls below only change this page.</small></label>
+              <label v-if="['bookings','trips','users','passengers','check-in','boarding','manifest'].includes(section) && (section !== 'trips' || tripTab === 'trips')" class="directory-global-sort"><span>Sort all matching records</span><select v-model="directorySort"><option value="">Default order</option><template v-if="section === 'bookings'"><option value="reference:asc">Reference: A–Z</option><option value="amount:desc">Amount: highest first</option><option value="departure:asc">Departure: earliest first</option></template><template v-else-if="section === 'trips'"><option value="departure:asc">Departure: earliest first</option><option value="departure:desc">Departure: latest first</option><option value="name:asc">Vessel: A–Z</option></template><template v-else><option value="name:asc">Name: A–Z</option><option value="name:desc">Name: Z–A</option></template></select><small>Orders every matching record before pagination. Column controls below only change this page.</small></label>
               <p v-if="section === 'check-in'" class="check-in-guidance"><AppIcon :icon="informationCircleOutline" aria-hidden="true" /><span>Check in issued tickets for paid, confirmed bookings. Choose a sailing to focus on its passengers.</span></p>
               <VesselTrackingPanel v-if="section === 'vessels'" ref="childEditorRef" />
-              <div v-if="section === 'trips'" class="workspace-tabs" role="group" aria-label="Trip management view">
+              <div v-if="section === 'trips'" class="trip-view-tools">
+              <div class="workspace-tabs" role="group" aria-label="Trip management view">
                 <button type="button" :aria-pressed="tripTab === 'trips'" @click="tripTab = 'trips'">Actual trips</button>
                 <button type="button" :aria-pressed="tripTab === 'templates'" @click="tripTab = 'templates'">Daily schedules</button>
               </div>
+              <details v-if="section === 'trips' && tripTab === 'trips'" class="trip-status-help"><summary>How automatic trip status works</summary><p>Automatic status follows each trip's confirmed boarding time and scheduled arrival. Updates run every minute. Trips without a confirmed boarding time are flagged for review. Admin controls Delayed and Cancelled; update the schedule before resuming a delayed trip.</p></details>
+              <details v-if="section === 'trips' && tripTab === 'trips'" class="admin-trip-weather"><summary><span><AppIcon :icon="boatOutline" aria-hidden="true" /> Port weather</span><span>Choose a sailing to view its forecast</span></summary><WeatherTripPicker :trips="sailings" /></details>
+              </div>
               <DailySchedulesPanel ref="childEditorRef" v-if="section === 'trips'" v-show="tripTab === 'templates'" :disabled="loading || !!busy" @plan="planPublishedDeparture" />
               <p v-if="['ports', 'vessels'].includes(section) && statusFilter === 'INACTIVE'" class="archive-guidance">Archived records remain linked to past trips and tickets. They are unavailable for new trips.</p>
-              <p v-if="section === 'trips' && tripTab === 'trips'" class="trip-field-hint">Automatic status follows each trip's confirmed boarding time and scheduled arrival. Updates run every minute. Trips without a confirmed boarding time are flagged for review. Admin controls Delayed and Cancelled; update the schedule before resuming a delayed trip.</p>
-              <details v-if="section === 'trips' && tripTab === 'trips'" class="admin-trip-weather"><summary><span><AppIcon :icon="boatOutline" aria-hidden="true" /> Port weather</span><span>Choose a sailing to view its forecast</span></summary><WeatherTripPicker :trips="sailings" /></details>
               <section v-show="section !== 'trips' || tripTab === 'trips'" class="panel" :class="{ 'booking-records-panel': ['bookings', 'passengers', 'trips', 'ports', 'vessels', 'check-in', 'boarding', 'manifest', 'users'].includes(section), 'passenger-records-panel': section === 'passengers', 'trip-records-panel': section === 'trips', 'boarding-records-panel': section === 'boarding', 'manifest-records-panel': section === 'manifest' }">
                 <div class="panel-head">
                   <div>
@@ -1347,6 +1260,9 @@
 </template>
 
 <script setup lang="ts">
+import AdminSidebar from '../../components/admin/AdminSidebar.vue';
+import AdminWorkspaceHeader from '../../components/admin/AdminWorkspaceHeader.vue';
+import { adminNavigation } from '../../data/adminNavigation';
 import { notifyError, notifySuccess, notify } from '@/composables/toast';
 import { orderedDirectory } from "../../data/directoryOrdering";
 import { useFieldErrors } from "../../composables/fieldErrors";
@@ -1527,7 +1443,7 @@ const menuOpen = ref(false),
   modal = ref(""),
   formError = ref(""),
   editingId = ref("");
-const globalSearch = ref("");
+
 const search = ref(String(route.query.search || "")),
   statusFilter = ref(String(route.query.status || (["ports", "vessels"].includes(section.value) ? "ACTIVE" : "ALL"))),
   sailingFilter = ref(String(route.query.sailing || "ALL"));
@@ -1585,96 +1501,9 @@ const bookings = ref<StaffBookingsData["bookings"]>([]),
   vessels = ref<AdminVesselsData["vessels"]>([]),
   stats = ref<AdminDashboardStatsData | null>(null);
 const sailingOptions = ref<AdminSailingsData["sailings"]>([]);
-const navigation = [
-  {
-    label: "OVERVIEW",
-    icon: homeOutline,
-    items: [{ key: "dashboard", label: "Dashboard", icon: gridOutline }],
-  },
-  {
-    label: "WORKSPACE",
-    icon: briefcaseOutline,
-    items: [
-      { key: "bookings", label: "Bookings", icon: ticketOutline },
-      { key: "passengers", label: "Passengers", icon: peopleOutline },
-    ],
-  },
-  {
-    label: "FERRY OPERATIONS",
-    icon: compassOutline,
-    items: [
-      { key: "trips", label: "Trips & schedules", icon: calendarOutline },
-      {
-        key: "trip-operations",
-        label: "Trip operations",
-        icon: optionsOutline,
-      },
-    ],
-  },
-  {
-    label: "FLEET SETUP",
-    icon: constructOutline,
-    items: [
-      { key: "ports", label: "Ports", icon: locationOutline },
-      { key: "routes", label: "Routes", icon: navigateOutline },
-      { key: "vessels", label: "Vessels", icon: boatOutline },
-      { key: "accommodation", label: "Accommodation", icon: bedOutline },
-    ],
-  },
-  {
-    label: "PRICING & PROMOS",
-    icon: pricetagsOutline,
-    items: [
-      { key: "fares", label: "Fares & discounts", icon: pricetagsOutline },
-      { key: "vouchers", label: "Vouchers", icon: giftOutline },
-    ],
-  },
-  {
-    label: "PASSENGER OPERATIONS",
-    icon: walkOutline,
-    items: [
-      { key: "check-in", label: "Check-in", icon: scanOutline },
-      { key: "boarding", label: "Boarding", icon: enterOutline },
-      { key: "manifest", label: "Passenger manifest", icon: clipboardOutline },
-      { key: "no-shows", label: "No-shows", icon: personRemoveOutline },
-    ],
-  },
-  {
-    label: "COMMUNICATION",
-    icon: chatbubblesOutline,
-    items: [
-      { key: "advisories", label: "Travel advisories", icon: megaphoneOutline },
-      {
-        key: "notifications",
-        label: "Broadcasts",
-        icon: notificationsOutline,
-      },
-    ],
-  },
-  {
-    label: "MANAGEMENT",
-    icon: businessOutline,
-    items: [
-      { key: "reports", label: "Reports", icon: documentTextOutline },
-      { key: "users", label: "Users", icon: peopleCircleOutline },
-      { key: "staff-ports", label: "Staff port assignments", icon: idCardOutline },
-      { key: "audit-logs", label: "Audit logs", icon: receiptOutline },
-      {
-        key: "operations",
-        label: "Operations settings",
-        icon: settingsOutline,
-      },
-    ],
-  },
-];
-const expandedNavigation = ref("");
-const navigationSection = computed(() => section.value === 'analytics' ? 'reports' : section.value);
-const navigationGroupFor = (value: string) => navigation.find(group =>
+const navigationGroupFor = (value: string) => adminNavigation.find(group =>
   group.items.some(item => item.key === (value === 'analytics' ? 'reports' : value))
 )?.label;
-watch(section, (value) => {
-  expandedNavigation.value = navigationGroupFor(value) || "OVERVIEW";
-}, { immediate: true });
 const recordPage = ref(0);
 const recordTotal = ref(0);
 const pageSize = 30;
@@ -2363,7 +2192,7 @@ async function saveFareSettings() {
     await adminSaveFareSettings(dc, { vesselId, ...settings });
     vesselFareSettings.value[vesselId] = settings;
     fareDrafts.value[vesselId] = settings;
-    notice.value = notifySuccess(`Fares & discounts saved for ${selectedFareVessel.value.name}. New trips for this vessel will use these rates.`);
+    notifySuccess(`Fares & discounts saved for ${selectedFareVessel.value.name}. New trips for this vessel will use these rates.`);
   } catch (cause) {
     error.value = notifyError(databaseRequestError(cause, "Could not save fare settings."));
   } finally {
@@ -2539,7 +2368,7 @@ async function mutate(label: string, work: () => Promise<unknown>) {
   try {
     await work();
     modal.value = "";
-    notice.value = notifySuccess("Saved successfully.");
+    notifySuccess("Saved successfully.");
     if (staffDatabase) clearReferenceCache(staffDatabase);
     await loadData();
   } catch (e) {
@@ -2793,12 +2622,12 @@ async function saveTrip() {
         pwdFare: tripForm.pwdFare,
         pregnantFare: tripForm.pregnantFare,
       });
-      notice.value = notifySuccess(`${result.data.sailing_insert.code} created.`);
+      notifySuccess(`${result.data.sailing_insert.code} created.`);
     } else if (tripHasBookings.value) {
       const result = await adminRescheduleSailing(dc, schedule);
       if (!result.data.sailing_update)
         throw new Error("The sailing was not updated.");
-      notice.value = notifySuccess(`${schedule.code} rescheduled. ${result.data.notified} account(s) notified.`);
+      notifySuccess(`${schedule.code} rescheduled. ${result.data.notified} account(s) notified.`);
     } else {
       const result = await adminUpdateUnbookedSailing(dc, {
         ...schedule,
@@ -2814,7 +2643,7 @@ async function saveTrip() {
       });
       if (!result.data.sailing_update)
         throw new Error("The sailing was not updated.");
-      notice.value = notifySuccess(`${schedule.code} updated.`);
+      notifySuccess(`${schedule.code} updated.`);
     }
     modal.value = "";
     await loadData();
@@ -2888,7 +2717,7 @@ async function changeSailingStatus(
     });
     sailings.value = refreshed.data.sailings;
     await loadData();
-    notice.value = notifySuccess(`${s.code} status changed to ${status}. ${result.data.notified ?? 0} account(s) notified.`);
+    notifySuccess(`${s.code} status changed to ${status}. ${result.data.notified ?? 0} account(s) notified.`);
   } catch (e) {
     select.value = s.status;
     error.value = notifyError(databaseRequestError(e, "Could not update the trip."));
@@ -2924,7 +2753,7 @@ async function processTicket(
     if (action === "check-in") await checkInTicket(dc, { passengerId: p.id });
     else await boardTicket(dc, { passengerId: p.id });
     await loadData();
-    notice.value = notifySuccess(`${p.fullName} ${action === "check-in" ? "checked in" : "boarded"} for ${p.booking.sailing.code}.`);
+    notifySuccess(`${p.fullName} ${action === "check-in" ? "checked in" : "boarded"} for ${p.booking.sailing.code}.`);
   } catch (cause) {
     const message = ticketRequestError(
       cause,
@@ -5696,6 +5525,20 @@ td strong {
 </style>
 
 <style scoped>
-.directory-global-sort { display:grid; gap:8px; max-width:420px; margin:12px 0 20px; font-size:var(--text-label); }.directory-global-sort select { min-height:44px; padding:10px; border:1px solid var(--line); border-radius:var(--button-radius); background:var(--surface); color:var(--ink); font:inherit; }.directory-global-sort small { color:var(--muted); line-height:1.5; }
+.trip-view-tools { display:flex; align-items:flex-start; flex-wrap:wrap; gap:8px 12px; margin:12px 0 14px; }
+.trip-view-tools .workspace-tabs { flex:none; }
+.trip-view-tools .trip-status-help { flex:1 1 220px; margin:0; }
+.trip-view-tools .trip-status-help summary { padding:16px 0; }
+.trip-view-tools .admin-trip-weather { flex:1 1 240px; margin:0; }
+.trip-view-tools .admin-trip-weather summary > span:last-child { display:none; }
+.trip-view-tools > details[open] { flex-basis:100%; order:2; }
+.trip-status-help { margin:10px 0; color:var(--muted); font-size:var(--text-caption); line-height:1.5; }
+.trip-status-help summary { cursor:pointer; color:var(--ocean); padding:6px 0; }
+.trip-status-help p { margin:8px 0; max-width:850px; }
+.directory-global-sort { display:flex; align-items:center; flex-wrap:wrap; gap:8px 12px; margin:10px 0 14px; font-size:var(--text-label); }
+.directory-global-sort > span { font-weight:600; }
+.directory-global-sort select { width:230px; min-height:40px; padding:8px 10px; border:1px solid var(--line); border-radius:var(--button-radius); background:var(--surface); color:var(--ink); font:inherit; }
+.directory-global-sort small { flex:1 1 240px; max-width:380px; color:var(--muted); font-size:var(--text-caption); line-height:1.5; }
+@media(max-width:700px) { .directory-global-sort { display:grid; grid-template-columns:minmax(0,1fr); gap:6px; } .directory-global-sort select { width:100%; min-height:44px; } }
 @media(max-width:480px){ .heading .heading-actions { flex-wrap:wrap; }.heading .heading-actions > [data-slot="button"] { flex:1 1 calc(50% - 8px); min-width:0; white-space:normal; } }
 </style>

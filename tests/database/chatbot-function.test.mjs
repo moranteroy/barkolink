@@ -91,4 +91,12 @@ describe('database-backed multilingual chatbot',()=>{
     }
     assert.equal((await shared.readTool('get_advisories',{},rpc,'2026-10-08T00:00:00Z')).links[0].path,'/home#travel-advisories');
   });
+  it('limits guide context to the requested topic and preserves saved QR validity rules',async()=>{
+    const data=await shared.readTool('get_help',{topic:'boarding'},async()=>{throw new Error('No private read needed');},'2026-10-15T00:00:00Z');
+    assert.deepEqual(Object.keys(data.guide),['boarding']);
+    assert.equal(data.records.length,1);assert.equal(data.records[0].topic,'boarding');
+    assert.match(data.records[0].instructions,/screenshots are not automatically invalid/);
+    assert.match(data.records[0].instructions,/live ticket/);
+    assert.doesNotMatch(JSON.stringify(data.guide),/ticketing desk/);
+  });
 });

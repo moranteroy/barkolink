@@ -95,7 +95,7 @@ async function load() {
 async function save() {
   if (!staffDatabase || !canSave.value) return;
   error.value = ''; notice.value = ''; saving.value = true;
-  try { policies.value = (await saveSailingStatusPolicy(staffDatabase, { operator: operator.value, boardingLeadMinutes: form.autoBoarding ? form.minutes : null, boardingTimeSource: form.autoBoarding ? form.source.trim() : null, autoComplete: form.autoComplete })).data.policies; selectPolicy(); notice.value = notifySuccess('Sailing status configuration saved.'); }
+  try { policies.value = (await saveSailingStatusPolicy(staffDatabase, { operator: operator.value, boardingLeadMinutes: form.autoBoarding ? form.minutes : null, boardingTimeSource: form.autoBoarding ? form.source.trim() : null, autoComplete: form.autoComplete })).data.policies; selectPolicy(); notifySuccess('Sailing status configuration saved.'); }
   catch (e) { error.value = notifyError(databaseRequestError(e, 'Could not save status configuration.')); }
   finally { saving.value = false; }
 }

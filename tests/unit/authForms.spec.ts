@@ -51,6 +51,7 @@ describe('Account forms', () => {
     mocks.resend.mockResolvedValue(undefined)
     const wrapper = mount(AuthPage)
     await wrapper.get('#email').setValue('test@example.invalid')
+    await wrapper.get('#password').setValue('Password123!')
     await wrapper.get('form').trigger('submit'); await flushPromises()
     expect(mocks.resend).toHaveBeenCalledWith('test@example.invalid', 'signup')
     expect(mocks.replace).toHaveBeenCalledWith({ path: '/verify-email', query: { purpose: 'signup' } })
@@ -61,6 +62,8 @@ describe('Account forms', () => {
     mocks.signIn.mockResolvedValue({ user: { getRoleSession: async () => ({ claims: { role: 'PASSENGER' } }) } })
     mocks.profile.mockResolvedValue({ data: { user: { role: 'PASSENGER' } } })
     const wrapper = mount(AuthPage)
+    await wrapper.get('#email').setValue('test@example.invalid')
+    await wrapper.get('#password').setValue('Password123!')
     await wrapper.get('form').trigger('submit'); await flushPromises()
     expect(mocks.replace).toHaveBeenCalledWith('/home')
     wrapper.unmount()
@@ -68,6 +71,8 @@ describe('Account forms', () => {
   it('restores the submit button after invalid credentials', async () => {
     mocks.signIn.mockRejectedValue({ code: 'invalid_credentials' })
     const wrapper = mount(AuthPage)
+    await wrapper.get('#email').setValue('test@example.invalid')
+    await wrapper.get('#password').setValue('Password123!')
     await wrapper.get('form').trigger('submit')
     await flushPromises()
     expect(wrapper.get('[role="alert"]').text()).toContain('do not match')
@@ -77,6 +82,8 @@ describe('Account forms', () => {
   it('requires privacy acknowledgement before registration', async () => {
     mocks.route.path = '/register'
     const wrapper = mount(AuthPage)
+    await wrapper.get('#full-name').setValue('Test Passenger')
+    await wrapper.get('#email').setValue('test@example.invalid')
     await wrapper.get('#password').setValue('Password123!')
     await wrapper.get('#confirm-password').setValue('Password123!')
     await wrapper.get('form').trigger('submit')
@@ -88,6 +95,7 @@ describe('Account forms', () => {
     mocks.route.path = '/register'
     mocks.register.mockResolvedValue({ user: { email: 'test@example.invalid' }, session: null })
     const wrapper = mount(AuthPage)
+    await wrapper.get('#full-name').setValue('Test Passenger')
     await wrapper.get('#email').setValue('test@example.invalid')
     await wrapper.get('#password').setValue('Password123!')
     await wrapper.get('#confirm-password').setValue('Password123!')

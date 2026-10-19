@@ -187,6 +187,7 @@
 </template>
 
 <script setup lang="ts">
+import { safeDestination, validEmail, validName } from '../../data/securityValidation';
 import { notifyError, notifySuccess } from '@/composables/toast';
 import BackIcon from "@/components/ui/icon/BackIcon.vue";
 import { computed, ref, watch } from "vue";
@@ -276,6 +277,11 @@ async function resetPassword() {
 async function submit() {
   if (submitting.value || resetting.value) return;
   errorMessage.value = "";
+  if (!validEmail(email.value) || !password.value || password.value.length > 128 ||
+      (isRegister.value && (!validName(fullName.value) || password.value.length < 8))) {
+    errorMessage.value = 'Enter a valid name, email, and password. Registration passwords must use 8 to 128 characters.';
+    return;
+  }
   if (isRegister.value && password.value !== confirmPassword.value) {
     errorMessage.value = "Passwords do not match. Please check and try again.";
     return;
@@ -345,7 +351,7 @@ async function submit() {
     stage = "navigation";
     // A completed sign-in starts a new navigation stack. Ionic treats replace as
     // a root transition, so the passenger frame can resize before /home renders.
-    const requestedDestination = String(route.query.redirect || defaultDestination);
+    const requestedDestination = safeDestination(route.query.redirect, defaultDestination);
     await router.replace(requestedDestination.split('?')[0] === '/verify-email' ? defaultDestination : requestedDestination);
   } catch (error) {
     const code = (error as { code?: string }).code;

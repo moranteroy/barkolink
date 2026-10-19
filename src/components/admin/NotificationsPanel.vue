@@ -192,7 +192,7 @@ async function send() {
     )
       return;
     const r = await sendNotification(staffDatabase, { ...args, requestId });
-    notice.value = notifySuccess(`Notification sent to ${r.data.sent} accounts.`);
+    notifySuccess(`Notification sent to ${r.data.sent} accounts.`);
     busy.value = false; editing.value = false;
     Object.assign(draft, { title: "", message: "", audience: "PASSENGERS", sailingCode: "" });
     page.value = 0;

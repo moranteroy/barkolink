@@ -263,7 +263,7 @@ onIonViewWillEnter(() => {
 onIonViewDidLeave(() => { boardActive.value = false; });
 </script>
 <style scoped>
-.home-content { --background: var(--page-background); }
+.home-content { --background: var(--page-background); --padding-bottom: 24px; }
 #loyalty-rewards, #travel-advisories, #weather-outlook, #frequent-routes { scroll-margin-top: 16px; }
 #loyalty-rewards:target, #travel-advisories:target, #weather-outlook:target, #frequent-routes:target { outline: 2px solid var(--ocean); outline-offset: 4px; border-radius: 16px; }
 .page-shell { display: block; width: 100%; max-width: 680px; margin: 0 auto; padding: 20px 16px calc(108px + env(safe-area-inset-bottom)); color: var(--ink); }

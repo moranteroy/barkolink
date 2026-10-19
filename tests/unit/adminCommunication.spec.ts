@@ -1,3 +1,4 @@
+import { clearToasts, toastMessages } from '../../src/composables/toast';
 import { flushPromises, mount } from '@vue/test-utils';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import AdvisoriesPanel from '../../src/components/admin/AdvisoriesPanel.vue';
@@ -15,7 +16,7 @@ vi.mock('../../src/components/shared/RecordsGrid.vue', () => ({ default: {
   props: ['rows', 'columns'],
   template: '<div class="records-grid"><div v-for="row in rows" :key="row.key"><slot name="cell" v-for="(value, index) in row.cells" :row="row" :value="value" :index="index" /></div></div>',
 } }));
-beforeEach(() => {
+beforeEach(() => { clearToasts();
   vi.clearAllMocks();
   mocks.advisories.mockResolvedValue({ data: { advisories: [] } });
   mocks.sailings.mockResolvedValue({ data: { sailings: [], totalCount: 0 } });
@@ -65,7 +66,7 @@ describe('admin communication compose dialogs', () => {
     const wrapper = await broadcast(); await wrapper.find('form').trigger('submit'); await flushPromises();
     expect(mocks.confirm).toHaveBeenCalledWith(expect.objectContaining({ message: expect.stringContaining('7 accounts') }));
     expect(mocks.send).toHaveBeenCalledWith({}, expect.objectContaining({ title: 'Welcome aboard', audience: 'PASSENGERS', requestId: expect.any(String) }));
-    expect(wrapper.find('[role="dialog"]').exists()).toBe(false); expect(wrapper.text()).toContain('Notification sent to 7 accounts.'); wrapper.unmount();
+    expect(wrapper.find('[role="dialog"]').exists()).toBe(false); expect(toastMessages.value.filter(toast => toast.message === 'Notification sent to 7 accounts.')).toHaveLength(1); expect(wrapper.text()).not.toContain('Notification sent to 7 accounts.'); wrapper.unmount();
   });
   it('keeps broadcast input on failure and does not send to an empty audience', async () => {
     const wrapper = await broadcast(); mocks.recipients.mockResolvedValue({ data: { recipients: 0 } });
