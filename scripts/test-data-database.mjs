@@ -49,9 +49,12 @@ export function resetTransaction(snapshot, seed, checks = fixtureChecks) {
     truncate table ${dataTables.filter(t => t !== 'port').map(t => `public.${t}`).join(',')},barkolink_private.daily_schedule,barkolink_private.vessel_port_observation;
     -- Keep any ports referenced by preserved staff accounts.
     delete from public.port p where not exists(select 1 from public.app_user u where u.assigned_port_id=p.id);
-    -- Importing historical snapshots is separate from accepting a new reservation.
+    -- Trusted fixture imports include disconnected historical/sample voyages.
+    -- Restore both guards before validating or accepting any new operation.
     alter table public.booking disable trigger booking_vessel_port;
+    alter table public.sailing disable trigger vessel_port_chain;
     ${seed.replace(/(insert into public\.port\b[\s\S]*?);/i, '$1 on conflict (id) do nothing;')}
+    alter table public.sailing enable trigger vessel_port_chain;
     alter table public.booking enable trigger booking_vessel_port;
     ${checks}
     do $$ begin

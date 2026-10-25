@@ -35,24 +35,24 @@ ion-content {
 }
 
 :root[data-theme="dark"] {
-  --deep: #08182d;
-  --ocean: #53a9ee;
-  --primary: #66b8f5;
-  --light-blue: #102d4b;
-  --cloud: #0d1726;
-  --ink: #eff6fb;
-  --muted: #9aafc0;
-  --line: #263b50;
-  --surface: #142235;
-  --surface-soft: #101d2d;
+  --deep: #04162b;
+  --ocean: #55bdff;
+  --primary: #75d0ff;
+  --light-blue: #103a62;
+  --cloud: #04162a;
+  --ink: #f1f7ff;
+  --muted: #adc5df;
+  --line: #22496d;
+  --surface: #0b2139;
+  --surface-soft: #061a2f;
   --ion-background-color: var(--cloud);
   --ion-text-color: var(--ink);
 }
 
 :root[data-theme="dark"] body,
 :root[data-theme="dark"] ion-content {
-  background: var(--cloud);
-  --background: var(--cloud);
+  background: var(--page-background);
+  --background: var(--page-background);
 }
 :root[data-theme="dark"] .search-card,
 :root[data-theme="dark"] .upcoming-card,
@@ -91,17 +91,20 @@ ion-content {
   background: #07182c;
 }
 
-/* Base44 light palette, mapped to the existing Ionic and workspace tokens. */
+/* Maritime palette shared by Ionic, forms and workspaces. */
 :root {
   --deep: hsl(215 70% 14%);
-  --ocean: hsl(210 80% 42%);
+  --ocean: #096dc3;
   --primary: hsl(207 90% 54%);
   --light-blue: hsl(210 100% 96%);
   --cloud: hsl(220 29% 97%);
   --ink: hsl(220 31% 15%);
   --muted: hsl(220 13% 46%);
   --line: hsl(220 16% 91%);
-  --action: hsl(210 80% 42%);
+  --action: #096dc3;
+  --panel-background: var(--surface);
+  --nav-background: url('/images/nav-waves.svg') left bottom / 100% 200px no-repeat, linear-gradient(165deg, #08284a 0%, #041a34 65%, #062443 100%);
+  --nav-active: #0074d9;
   --button-radius: 10px;
   --button-height: 44px;
   --button-height-lg: 48px;
@@ -113,31 +116,32 @@ ion-content {
   --glass-border: var(--line);
   --card-shadow:
     0 1px 2px rgba(16, 24, 40, 0.04), 0 1px 3px rgba(16, 24, 40, 0.06);
-  --page-background: var(--cloud);
-  --ion-color-primary: hsl(210 80% 42%);
-  --ion-color-primary-rgb: 21, 107, 193;
+  --ocean-art: url('/images/ocean-background-v1.webp');
+  --ocean-night-background: linear-gradient(#04162a55, #04162a66), var(--ocean-art) center top / cover no-repeat, #04162a;
+  --page-background: linear-gradient(#f4f9fff0, #f4f9ffed), var(--ocean-art) center top / cover no-repeat, #f4f9ff;
+  --ion-color-primary: #096dc3;
+  --ion-color-primary-rgb: 9, 109, 195;
   --ion-color-primary-contrast: #fff;
   --ion-font-family: "Inter", "Segoe UI", system-ui, sans-serif;
 }
 :root[data-theme="dark"] {
-  --deep: #08182d;
-  --ocean: #53a9ee;
-  --primary: #66b8f5;
-  --light-blue: #102d4b;
-  --cloud: #0d1726;
-  --ink: #eff6fb;
-  --muted: #9aafc0;
-  --line: #263b50;
-  --action: #246fba;
+  --deep: #04162b;
+  --ocean: #55bdff;
+  --primary: #75d0ff;
+  --light-blue: #103a62;
+  --cloud: #04162a;
+  --ink: #f1f7ff;
+  --muted: #adc5df;
+  --line: #22496d;
+  --action: #0074d9;
+  --panel-background: linear-gradient(120deg, #122e4b 0%, #0b2139 60%, #091d33 100%);
   --teal: #7edbd1;
-  --glass-background: rgba(20, 34, 53, 0.88);
-  --glass-border: rgba(117, 159, 195, 0.23);
+  --glass-background: rgba(9, 31, 54, 0.94);
+  --glass-border: rgba(71, 139, 196, 0.3);
   --card-shadow: 0 12px 36px rgba(0, 0, 0, 0.18);
-  --page-background:
-    radial-gradient(ellipse at 0 0, #162d49 0, transparent 52%),
-    radial-gradient(ellipse at 100% 25%, #123135 0, transparent 40%), #0d1726;
-  --ion-color-primary: #246fba;
-  --ion-color-primary-rgb: 36, 111, 186;
+  --page-background: var(--ocean-night-background);
+  --ion-color-primary: #0074d9;
+  --ion-color-primary-rgb: 0, 116, 217;
 }
 body {
   background: var(--page-background);
@@ -210,8 +214,12 @@ select {
 
 :root body .workspace,
 :root body .staff-main,
-:root body .main-column {
+:root body .main-column,
+:root body .reference-main,
+:root body .staff-settings-main,
+:root body .admin-account-workspace {
   background: var(--page-background);
+  min-height: 100dvh;
 }
 :root body .metrics > article,
 :root body .metric-grid > article,

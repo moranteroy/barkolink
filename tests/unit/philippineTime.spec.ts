@@ -1,7 +1,14 @@
 import { describe, expect, it } from 'vitest';
-import { philippineDateTime, philippineInput, parsePhilippineInput } from '../../src/data/philippineTime';
+import { philippineDateTime, philippineInput, parsePhilippineInput, routeArrivalInput } from '../../src/data/philippineTime';
 
 describe('terminal time consistency', () => {
+  it('calculates route arrivals across midnight, month and year boundaries', () => {
+    expect(routeArrivalInput('2026-10-24T20:00',120)).toBe('2026-10-24T22:00');
+    expect(routeArrivalInput('2026-10-31T23:30',120)).toBe('2026-11-01T01:30');
+    expect(routeArrivalInput('2026-12-31T23:00',120)).toBe('2027-01-01T01:00');
+    expect(routeArrivalInput('2026-10-24T20:00',null)).toBe('');
+    expect(routeArrivalInput('',120)).toBe('');
+  });
   it('round trips a Philippine midnight departure without applying the device offset', () => {
     const input = '2026-10-15T00:30';
     expect(parsePhilippineInput(input).toISOString()).toBe('2026-10-14T16:30:00.000Z');

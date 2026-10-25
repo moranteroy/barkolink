@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import { chromium } from 'playwright-core'
+import { boardingTimingFixture } from './boarding-timing-fixture.mjs'
 
 // Visual regression checks for shared actions, icons and branding.
 // All backend requests use isolated fixtures; no real accounts or hosted writes.
@@ -95,6 +96,7 @@ try {
         AdminVesselPositions: { vessels: Array.from({length:12},(_,i)=>({...sailing.vessel,id:`vessel-${i}`,name:`MV Example ${i+1}`,operator:'Sample Shipping Lines',position:i===2 ? {state:'DELAYED',tripCode:'TRIP-DELAYED'} : i===1 ? {state:'UNDERWAY',originPortId:sailing.origin.id,destinationPortId:sailing.destination.id,arrivalAt:sailing.arrivalAt} : {state:'EXPECTED',portName:i%2 ? 'Batangas Port' : 'Calapan Port',tripCode:`TRIP-${i+1}`}})), ports: [sailing.origin, sailing.destination] },
         AdminVesselAvailability: { vessels: [{ id: sailing.vessel.id, issue: null }] },
         AdminActivityLog: { records: [{ id, actorName: 'UI Administrator', action: 'UPDATE', entityType: 'operation_settings', entityId: 'DEFAULT', createdAt: '2026-10-05T01:00:00Z', details: { reservationMinutes: { before: 1440, after: 720 } } }], totalCount: 1 },
+        BoardingSailingTiming: boardingTimingFixture(sailing),
         StaffBookings: { bookings: [booking], totalCount: 1 }, BoardingSailings: { sailings: [sailing] }, BoardingManifest: { bookings: [booking] }, BoardingActivity: { boardingEvents: [] }, AdminDashboardStats: {},
         AdminFareSettings: { fareSettings: null, vesselFareSettings: [fareConfig] }, AdminNextTripCode: { nextTripCode: { code: 'TRP2026-1004001' } },
         AdminOverview: {stats:{todayTrips:5,todayBookings:0,todayPassengers:72,checkedIn:0,boarded:0,noShow:0,cancelled:0,utilization:4.5},trips:Array.from({length:5},(_,i)=>({...sailing,code:`UI-TRIP-${i+1}`,status:i===4?'BOARDING':'COMPLETED',vessel:{...sailing.vessel,name:`MV Example ${i+1}`}})),monthly:[{month:'May',bookings:10,passengers:18},{month:'Jun',bookings:18,passengers:24},{month:'Jul',bookings:22,passengers:35},{month:'Aug',bookings:25,passengers:41},{month:'Sep',bookings:30,passengers:46},{month:'Oct',bookings:729,passengers:2294}],bookingStatus:[{name:'Cancelled',value:43},{name:'Completed',value:596},{name:'Confirmed',value:94},{name:'Expired',value:133}],categories:['REGULAR','STUDENT','SENIOR','CHILD','PWD','PREGNANT','RESIDENT'].map((name,i)=>({name,value:[391,316,314,307,301,295,3][i]})),routes:[{route:'Calapan City to Batangas City',passengers:1199},{route:'Batangas City to Calapan City',passengers:725},{route:'Batangas City to Puerto Galera',passengers:3}]},
@@ -136,7 +138,7 @@ try {
           }
           if (role === 'BOARDING' && !target.includes('/settings/') && !target.endsWith('/notifications') && !target.endsWith('/trips') && !target.endsWith('/no-shows')) {
             assert.equal(await page.locator('.sailing-status').innerText(), 'Scheduled');
-            assert.match(await page.locator('.gate-note').innerText(), /automatically at the confirmed boarding time/);
+            assert.match(await page.locator('.gate-note').innerText(), /automatically at the saved boarding time/);
             if(width<=700){
               const picker=await page.locator('#boarding-sailing').boundingBox();
               assert.ok(picker.width>290, `Sailing selector uses the card width: ${picker.width}`);
@@ -146,24 +148,14 @@ try {
         if (target === '/admin/bookings' || target === '/admin/trips') {
           const panel=page.locator('.booking-records-panel');
           assert.equal(await panel.evaluate(el=>parseFloat(getComputedStyle(el).paddingTop)),0,'Records container does not double its internal padding');
-          const help=panel.locator('.grid-help');
-          await help.locator('summary').click();
-          assert.match(await help.innerText(), /sorting apply to this page/);
-          await help.locator('summary').click();
+          await panel.getByRole('button',{name:'Columns',exact:true}).waitFor();
+          assert.equal(await panel.locator('.grid-scope').innerText(),'on this page');
           if(width>700){
             const grid=await panel.locator('.desktop-grid').boundingBox();
             assert.ok(grid.y<580, `Records start within the first screen: ${grid.y}`);
             reports.push({target,width,theme,recordsTop:Math.round(grid.y)});
           }
           if(target === '/admin/trips') {
-            const statusHelp=page.locator('.trip-status-help');
-            await statusHelp.locator('summary').click();
-            assert.match(await statusHelp.innerText(), /Updates run every minute/);
-            await statusHelp.locator('summary').click();
-            const weather=page.locator('.admin-trip-weather');
-            await weather.locator('summary').click();
-            assert.equal(await weather.locator('.weather-trip-picker').isVisible(),true);
-            await weather.locator('summary').click();
             await page.getByRole('button',{name:'Daily schedules',exact:true}).click();
             assert.equal(await page.locator('.daily-schedules').isVisible(),true);
             assert.equal(await panel.isVisible(),false);
@@ -176,7 +168,8 @@ try {
           const cards = await page.locator('.overview-metrics article').evaluateAll(cards=>cards.map(card=>card.getBoundingClientRect().height))
           const chart = await page.locator('.analytics-grid').boundingBox()
           assert.ok(cards.every(height=>height<=(width>700?145:175)), `Summary cards remain compact: ${cards}`)
-          if(width>700)assert.ok(chart.y<430, `First charts start higher on the dashboard: ${chart.y}`)
+          const attendance = await page.locator('.attendance-strip').boundingBox();
+          assert.ok(chart.y >= attendance.y + attendance.height && chart.y - attendance.y - attendance.height <= 20, 'Charts follow the attendance summary without overlap or excess space');
           const overview=page.locator('.operations-overview');
           const trend=overview.locator('.trend-panel');
           const svg=trend.locator('svg');
@@ -192,7 +185,7 @@ try {
         }
         if(target==='/admin/vessels') {
           const tracking=page.locator('.tracking-panel');
-          await tracking.getByRole('heading',{name:'Automatic vessel locations'}).waitFor();
+          await tracking.getByRole('heading',{name:'Vessel locations',exact:true}).waitFor();
           assert.equal(await tracking.getByRole('button',{name:'Confirm port',exact:true}).count(),0);
           assert.equal(await tracking.locator('.location-list article').count(),5);
           assert.equal(await tracking.locator('.location-list').evaluate(el=>getComputedStyle(el).overflowY),'visible');

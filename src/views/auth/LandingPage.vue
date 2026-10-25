@@ -23,7 +23,7 @@
 <script setup lang="ts">
 import { notifyError } from '@/composables/toast';
 import { computed, onMounted, ref } from 'vue';
-import { IonContent, IonPage } from '@ionic/vue';
+import { IonContent, IonPage, onIonViewWillEnter } from '@ionic/vue';
 import { RouterLink, useRouter } from 'vue-router';
 import BrandMark from '../../components/shared/BrandMark.vue';
 import PortLocationMap from '../../components/shared/PortLocationMap.vue';
@@ -76,5 +76,6 @@ function selectRoute(sailing: LandingSailing) {
   localStorage.setItem('barkolink-search-passengers', '1');
   void router.push('/trips');
 }
-onMounted(() => { void loadCatalog(); void loadPorts(); });
+onMounted(() => { void loadCatalog(); });
+onIonViewWillEnter(() => { void loadPorts(); });
 </script>

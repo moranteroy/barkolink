@@ -13,45 +13,49 @@
         </div>
         <p v-if="error" class="error" role="alert">{{ error }}</p>
         <p v-if="notice" role="status">{{ notice }}</p>
-        <form @submit.prevent="save">
+        <form novalidate @submit.prevent="save">
           <h2>{{ form.id ? "Edit traveler" : "Add a traveler" }}</h2>
           <label
             >Full name<input
               v-model.trim="form.fullName"
+              v-bind="fieldAttrs('traveler-name')"
               required
               maxlength="120"
-          /></label>
+          /><small v-if="fieldErrors['traveler-name']" :id="errorId('traveler-name')" class="field-error">{{ fieldErrors['traveler-name'] }}</small></label>
           <div class="fields">
             <label
               >Birth date<input
                 v-model="form.birthDate"
+                v-bind="fieldAttrs('traveler-birth')"
                 type="date"
                 :max="today"
                 min="1900-01-01"
-                required /></label
+                required /><small v-if="fieldErrors['traveler-birth']" :id="errorId('traveler-birth')" class="field-error">{{ fieldErrors['traveler-birth'] }}</small></label
             ><label
-              >Sex<select v-model="form.sex" required>
+              >Sex<select v-model="form.sex" v-bind="fieldAttrs('traveler-sex')" required>
                 <option value="" disabled>Select sex</option>
                 <option value="MALE">Male</option>
                 <option value="FEMALE">Female</option>
                 <option value="OTHER">Other</option>
-              </select></label
+              </select><small v-if="fieldErrors['traveler-sex']" :id="errorId('traveler-sex')" class="field-error">{{ fieldErrors['traveler-sex'] }}</small></label
             >
           </div>
           <div class="fields">
             <label
               >Mobile number<input
                 v-model.trim="form.phone"
+                v-bind="fieldAttrs('traveler-phone')"
                 type="tel"
                 minlength="7"
                 maxlength="30"
-                required /></label
+                required /><small v-if="fieldErrors['traveler-phone']" :id="errorId('traveler-phone')" class="field-error">{{ fieldErrors['traveler-phone'] }}</small></label
             ><label
               >Nationality<input
                 v-model.trim="form.nationality"
+                v-bind="fieldAttrs('traveler-nationality')"
                 maxlength="60"
                 required
-            /></label>
+            /><small v-if="fieldErrors['traveler-nationality']" :id="errorId('traveler-nationality')" class="field-error">{{ fieldErrors['traveler-nationality'] }}</small></label>
           </div>
           <div class="actions">
             <button :disabled="busy">
@@ -71,7 +75,8 @@
           >
         </form>
         <section class="traveler-list" aria-label="Your travelers">
-          <p v-if="loading">Loading travelers…</p>
+          <p v-if="loading" role="status">Loading travelers…</p>
+          <p v-else-if="loadError" class="error" role="alert">{{ loadError }} <button type="button" @click="load">Retry</button></p>
           <p v-else-if="!items.length">No saved travelers yet.</p>
           <article v-for="person in items" :key="person.id">
             <AppIcon :icon="personOutline" aria-hidden="true" />
@@ -92,6 +97,7 @@ import { validName, validPhone, validNationality } from '../../data/securityVali
 import { validBirthDate } from '../../data/travelDate';
 import { notifyError, notifySuccess } from '@/composables/toast';
 import { confirmAction } from "../../composables/confirmation";
+import { useFieldErrors } from '../../composables/fieldErrors';
 import { onMounted, reactive, ref } from "vue";
 import { IonPage, IonContent, onIonViewWillEnter } from "@ionic/vue";
 import AppIcon from "@/components/ui/icon/AppIcon.vue";
@@ -122,11 +128,15 @@ const empty = () => ({
   nationality: "Filipino",
 });
 const form = reactive(empty());
+const loadError = ref('');
+const { fieldErrors, fieldAttrs, errorId, clearErrors, showErrors } = useFieldErrors();
 const contentRef = ref<InstanceType<typeof IonContent> | null>(null);
 function reset() {
+  clearErrors();
   Object.assign(form, empty());
 }
 function edit(person: SavedTraveler) {
+  clearErrors();
   Object.assign(form, person);
   notice.value = "";
   void contentRef.value?.$el.scrollToTop(250).then(() => {
@@ -136,10 +146,11 @@ function edit(person: SavedTraveler) {
 async function load() {
   if (!database || loading.value) return;
   loading.value = true;
+  loadError.value = '';
   try {
     items.value = (await savedTravelers(database)).data.travelers;
   } catch (cause) {
-    error.value = notifyError(databaseRequestError(
+    loadError.value = notifyError(databaseRequestError(
       cause,
       "Could not load saved travelers.",
     ));
@@ -149,8 +160,16 @@ async function load() {
 }
 async function save() {
   if (!database || busy.value) return;
-  if (!validName(form.fullName) || !validPhone(form.phone) || !validNationality(form.nationality) || !validBirthDate(form.birthDate)) {
-    error.value = 'Enter a valid name, birth date, contact number, and nationality.';
+  error.value = '';
+  clearErrors();
+  const errors: Record<string, string> = {};
+  if (!validName(form.fullName)) errors['traveler-name'] = 'Enter the traveler’s full name.';
+  if (!validBirthDate(form.birthDate)) errors['traveler-birth'] = 'Enter a valid birth date that is not in the future.';
+  if (!['MALE', 'FEMALE', 'OTHER'].includes(form.sex)) errors['traveler-sex'] = 'Select the traveler’s sex.';
+  if (!validPhone(form.phone)) errors['traveler-phone'] = 'Enter a valid mobile number.';
+  if (!validNationality(form.nationality)) errors['traveler-nationality'] = 'Enter the traveler’s nationality.';
+  if (Object.keys(errors).length) {
+    await showErrors(errors);
     return;
   }
   busy.value = true;
@@ -302,6 +321,8 @@ small {
 .error {
   color: var(--danger);
 }
+.field-error { color: var(--danger); font-weight: 400; }
+input[aria-invalid="true"], select[aria-invalid="true"] { border-color: var(--danger); }
 @container passenger (max-width: 600px) {
   .travelers-page {
     padding: 20px 16px 110px;

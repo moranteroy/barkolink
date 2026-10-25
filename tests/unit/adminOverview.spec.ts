@@ -31,6 +31,7 @@ describe('admin operational insights', () => {
     const wrapper = mount(AdminOverviewPanel, options); await flushPromises();
     expect(wrapper.find('.overview-metrics').text()).toContain('12.5%');
     expect(wrapper.find('.attendance-strip').exists()).toBe(true);
+    expect(wrapper.find('.overview-context').text()).not.toContain('Updated');
     expect(wrapper.find('.today-trips').text()).toContain('No departures scheduled today.');
     wrapper.unmount();
   });

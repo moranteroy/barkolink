@@ -1,6 +1,8 @@
 import fs from 'node:fs';
 import assert from 'node:assert/strict';
 import { chromium } from 'playwright-core';
+const baseUrl = process.env.BARKOLINK_UI_URL || 'http://127.0.0.1:8110';
+import { boardingTimingFixture } from './boarding-timing-fixture.mjs';
 import jsQR from 'jsqr';
 const project=fs.readFileSync('.env.local','utf8').match(/^VITE_SUPABASE_URL\s*=\s*(.+)$/m)[1].trim().replace(/^['"]|['"]$/g,'');
 const id='11111111-1111-4111-8111-111111111111',code='22222222-2222-4222-8222-222222222222';
@@ -16,7 +18,7 @@ try{
     for(const role of ['PASSENGER','BOARDING']){
       const user={id,email:'qr@example.invalid',app_metadata:{role},user_metadata:{fullName:'Carlo Reyes'},aud:'authenticated',created_at:'2026-01-01T00:00:00Z'};
       const exp=Math.floor(Date.now()/1000)+3600,encode=value=>Buffer.from(JSON.stringify(value)).toString('base64url');
-      const session={access_token:`${encode({alg:'HS256'})}.${encode({sub:id,exp,role:'authenticated',app_metadata:user.app_metadata})}.fixture`,refresh_token:'fixture',token_type:'bearer',expires_at:exp,expires_in:3600,user};
+      const session={access_token:`${encode({alg:'HS256'})}.${encode({sub:id,exp,aal:'aal2',role:'authenticated',app_metadata:user.app_metadata})}.fixture`,refresh_token:'fixture',token_type:'bearer',expires_at:exp,expires_in:3600,user};
       const context=await browser.newContext({viewport:{width,height:1000}});
       await context.addInitScript(({project,session})=>{localStorage.setItem(`sb-${new URL(project).hostname.split('.')[0]}-auth-token`,JSON.stringify(session));localStorage.setItem('barkolink-theme','dark');},{project,session});
       let actions=0,alreadyBoarded=false;
@@ -28,19 +30,19 @@ try{
           if(args.payload!==payload && args.payload!==code)return route.fulfill({status:400,json:{message:'QR verification failed: ticket details were changed.',code:'P0001'}});
           return route.fulfill({json:{passenger:{...person,ticketStatus:alreadyBoarded?'BOARDED':'ISSUED',booking},alreadyBoarded,legacyCode:args.payload===code}});
         }
-        const fixtures={MyProfile:{user:{fullName:'Carlo Reyes',role}},MyBookings:{bookings:[booking]},MyNotifications:{notifications:[]},BoardingSailings:{sailings:[sailing]},BoardingManifest:{bookings:[booking]},BoardingActivity:{boardingEvents:[]}};
+        const fixtures={BoardingSailingTiming:boardingTimingFixture(sailing),MyProfile:{user:{uid:id,fullName:'Carlo Reyes',role,assignedPortId:'batangas',assignedPort:{id:'batangas',name:'Batangas Port',isActive:true}}},MyBookings:{bookings:[booking]},MyNotifications:{notifications:[]},BoardingSailings:{sailings:[sailing]},BoardingManifest:{bookings:[booking]},BoardingActivity:{boardingEvents:[]}};
         return route.fulfill({json:fixtures[operation]||{advisories:[],notifications:[]}});
       });
       const page=await context.newPage(),errors=[];page.on('pageerror',error=>errors.push(error.message));
       if(role==='PASSENGER'){
-        await page.goto('http://127.0.0.1:8115/ticket?reference=QR-BOOKING',{waitUntil:'networkidle'});
+        await page.goto(`${baseUrl}/ticket?reference=QR-BOOKING`,{waitUntil:'networkidle'});
         const qr=page.locator('.qr-block img');await qr.waitFor();
         const frame=await qr.evaluate(img=>{const canvas=document.createElement('canvas');canvas.width=img.naturalWidth;canvas.height=img.naturalHeight;const ctx=canvas.getContext('2d');ctx.drawImage(img,0,0);return {width:canvas.width,height:canvas.height,data:Array.from(ctx.getImageData(0,0,canvas.width,canvas.height).data)};});
         decoded=jsQR(new Uint8ClampedArray(frame.data),frame.width,frame.height)?.data;assert.equal(decoded,payload);
         assert.equal(JSON.parse(decoded).Name,'Carlo Reyes');
         await qr.scrollIntoViewIfNeeded();await page.locator('.ticket').screenshot({path:`.audit/ticket-qr/passenger-${width}.png`});
       }else{
-        await page.goto('http://127.0.0.1:8115/staff/boarding/check-in',{waitUntil:'networkidle'});
+        await page.goto(`${baseUrl}/staff/boarding/check-in`,{waitUntil:'networkidle'});
         await page.locator('.heading-actions').getByRole('button',{name:'Find ticket'}).click();
         const modal=page.locator('.scanner-modal');await modal.locator('input').fill(JSON.stringify({...JSON.parse(payload),Name:'Fake Passenger'}));
         await modal.getByRole('button',{name:'Verify ticket'}).click();await modal.getByText(/QR verification failed/).waitFor();

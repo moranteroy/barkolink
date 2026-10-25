@@ -3,7 +3,7 @@
     <p v-if="error" class="catalog-error" role="alert">{{ error }}</p>
     <div v-if="loading && !data" class="overview-loading" role="status">Loading operational insights…</div>
     <template v-if="data">
-      <div class="overview-context"><span><span class="context-dot"></span>{{ analytics ? 'PERFORMANCE OVERVIEW' : 'DAILY OPERATIONS' }}</span><span>{{ todayLabel }} <span class="context-separator">/</span> {{ loading ? 'Refreshing…' : `Updated ${updatedLabel}` }}</span></div>
+      <div class="overview-context"><span><span class="context-dot"></span>{{ analytics ? 'PERFORMANCE OVERVIEW' : 'DAILY OPERATIONS' }}</span><span>{{ todayLabel }}</span></div>
       <section v-if="!analytics" class="overview-metrics" aria-label="Today's operational metrics">
         <article v-for="metric in primaryMetrics" :key="metric.key"><div class="metric-top"><span>{{ metric.label }}</span><span class="metric-icon"><AppIcon :icon="metric.icon" aria-hidden="true" /></span></div><strong>{{ number(data.stats[metric.key] ?? 0) }}{{ metric.key === 'utilization' ? '%' : '' }}</strong><p>{{ metric.context }}</p></article>
       </section>
@@ -73,7 +73,6 @@ const number = (value: number) => value.toLocaleString('en-PH', { maximumFractio
 const label = (value: string) => value.toUpperCase() === 'PWD' ? 'PWD' : humanize(value);
 const todayLabel = computed(() => (updatedAt.value || new Date()).toLocaleDateString('en-PH', { timeZone: 'Asia/Manila', month: 'short', day: 'numeric', year: 'numeric' }));
 const time = (value: string | Date) => new Date(value).toLocaleTimeString('en-PH', { timeZone: 'Asia/Manila', hour: '2-digit', minute: '2-digit' });
-const updatedLabel = computed(() => updatedAt.value ? time(updatedAt.value) : '—');
 const primaryMetrics = [
   { key: 'todayTrips', label: "Today's sailings", icon: boatOutline, context: 'Scheduled for today' },
   { key: 'todayBookings', label: "Today's bookings", icon: ticketOutline, context: 'Created today' },

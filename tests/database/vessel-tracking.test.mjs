@@ -86,7 +86,11 @@ it('keeps delayed voyages unresolved and detects a broken unconfirmed itinerary'
  // With no observation, the remaining voyage is the only location evidence.
  assert.equal((await estimate(0)).portId,cal);
  await db.exec('delete from public.sailing');
- await trip('OUT',btg,cal,1,3);await trip('WRONG',btg,cal,4,6);
+ await trip('OUT',btg,cal,1,3);
+ // Model corrupt historical data; new writes must now reject this itinerary.
+ await db.exec('alter table public.sailing disable trigger vessel_port_chain');
+ try { await trip('WRONG',btg,cal,4,6); }
+ finally { await db.exec('alter table public.sailing enable trigger vessel_port_chain'); }
  assert.equal((await estimate(5)).state,'CONFLICT');
 });
 it('uses a newer terminal observation ahead of older schedule estimates',async()=>{
@@ -104,4 +108,27 @@ it('opens bookings automatically from a connected itinerary without manual obser
  await db.exec("update public.sailing set status='DELAYED' where code='AUTO-OUT'");
  assert.match(await issue(cal,4,'AUTO-BACK'),/delayed/);
  await assert.rejects(db.query(`insert into public.booking(reference,owner_uid,sailing_code,passenger_count,passenger_fare_total,total) values('BKG-BLOCK',$1,'AUTO-BACK',1,600,600)`,[passenger]),/delayed/);
+});
+
+it('rejects the wrong departure port on create and edit using only saved trips',async()=>{
+ await trip('OUT',btg,cal,1,3);
+ await assert.rejects(trip('WRONG',btg,cal,4,6),/will be at Calapan/);
+ await assert.rejects(trip('OVERLAP',cal,btg,2,4),/another voyage|overlapping trip/);
+ await trip('RETURN',cal,btg,4,6);
+ await assert.rejects(db.query("update public.sailing set origin_port_id=$1,destination_port_id=$2 where code='RETURN'",[btg,cal]),/will be at Calapan/);
+ assert.equal((await db.query("select count(*)::int n from barkolink_private.vessel_port_observation")).rows[0].n,0);
+ assert.equal((await db.query("select origin_port_id from public.sailing where code='RETURN'")).rows[0].origin_port_id,cal);
+});
+
+it('protects the following departure when inserting an earlier trip without observations',async()=>{
+ await trip('LATER',cal,btg,5,7);
+ await assert.rejects(trip('BROKEN',cal,btg,1,3),/next departure/);
+ await trip('TRANSFER',btg,cal,1,3);
+ assert.equal(await issue(cal,5,'LATER'),null);
+});
+
+it('blocks a dependent departure while the preceding scheduled voyage is delayed',async()=>{
+ await trip('OUT',btg,cal,1,3);
+ await db.exec("update public.sailing set status='DELAYED' where code='OUT'");
+ await assert.rejects(trip('RETURN',cal,btg,4,6),/delayed/);
 });

@@ -9,12 +9,33 @@ const mocks = vi.hoisted(() => {
   const layer = () => { const result = { addTo: vi.fn(), remove: vi.fn(), on: vi.fn(), bindPopup: vi.fn(), openPopup: vi.fn(), redraw: vi.fn() }; for (const key of ['addTo','on','bindPopup'] as const) result[key].mockReturnValue(result); return result; };
   return { map, layer };
 });
-vi.mock('leaflet', () => ({ map: () => mocks.map, tileLayer: () => mocks.layer(), layerGroup: () => mocks.layer(), marker: () => mocks.layer(), divIcon: vi.fn(), polyline: () => mocks.layer() }));
+vi.mock('../../src/services/leaflet', () => ({ loadLeaflet: async () => ({ map: () => mocks.map, tileLayer: () => mocks.layer(), layerGroup: () => mocks.layer(), marker: () => mocks.layer(), divIcon: vi.fn(), polyline: () => mocks.layer() }) }));
 const ports = [
   { id: 'a', name: 'Batangas Port', city: 'Batangas' },
   { id: 'b', name: 'Calapan Port', city: 'Calapan' },
 ]
 describe('Port map integration', () => {
+  it('removes inactive ports from directory maps and responds to activation changes', async () => {
+    const inactive = { id: 'pga', name: 'Balatero Port', city: 'Puerto Galera', isActive: false };
+    const wrapper = mount(PortLocationMap, { props: { ports: [...ports, inactive], admin: true } });
+    await flushPromises();
+    expect(wrapper.findAll('.port-tabs button')).toHaveLength(2);
+    expect(wrapper.text()).not.toContain('Balatero');
+    await wrapper.setProps({ ports: [ports[0], { ...ports[1], isActive: false }] });
+    await flushPromises();
+    expect(wrapper.findAll('.port-tabs button')).toHaveLength(1);
+    expect(wrapper.get('.map-footer').text()).toContain('Batangas');
+    await wrapper.setProps({ ports: [{ ...ports[1], isActive: true }] });
+    await flushPromises();
+    expect(wrapper.get('.map-footer').text()).toContain('Calapan');
+    wrapper.unmount();
+  });
+  it('retains the actual terminals of a booked journey after a port is disabled', async () => {
+    const wrapper = mount(PortLocationMap, { props: { ports: [ports[0], { ...ports[1], isActive: false }], journey: true } });
+    await flushPromises();
+    expect(wrapper.findAll('.port-tabs button')).toHaveLength(2);
+    wrapper.unmount();
+  });
   it('opens the Maps search endpoint with the encoded terminal query', () => {
     const url = new URL(googleMapSearch({ id: 'x', name: 'Port & Wharf #1', city: 'City' }))
     expect(url.pathname).toBe('/maps/search/')

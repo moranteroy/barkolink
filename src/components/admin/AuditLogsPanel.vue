@@ -37,8 +37,9 @@
       title="Audit records table"
       :columns="['When', 'Who', 'Action', 'Record', 'Details']"
       :display-only-columns="[4]"
+      :column-types="['date', 'text', 'text', 'text', 'text']"
       density="compact"
-      :column-min-widths="[155, 170, 155, 170, 145]"
+      :column-min-widths="[180, 200, 160, 210, 160]"
       :column-flex="[1, 1.1, 1, 1.1, .9]"
       :max-grid-height="360"
       :rows="gridRows"
@@ -76,7 +77,7 @@
       <summary>About roles in older records</summary>
       <p>{{ legacyRoleNote }}</p>
     </details>
-<WorkspacePagination :page="page" :total="total" :disabled="loading" @change="move($event - page)">Dates use Philippine time.</WorkspacePagination></div>
+<WorkspacePagination :page="page" :total="total" :disabled="loading" @change="move($event - page)">{{ records.length ? page * 30 + 1 : 0 }}–{{ records.length ? page * 30 + records.length : 0 }} of {{ total.toLocaleString() }} records</WorkspacePagination></div>
     <IonModal :is-open="!!selectedRecord" class="audit-details-modal" @didDismiss="selectedRecord = null"><section v-if="selectedRecord" class="audit-dialog"><header><div><p class="eyebrow">AUDIT ENTRY</p><h2>{{ auditAction(selectedRecord.action) }}</h2></div><Button variant="ghost" size="icon" aria-label="Close audit details" @click="selectedRecord = null"><AppIcon :icon="closeOutline" aria-hidden="true" /></Button></header><div class="audit-dialog-scroll"><dl class="entry-context"><div><dt>When</dt><dd>{{ date(selectedRecord.createdAt) }} (PH)</dd></div><div><dt>Who</dt><dd>{{ selectedRecord.actorName }}<small>{{ roleName(selectedRecord.actorRole) }}</small></dd></div><div><dt>Record</dt><dd>{{ humanize(selectedRecord.entityType) }}<small>{{ selectedRecord.entityId }}</small></dd></div></dl><p v-if="isLegacyRole(selectedRecord)" class="legacy-note">{{ legacyRoleNote }}</p><h3>Recorded changes</h3><AuditChanges :details="selectedRecord.details" /></div><footer><Button variant="outline" @click="selectedRecord = null">Close</Button></footer></section></IonModal>
   </section>
 </template>

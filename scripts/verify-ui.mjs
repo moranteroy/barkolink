@@ -2,6 +2,7 @@ import assert from 'node:assert/strict'
 import { mkdir } from 'node:fs/promises'
 import { fileURLToPath } from 'node:url'
 import { chromium } from 'playwright-core'
+import { boardingTimingFixture } from './boarding-timing-fixture.mjs'
 
 const baseUrl = process.env.BARKOLINK_UI_URL || 'http://127.0.0.1:8100'
 const output = new URL('../docs/screenshots/', import.meta.url)
@@ -78,6 +79,7 @@ try {
     AdminDashboardStats: Object.fromEntries(['todaySailings', 'todayBookings', 'cancelledBookings', 'allPassengers', 'checkedInPassengers', 'boardedPassengers'].map(key => [key, [{ _count: 0 }]])),
     AdminFareSettings: { fareSettings: { regularFare: 500, studentDiscount: 20, seniorDiscount: 20, childDiscount: 50, pwdDiscount: 20, pregnantDiscount: 0 }, vesselFareSettings: [] },
     AdminNextTripCode: { nextTripCode: { code: 'TRP2027-0101002' } },
+    BoardingSailingTiming: boardingTimingFixture(trip),
     BoardingSailings: { sailings: [trip] }, BoardingManifest: { bookings: [] }, BoardingActivity: { boardingEvents: [] },
   }
   for (const [role, paths] of [['ADMIN', ['/admin', '/admin/ports']], ['TICKETING', ['/staff/ticketing']], ['BOARDING', ['/staff/boarding']], ['PASSENGER', ['/home', '/search', '/trip-details']]]) {

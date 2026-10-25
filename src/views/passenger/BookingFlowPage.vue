@@ -2187,11 +2187,11 @@ watch(
   }
 }
 .passenger-content {
-  --background: var(--cloud);
+  --background: var(--page-background);
 }
 .passenger-info-page {
   min-height: 100%;
-  background: var(--cloud);
+  background: var(--page-background);
   color: var(--ink);
 }
 .passenger-info-page .passenger-card,

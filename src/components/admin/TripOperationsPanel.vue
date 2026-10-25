@@ -614,7 +614,9 @@ progress::-moz-progress-bar { background: var(--ocean); border-radius: 8px; }
 .record-search .app-icon { color: var(--muted); font-size: 17px; flex: none; }
 .record-search input { width: 100%; min-height: 38px; background: transparent; border: 0; }
 .table-wrap { overflow: auto; max-height: 420px; border-top: 1px solid var(--line); border-radius: 0 0 12px 12px; }
-table { width: 100%; border-collapse: separate; border-spacing: 0; }
+table { width: 100%; min-width: 820px; table-layout: fixed; border-collapse: separate; border-spacing: 0; }
+th:first-child { width: 30%; }
+td { overflow-wrap: anywhere; }
 th, td { text-align: left; padding: 12px 16px; border-bottom: 1px solid var(--line); font-size: var(--text-label); }
 th { position: sticky; top: 0; z-index: 1; background: var(--surface-soft); color: var(--muted); font-size: var(--text-caption); letter-spacing: .04em; text-transform: uppercase; padding-block: 13px; }
 tbody tr:last-child td { border-bottom: 0; }
@@ -652,6 +654,6 @@ td strong { font-size: var(--text-label); font-weight: 600; }
   .metrics { grid-template-columns: repeat(3, 1fr); gap: 16px 0; } .metrics article:nth-child(3) { border-right: 0; } .metrics strong { font-size: 21px; }
   .stage-grid { gap: 6px; } .stage-grid > div { flex-direction: column; align-items: flex-start; padding: 10px; } .stage-grid small { font-size: var(--text-caption); }
   .content-heading { align-items: flex-start; padding: 14px; } .record-search { margin-inline: 14px; } .reconcile { flex-direction: column; align-items: stretch; padding: 16px; } .activity time { max-width: 100px; }
-  table, tbody, tr, td { display: block; } thead { display: none; } tr { padding: 10px 14px; border-bottom: 1px solid var(--line); } td { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 5px 12px; padding: 6px 0; border: 0; overflow-wrap: anywhere; } td::before { content: attr(data-label); font-size: var(--text-caption); color: var(--muted); margin-right: auto; } .attendance-time { width: 100%; text-align: right; }
+  table { min-width: 0; } table, tbody, tr, td { display: block; } thead { display: none; } tr { padding: 10px 14px; border-bottom: 1px solid var(--line); } td { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 5px 12px; padding: 6px 0; border: 0; overflow-wrap: anywhere; } td::before { content: attr(data-label); font-size: var(--text-caption); color: var(--muted); margin-right: auto; } .attendance-time { width: 100%; text-align: right; }
 }
 </style>

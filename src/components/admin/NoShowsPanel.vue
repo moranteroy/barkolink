@@ -51,7 +51,7 @@
     <div v-else-if="!visible.length && !error" class="no-show-empty" role="status"><span class="no-show-empty-symbol"><AppIcon :icon="code && !search ? checkmarkCircleOutline : personRemoveOutline" aria-hidden="true" /></span><strong>{{ search ? 'No matching passengers' : code ? 'No passengers to record' : 'Choose a completed trip' }}</strong><p>{{ search ? 'Try another passenger name or booking reference.' : code ? 'No non-boarded paid passengers were found for this completed sailing.' : 'Select a completed sailing to review attendance.' }}</p></div>
     <div v-else-if="visible.length" class="catalog-table">
       <div class="no-show-table-heading"><p class="eyebrow">PASSENGER ATTENDANCE</p><h2>Passengers who did not board</h2></div>
-      <RecordsGrid title="Passenger no-show records" :columns="['Passenger', 'Booking', 'Accommodation', 'Ticket', 'Attendance']" :rows="gridRows" density="compact" :column-min-widths="[150, 145, 130, 105, 145]" :action-width="135" :max-grid-height="360">
+      <RecordsGrid title="Passenger no-show records" :columns="['Passenger', 'Booking', 'Accommodation', 'Ticket', 'Attendance']" :rows="gridRows" density="compact" :column-min-widths="[200, 240, 160, 150, 175]" :action-width="135" :max-grid-height="360">
         <template #cell="{ row, index, value }">
           <strong v-if="index === 0">{{ value }}</strong>
           <Badge v-else-if="index === 3" :variant="row.source.ticketStatus === 'CHECKED_IN' ? 'success' : row.source.ticketStatus === 'ISSUED' ? 'default' : 'warning'">{{ value }}</Badge>

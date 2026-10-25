@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import { chromium } from 'playwright-core'
+import { boardingTimingFixture } from './boarding-timing-fixture.mjs'
 
 // Visual regression checks for shared actions, icons and branding.
 // All backend requests use isolated fixtures; no real accounts or hosted writes.
@@ -91,6 +92,7 @@ try {
         AdminVesselPositions: { vessels: [{ ...sailing.vessel, position: { state: 'UNKNOWN' } }], ports: [sailing.origin, sailing.destination] },
         AdminVesselAvailability: { vessels: [{ id: sailing.vessel.id, issue: null }] },
         AdminActivityLog: { records: [{ id, actorName: 'UI Administrator', action: 'UPDATE', entityType: 'operation_settings', entityId: 'DEFAULT', createdAt: '2026-10-05T01:00:00Z', details: { reservationMinutes: { before: 1440, after: 720 } } }], totalCount: 1 },
+        BoardingSailingTiming: boardingTimingFixture(sailing),
         StaffBookings: { bookings: [booking], totalCount: 1 }, BoardingSailings: { sailings: [sailing] }, BoardingManifest: { bookings: [booking] }, BoardingActivity: { boardingEvents: [] }, AdminDashboardStats: {},
         AdminFareSettings: { fareSettings: null, vesselFareSettings: [fareConfig] }, AdminNextTripCode: { nextTripCode: { code: 'TRP2026-1004001' } },
         AdminOverview: {stats:{todayTrips:1,todayBookings:6,todayPassengers:9,checkedIn:7,boarded:4,noShow:1,cancelled:1,utilization:62},trips:[sailing],monthly:[{month:'May',bookings:10,passengers:18},{month:'Jun',bookings:18,passengers:24},{month:'Jul',bookings:22,passengers:35},{month:'Aug',bookings:25,passengers:41},{month:'Sep',bookings:30,passengers:46},{month:'Oct',bookings:34,passengers:50}],bookingStatus:[{name:'Confirmed',value:35},{name:'Pending',value:7},{name:'Cancelled',value:4}],categories:[{name:'REGULAR',value:30},{name:'STUDENT',value:8},{name:'SENIOR',value:4},{name:'CHILD',value:3}],routes:[{route:'Calapan ? Batangas',passengers:50}]},
@@ -173,7 +175,7 @@ try {
         }
       }
       if (path === '/staff/ticketing' || path === '/staff/boarding') {
-        assert.ok((await page.locator('.queue-freshness').innerText()).includes('Updated'), 'Staff can see the last successful queue update')
+        assert.equal(await page.locator('.queue-freshness').count(), 0, 'Loaded queues do not show routine refresh metadata')
       }
       if (path === '/admin/ports' || path === '/admin/vessels') {
         assert.equal(await page.locator('#directory-status').inputValue(),'ACTIVE','Operational directories default to active records')
@@ -222,7 +224,8 @@ try {
       }))
       assert.deepEqual(actionStyleProblems, [], `${path}: shared action sizes survive page styles`)
       assert.equal(await page.evaluate(() => document.documentElement.dataset.theme), 'light')
-      assert.equal(await page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--page-background').trim()), 'hsl(220 29% 97%)')
+      assert.equal(await page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--cloud').trim()), 'hsl(220 29% 97%)')
+      assert.equal(await page.evaluate(() => CSS.supports('background',getComputedStyle(document.documentElement).getPropertyValue('--page-background').trim())), true)
       if (['/admin/audit-logs','/staff/ticketing','/staff/boarding','/home'].includes(path)) {
         const selector=role==='ADMIN' ? '.sidebar nav a svg.app-icon' : role==='PASSENGER' ? '.bottom-nav svg.app-icon' : '.staff-navigation svg.app-icon'
         const icons=await page.locator(selector).evaluateAll(nodes=>nodes.map(node=>node.innerHTML))

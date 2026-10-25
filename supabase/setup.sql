@@ -4819,4 +4819,785 @@ revoke all on function public.verify_online_payment(uuid) from public,anon;
 grant execute on function public.verify_online_payment(uuid) to authenticated;
 revoke all on all functions in schema barkolink_private from public,anon,authenticated;
 
+
+-- 044_automatic_vessel_tracking.sql
+-- Display-only estimates may start from a saved itinerary. Booking eligibility
+-- continues to use vessel_position_at and its confirmed starting observation.
+create function barkolink_private.vessel_display_position_at(vessel uuid, at_time timestamptz)
+returns jsonb language plpgsql stable set search_path='' as $$
+declare position jsonb; trip public.sailing; location uuid; last_trip public.sailing;
+begin
+  position:=barkolink_private.vessel_position_at(vessel,at_time);
+  if position->>'state'<>'UNKNOWN' then
+    return position || jsonb_build_object('basis',case when position->>'state'='CONFIRMED' then 'TERMINAL' else 'SCHEDULE' end);
+  end if;
+  select * into trip from public.sailing where vessel_id=vessel and status<>'CANCELLED'
+    order by departure_at,code limit 1;
+  if not found then
+    return jsonb_build_object('state','UNKNOWN','reason','No saved voyage or confirmed port is available.');
+  end if;
+  location:=trip.origin_port_id;
+  last_trip:=trip;
+  for trip in select * from public.sailing where vessel_id=vessel and status<>'CANCELLED'
+    and departure_at<=at_time order by departure_at,code loop
+    if trip.origin_port_id<>location then
+      return jsonb_build_object('state','CONFLICT','basis','SCHEDULE','tripCode',trip.code,
+        'reason','Scheduled voyages have a port mismatch. Review the itinerary or confirm the current port.');
+    end if;
+    if trip.status='DELAYED' then
+      return jsonb_build_object('state','DELAYED','basis','SCHEDULE','tripCode',trip.code,
+        'reason','The voyage is delayed. Confirm the current port or correct its schedule.');
+    end if;
+    if trip.arrival_at>at_time then
+      return jsonb_build_object('state','UNDERWAY','basis','SCHEDULE','tripCode',trip.code,
+        'originPortId',trip.origin_port_id,'destinationPortId',trip.destination_port_id,
+        'departureAt',trip.departure_at,'arrivalAt',trip.arrival_at,
+        'reason','Estimated from scheduled departure and arrival; actual departure is not confirmed.');
+    end if;
+    location:=trip.destination_port_id;
+    last_trip:=trip;
+  end loop;
+  return jsonb_build_object('state','EXPECTED','basis','SCHEDULE','portId',location,
+    'portName',(select name from public.port where id=location),
+    'tripCode',coalesce(last_trip.code,trip.code),
+    'reason','Estimated from saved voyages. Confirm the actual port with the terminal.');
+end $$;
+
+alter function barkolink_private.execute_flexible_discounts(text,jsonb,text,text)
+  rename to execute_flexible_discounts_v43;
+create function barkolink_private.execute_flexible_discounts(operation text,args jsonb,actor_uid text,actor_role text)
+returns jsonb language plpgsql set search_path='' as $$
+declare result jsonb;
+begin
+  -- Delegate identity, permissions, confirmations, and all booking checks unchanged.
+  result:=barkolink_private.execute_flexible_discounts_v43(operation,args,actor_uid,actor_role);
+  if operation in ('AdminVesselPositions','AdminConfirmVesselPort') then
+    result:=jsonb_set(result,'{vessels}',coalesce((select jsonb_agg(
+      jsonb_set(item,'{position}',barkolink_private.vessel_display_position_at((item->>'id')::uuid,now()))
+      order by item->>'name',item->>'id') from jsonb_array_elements(result->'vessels') item),'[]'::jsonb));
+  end if;
+  return result;
+end $$;
+revoke all on all functions in schema barkolink_private from public,anon,authenticated;
+
+
+-- 045_schedule_based_vessel_positions.sql
+-- Routine tracking and booking availability follow the saved itinerary.
+-- A manual port observation is an optional correction, never an automatic arrival.
+create or replace function barkolink_private.vessel_position_at(vessel uuid, at_time timestamptz, exclude_code text default null)
+returns jsonb language plpgsql stable set search_path='' as $$
+declare anchor barkolink_private.vessel_port_observation; trip public.sailing;
+  location uuid; expected boolean:=false; observed boolean; since_time timestamptz; latest_code text;
+begin
+  select * into anchor from barkolink_private.vessel_port_observation
+    where vessel_id=vessel and observed_at<=at_time order by observed_at desc,created_at desc,id desc limit 1;
+  observed:=found;
+  if observed then
+    location:=anchor.port_id;since_time:=anchor.observed_at;
+  else
+    -- The excluded trip still supplies its origin if it is the first voyage;
+    -- it must not count as already underway when checking its own departure.
+    select * into trip from public.sailing where vessel_id=vessel and status<>'CANCELLED'
+      order by departure_at,code limit 1;
+    if not found then return jsonb_build_object('state','UNKNOWN','reason','Add a saved trip to establish the vessel itinerary.'); end if;
+    location:=trip.origin_port_id;since_time:='-infinity';expected:=true;latest_code:=trip.code;
+  end if;
+  for trip in select * from public.sailing where vessel_id=vessel and status<>'CANCELLED'
+    and code is distinct from exclude_code and departure_at>=since_time and departure_at<=at_time
+    order by departure_at,code loop
+    if trip.origin_port_id<>location then
+      return jsonb_build_object('state','CONFLICT','reason','The vessel itinerary has a port mismatch. Correct its trips or record a location correction.','tripCode',trip.code);
+    end if;
+    if trip.status='DELAYED' then
+      return jsonb_build_object('state','DELAYED','reason','A previous voyage is delayed. Update the voyage schedule before opening a dependent departure.','tripCode',trip.code);
+    end if;
+    if trip.arrival_at>at_time then
+      return jsonb_build_object('state','UNDERWAY','basis','SCHEDULE','reason','The vessel is assigned to another voyage at this time (schedule estimate).',
+        'originPortId',trip.origin_port_id,'destinationPortId',trip.destination_port_id,'tripCode',trip.code,'arrivalAt',trip.arrival_at);
+    end if;
+    location:=trip.destination_port_id;expected:=true;latest_code:=trip.code;
+  end loop;
+  return jsonb_strip_nulls(jsonb_build_object('state',case when expected then 'EXPECTED' else 'CONFIRMED' end,
+    'basis',case when expected then 'SCHEDULE' else 'TERMINAL' end,
+    'portId',location,'portName',(select name from public.port where id=location),
+    'tripCode',latest_code,
+    'confirmedPortName',case when observed then (select name from public.port where id=anchor.port_id) end,
+    'confirmedAt',case when observed then anchor.observed_at end,
+    'confirmationNote',case when observed then anchor.note end));
+end $$;
+revoke all on function barkolink_private.vessel_position_at(uuid,timestamptz,text) from public,anon,authenticated;
+
+
+-- 046_optional_account_mfa.sql
+create table barkolink_private.mfa_policy (
+  singleton boolean primary key default true check(singleton),
+  staff_required boolean not null default true,
+  updated_at timestamptz not null default now()
+);
+insert into barkolink_private.mfa_policy(singleton) values(true);
+revoke all on barkolink_private.mfa_policy from public,anon,authenticated;
+
+create function barkolink_private.account_mfa_required(p_actor uuid,p_role text) returns boolean
+language plpgsql stable set search_path='' as $$
+begin
+  if p_role not in ('ADMIN','TICKETING','BOARDING') then return false;end if;
+  if p_role in ('TICKETING','BOARDING') and (select staff_required from barkolink_private.mfa_policy where singleton) then return true;end if;
+  -- A missing Auth relation must never make an opted-in account less protected.
+  if to_regclass('auth.mfa_factors') is null then return true;end if;
+  return exists(select 1 from auth.mfa_factors where user_id=p_actor and status='verified');
+end $$;
+
+create or replace function barkolink_private.require_staff_mfa(actor_role text) returns void
+language plpgsql set search_path='' as $$
+begin
+  if actor_role in ('ADMIN','TICKETING','BOARDING') and
+    coalesce(nullif(current_setting('request.jwt.claims',true),'')::jsonb->>'aal','')<>'aal2' and
+    barkolink_private.account_mfa_required(auth.uid(),actor_role) then
+    raise exception 'Verify your authenticator code before accessing the staff workspace.' using errcode='42501';
+  end if;
+end $$;
+
+-- Available before step-up so the router can decide whether setup is required.
+create function public.my_mfa_settings() returns jsonb
+language plpgsql security definer set search_path='' as $$
+declare actor uuid:=auth.uid(); actor_role text; enabled boolean; required boolean;
+begin
+  if actor is null then raise exception 'Sign in first.' using errcode='42501';end if;
+  select coalesce(raw_app_meta_data->>'role','PASSENGER') into actor_role from auth.users where id=actor;
+  if not found then raise exception 'Account was not found.' using errcode='42501';end if;
+  select exists(select 1 from auth.mfa_factors where user_id=actor and status='verified' and factor_type='totp') into enabled;
+  select staff_required into required from barkolink_private.mfa_policy where singleton;
+  return jsonb_build_object('role',actor_role,'enabled',enabled,'staffRequired',required,
+    'policyRequired',actor_role in ('TICKETING','BOARDING') and required,
+    'mfaRequired',barkolink_private.account_mfa_required(actor,actor_role));
+end $$;
+revoke all on function public.my_mfa_settings() from public,anon;
+grant execute on function public.my_mfa_settings() to authenticated;
+
+create function public.set_staff_mfa_required(p_required boolean) returns jsonb
+language plpgsql security definer set search_path='' as $$
+declare actor uuid:=auth.uid(); actor_role text;
+begin
+  select raw_app_meta_data->>'role' into actor_role from auth.users where id=actor;
+  if actor is null or actor_role is distinct from 'ADMIN' then raise exception 'Administrator access required.' using errcode='42501';end if;
+  perform barkolink_private.require_staff_mfa(actor_role);
+  if p_required is null then raise exception 'Choose whether staff 2FA is required.';end if;
+  update barkolink_private.mfa_policy set staff_required=p_required,updated_at=now() where singleton;
+  insert into public.activity_log(actor_uid,action,entity_type,entity_id,details)
+    values(actor::text,'MFA_POLICY_UPDATED','mfa_policy','staff',jsonb_build_object('staff_required',p_required));
+  return public.my_mfa_settings();
+end $$;
+revoke all on function public.set_staff_mfa_required(boolean) from public,anon;
+grant execute on function public.set_staff_mfa_required(boolean) to authenticated;
+
+-- The account-management Edge Function validates the caller, then consults the
+-- same rule using its service role. No caller can query another account directly.
+create function public.admin_mfa_requirement(p_actor uuid) returns boolean
+language plpgsql security definer set search_path='' as $$
+begin
+  if not exists(select 1 from auth.users where id=p_actor and raw_app_meta_data->>'role'='ADMIN') then
+    raise exception 'Administrator access required.' using errcode='42501';end if;
+  return barkolink_private.account_mfa_required(p_actor,'ADMIN');
+end $$;
+revoke all on function public.admin_mfa_requirement(uuid) from public,anon,authenticated;
+grant execute on function public.admin_mfa_requirement(uuid) to service_role;
+revoke all on all functions in schema barkolink_private from public,anon,authenticated;
+
+
+-- 047_preserve_authenticator_on_toggle.sql
+-- Switching the application requirement off must preserve the Auth factor.
+create table barkolink_private.account_mfa_preference (
+  user_id uuid primary key references auth.users(id) on delete cascade,
+  enabled boolean not null,
+  last_verification bigint not null,
+  updated_at timestamptz not null default now()
+);
+revoke all on barkolink_private.account_mfa_preference from public,anon,authenticated;
+
+create or replace function barkolink_private.account_mfa_required(p_actor uuid,p_role text) returns boolean
+language plpgsql stable set search_path='' as $$
+begin
+  if p_role not in ('ADMIN','TICKETING','BOARDING') then return false;end if;
+  if p_role in ('TICKETING','BOARDING') and (select staff_required from barkolink_private.mfa_policy where singleton) then return true;end if;
+  if to_regclass('auth.mfa_factors') is null then return true;end if;
+  return coalesce((select enabled from barkolink_private.account_mfa_preference where user_id=p_actor),true)
+    and exists(select 1 from auth.mfa_factors where user_id=p_actor and status='verified');
+end $$;
+
+create or replace function public.my_mfa_settings() returns jsonb
+language plpgsql security definer set search_path='' as $$
+declare actor uuid:=auth.uid(); actor_role text; linked boolean; required boolean; preference boolean;
+begin
+  if actor is null then raise exception 'Sign in first.' using errcode='42501';end if;
+  select coalesce(raw_app_meta_data->>'role','PASSENGER') into actor_role from auth.users where id=actor;
+  if not found then raise exception 'Account was not found.' using errcode='42501';end if;
+  select exists(select 1 from auth.mfa_factors where user_id=actor and status='verified' and factor_type='totp') into linked;
+  select staff_required into required from barkolink_private.mfa_policy where singleton;
+  select enabled into preference from barkolink_private.account_mfa_preference where user_id=actor;
+  return jsonb_build_object('role',actor_role,'authenticatorLinked',linked,
+    'enabled',linked and (coalesce(preference,true) or (actor_role in ('TICKETING','BOARDING') and required)),
+    'staffRequired',required,'policyRequired',actor_role in ('TICKETING','BOARDING') and required,
+    'mfaRequired',barkolink_private.account_mfa_required(actor,actor_role));
+end $$;
+
+create function public.set_account_mfa_enabled(p_enabled boolean) returns jsonb
+language plpgsql security definer set search_path='' as $$
+declare actor uuid:=auth.uid(); actor_role text; required boolean; claims jsonb;
+  verified_at bigint; last_used bigint;
+begin
+  select raw_app_meta_data->>'role' into actor_role from auth.users where id=actor;
+  if actor is null or actor_role not in ('ADMIN','TICKETING','BOARDING') or actor_role is null then
+    raise exception 'Staff or administrator access required.' using errcode='42501';end if;
+  if p_enabled is null then raise exception 'Choose On or Off.';end if;
+  -- Serialize policy changes and concurrent toggles; one proof cannot be replayed.
+  select staff_required into required from barkolink_private.mfa_policy where singleton for share;
+  if not p_enabled and actor_role in ('TICKETING','BOARDING') and required then
+    raise exception 'Your administrator requires staff two-factor authentication.' using errcode='42501';end if;
+  perform pg_advisory_xact_lock(hashtextextended(actor::text,47621));
+  claims:=coalesce(nullif(current_setting('request.jwt.claims',true),'')::jsonb,'{}'::jsonb);
+  select max((item->>'timestamp')::bigint) into verified_at from jsonb_array_elements(
+    case when jsonb_typeof(claims->'amr')='array' then claims->'amr' else '[]'::jsonb end) item
+    where item->>'method'='totp' and item->>'timestamp' ~ '^[0-9]{1,12}$';
+  if claims->>'aal' is distinct from 'aal2' or verified_at is null
+    or verified_at<extract(epoch from now())-300 or verified_at>extract(epoch from now())+30 then
+    raise exception 'Verify a fresh authenticator code before changing 2FA.' using errcode='42501';end if;
+  if not exists(select 1 from auth.mfa_factors where user_id=actor and factor_type='totp' and status='verified') then
+    raise exception 'Link an authenticator before changing 2FA.' using errcode='42501';end if;
+  select last_verification into last_used from barkolink_private.account_mfa_preference where user_id=actor;
+  if last_used is not null and verified_at<=last_used then
+    raise exception 'Use a new authenticator code before changing 2FA again.' using errcode='42501';end if;
+  insert into barkolink_private.account_mfa_preference(user_id,enabled,last_verification)
+    values(actor,p_enabled,verified_at) on conflict(user_id) do update
+    set enabled=excluded.enabled,last_verification=excluded.last_verification,updated_at=now();
+  insert into public.activity_log(actor_uid,action,entity_type,entity_id,details)
+    values(actor::text,'ACCOUNT_MFA_UPDATED','account_mfa',actor::text,jsonb_build_object('enabled',p_enabled));
+  return public.my_mfa_settings();
+end $$;
+revoke all on function public.set_account_mfa_enabled(boolean) from public,anon;
+grant execute on function public.set_account_mfa_enabled(boolean) to authenticated;
+revoke all on all functions in schema barkolink_private from public,anon,authenticated;
+
+
+-- 048_boarding_staff_trip_timing.sql
+-- Boarding staff may override one departing trip at their assigned active port.
+-- Operator-wide policy and departure/status administration remain Admin-only.
+alter function barkolink_private.execute_flexible_discounts(text,jsonb,text,text)
+  rename to execute_flexible_discounts_v47;
+
+create function barkolink_private.execute_flexible_discounts(operation text,args jsonb,actor_uid text,actor_role text)
+returns jsonb language plpgsql set search_path='' as $$
+declare trip public.sailing; assigned uuid; policy barkolink_private.sailing_status_policy;
+  boarding_time timestamptz; reason text; previous_time timestamptz; effective_time timestamptz;
+begin
+  if operation not in ('BoardingSailingTiming','BoardingSetSailingTiming') then
+    return barkolink_private.execute_flexible_discounts_v47(operation,args,actor_uid,actor_role);
+  end if;
+  if nullif(actor_uid,'') is null or coalesce(actor_role,'') not in ('BOARDING','ADMIN') then
+    raise exception 'Boarding staff access required.' using errcode='42501';
+  end if;
+  if actor_role='BOARDING' then
+    -- Hold the assignment until the read/save finishes, before locking the trip.
+    select assigned_port_id into assigned from public.app_user where uid=actor_uid and role='BOARDING' for share;
+    if assigned is null or not exists(select 1 from public.port where id=assigned and is_active) then
+      raise exception 'No active port is assigned to your staff account. Ask an administrator to assign your port.' using errcode='42501';
+    end if;
+  end if;
+  select * into trip from public.sailing where code=args->>'sailingCode' for update;
+  if not found then raise exception 'Sailing was not found.'; end if;
+  if actor_role='BOARDING' and trip.origin_port_id is distinct from assigned then
+    raise exception 'This record is outside your assigned port.' using errcode='42501';
+  end if;
+  select p.* into policy from barkolink_private.sailing_status_policy p
+    join public.vessel v on v.reference_metadata->>'operator'=p.operator where v.id=trip.vessel_id;
+  previous_time:=coalesce(trip.boarding_at,trip.departure_at-make_interval(mins=>policy.boarding_lead_minutes));
+  if operation='BoardingSetSailingTiming' then
+    if trip.status not in ('SCHEDULED','BOARDING') or trip.departure_at<=now() then
+      raise exception 'Adjust boarding time only for scheduled or boarding trips before departure.';
+    end if;
+    -- A stale dialog must not overwrite an Admin reschedule or another staff edit.
+    if nullif(args->>'expectedUpdatedAt','') is null or
+      (args->>'expectedUpdatedAt')::timestamptz is distinct from trip.updated_at then
+      raise exception 'This trip changed. Reload its boarding details and try again.' using errcode='40001';
+    end if;
+    boarding_time:=nullif(args->>'boardingAt','')::timestamptz;
+    reason:=nullif(trim(args->>'reason'),'');
+    if boarding_time is null or not isfinite(boarding_time) or boarding_time>=trip.departure_at or
+      boarding_time<trip.departure_at-interval '7 days' then
+      raise exception 'Set boarding between 1 minute and 7 days before departure.';
+    end if;
+    if boarding_time>trip.departure_at-interval '1 minute' then
+      raise exception 'Set boarding at least 1 minute before departure.';
+    end if;
+    if reason is null or length(reason) not between 5 and 500 then
+      raise exception 'Enter a reason of 5 to 500 characters for the boarding time change.';
+    end if;
+    if trip.status='BOARDING' and boarding_time>now() then
+      raise exception 'Boarding has already started. Ask an administrator to delay or reschedule the trip instead.';
+    end if;
+    update public.sailing set boarding_at=boarding_time,boarding_time_source=reason,updated_at=clock_timestamp()
+      where code=trip.code returning * into trip;
+    insert into public.activity_log(actor_uid,action,entity_type,entity_id,details)
+      values(actor_uid,'BOARDING_TIME_UPDATED','sailing',trip.code,jsonb_build_object(
+        'boardingAt',jsonb_build_object('before',previous_time,'after',boarding_time),
+        'departureAt',trip.departure_at,'reason',reason));
+  end if;
+  effective_time:=coalesce(trip.boarding_at,trip.departure_at-make_interval(mins=>policy.boarding_lead_minutes));
+  return jsonb_build_object('timing',jsonb_build_object(
+    'sailingCode',trip.code,'departureAt',trip.departure_at,'boardingAt',trip.boarding_at,
+    'effectiveBoardingAt',effective_time,'boardingTimeSource',coalesce(trip.boarding_time_source,policy.boarding_time_source),
+    'usesOperatorDefault',trip.boarding_at is null,'updatedAt',trip.updated_at,'status',trip.status,
+    'canEdit',trip.status in ('SCHEDULED','BOARDING') and trip.departure_at>now()));
+end $$;
+
+revoke all on function barkolink_private.execute_flexible_discounts(text,jsonb,text,text) from public,anon,authenticated;
+revoke all on function barkolink_private.execute_flexible_discounts_v47(text,jsonb,text,text) from public,anon,authenticated;
+
 commit;
+
+-- 049_starlite_accommodation_catalog.sql
+-- Align the current Starlite service catalog without changing booked fares or IDs.
+do $$ begin
+  if exists(select 1 from public.vessel where code='SL-SWM-STELLA-DEL-MAR' and reference_metadata->>'operator'='Starlite Ferries')
+    and exists(select 1 from public.vessel where code='SL-STELLA-DEL-MAR') then
+    raise exception 'The normalized Starlite vessel code is already in use.';
+  end if;
+end $$;
+update public.vessel set code='SL-STELLA-DEL-MAR'
+where code='SL-SWM-STELLA-DEL-MAR' and reference_metadata->>'operator'='Starlite Ferries';
+
+-- Unsupported classes with booking history stay archived; never delete bookings.
+update public.accommodation a set is_active=false
+from public.vessel v where a.vessel_id=v.id and v.reference_metadata->>'operator'='Starlite Ferries'
+  and a.name not in ('Economy','Tourist Class','Business Class')
+  and exists(select 1 from public.booking b where b.accommodation_id=a.id);
+delete from public.accommodation a using public.vessel v
+where a.vessel_id=v.id and v.reference_metadata->>'operator'='Starlite Ferries'
+  and a.name not in ('Economy','Tourist Class','Business Class')
+  and not exists(select 1 from public.booking b where b.accommodation_id=a.id);
+
+
+-- Validate connected itineraries even without a manual terminal observation.
+create or replace function barkolink_private.check_vessel_port_chain()
+returns trigger language plpgsql set search_path='' as $$
+declare issue text; next_trip public.sailing;
+begin
+  if new.status not in ('SCHEDULED','BOARDING') or new.departure_at<=now() then return new; end if;
+  perform pg_advisory_xact_lock(hashtextextended(new.vessel_id::text,4281));
+  -- The first saved voyage can establish an itinerary's starting port.
+  -- Every later voyage must respect the preceding voyage or terminal observation.
+  if exists(select 1 from barkolink_private.vessel_port_observation
+      where vessel_id=new.vessel_id and observed_at<=new.departure_at)
+    or exists(select 1 from public.sailing where vessel_id=new.vessel_id
+      and code<>new.code and status<>'CANCELLED' and departure_at<=new.departure_at) then
+    issue:=barkolink_private.vessel_departure_issue(new.vessel_id,new.origin_port_id,new.departure_at,new.code);
+    if issue is not null then raise exception '%',issue; end if;
+  end if;
+  select * into next_trip from public.sailing where vessel_id=new.vessel_id
+    and code<>new.code and status<>'CANCELLED' and departure_at>=new.arrival_at
+    order by departure_at,code limit 1;
+  if found and next_trip.origin_port_id<>new.destination_port_id then
+    raise exception 'This trip ends at a different port from the vessel next departure. Add its transfer voyage or choose another vessel.';
+  end if;
+  return new;
+end $$;
+revoke all on function barkolink_private.check_vessel_port_chain() from public,anon,authenticated;
+
+
+-- A saved daily schedule assigns one vessel; a database clock creates actual trips.
+alter table barkolink_private.daily_schedule
+  add column vessel_id uuid references public.vessel,
+  add column generation_issues jsonb not null default '[]',
+  add column last_generated_at timestamptz;
+alter table public.sailing
+  add column daily_schedule_id uuid references barkolink_private.daily_schedule,
+  add column daily_service_date date,
+  add column daily_departure_time text,
+  add constraint daily_trip_source_complete check (
+    (daily_schedule_id is null and daily_service_date is null and daily_departure_time is null) or
+    (daily_schedule_id is not null and daily_service_date is not null and daily_departure_time is not null)),
+  add constraint daily_trip_occurrence unique(daily_schedule_id,daily_service_date,daily_departure_time);
+
+create function barkolink_private.generate_daily_trips() returns integer
+language plpgsql security definer set search_path='' as $$
+declare slot record; ship public.vessel; fares public.fare_settings; policy barkolink_private.sailing_status_policy;
+  minutes integer; trip_code text; created integer:=0;
+begin
+  if not pg_try_advisory_xact_lock(hashtext('barkolink-generate-daily-trips')) then return 0; end if;
+  update barkolink_private.daily_schedule set generation_issues='[]',last_generated_at=now() where is_active;
+  -- All routes are processed together chronologically, so outbound/return pairs connect.
+  for slot in
+    select s.*,r.origin_port_id,r.destination_port_id,r.duration_minutes as route_minutes,
+      r.is_active and o.is_active and d.is_active as route_active,
+      (now() at time zone 'Asia/Manila')::date + day_offset as service_date, departure_time,
+      (((now() at time zone 'Asia/Manila')::date + day_offset) + departure_time::time) at time zone 'Asia/Manila' as departure
+    from barkolink_private.daily_schedule s join public.ferry_route r on r.id=s.route_id
+    join public.port o on o.id=r.origin_port_id join public.port d on d.id=r.destination_port_id
+    cross join generate_series(0,6) day_offset cross join unnest(s.departure_times) departure_time
+    where s.is_active
+    order by departure,s.id
+  loop
+    if slot.departure<=now() or exists(select 1 from public.sailing where daily_schedule_id=slot.id
+      and daily_service_date=slot.service_date and daily_departure_time=slot.departure_time) then continue; end if;
+    begin
+      if not slot.route_active then raise exception 'Activate the route and both ports.'; end if;
+      if slot.vessel_id is null then raise exception 'Assign a vessel in Edit schedule to start automatic trips.'; end if;
+      select * into ship from public.vessel where id=slot.vessel_id for update;
+      if not found or not ship.is_active or ship.passenger_capacity is null then raise exception 'Choose an active vessel with passenger capacity.'; end if;
+      if ship.reference_metadata->>'operator' is distinct from slot.operator or not exists(
+        select 1 from public.vessel_route where vessel_id=ship.id and route_id=slot.route_id) then
+        raise exception 'Assign a vessel that serves this operator and route.';
+      end if;
+      minutes:=coalesce(slot.route_minutes,slot.duration_minutes);
+      if minutes is null or minutes<=0 then raise exception 'Set the route duration before generating trips.'; end if;
+      select * into fares from public.fare_settings where code=ship.id::text;
+      if not found then raise exception 'Save fare settings for the assigned vessel.'; end if;
+      select * into policy from barkolink_private.sailing_status_policy where operator=slot.operator;
+      if not found or policy.boarding_lead_minutes is null then raise exception 'Set the operator-confirmed boarding policy.'; end if;
+      -- Link a matching manual trip rather than duplicate it. Cancelled occurrences stay cancelled.
+      if exists(select 1 from public.sailing where vessel_id=ship.id and origin_port_id=slot.origin_port_id
+        and destination_port_id=slot.destination_port_id and departure_at=slot.departure and daily_schedule_id is null) then
+        update public.sailing set daily_schedule_id=slot.id,daily_service_date=slot.service_date,daily_departure_time=slot.departure_time
+          where code=(select code from public.sailing where vessel_id=ship.id and origin_port_id=slot.origin_port_id
+            and destination_port_id=slot.destination_port_id and departure_at=slot.departure and daily_schedule_id is null order by code limit 1);
+        continue;
+      end if;
+      trip_code:='DLY'||to_char(slot.service_date,'YYYYMMDD')||'-'||upper(substr(md5(slot.id::text||slot.departure_time),1,12));
+      insert into public.sailing(code,vessel_id,origin_port_id,destination_port_id,departure_at,arrival_at,duration_minutes,
+        regular_fare,student_fare,senior_fare,child_fare,pwd_fare,pregnant_fare,available_seats,boarding_at,boarding_time_source,
+        daily_schedule_id,daily_service_date,daily_departure_time)
+      values(trip_code,ship.id,slot.origin_port_id,slot.destination_port_id,slot.departure,slot.departure+make_interval(mins=>minutes),minutes,
+        fares.regular_fare,greatest(1,round(fares.regular_fare*(100-fares.student_discount)::numeric/100)::integer),
+        greatest(1,round(fares.regular_fare*(100-fares.senior_discount)::numeric/100)::integer),
+        greatest(1,round(fares.regular_fare*(100-fares.child_discount)::numeric/100)::integer),
+        greatest(1,round(fares.regular_fare*(100-fares.pwd_discount)::numeric/100)::integer),
+        greatest(1,round(fares.regular_fare*(100-fares.pregnant_discount)::numeric/100)::integer),ship.passenger_capacity,
+        slot.departure-make_interval(mins=>policy.boarding_lead_minutes),policy.boarding_time_source,
+        slot.id,slot.service_date,slot.departure_time);
+      created:=created+1;
+    exception when others then
+      -- One blocked departure must not prevent other vessels from being scheduled.
+      update barkolink_private.daily_schedule set generation_issues=generation_issues||jsonb_build_array(
+        jsonb_build_object('departureAt',slot.departure,'reason',sqlerrm))
+        where id=slot.id and jsonb_array_length(generation_issues)<10;
+    end;
+  end loop;
+  return created;
+end $$;
+
+alter function barkolink_private.execute_flexible_discounts(text,jsonb,text,text) rename to execute_flexible_discounts_v50;
+create function barkolink_private.execute_daily_automation(operation text,args jsonb,actor_uid text,actor_role text)
+returns jsonb language plpgsql set search_path='' as $$
+declare result jsonb; schedule_id uuid; selected_vessel uuid;
+begin
+  if operation not in ('AdminDailySchedules','AdminSaveDailySchedule','AdminSetDailyScheduleActive') then
+    raise exception 'Unknown daily schedule operation.';
+  end if;
+  if nullif(actor_uid,'') is null or actor_role is distinct from 'ADMIN' then raise exception 'Administrator access required.' using errcode='42501'; end if;
+  if operation='AdminSaveDailySchedule' then
+    selected_vessel:=nullif(args->>'vesselId','')::uuid;
+    if coalesce((args->>'isActive')::boolean,false) and selected_vessel is null then raise exception 'Assign a vessel before activating automatic daily trips.'; end if;
+    if selected_vessel is not null and not exists(select 1 from public.vessel v join public.vessel_route vr on vr.vessel_id=v.id
+      where v.id=selected_vessel and v.is_active and v.reference_metadata->>'operator'=args->>'operator'
+      and vr.route_id=(args->>'routeId')::uuid) then raise exception 'Choose an active vessel assigned to this operator and route.'; end if;
+    result:=barkolink_private.execute_flexible_discounts_v50(operation,args,actor_uid,actor_role);
+    select id into schedule_id from barkolink_private.daily_schedule where operator=trim(args->>'operator') and route_id=(args->>'routeId')::uuid;
+    update barkolink_private.daily_schedule set vessel_id=selected_vessel where id=schedule_id;
+  elsif operation='AdminSetDailyScheduleActive' then
+    if (args->>'isActive')::boolean and exists(select 1 from barkolink_private.daily_schedule where id=(args->>'id')::uuid and vessel_id is null) then
+      raise exception 'Assign a vessel in Edit schedule before resuming automatic trips.';
+    end if;
+    result:=barkolink_private.execute_flexible_discounts_v50(operation,args,actor_uid,actor_role);
+  end if;
+  if operation<>'AdminDailySchedules' then perform barkolink_private.generate_daily_trips(); end if;
+  result:=barkolink_private.execute_flexible_discounts_v50('AdminDailySchedules','{}',actor_uid,actor_role);
+  return result || jsonb_build_object(
+    'schedules',(select coalesce(jsonb_agg(item||jsonb_build_object('vesselId',s.vessel_id,'vesselName',v.name,
+      'generationIssues',s.generation_issues,'lastGeneratedAt',s.last_generated_at,
+      'generatedCount',(select count(*) from public.sailing t where t.daily_schedule_id=s.id and t.departure_at>now() and t.status<>'CANCELLED')) order by position),'[]')
+      from jsonb_array_elements(result->'schedules') with ordinality entries(item,position)
+      join barkolink_private.daily_schedule s on s.id=(item->>'id')::uuid left join public.vessel v on v.id=s.vessel_id),
+    'vessels',(select coalesce(jsonb_agg(jsonb_build_object('id',v.id,'name',v.name,'operator',v.reference_metadata->>'operator',
+      'routeIds',(select coalesce(jsonb_agg(vr.route_id),'[]') from public.vessel_route vr where vr.vessel_id=v.id)) order by v.name),'[]')
+      from public.vessel v where v.is_active and v.passenger_capacity is not null));
+end $$;
+-- Keep the existing non-daily dispatch depth and Boarding authorization unchanged.
+create function barkolink_private.execute_flexible_discounts(operation text,args jsonb,actor_uid text,actor_role text)
+returns jsonb language plpgsql set search_path='' as $$
+declare trip public.sailing; assigned uuid; policy barkolink_private.sailing_status_policy;
+  boarding_time timestamptz; reason text; previous_time timestamptz; effective_time timestamptz;
+begin
+  if operation in ('AdminDailySchedules','AdminSaveDailySchedule','AdminSetDailyScheduleActive') then
+    return barkolink_private.execute_daily_automation(operation,args,actor_uid,actor_role);
+  end if;
+  if operation not in ('BoardingSailingTiming','BoardingSetSailingTiming') then
+    return barkolink_private.execute_flexible_discounts_v47(operation,args,actor_uid,actor_role);
+  end if;
+  if nullif(actor_uid,'') is null or coalesce(actor_role,'') not in ('BOARDING','ADMIN') then
+    raise exception 'Boarding staff access required.' using errcode='42501';
+  end if;
+  if actor_role='BOARDING' then
+    -- Hold the assignment until the read/save finishes, before locking the trip.
+    select assigned_port_id into assigned from public.app_user where uid=actor_uid and role='BOARDING' for share;
+    if assigned is null or not exists(select 1 from public.port where id=assigned and is_active) then
+      raise exception 'No active port is assigned to your staff account. Ask an administrator to assign your port.' using errcode='42501';
+    end if;
+  end if;
+  select * into trip from public.sailing where code=args->>'sailingCode' for update;
+  if not found then raise exception 'Sailing was not found.'; end if;
+  if actor_role='BOARDING' and trip.origin_port_id is distinct from assigned then
+    raise exception 'This record is outside your assigned port.' using errcode='42501';
+  end if;
+  select p.* into policy from barkolink_private.sailing_status_policy p
+    join public.vessel v on v.reference_metadata->>'operator'=p.operator where v.id=trip.vessel_id;
+  previous_time:=coalesce(trip.boarding_at,trip.departure_at-make_interval(mins=>policy.boarding_lead_minutes));
+  if operation='BoardingSetSailingTiming' then
+    if trip.status not in ('SCHEDULED','BOARDING') or trip.departure_at<=now() then
+      raise exception 'Adjust boarding time only for scheduled or boarding trips before departure.';
+    end if;
+    -- A stale dialog must not overwrite an Admin reschedule or another staff edit.
+    if nullif(args->>'expectedUpdatedAt','') is null or
+      (args->>'expectedUpdatedAt')::timestamptz is distinct from trip.updated_at then
+      raise exception 'This trip changed. Reload its boarding details and try again.' using errcode='40001';
+    end if;
+    boarding_time:=nullif(args->>'boardingAt','')::timestamptz;
+    reason:=nullif(trim(args->>'reason'),'');
+    if boarding_time is null or not isfinite(boarding_time) or boarding_time>=trip.departure_at or
+      boarding_time<trip.departure_at-interval '7 days' then
+      raise exception 'Set boarding between 1 minute and 7 days before departure.';
+    end if;
+    if boarding_time>trip.departure_at-interval '1 minute' then
+      raise exception 'Set boarding at least 1 minute before departure.';
+    end if;
+    if reason is null or length(reason) not between 5 and 500 then
+      raise exception 'Enter a reason of 5 to 500 characters for the boarding time change.';
+    end if;
+    if trip.status='BOARDING' and boarding_time>now() then
+      raise exception 'Boarding has already started. Ask an administrator to delay or reschedule the trip instead.';
+    end if;
+    update public.sailing set boarding_at=boarding_time,boarding_time_source=reason,updated_at=clock_timestamp()
+      where code=trip.code returning * into trip;
+    insert into public.activity_log(actor_uid,action,entity_type,entity_id,details)
+      values(actor_uid,'BOARDING_TIME_UPDATED','sailing',trip.code,jsonb_build_object(
+        'boardingAt',jsonb_build_object('before',previous_time,'after',boarding_time),
+        'departureAt',trip.departure_at,'reason',reason));
+  end if;
+  effective_time:=coalesce(trip.boarding_at,trip.departure_at-make_interval(mins=>policy.boarding_lead_minutes));
+  return jsonb_build_object('timing',jsonb_build_object(
+    'sailingCode',trip.code,'departureAt',trip.departure_at,'boardingAt',trip.boarding_at,
+    'effectiveBoardingAt',effective_time,'boardingTimeSource',coalesce(trip.boarding_time_source,policy.boarding_time_source),
+    'usesOperatorDefault',trip.boarding_at is null,'updatedAt',trip.updated_at,'status',trip.status,
+    'canEdit',trip.status in ('SCHEDULED','BOARDING') and trip.departure_at>now()));
+end $$;
+
+revoke all on all functions in schema barkolink_private from public,anon,authenticated;
+
+do $$ begin
+  if exists(select 1 from pg_available_extensions where name='pg_cron') then
+    execute 'create extension if not exists pg_cron';
+    execute $schedule$select cron.schedule('barkolink-generate-daily-trips','* * * * *','select barkolink_private.generate_daily_trips();')$schedule$;
+  end if;
+end $$;
+
+
+-- Rotate eligible vessels instead of assigning every route departure to one ship.
+alter table barkolink_private.daily_schedule add column assignment_mode text not null default 'FIXED'
+  check(assignment_mode in ('FIXED','FLEET'));
+
+create or replace function barkolink_private.generate_daily_trips() returns integer
+language plpgsql security definer set search_path='' as $$
+declare slot record; ship public.vessel; fares public.fare_settings; policy barkolink_private.sailing_status_policy;
+  minutes integer; trip_code text; created integer:=0; chosen boolean; attempts jsonb; matched_code text;
+begin
+  if not pg_try_advisory_xact_lock(hashtext('barkolink-generate-daily-trips')) then return 0; end if;
+  update barkolink_private.daily_schedule set generation_issues='[]',last_generated_at=now() where is_active;
+  -- All routes are processed together chronologically, so outbound/return pairs connect.
+  for slot in
+    select s.*,r.origin_port_id,r.destination_port_id,r.duration_minutes as route_minutes,
+      r.is_active and o.is_active and d.is_active as route_active,
+      (now() at time zone 'Asia/Manila')::date + day_offset as service_date, departure_time,
+      (((now() at time zone 'Asia/Manila')::date + day_offset) + departure_time::time) at time zone 'Asia/Manila' as departure
+    from barkolink_private.daily_schedule s join public.ferry_route r on r.id=s.route_id
+    join public.port o on o.id=r.origin_port_id join public.port d on d.id=r.destination_port_id
+    cross join generate_series(0,6) day_offset cross join unnest(s.departure_times) departure_time
+    where s.is_active
+    order by departure,s.id
+  loop
+    if slot.departure<=now() or exists(select 1 from public.sailing where daily_schedule_id=slot.id
+      and daily_service_date=slot.service_date and daily_departure_time=slot.departure_time) then continue; end if;
+    begin
+      if not slot.route_active then raise exception 'Activate the route and both ports.'; end if;
+      if slot.assignment_mode='FIXED' and slot.vessel_id is null then raise exception 'Assign a vessel in Edit schedule to start automatic trips.'; end if;
+      minutes:=coalesce(slot.route_minutes,slot.duration_minutes);
+      if minutes is null or minutes<=0 then raise exception 'Set the route duration before generating trips.'; end if;
+      select * into policy from barkolink_private.sailing_status_policy where operator=slot.operator;
+      if not found or policy.boarding_lead_minutes is null then raise exception 'Set the operator-confirmed boarding policy.'; end if;
+      chosen:=false;attempts:='[]';
+      for ship in
+        select v.* from public.vessel v join public.vessel_route vr on vr.vessel_id=v.id
+        where vr.route_id=slot.route_id and v.is_active and v.passenger_capacity is not null
+          and v.reference_metadata->>'operator'=slot.operator
+          and (slot.assignment_mode='FLEET' or v.id=slot.vessel_id)
+        order by
+          case when exists(select 1 from public.sailing t where t.vessel_id=v.id and t.departure_at=slot.departure
+            and t.origin_port_id=slot.origin_port_id and t.destination_port_id=slot.destination_port_id and t.daily_schedule_id is null) then 0 else 1 end,
+          (select count(*) from public.sailing t where t.vessel_id=v.id and t.departure_at>=now() and t.status<>'CANCELLED'),v.id
+        for update of v
+      loop
+        begin
+          select * into fares from public.fare_settings where code=ship.id::text;
+          if not found then raise exception 'Save fare settings for this vessel.'; end if;
+          select code into matched_code from public.sailing where vessel_id=ship.id and origin_port_id=slot.origin_port_id
+            and destination_port_id=slot.destination_port_id and departure_at=slot.departure and daily_schedule_id is null order by code limit 1;
+          if found then
+            update public.sailing set daily_schedule_id=slot.id,daily_service_date=slot.service_date,daily_departure_time=slot.departure_time where code=matched_code;
+            chosen:=true;exit;
+          end if;
+      trip_code:='DLY'||to_char(slot.service_date,'YYYYMMDD')||'-'||upper(substr(md5(slot.id::text||slot.departure_time),1,12));
+      insert into public.sailing(code,vessel_id,origin_port_id,destination_port_id,departure_at,arrival_at,duration_minutes,
+        regular_fare,student_fare,senior_fare,child_fare,pwd_fare,pregnant_fare,available_seats,boarding_at,boarding_time_source,
+        daily_schedule_id,daily_service_date,daily_departure_time)
+      values(trip_code,ship.id,slot.origin_port_id,slot.destination_port_id,slot.departure,slot.departure+make_interval(mins=>minutes),minutes,
+        fares.regular_fare,greatest(1,round(fares.regular_fare*(100-fares.student_discount)::numeric/100)::integer),
+        greatest(1,round(fares.regular_fare*(100-fares.senior_discount)::numeric/100)::integer),
+        greatest(1,round(fares.regular_fare*(100-fares.child_discount)::numeric/100)::integer),
+        greatest(1,round(fares.regular_fare*(100-fares.pwd_discount)::numeric/100)::integer),
+        greatest(1,round(fares.regular_fare*(100-fares.pregnant_discount)::numeric/100)::integer),ship.passenger_capacity,
+        slot.departure-make_interval(mins=>policy.boarding_lead_minutes),policy.boarding_time_source,
+        slot.id,slot.service_date,slot.departure_time);
+          created:=created+1;chosen:=true;exit;
+        exception when others then
+          attempts:=attempts||jsonb_build_array(jsonb_build_object('vessel',ship.name,'reason',sqlerrm));
+        end;
+      end loop;
+      if not chosen then
+        update barkolink_private.daily_schedule set generation_issues=generation_issues||jsonb_build_array(jsonb_build_object(
+          'departureAt',slot.departure,
+          'reason',case when jsonb_array_length(attempts)=0 then 'No active vessel is assigned to this operator and route.'
+            when slot.assignment_mode='FIXED' then attempts->0->>'reason'
+            else 'No vessel is available at the departure port for this time. Review vessel locations and conflicting trips.' end,
+          'vesselIssues',attempts)) where id=slot.id and jsonb_array_length(generation_issues)<10;
+      end if;
+    exception when others then
+      -- One blocked departure must not prevent other vessels from being scheduled.
+      update barkolink_private.daily_schedule set generation_issues=generation_issues||jsonb_build_array(
+        jsonb_build_object('departureAt',slot.departure,'reason',sqlerrm))
+        where id=slot.id and jsonb_array_length(generation_issues)<10;
+    end;
+  end loop;
+  return created;
+end $$;
+
+create or replace function barkolink_private.execute_daily_automation(operation text,args jsonb,actor_uid text,actor_role text)
+returns jsonb language plpgsql set search_path='' as $$
+declare result jsonb; schedule_id uuid; selected_vessel uuid; selected_mode text;
+begin
+  if operation not in ('AdminDailySchedules','AdminSaveDailySchedule','AdminSetDailyScheduleActive') then
+    raise exception 'Unknown daily schedule operation.';
+  end if;
+  if nullif(actor_uid,'') is null or actor_role is distinct from 'ADMIN' then raise exception 'Administrator access required.' using errcode='42501'; end if;
+  if operation='AdminSaveDailySchedule' then
+    selected_mode:=coalesce(nullif(args->>'assignmentMode',''),case when nullif(args->>'vesselId','') is not null then 'FIXED' end,
+      (select assignment_mode from barkolink_private.daily_schedule where id=nullif(args->>'id','')::uuid),'FLEET');
+    if selected_mode not in ('FIXED','FLEET') then raise exception 'Choose automatic fleet rotation or a fixed vessel.'; end if;
+    selected_vessel:=case when selected_mode='FIXED' then nullif(args->>'vesselId','')::uuid end;
+    if selected_mode='FIXED' and coalesce((args->>'isActive')::boolean,false) and selected_vessel is null then raise exception 'Assign a vessel before activating automatic daily trips.'; end if;
+    if selected_vessel is not null and not exists(select 1 from public.vessel v join public.vessel_route vr on vr.vessel_id=v.id
+      where v.id=selected_vessel and v.is_active and v.reference_metadata->>'operator'=args->>'operator'
+      and vr.route_id=(args->>'routeId')::uuid) then raise exception 'Choose an active vessel assigned to this operator and route.'; end if;
+    result:=barkolink_private.execute_flexible_discounts_v50(operation,args,actor_uid,actor_role);
+    select id into schedule_id from barkolink_private.daily_schedule where operator=trim(args->>'operator') and route_id=(args->>'routeId')::uuid;
+    update barkolink_private.daily_schedule set vessel_id=selected_vessel,assignment_mode=selected_mode where id=schedule_id;
+  elsif operation='AdminSetDailyScheduleActive' then
+    if (args->>'isActive')::boolean and exists(select 1 from barkolink_private.daily_schedule where id=(args->>'id')::uuid and vessel_id is null and assignment_mode='FIXED') then
+      raise exception 'Assign a vessel in Edit schedule before resuming automatic trips.';
+    end if;
+    result:=barkolink_private.execute_flexible_discounts_v50(operation,args,actor_uid,actor_role);
+  end if;
+  if operation<>'AdminDailySchedules' then perform barkolink_private.generate_daily_trips(); end if;
+  result:=barkolink_private.execute_flexible_discounts_v50('AdminDailySchedules','{}',actor_uid,actor_role);
+  return result || jsonb_build_object(
+    'schedules',(select coalesce(jsonb_agg(item||jsonb_build_object('vesselId',s.vessel_id,'vesselName',v.name,'assignmentMode',s.assignment_mode,
+      'fleetCount',(select count(*) from public.vessel fv join public.vessel_route vr on vr.vessel_id=fv.id
+        where vr.route_id=s.route_id and fv.is_active and fv.passenger_capacity is not null and fv.reference_metadata->>'operator'=s.operator),
+      'generationIssues',s.generation_issues,'lastGeneratedAt',s.last_generated_at,
+      'generatedCount',(select count(*) from public.sailing t where t.daily_schedule_id=s.id and t.departure_at>now() and t.status<>'CANCELLED')) order by position),'[]')
+      from jsonb_array_elements(result->'schedules') with ordinality entries(item,position)
+      join barkolink_private.daily_schedule s on s.id=(item->>'id')::uuid left join public.vessel v on v.id=s.vessel_id),
+    'vessels',(select coalesce(jsonb_agg(jsonb_build_object('id',v.id,'name',v.name,'operator',v.reference_metadata->>'operator',
+      'routeIds',(select coalesce(jsonb_agg(vr.route_id),'[]') from public.vessel_route vr where vr.vessel_id=v.id)) order by v.name),'[]')
+      from public.vessel v where v.is_active and v.passenger_capacity is not null));
+end $$;
+
+revoke all on all functions in schema barkolink_private from public,anon,authenticated;
+
+
+-- Manual and recurring trips share a non-blocking sequence-backed TRP allocator.
+-- Sequence values are never reused, including after failed/cancelled operations.
+create sequence barkolink_private.trip_code_serial;
+select setval('barkolink_private.trip_code_serial',coalesce((select max(substring(code from 13)::bigint)
+  from public.sailing where code ~ '^TRP[0-9]{4}-[0-9]{7,}$'),0)+1,false);
+
+create function barkolink_private.allocate_trip_code() returns text
+language plpgsql volatile set search_path='' as $$
+declare serial bigint;
+begin
+  serial:=nextval('barkolink_private.trip_code_serial');
+  return to_char(now() at time zone 'Asia/Manila','"TRP"YYYY-MMDD')||
+    case when serial<1000 then lpad(serial::text,3,'0') else serial::text end;
+end $$;
+create or replace function barkolink_private.next_trip_code() returns text
+language sql stable set search_path='' as $$
+  select to_char(now() at time zone 'Asia/Manila','"TRP"YYYY-MMDD')||
+    case when serial<1000 then lpad(serial::text,3,'0') else serial::text end
+  from (select last_value+case when is_called then 1 else 0 end serial from barkolink_private.trip_code_serial) candidate;
+$$;
+
+do $$ declare definition text; begin
+  definition:=pg_get_functiondef('barkolink_private.generate_daily_trips()'::regprocedure);
+  if position('trip_code:=''DLY''' in definition)=0 then raise exception 'Expected the fleet generator before installing TRP allocation.';end if;
+  execute replace(definition,
+    'trip_code:=''DLY''||to_char(slot.service_date,''YYYYMMDD'')||''-''||upper(substr(md5(slot.id::text||slot.departure_time),1,12));',
+    'trip_code:=barkolink_private.allocate_trip_code();');
+  definition:=pg_get_functiondef('barkolink_private.execute(text,jsonb,text,text)'::regprocedure);
+  if position('new_code := barkolink_private.next_trip_code();' in definition)=0 then raise exception 'Expected the manual trip creation allocator.';end if;
+  execute replace(definition,'new_code := barkolink_private.next_trip_code();','new_code := barkolink_private.allocate_trip_code();');
+end $$;
+revoke all on sequence barkolink_private.trip_code_serial from public,anon,authenticated;
+revoke all on all functions in schema barkolink_private from public,anon,authenticated;
+
+-- Editable application allocations, not certified physical class capacities.
+-- Complete the current Starlite catalog once. Never reset a complete, edited catalog.
+do $$
+declare ship record; class record; reserved integer;
+begin
+  for ship in select v.* from public.vessel v where v.is_active and v.passenger_capacity >= 3
+    and v.reference_metadata->>'operator'='Starlite Ferries'
+    and (select count(*) from public.accommodation a where a.vessel_id=v.id
+      and a.name in ('Economy','Tourist Class','Business Class')) < 3
+    order by v.id for update
+  loop
+    perform pg_advisory_xact_lock(hashtextextended(ship.id::text,42));
+    if exists(select 1 from public.accommodation where vessel_id=ship.id and is_active
+      and name not in ('Economy','Tourist Class','Business Class')) then
+      raise exception 'Review other active accommodation classes on % before allocating seats.',ship.name;
+    end if;
+    for class in select * from (values
+      ('Economy',ship.passenger_capacity-greatest(1,floor(ship.passenger_capacity*.2)::integer)-greatest(1,floor(ship.passenger_capacity*.1)::integer),
+        'Standard passenger seating in the Economy accommodation.'),
+      ('Tourist Class',greatest(1,floor(ship.passenger_capacity*.2)::integer),
+        'Passenger seating in the Tourist Class accommodation. Confirm the seating arrangement and amenities for the assigned vessel.'),
+      ('Business Class',greatest(1,floor(ship.passenger_capacity*.1)::integer),
+        'Passenger seating in the Business Class accommodation. Confirm the seating arrangement and amenities for the assigned vessel.')
+    ) as classes(name,capacity,description)
+    loop
+      select coalesce(max(seats),0) into reserved from (
+        select sum(b.passenger_count) seats from public.booking b join public.accommodation a on a.id=b.accommodation_id
+        where a.vessel_id=ship.id and a.name=class.name and b.status in ('PENDING','CONFIRMED') group by b.sailing_code
+      ) occupied;
+      if reserved>class.capacity then raise exception 'Allocation for % on % would be below reserved seats.',class.name,ship.name; end if;
+      insert into public.accommodation(vessel_id,name,description,capacity,surcharge,is_active)
+      values(ship.id,class.name,class.description,class.capacity,0,true)
+      on conflict(vessel_id,name) do update set capacity=excluded.capacity,is_active=true;
+    end loop;
+  end loop;
+end $$;

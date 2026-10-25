@@ -7,3 +7,5 @@ Trip details use Leaflet 1.9.4 with departure (A) and arrival (B) markers, port 
 Default tiles are `https://tile.openstreetmap.org/{z}/{x}/{y}.png` with visible OpenStreetMap attribution and normal browser caching/referrer behavior. There is no prefetch, offline download, or background tile polling. Follow the [OSM tile policy](https://operations.osmfoundation.org/policies/tiles/). Production operators can set `VITE_MAP_TILE_URL` and `VITE_MAP_ATTRIBUTION` together for another provider, then rebuild. These are public browser settings; do not place private keys there. Google directions remain name-based to help passengers find the terminal.
 
 Leaflet loads on demand, cleans up on component removal, and resizes when Ionic views become visible. Unknown locations and tile errors preserve port details and directions.
+
+Directory and landing maps exclude disabled ports and react to changes in the supplied port list. Booked journeys retain their actual terminals. See [active ports and the accommodation catalog](port-accommodation-catalog.md) for the October 24 repair and verification.

@@ -1,7 +1,7 @@
 <template>
   <ion-page>
     <ion-content ref="contentRef" :fullscreen="true">
-      <main class="staff-shell design-workspace" :class="{ 'ticketing-workspace': !isBoarding, 'ticketing-bookings': isBookingsPage, 'ticketing-dashboard': !isBoarding && !isBookingsPage }">
+      <div class="staff-shell design-workspace" :class="{ 'ticketing-workspace': !isBoarding, 'ticketing-bookings': isBookingsPage, 'ticketing-dashboard': !isBoarding && !isBookingsPage }">
         <button
           v-if="menuOpen"
           class="staff-scrim"
@@ -21,8 +21,9 @@
         <section class="staff-main">
           <StaffWorkspaceHeader :role="String(route.params.role)" navigation :menu-open="menuOpen" @toggle-menu="menuOpen = !menuOpen" />
           <main id="overview" class="content">
-            <div class="heading">
-              <div>
+            <div class="heading staff-maritime-heading">
+              <MaritimeHeaderArt />
+              <div class="staff-heading-copy">
                 <p class="kicker">{{ staff.eyebrow }}</p>
                 <h1>{{ staff.greeting }}</h1>
                 <p>{{ staff.description }}</p>
@@ -466,7 +467,7 @@
             </div>
           </div></div></ion-modal
         >
-      </main>
+      </div>
     </ion-content>
   </ion-page>
 </template>
@@ -475,6 +476,7 @@ import { notifyError, notifySuccess } from '@/composables/toast';
 import QueueFreshness from "../../../components/shared/QueueFreshness.vue";
 import StaffPortRequired from '../../../components/staff/StaffPortRequired.vue';
 import { useStaffPortGate } from '../../../composables/staffPortGate';
+import { StaffPortRequiredError } from '../../../services/staffPortAccess';
 const { portBlocked } = useStaffPortGate(refreshQueues);
 import { paymentMethodLabel } from '../../../data/paymentMethod';
 import { awaitingPaymentVerification, bookingTicketReady } from '../../../data/paymentVerification';
@@ -493,6 +495,7 @@ import { computed, nextTick, onBeforeUnmount, ref, watch } from "vue";
 import { useRoute } from "vue-router";
 import { IonButton, IonContent, IonModal, IonPage, onIonViewDidEnter, onIonViewWillEnter } from "@ionic/vue";
 import AppIcon from "@/components/ui/icon/AppIcon.vue";
+import MaritimeHeaderArt from "@/components/shared/MaritimeHeaderArt.vue";
 import {
   boatOutline,
   checkmarkCircle,
@@ -921,6 +924,7 @@ async function refreshQueues() {
     if (requestId === refreshToken) { queueUpdatedAt.value = Date.now(); queueSnapshotKey = snapshotKey; }
   } catch (error) {
     if (requestId === refreshToken) {
+      if (error instanceof StaffPortRequiredError) { loadError.value = ''; return; }
       loadError.value = notifyError(databaseRequestError(
         error,
         "Could not load operations. Try refreshing again.",

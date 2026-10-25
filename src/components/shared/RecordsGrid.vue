@@ -1,8 +1,12 @@
 <template>
   <section class="records-grid" :class="{ 'dense-grid': density === 'compact' }" :aria-label="title">
     <div class="grid-tools">
-      <div class="grid-summary"><Badge>{{ visibleCount }} of {{ rows.length }} records</Badge><details class="grid-help"><summary>Table help</summary><p>Column filters and sorting apply to this page. Use the search above to find records.</p></details></div>
-      <div>
+      <div class="grid-summary" role="status" aria-live="polite">
+        <span class="grid-count"><strong>{{ visibleCount.toLocaleString() }}</strong><template v-if="activeFilterCount"> of {{ rows.length.toLocaleString() }}</template> {{ visibleCount === 1 ? 'record' : 'records' }}</span>
+        <span class="grid-scope">on this page</span>
+        <Button v-if="activeFilterCount" variant="ghost" class="clear-filters" @click="clearFilters"><X :size="14" />Clear filters ({{ activeFilterCount }})</Button>
+      </div>
+      <div class="grid-actions" aria-label="Table controls">
         <DropdownMenu>
           <DropdownMenuTrigger as-child><Button variant="outline" :disabled="!compact && !api"><Columns3 />Columns</Button></DropdownMenuTrigger>
           <DropdownMenuContent align="end">
@@ -16,11 +20,11 @@
           </DropdownMenuContent>
         </DropdownMenu>
         <Button v-if="!compact" variant="outline" :disabled="!api" @click="fitColumns"><ScanLine />Fit columns</Button>
-        <Button variant="ghost" :disabled="!compact && !api" @click="compact ? resetMobileView() : resetView()"><RotateCcw />Reset table</Button>
+        <Button variant="ghost" :disabled="!api" @click="resetView"><RotateCcw />Reset table</Button>
       </div>
     </div>
     <div v-if="compact" class="mobile-records">
-      <label>Sort loaded records<select v-model="mobileSort"><option value="">Original order</option><template v-for="(column, index) in columns" :key="column"><option v-if="!displayOnlyColumns.includes(index)" :value="`${index}:asc`">{{ column }}: ascending</option><option v-if="!displayOnlyColumns.includes(index)" :value="`${index}:desc`">{{ column }}: descending</option></template></select></label>
+      <label class="mobile-sort">Sort this page<select :value="mobileSort" :disabled="!api || loading" @change="sortMobile"><option value="">Original order</option><template v-for="(column, index) in columns" :key="column"><option v-if="!displayOnlyColumns.includes(index)" :value="`${index}:asc`">{{ column }}: ascending</option><option v-if="!displayOnlyColumns.includes(index)" :value="`${index}:desc`">{{ column }}: descending</option></template></select></label>
       <div v-if="loading" role="status" aria-label="Loading records" class="loading-cards">
         <Card v-for="item in 3" :key="item" class="loading-card"><Skeleton class="h-4 w-2/3" /><Skeleton class="h-4 w-full" /><Skeleton class="h-4 w-1/2" /></Card>
       </div>
@@ -29,6 +33,7 @@
           v-for="(column, index) in columns"
           :key="column"
           class="mobile-field"
+          :class="{ 'primary-field': index === firstVisibleColumn }"
           v-show="!hiddenColumns.includes(index)"
         >
           <small>{{ column }}</small>
@@ -42,18 +47,19 @@
             >
           </div>
         </div>
-        <div v-if="$slots.actions" class="mobile-field">
+        <div v-if="$slots.actions" class="mobile-field mobile-actions">
           <small>Actions</small>
           <div><slot name="actions" :row="row" /></div>
         </div>
       </Card>
-      <p v-if="!loading && !rows.length" class="grid-empty">
-        No matching records.
+      <p v-if="!loading && !mobileRows.length" class="grid-empty" role="status">
+        {{ activeFilterCount ? 'No records on this page match your column filters.' : 'No matching records.' }}
       </p>
     </div>
     <AgGridVue
-      v-else
+      v-show="!compact"
       class="desktop-grid"
+      :aria-label="title"
       :style="{ height: gridHeight }"
       :theme="gridTheme"
       :modules="modules"
@@ -72,8 +78,9 @@
       overlay-no-rows-template="No matching records."
       @grid-ready="ready"
       @grid-pre-destroyed="api = null"
-      @filter-changed="updateCount"
-      @row-data-updated="updateCount"
+      @filter-changed="updateView"
+      @sort-changed="updateView"
+      @row-data-updated="updateView"
       @column-visible="syncColumns"
     />
   </section>
@@ -100,7 +107,7 @@ import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuCheckboxItem,
   DropdownMenuItemIndicator, DropdownMenuLabel } from "@/components/ui/dropdown-menu";
-import { Columns3, Check, ScanLine, RotateCcw } from "@lucide/vue";
+import { Columns3, Check, ScanLine, RotateCcw, X } from "@lucide/vue";
 import {
   ClientSideRowModelModule,
   ClientSideRowModelApiModule,
@@ -108,6 +115,8 @@ import {
   ColumnAutoSizeModule,
   RowAutoHeightModule,
   TextFilterModule,
+  NumberFilterModule,
+  DateFilterModule,
   TooltipModule,
   ValidationModule,
   themeQuartz,
@@ -138,24 +147,31 @@ const props = withDefaults(
     columnFlex?: number[];
     maxGridHeight?: number;
     displayOnlyColumns?: number[];
+    columnTypes?: ("text" | "number" | "date")[];
   }>(),
-  { loading: false, density: "comfortable", actionWidth: 300, columnMinWidths: () => [], maxGridHeight: 560, displayOnlyColumns: () => [] },
+  { loading: false, density: "comfortable", actionWidth: 160, columnMinWidths: () => [], maxGridHeight: 560, displayOnlyColumns: () => [], columnTypes: () => [] },
 );
 const emit = defineEmits<{ ready: [api: GridApi<RecordGridRow>] }>();
 const slots = useSlots();
 const api = shallowRef<GridApi<RecordGridRow> | null>(null);
-const displayedCount = ref<number | null>(null);
+const displayedRows = shallowRef<RecordGridRow[] | null>(null);
+const activeFilterCount = ref(0);
 const hiddenColumns = ref<number[]>([]);
-const visibleCount = computed(() => compact.value ? props.rows.length : displayedCount.value ?? props.rows.length);
-function updateCount() { displayedCount.value = api.value?.getDisplayedRowCount() ?? null; }
+const visibleCount = computed(() => displayedRows.value?.length ?? props.rows.length);
+const firstVisibleColumn = computed(() => props.columns.findIndex((_, index) => !hiddenColumns.value.includes(index)));
+function updateView() {
+  if (!api.value) return;
+  const rows: RecordGridRow[] = [];
+  api.value.forEachNodeAfterFilterAndSort(node => { if (node.data) rows.push(node.data); });
+  displayedRows.value = rows;
+  activeFilterCount.value = Object.keys(api.value.getFilterModel()).length;
+  const sort = api.value.getColumnState().filter(column => column.sort).sort((a, b) => (a.sortIndex ?? 0) - (b.sortIndex ?? 0))[0];
+  mobileSort.value = sort ? `${sort.colId.replace('cell-', '')}:${sort.sort}` : '';
+}
 function syncColumns() {
   hiddenColumns.value = props.columns.map((_, index) => index).filter(index => api.value?.getColumn(`cell-${index}`)?.isVisible() === false);
 }
 function toggleColumn(index: number, visible: boolean | "indeterminate") {
-  if (compact.value) {
-    hiddenColumns.value = visible === true ? hiddenColumns.value.filter(column => column !== index) : [...new Set([...hiddenColumns.value, index])];
-    return;
-  }
   api.value?.setColumnsVisible([`cell-${index}`], visible === true);
   syncColumns();
 }
@@ -163,7 +179,7 @@ function statusVariant(value: string | number) {
   const status = String(value).toUpperCase().replace(/[\s-]+/g, "_");
   if (/^(PAID|CONFIRMED|ACTIVE|COMPLETED|BOARDED|CHECKED_IN|ISSUED|SCHEDULED)$/.test(status)) return "success";
   if (/^(PENDING|UNPAID|BOARDING|DELAYED|RESERVED)$/.test(status)) return "warning";
-  if (/^(CANCELLED|EXPIRED|NO_SHOW|INACTIVE|REFUNDED)$/.test(status)) return "destructive";
+  if (/^(CANCELLED|EXPIRED|NO_SHOW)$/.test(status)) return "destructive";
   return "default";
 }
 const compact = ref(typeof window !== "undefined" && window.innerWidth < 700);
@@ -173,18 +189,13 @@ function keepInactiveLast(params: PostSortRowsParams<RecordGridRow>) {
   const ordered = activeFirst(params.nodes, node => node.data?.source?.isActive === false);
   ordered.forEach((node, index) => { params.nodes[index] = node; });
 }
-function resetMobileView() { mobileSort.value = ""; hiddenColumns.value = []; }
-const mobileRows = computed(() => {
-  if (!mobileSort.value) return orderedRows.value;
-  const [column, direction] = mobileSort.value.split(':');
-  const index = Number(column);
-  const sorted = [...orderedRows.value].sort((a, b) => {
-    const left = a.sortValues?.[index] ?? a.cells[index], right = b.sortValues?.[index] ?? b.cells[index];
-    const result = typeof left === 'number' && typeof right === 'number' ? left - right : collator.compare(String(left ?? ''), String(right ?? ''));
-    return direction === 'desc' ? -result : result;
-  });
-  return activeFirst(sorted, row => row.source?.isActive === false);
-});
+const mobileRows = computed(() => displayedRows.value ?? orderedRows.value);
+function sortMobile(event: Event) {
+  const value = (event.target as HTMLSelectElement).value;
+  const [index, direction] = value.split(':');
+  api.value?.applyColumnState({ state: value ? [{ colId: `cell-${index}`, sort: direction === 'desc' ? 'desc' : 'asc', sortIndex: 0 }] : [], defaultState: { sort: null } });
+}
+function clearFilters() { api.value?.setFilterModel(null); }
 const modules = [
   ClientSideRowModelModule,
   ClientSideRowModelApiModule,
@@ -192,6 +203,8 @@ const modules = [
   ColumnAutoSizeModule,
   RowAutoHeightModule,
   TextFilterModule,
+  NumberFilterModule,
+  DateFilterModule,
   TooltipModule,
   ...(import.meta.env.DEV ? [ValidationModule] : []),
 ];
@@ -221,6 +234,8 @@ const defaultColDef: ColDef<RecordGridRow> = {
   flex: 1,
   wrapText: true,
   autoHeight: true,
+  wrapHeaderText: true,
+  autoHeaderHeight: true,
   cellDataType: false,
 };
 const collator = new Intl.Collator("en", {
@@ -269,9 +284,20 @@ const columnDefs = computed<ColDef<RecordGridRow>[]>(() => [
       headerName,
       colId: `cell-${index}`,
       sortable: !props.displayOnlyColumns.includes(index),
-      filter: props.displayOnlyColumns.includes(index)
-        ? false
-        : "agTextColumnFilter",
+      filter: props.displayOnlyColumns.includes(index) ? false : props.columnTypes[index] === 'number' ? 'agNumberColumnFilter' : props.columnTypes[index] === 'date' ? 'agDateColumnFilter' : 'agTextColumnFilter',
+      filterValueGetter: ({ data }) => {
+        const raw = data?.sortValues?.[index] ?? data?.cells[index];
+        if (props.columnTypes[index] === 'number') return raw == null || raw === '' || !Number.isFinite(Number(raw)) ? null : Number(raw);
+        if (props.columnTypes[index] === 'date') {
+          if (raw == null || raw === '') return null;
+          const date = new Date(raw);
+          if (Number.isNaN(date.getTime())) return null;
+          const parts = new Intl.DateTimeFormat('en-US', { timeZone: 'Asia/Manila', year: 'numeric', month: 'numeric', day: 'numeric' }).formatToParts(date);
+          const part = (type: string) => Number(parts.find(p => p.type === type)?.value);
+          return new Date(part('year'), part('month') - 1, part('day'));
+        }
+        return data?.cells[index] ?? '';
+      },
       valueGetter: ({ data }) => data?.cells[index] ?? "",
       tooltip: ({ value }) => String(value ?? ""),
       cellRenderer: renderer(index),
@@ -307,7 +333,7 @@ const columnDefs = computed<ColDef<RecordGridRow>[]>(() => [
 const getRowId = ({ data }: GetRowIdParams<RecordGridRow>) => data.key;
 function ready(event: GridReadyEvent<RecordGridRow>) {
   api.value = event.api;
-  updateCount();
+  updateView();
   syncColumns();
   emit("ready", event.api);
 }
@@ -318,8 +344,8 @@ function resetView() {
   api.value?.setFilterModel(null);
   api.value?.resetColumnState();
   syncColumns();
-  updateCount();
-  fitColumns();
+  updateView();
+  if (!compact.value) fitColumns();
 }
 function resize() {
   compact.value = window.innerWidth < 700;
@@ -332,13 +358,15 @@ defineExpose({ getApi: () => api.value, resetView, fitColumns });
 .records-grid {
   width: 100%;
   min-width: 0;
+  container: records / inline-size;
 }
 .grid-tools {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
-  padding: 8px 16px;
+  gap: 8px 16px;
+  flex-wrap: wrap;
+  padding: 10px 14px;
   color: var(--muted);
   font-size: var(--text-caption);
 }
@@ -348,15 +376,15 @@ defineExpose({ getApi: () => api.value, resetView, fitColumns });
   gap: 8px;
   min-width: 0;
 }
-.grid-help { font-size: var(--text-caption); max-width: 310px; }
-.grid-help summary { cursor: pointer; padding: 6px 0; color: var(--muted); }
-.grid-help p { margin: 4px 0; line-height: 1.5; }
+.grid-summary { align-items: center; }
+.grid-count { color: var(--ink); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.grid-count strong { font-weight: 650; }
+.grid-scope { color: var(--muted); }
+.grid-actions { margin-left: auto; align-items: center; }
+.grid-tools .clear-filters { color: var(--ocean); padding-inline: 6px; }
 .grid-tools button {
   padding: 7px 10px;
-  border: 1px solid var(--line);
-  border-radius: 7px;
-  background: var(--surface);
-  color: var(--ocean);
+  border-radius: 8px;
   font: inherit;
   font-size: var(--text-caption);
   cursor: pointer;
@@ -374,6 +402,8 @@ defineExpose({ getApi: () => api.value, resetView, fitColumns });
   line-height: 1.5;
   overflow-wrap: anywhere;
 }
+.records-grid :deep(.grid-cell-content) { min-width: 0; width: 100%; }
+.records-grid :deep(.ag-header-cell-text) { line-height: 1.35; }
 .records-grid :deep(.record-status) {
   display: inline-block;
   padding: 4px 8px;
@@ -386,10 +416,14 @@ defineExpose({ getApi: () => api.value, resetView, fitColumns });
 .mobile-records {
   padding: 12px;
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  min-width: 0;
   gap: 12px;
 }
 .mobile-record {
   padding: 12px 14px;
+  box-shadow: none;
+  border-radius: 10px;
 }
 .mobile-field {
   display: flex;
@@ -403,7 +437,7 @@ defineExpose({ getApi: () => api.value, resetView, fitColumns });
   color: var(--muted);
   font-size: var(--text-caption);
   flex: none;
-  max-width: 90px;
+  max-width: 40%;
 }
 .mobile-field > div {
   min-width: 0;
@@ -412,29 +446,35 @@ defineExpose({ getApi: () => api.value, resetView, fitColumns });
 }
 .grid-empty,
 .mobile-records > p {
-  padding: 24px 0;
+  padding: 24px 12px;
+  margin: 0;
+  text-align: center;
   color: var(--muted);
   font-size: var(--text-label);
 }
 .grid-tools span {
   line-height: 1.5;
 }
-@media (max-width: 699px) {
-  .grid-tools {
-    padding: 12px 16px;
-  }
-  .grid-tools button { min-height: 44px; }
-}
-.grid-summary { align-items: center; flex-wrap: wrap; }
-.grid-summary [data-slot="badge"] { display: inline-flex; }
-.grid-tools button { min-height: 40px; color: var(--ink); }
+.grid-tools button { min-height: 34px; }
 .grid-tools button svg { width: 15px; height: 15px; }
 .column-check { width: 16px; height: 16px; }
 .loading-cards { display: grid; gap: 12px; }
 .loading-card { padding: 18px; display: grid; gap: 15px; }
-@media (max-width: 1000px) { .grid-tools { flex-wrap: wrap; } }
 .dense-grid :deep(.grid-cell-content) { padding: 6px 0; line-height: 1.5; }
 .dense-grid .mobile-records { gap: 7px; padding: 10px; }
 .dense-grid .mobile-record { padding: 10px 12px; }
-.dense-grid .mobile-field { padding: 3px 0; font-size: var(--text-caption); }
+.dense-grid .mobile-field { padding: 5px 0; font-size: var(--text-label); }
+.mobile-sort { display: flex; align-items: center; justify-content: space-between; gap: 12px; color: var(--muted); font-size: var(--text-caption); padding: 0 2px 6px; }
+.mobile-sort select { min-width: 0; max-width: 65%; min-height: 44px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; color: var(--ink); background: var(--surface); font: inherit; }
+.mobile-field.primary-field { display: grid; gap: 4px; padding: 4px 0 12px; margin-bottom: 6px; border-bottom: 1px solid var(--line); }
+.primary-field > small { max-width: none; }
+.primary-field > div { text-align: left; font-weight: 650; font-size: 15px; }
+.mobile-actions { border-top: 1px solid var(--line); margin-top: 8px; padding-top: 12px; align-items: center; }
+.mobile-actions > div { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; }
+@container records (max-width: 600px) {
+  .grid-tools { align-items: stretch; gap: 6px; }
+  .grid-summary { width: 100%; gap: 6px; }
+  .grid-actions { width: 100%; margin-left: 0; gap: 6px; }
+  .grid-tools button { min-height: 44px; }
+}
 </style>

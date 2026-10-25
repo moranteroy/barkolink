@@ -20,13 +20,13 @@
       </article>
     </div>
     <button v-if="rows.length > 4" class="show-more" :aria-expanded="expanded" @click="expanded = !expanded">{{ expanded ? 'Show fewer' : `Show all ${rows.length} ${direction.toLowerCase()}` }}<ChevronDown :size="14" :class="{ flipped: expanded }" aria-hidden="true" /></button>
-    <footer><span v-if="data" class="updated"><Clock3 :size="11" aria-hidden="true" />Updated {{ clock(data.updatedAt) }} · Refreshes every 30 seconds</span><p>Scheduled times · Check operator updates before travelling.</p></footer>
+    <footer><p>Scheduled times · Check operator updates before travelling.</p></footer>
   </section>
 </template>
 <script setup lang="ts">
 import { notifyError } from '@/composables/toast';
 import { computed, onUnmounted, ref, watch } from 'vue';
-import { Ship, MapPin, RefreshCw, ArrowUpRight, ArrowDownLeft, ChevronDown, Clock3 } from '@lucide/vue';
+import { Ship, MapPin, RefreshCw, ArrowUpRight, ArrowDownLeft, ChevronDown } from '@lucide/vue';
 import { browseActivePorts } from '../../services/database/passenger';
 import { database } from '../../services/session';
 import { passengerSailingBoard, type SailingBoardData } from '../../services/sailingBoard';
@@ -97,7 +97,7 @@ dl { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin:14px 0 0; pad
 .board-message { padding:10px; font-size: var(--text-label); line-height:1.7; color:var(--muted); }.board-message.error { color:var(--danger); }
 .board-empty { display:grid; justify-items:center; text-align:center; padding:20px 14px; border:1px dashed var(--line); border-radius:12px; background:var(--surface-soft); }.board-empty svg { color:var(--ocean); margin-bottom:10px; }.board-empty strong { font-size: var(--text-label); }.board-empty p { max-width:270px; margin:6px 0 0; font-size: var(--text-caption); line-height:1.7; color:var(--muted); }
 .show-more { width:100%; margin-top:10px; border:1px solid var(--line); border-radius:9px; }.flipped { transform:rotate(180deg); }
-footer { margin-top:14px; color:var(--muted); font-size: var(--text-caption); line-height:1.7; }.updated { display:flex; align-items:center; gap:5px; }footer p { margin:4px 0 0; }
+footer { margin-top:14px; color:var(--muted); font-size: var(--text-caption); line-height:1.7; }footer p { margin:4px 0 0; }
 button:focus-visible { outline:2px solid var(--ocean); outline-offset:3px; }
 .spinning { animation:board-refresh 1s linear infinite; }@keyframes board-refresh { to { transform:rotate(360deg); } }
 @container passenger (max-width:380px) { .sailing-board { padding:14px 12px; }.board-icon { display:none; }.board-tabs button { gap:4px; } }

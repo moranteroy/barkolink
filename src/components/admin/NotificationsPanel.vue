@@ -55,8 +55,8 @@
     <button v-if="error && !loading" type="button" @click="load">Retry loading broadcasts</button>
     <div class="communication-directory"><div class="communication-heading"><div><p class="eyebrow">DELIVERY HISTORY</p><h2>Sent broadcasts</h2></div><Badge>{{ total }} total</Badge></div>
     <div class="broadcast-filters"><label>Search broadcasts<input v-model="table.query.value" type="search" placeholder="Search all broadcasts" /></label><label>Sort all broadcasts<select v-model="table.sort.value"><option value="">Newest first</option><option value="createdAt:asc">Oldest first</option><option value="title:asc">Title: A–Z</option><option value="recipientCount:desc">Most recipients</option></select></label><Button variant="ghost" :disabled="!table.query.value" @click="table.query.value = ''">Reset search</Button></div>
-    <RecordsGrid v-if="!error" title="Sent broadcasts" :columns="['Title', 'Message', 'Audience', 'Recipients', 'Sent (PH)']" :rows="gridRows" :loading="loading" density="compact" :column-min-widths="[155, 210, 135, 115, 150]" :column-flex="[1.2, 2.2, 1, .75, 1.1]" :max-grid-height="360">
-      <template #cell="{ index, value }"><strong v-if="index === 0">{{ value }}</strong><Badge v-else-if="index === 2">{{ value }}</Badge><span v-else>{{ value }}</span></template>
+    <RecordsGrid v-if="!error" title="Sent broadcasts" :columns="['Title', 'Message', 'Audience', 'Recipients', 'Sent (PH)']" :column-types="['text', 'text', 'text', 'number', 'date']" :rows="gridRows" :loading="loading" density="compact" :column-min-widths="[200, 280, 155, 125, 180]" :column-flex="[1.2, 2.2, 1, .75, 1.1]" :max-grid-height="360">
+      <template #cell="{ index, value }"><strong v-if="index === 0">{{ value }}</strong><RecordText v-else-if="index === 1" :text="String(value)" /><Badge v-else-if="index === 2">{{ value }}</Badge><span v-else>{{ value }}</span></template>
     </RecordsGrid>
     <WorkspacePagination :page="page" :total="table.records.value.length" item-label="broadcasts" :disabled="busy || loading" @change="page = $event" />
     </div>
@@ -74,6 +74,7 @@ import { Badge } from "@/components/ui/badge";
 import "../../theme/communication.css";
 import { confirmAction } from "../../composables/confirmation";
 import RecordsGrid from "../shared/RecordsGrid.vue";
+import RecordText from '../shared/RecordText.vue';
 import { useTableRecords } from "../../composables/tableRecords";
 import { useUnsavedChanges } from "../../composables/unsavedChanges";
 import { computed, onMounted, reactive, ref, watch } from "vue";

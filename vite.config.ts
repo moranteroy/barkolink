@@ -9,6 +9,16 @@ import { defineConfig } from 'vite'
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [
+    {
+      name: 'port-isolated-dependency-cache',
+      config(config, env) {
+        // Parallel Ionic/dev servers must not rename the same optimizer cache on Windows.
+        if (env.command === 'serve' && !env.isPreview && !config.cacheDir) {
+          const mode = env.mode.replace(/[^a-zA-Z0-9_-]/g, '_')
+          return { cacheDir: `node_modules/.vite/${mode}-${config.server?.port ?? 5173}` }
+        }
+      },
+    },
     vue(),
     tailwindcss(),
     legacy(),

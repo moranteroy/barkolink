@@ -5,6 +5,8 @@ const labels: Record<string, string> = {
   paymentstatus: "Payment status",
   departureat: "Departure",
   arrivalat: "Arrival",
+  boardingat: "Boarding starts",
+  reason: "Reason",
   vesselid: "Vessel reference",
   regularfare: "Regular fare",
   studentdiscount: "Student discount",
@@ -46,6 +48,7 @@ export function auditAction(action: string): string {
         DELETE: "Deleted",
         RESERVATION_EXPIRED: "Reservation expired",
         NO_SHOW_RECONCILED: "No-shows recorded",
+        BOARDING_TIME_UPDATED: "Boarding time adjusted",
         ADVISORY_SAVED: "Travel advisory saved",
       } as Record<string, string>
     )[action] || auditLabel(action)

@@ -48,7 +48,7 @@
       </div>
       <div v-if="!filtered.length" class="card report-state"><AppIcon :icon="barChartOutline" aria-hidden="true" /><div><h3>No sailings in this report</h3><p>Try another date range, route, or vessel.</p></div></div>
       <div class="charts">
-        <section class="card">
+        <section class="card collection-trend" aria-label="Collection trend">
           <div class="card-head">
             <h2><AppIcon :icon="trendingUpOutline" aria-hidden="true" />Collection trend</h2>
             <Badge>{{ trend.mode }}</Badge>
@@ -57,48 +57,30 @@
             Paid booking amounts grouped by departure date, including paid
             cancellations before refunds.
           </p>
-          <div class="trend-scale"><span>{{ money(Math.max(...trend.points.map(point => point.revenue), 0)) }}</span><span>Peak collection</span></div><div class="chart-scroll">
-            <div
-              class="bars"
-              :style="{
-                minWidth: `${Math.max(280, trend.points.length * 24)}px`,
-              }"
-            >
-              <div
-                v-for="(point, i) in trend.points"
-                :key="point.date"
-                class="bar-column"
-              >
-                <div
-                  role="img"
-                  :style="{
-                    height: `${Math.max(1, (point.revenue / trendMax) * 100)}%`,
-                  }"
-                  :title="`${point.date}: ${money(point.revenue)}`"
-                  :aria-label="`${point.date}: ${money(point.revenue)}`"
-                ></div
-                ><small>{{
-                  i % Math.max(1, Math.ceil(trend.points.length / 6)) === 0
-                    ? point.date.slice(5)
-                    : ""
-                }}</small>
-              </div>
+          <div class="trend-summary"><div><small>Collected in this period</small><strong>{{ money(totals.collectedRevenue) }}</strong></div><div><small>Peak collection</small><strong>{{ money(chart.max) }}</strong></div></div>
+          <div class="collection-chart" aria-label="Collections by sailing departure date">
+            <div class="chart-y-axis" aria-hidden="true"><span v-for="tick in chart.ticks" :key="tick">{{ compactMoney(tick) }}</span></div>
+            <div class="chart-plot">
+              <svg viewBox="0 0 600 200" preserveAspectRatio="none" aria-hidden="true">
+                <line v-for="y in [20,100,180]" :key="y" x1="0" :y1="y" x2="600" :y2="y" class="chart-gridline" />
+                <polygon v-if="chart.max > 0" :points="chart.area" class="chart-area" />
+                <polyline v-if="chart.max > 0" :points="chart.line" class="chart-line" vector-effect="non-scaling-stroke" />
+              </svg>
+              <button v-for="point in chart.plotted" :key="point.date" type="button" class="chart-point" :class="{ 'zero-point': !point.revenue }" :style="{left: `${point.x / 6}%`, top: `${point.y / 2}%`}" :aria-label="`${collectionDateLabel(point.date)}: ${money(point.revenue)}`" :title="`${collectionDateLabel(point.date)}: ${money(point.revenue)}`" @focus="activePoint = point.date" @mouseenter="activePoint = point.date" @click="activePoint = point.date"></button>
+              <span v-if="!chart.max" class="chart-empty">No collections in this period</span>
             </div>
+            <div class="chart-x-axis" aria-hidden="true"><span v-for="label in chart.labels" :key="label">{{ collectionDateLabel(label) }}</span></div>
           </div>
-          <div class="chart-foot">
-            <details class="collection-data"><summary>View collection data</summary><table><thead><tr><th>Period</th><th>Collected (PHP)</th></tr></thead><tbody><tr v-for="point in trend.points" :key="point.date"><th>{{ point.date }}</th><td>{{ money(point.revenue) }}</td></tr></tbody></table></details>
-            <span>Highest period</span
-            ><strong>{{
-              money(Math.max(...trend.points.map((p) => p.revenue), 0))
-            }}</strong>
-          </div>
+          <div class="trend-selection" role="status">{{ selectedPoint ? collectionDateLabel(selectedPoint.date) : 'Select a chart point' }}<strong>{{ money(selectedPoint?.revenue || 0) }}</strong></div>
+          <details class="collection-data"><summary>View collection data</summary><div class="collection-data-scroll"><table><thead><tr><th>Period</th><th>Collected (PHP)</th></tr></thead><tbody><tr v-for="point in trend.points" :key="point.date"><th>{{ collectionDateLabel(point.date) }}</th><td>{{ money(point.revenue) }}</td></tr></tbody></table></div></details>
         </section>
-        <section class="card">
-          <h2><AppIcon :icon="ticketOutline" aria-hidden="true" />Booking activity</h2>
+        <section class="card booking-card">
+          <div class="card-head"><h2><AppIcon :icon="ticketOutline" aria-hidden="true" />Booking activity</h2><Badge>{{ totals.bookingCount }} reservations</Badge></div>
           <p>
             Payment and cancellation breakdown for
             {{ totals.bookingCount }} reservations.
           </p>
+          <div class="distribution-list">
           <div
             v-for="item in bookingMix"
             :key="item.label"
@@ -122,7 +104,8 @@
               ></i>
             </div>
           </div>
-          <div class="channel">
+          </div>
+          <div class="booking-summary"><div class="channel">
             <span
               >Online<strong>{{ totals.onlineBookings }}</strong></span
             ><span
@@ -130,10 +113,12 @@
             >
           </div>
           <div class="refund-summary"><span>Refunds pending<strong>{{ money(totals.refundPending) }}</strong></span><span>Cash refunded<strong>{{ money(totals.refundedRevenue) }}</strong></span><span>Expired reservations<strong>{{ totals.expiredBookings }}</strong></span></div>
+          </div>
         </section>
-        <section class="card">
-          <h2><AppIcon :icon="peopleOutline" aria-hidden="true" />Passenger mix</h2>
+        <section class="card passenger-card">
+          <div class="card-head"><h2><AppIcon :icon="peopleOutline" aria-hidden="true" />Passenger mix</h2><Badge>{{ totals.paidPassengers }} passengers</Badge></div>
           <p>Paid, confirmed passengers by fare category.</p>
+          <div class="distribution-list">
           <div
             v-for="item in passengerMix"
             :key="item.label"
@@ -156,12 +141,15 @@
               ></i>
             </div>
           </div>
+          </div>
+          <p class="card-note"><strong>{{ totals.paidPassengers }}</strong> paid passengers across {{ passengerMix.filter(item => item.count > 0).length }} fare categories.</p>
         </section>
-        <section class="card">
-          <h2><AppIcon :icon="boatOutline" aria-hidden="true" />Sailing performance</h2>
+        <section class="card performance-card">
+          <div class="card-head"><h2><AppIcon :icon="boatOutline" aria-hidden="true" />Sailing performance</h2><Badge>{{ filtered.length }} sailings</Badge></div>
           <p>
             Seat utilization and terminal progress across the selected sailings.
           </p>
+          <div class="distribution-list">
           <div
             v-for="item in performance"
             :key="item.label"
@@ -174,6 +162,7 @@
             <div class="track">
               <i :style="{ width: `${Math.min(100, item.value)}%` }"></i>
             </div>
+          </div>
           </div>
           <div class="statuses">
             <span
@@ -191,7 +180,7 @@
               }}</strong></span
             >
           </div>
-          <p>
+          <p class="card-note">
             Check-in totals include boarded passengers. Upcoming trips may have
             no boarding activity yet.
           </p>
@@ -208,10 +197,10 @@
           </div>
           <Button
             class="export"
-            :disabled="!tableRows.length"
+            :disabled="!tableRows.length || exporting"
             @click="exportReport"
           >
-            <AppIcon :icon="downloadOutline" aria-hidden="true" />Export CSV
+            <AppIcon :icon="downloadOutline" aria-hidden="true" />{{ exporting ? 'Creating PDF...' : 'Download report PDF' }}
           </Button>
         </div>
         <div class="table-toolbar">
@@ -232,16 +221,18 @@
             aria-label="Search report table"
           /></label>
         </div>
-        <RecordsGrid :key="tab" :title="tabs[tab] + ' report details'" :columns="headers" :rows="gridRows" density="compact" :column-min-widths="columnWidths" :max-grid-height="360">
-          <template #cell="{ index, value }">
-            <Badge v-if="tab === 'sailings' && index === 10" :variant="value === 'COMPLETED' ? 'success' : value === 'CANCELLED' ? 'destructive' : value === 'DELAYED' ? 'warning' : 'default'">{{ String(value).charAt(0) + String(value).slice(1).toLowerCase() }}</Badge>
-            <strong v-else-if="index === 0">{{ value }}</strong>
-            <span v-else :class="{ numeric: moneyColumns.includes(index) }">{{ moneyColumns.includes(index) ? money(Number(value)) : value }}</span>
+        <RecordsGrid :key="tab" :title="tabs[tab] + ' report details'" :columns="gridHeaders" :column-types="gridColumnTypes" :rows="gridRows" density="compact" :column-min-widths="columnWidths" :max-grid-height="360">
+          <template #cell="{ row, index, value }">
+            <Badge v-if="tab === 'sailings' && index === 6" :variant="value === 'COMPLETED' ? 'success' : value === 'CANCELLED' ? 'destructive' : value === 'DELAYED' ? 'warning' : 'default'">{{ String(value).charAt(0) + String(value).slice(1).toLowerCase() }}</Badge>
+            <div v-else-if="index === 0" class="report-identity"><strong>{{ value }}</strong><small v-if="tab === 'sailings'">{{ row.source[1] }}</small><small v-else-if="tab === 'collections'">{{ row.source[8] }} online &middot; {{ row.source[9] }} walk-in</small></div>
+            <div v-else-if="index === 1 && ['sailings','collections'].includes(tab)" class="report-identity"><span>{{ row.source[tab === 'sailings' ? 2 : 1] }}</span><small>{{ row.source[tab === 'sailings' ? 3 : 2] }}</small></div>
+            <div v-else-if="index === 4 && tab !== 'collections'" class="report-identity"><strong>{{ value }}</strong><small>{{ row.source[8] }} checked in &middot; {{ row.source[9] }} boarded</small></div>
+            <span v-else :class="{ numeric: index === 5 || (index === 6 && tab !== 'sailings') }">{{ index === 5 || (index === 6 && tab !== 'sailings') ? money(Number(value)) : value }}</span>
           </template>
         </RecordsGrid>
         <p class="table-note">
-          CSV includes the selected report, dates, route, vessel, and search
-          results. Collection amounts are gross paid bookings; refunds are not
+          PDF includes the selected report, dates, route, vessel, and search
+          results, before table column filters or sorting. Collection amounts are gross paid bookings; refunds are not
           deducted.
         </p>
       </section>
@@ -250,7 +241,7 @@
 </template>
 
 <script setup lang="ts">
-import { notifyError } from '@/composables/toast';
+import { notifyError, notifySuccess } from '@/composables/toast';
 import { computed, onBeforeUnmount, ref, watch } from "vue";
 import AppIcon from "@/components/ui/icon/AppIcon.vue";
 import { alertCircleOutline, barChartOutline, boatOutline, cashOutline, downloadOutline, informationCircleOutline, peopleOutline, refreshOutline, scanOutline, searchOutline, ticketOutline, timeOutline, trendingUpOutline } from 'ionicons/icons';
@@ -264,7 +255,6 @@ import {
   decodeReports,
   groupedReports,
   manilaDay,
-  reportCsv,
   reportPercentage as percent,
   reportRange,
   reportTotals,
@@ -273,6 +263,7 @@ import {
   type ReportSailing,
 } from "../../data/reportAnalytics";
 import { ticketRequestError } from "../../data/ticketActions";
+import { collectionChart, collectionDateLabel } from '../../data/collectionChart';
 const props = defineProps<{ refreshToken: number }>();
 const emit = defineEmits<{ loading: [value: boolean] }>();
 const today = manilaDay();
@@ -348,9 +339,11 @@ const metrics = computed(() => {
 const trend = computed(() =>
   revenueTrend(filtered.value, start.value, end.value),
 );
-const trendMax = computed(() =>
-  Math.max(1, ...trend.value.points.map((p) => p.revenue)),
-);
+const chart = computed(() => collectionChart(trend.value.points));
+const activePoint = ref('');
+const selectedPoint = computed(() => chart.value.plotted.find(point => point.date === activePoint.value) || chart.value.plotted.find(point => point.revenue === chart.value.max));
+const compactMoney = (value: number) => 'PHP ' + new Intl.NumberFormat('en-PH', { notation:'compact', maximumFractionDigits:1 }).format(value);
+const exporting = ref(false);
 const bookingMix = computed(() => [
   { label: "Paid active", count: totals.value.paidBookings, color: "#26b99a" },
   {
@@ -363,6 +356,7 @@ const bookingMix = computed(() => [
     count: totals.value.cancelledBookings,
     color: "#e77b88",
   },
+  { label: "Expired", count: totals.value.expiredBookings, color: "#91a5ba" },
 ]);
 const passengerMix = computed(() =>
   (["regular", "student", "senior", "child", "pwd", "pregnant"] as const).map(
@@ -484,19 +478,22 @@ const tableRows = computed(() => {
     ),
   );
 });
-const columnWidths = computed(() => tab.value === 'sailings'
-  ? [155, 165, 195, 145, 100, 115, 100, 145, 110, 100, 120]
-  : tab.value === 'collections'
-    ? [155, 195, 145, 115, 130, 110, 145, 145, 100, 100]
-    : [195, 100, 135, 100, 115, 100, 145, 145, 110, 100]);
-const gridRows = computed(() => tableRows.value.map((cells, index) => ({
-  key: `${tab.value}-${cells[0]}-${index}`,
-  cells,
-  source: cells,
-  sortValues: cells.map((value, column) => tab.value === 'sailings' && column === 1
-    ? Date.parse(filtered.value.find(sailing => sailing.code === cells[0])?.departureAt || '')
-    : typeof value === 'string' && value.endsWith('%') ? Number.parseFloat(value) : value),
-})));
+const gridHeaders = computed(() => tab.value === 'sailings'
+  ? ['Sailing','Route / vessel','Reserved / seats','Occupancy','Bookings','Collected','Status']
+  : tab.value === 'collections' ? ['Sailing / channel','Route / vessel','Paid active','Unpaid active','Cancelled','Collected','Awaiting']
+  : [tab.value === 'routes' ? 'Route' : 'Vessel','Sailings','Reserved / seats','Occupancy','Bookings','Collected','Awaiting']);
+const gridColumnTypes = computed<('text'|'number'|'date')[]>(() => tab.value === 'sailings'
+  ? ['date','text','text','number','number','number','text']
+  : tab.value === 'collections' ? ['text','text','number','number','number','number','number'] : ['text','number','text','number','number','number','number']);
+const columnWidths = computed(() => ['sailings','collections'].includes(tab.value) ? [160,210,100,95,100,125,110] : [210,90,110,95,100,125,110]);
+const gridRows = computed(() => tableRows.value.map((source,index) => {
+  const cells = tab.value === 'sailings' ? [source[0],`${source[2]} ${source[3]}`,source[4],source[5],source[6],source[7],source[10]]
+    : tab.value === 'collections' ? [source[0],`${source[1]} ${source[2]}`,source[3],source[4],source[5],source[6],source[7]]
+    : [source[0],source[1],`${source[2]} / ${source[3]}`,source[4],source[5],source[6],source[7]];
+  return {key:`${tab.value}-${source[0]}-${index}`,cells,source,sortValues:cells.map((value,column) => tab.value === 'sailings' && column === 0
+    ? Date.parse(filtered.value.find(sailing => sailing.code === source[0])?.departureAt || '')
+    : typeof value === 'string' && value.endsWith('%') ? Number.parseFloat(value) : value)};
+}));
 let request = 0;
 async function loadReports() {
   const version = ++request;
@@ -548,17 +545,20 @@ function customDates() {
   period.value = "custom";
   loadReports();
 }
-function exportReport() {
-  const url = URL.createObjectURL(
-    new Blob([reportCsv(headers.value, tableRows.value)], {
-      type: "text/csv;charset=utf-8;",
-    }),
-  );
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = `${tab.value}-${start.value}-to-${end.value}.csv`;
-  link.click();
-  URL.revokeObjectURL(url);
+async function exportReport() {
+  if (exporting.value || !tableRows.value.length) return;
+  exporting.value = true;
+  const input = {
+    title: `${tabs[tab.value]} report`,
+    scope: [`${start.value} to ${end.value} (Philippine departure dates)`, route.value === 'ALL' ? 'All routes' : routes.value.find(item => item.key === route.value)?.label || route.value, vessel.value === 'ALL' ? 'All vessels' : vessels.value.find(item => item.key === vessel.value)?.label || vessel.value, ...(search.value ? [`Search: ${search.value}`] : [])],
+    headers: [...headers.value], rows: tableRows.value.map(row => row.map((value,index) => moneyColumns.value.includes(index) ? `PHP ${Number(value).toLocaleString('en-PH')}` : value)),
+    summary: metrics.value.map(metric => ({label:metric.label,value:String(metric.value).replace(/₱/g,'PHP ')})),
+    note: 'Summary uses date, route and vessel filters. Table also applies report search, before column filters/sorting. Collections are gross paid bookings before refunds.',
+  };
+  const filename = `BarkoLink-${tab.value}-${start.value}-to-${end.value}.pdf`;
+  try { const {downloadReportPdf} = await import('../../data/reportPdf');await downloadReportPdf(input,filename);notifySuccess('Report PDF downloaded.'); }
+  catch(e) { notifyError(ticketRequestError(e,'Could not create the report PDF. Try again.')); }
+  finally { exporting.value = false; }
 }
 watch(() => props.refreshToken, loadReports, { immediate: true });
 onBeforeUnmount(() => {
@@ -568,7 +568,7 @@ onBeforeUnmount(() => {
 </script>
 
 <style scoped>
-.reports { display:grid; gap:14px; min-width:0; font-family:var(--ion-font-family); }
+.reports { container-type:inline-size; display:grid; gap:14px; min-width:0; font-family:var(--ion-font-family); }
 .card { background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:14px 16px; color:var(--ink); min-width:0; }
 .card h2 { display:flex; align-items:center; gap:10px; font-size:16px; margin:0 0 8px; }
 .card h2 .app-icon { color:var(--ocean); font-size:21px; flex:none; }
@@ -592,29 +592,38 @@ onBeforeUnmount(() => {
 .report-metrics .metric-icon.amber { background:rgba(227,171,76,.12); color:#e3ab4c; }
 .report-metrics .metric-icon.purple { background:rgba(160,138,226,.12); color:#a08ae2; }
 .reports .report-metrics strong { font-size:24px; line-height:1.2; letter-spacing:-.03em; font-variant-numeric:tabular-nums; }
-.charts { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:14px; align-items:start; }
+.charts { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:16px; align-items:stretch; }
+.charts > .card { display:flex; flex-direction:column; padding:20px; }
+.charts .card-head { margin-bottom:8px; min-height:28px; }.charts .card-head h2 { margin:0; }.charts .card-head :deep([data-slot="badge"]) { flex:none; }
+.charts > .card > p:first-of-type { min-height:42px; margin:0 0 16px; line-height:1.5; }
+.distribution-list { display:grid; gap:14px; align-content:start; }.passenger-card .distribution-list { flex:1; }
+.booking-summary { margin-top:auto; padding-top:18px; }
+.charts .card-note { margin:16px 0 0; padding-top:14px; border-top:1px solid var(--line); font-size:var(--text-caption); line-height:1.6; }
+.performance-card .card-note { margin-top:auto; }
+.collection-trend .collection-data { margin-top:auto; }
+@container(max-width:760px) { .charts { grid-template-columns:1fr; }.charts > .card > p:first-of-type { min-height:0; }.booking-summary { padding-top:16px; } }
 .card-head { display:flex; align-items:center; justify-content:space-between; gap:16px; }
-.trend-scale { display:flex; justify-content:space-between; gap:12px; padding-top:14px; border-top:1px solid var(--line); color:var(--muted); font-size: var(--text-caption); }
-.trend-scale span:first-child { color:var(--ink); font-weight:600; }
-.chart-scroll { overflow-x:auto; }
-.bars { height:164px; display:flex; gap:8px; padding:12px 8px 0; }
-.bar-column { flex:1; min-width:12px; height:124px; display:flex; align-items:center; justify-content:flex-end; flex-direction:column; position:relative; padding:0 1px; border-bottom:1px solid var(--line); }
-.bar-column > div { width:100%; max-width:38px; background:var(--ocean); border-radius:5px 5px 0 0; min-height:2px; }
-.bar-column small { position:absolute; top:132px; white-space:nowrap; font-size: var(--text-caption); color:var(--muted); }
-.chart-foot { display:flex; flex-wrap:wrap; gap:12px; justify-content:space-between; font-size: var(--text-label); margin-top:12px; border-top:1px solid var(--line); padding-top:14px; }
-.collection-data { flex-basis:100%; overflow-x:auto; }
-.collection-data summary { cursor:pointer; color:var(--ocean); padding-bottom:6px; }
-.distribution { margin:12px 0; }
+ .trend-summary { display:flex; justify-content:space-between; gap:16px; padding:14px 0; border-top:1px solid var(--line); }
+.trend-summary > div { display:grid; gap:5px; }.trend-summary > div:last-child { text-align:right; }.trend-summary small { color:var(--muted); font-size:var(--text-caption); }.trend-summary strong { font-size:19px; font-variant-numeric:tabular-nums; }
+.collection-chart { display:grid; grid-template-columns:60px minmax(0,1fr); min-width:0; }
+.chart-y-axis { display:flex; flex-direction:column; justify-content:space-between; padding:14px 6px 14px 0; font-size:11px; color:var(--muted); font-variant-numeric:tabular-nums; }
+.chart-plot { position:relative; height:200px; min-width:0; }.chart-plot svg { display:block; width:100%; height:100%; overflow:visible; }
+.chart-gridline { stroke:var(--line); stroke-dasharray:4 5; vector-effect:non-scaling-stroke; }.chart-area { fill:var(--ocean); opacity:.12; }.chart-line { fill:none; stroke:var(--ocean); stroke-width:2.5; stroke-linejoin:round; }
+.chart-point { position:absolute; transform:translate(-50%,-50%); width:10px; height:10px; border-radius:50%; border:2px solid var(--surface); background:var(--ocean); padding:0; cursor:pointer; }.chart-point.zero-point { width:7px; height:7px; }.chart-point:focus-visible { outline:3px solid var(--ocean); outline-offset:4px; }.chart-point:hover { box-shadow:0 0 0 4px var(--light-blue); }
+.chart-x-axis { grid-column:2; display:flex; justify-content:space-between; gap:4px; color:var(--muted); font-size:11px; padding-top:5px; }.chart-empty { position:absolute; left:0; right:0; top:42%; text-align:center; color:var(--muted); font-size:var(--text-label); }
+.trend-selection { display:flex; justify-content:space-between; gap:12px; margin:14px 0; padding:10px 12px; border-radius:9px; background:var(--surface-soft); color:var(--muted); font-size:var(--text-label); }.trend-selection strong { color:var(--ink); font-variant-numeric:tabular-nums; }.collection-data { border-top:1px solid var(--line); padding-top:10px; font-size:var(--text-label); }.collection-data summary { color:var(--ocean); cursor:pointer; padding:4px 0; }.collection-data-scroll { max-height:220px; overflow:auto; }
+.report-identity { display:grid; gap:4px; overflow-wrap:anywhere; }.report-identity small { font-size:var(--text-caption); color:var(--muted); font-weight:400; }
+.distribution { margin:0; min-width:0; }
 .distribution > div:first-child { display:flex; justify-content:space-between; gap:12px; font-size: var(--text-label); margin-bottom:5px; }
 .distribution small { font-weight:400; color:var(--muted); }
-.track { height:6px; border-radius:6px; background:var(--line); overflow:hidden; }
+.track { height:7px; border-radius:6px; background:var(--line); overflow:hidden; }
 .track i { height:100%; display:block; background:var(--ocean); border-radius:6px; }
 .channel,.statuses,.refund-summary { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; border-top:1px solid var(--line); padding-top:10px; }
 .channel span,.refund-summary span { color:var(--muted); font-size: var(--text-caption); }
 .channel strong,.statuses strong,.refund-summary strong { display:block; color:var(--ink); font-size:18px; margin-top:4px; font-variant-numeric:tabular-nums; }
 .refund-summary { margin-top:10px; grid-template-columns:repeat(3,minmax(0,1fr)); }
 .refund-summary strong { font-size:15px; }
-.statuses { grid-template-columns:repeat(3,minmax(0,1fr)); margin-bottom:16px; border:0; }
+.statuses { grid-template-columns:repeat(3,minmax(0,1fr)); margin:18px 0 16px; border:0; padding:0; gap:10px; }
 .statuses span { background:var(--surface-soft); border:1px solid var(--line); border-radius:8px; padding:8px 10px; font-size: var(--text-caption); color:var(--muted); text-transform:capitalize; }
 .statuses .completed strong { color:#26b99a; }
 .statuses .delayed strong { color:#e3ab4c; }

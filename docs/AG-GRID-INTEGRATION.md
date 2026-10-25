@@ -1,5 +1,7 @@
 # Records tables
 
+October 24 update: the shared toolbar has compact counts and no table-help disclosure. Desktop and mobile now share one retained grid model, keeping filters, sorting and hidden columns consistent across resizing. Optional `columnTypes` enable raw numeric filters and Philippine-calendar-day date filters. See [the implementation notes](UI-IMPROVEMENTS-2026-10-24.md) for scope and current validation.
+
 Shared shadcn-vue presentation, the column visibility menu, mobile loading cards, and coordinated light/dark/system appearance are documented in [UI-COMPONENTS.md](./UI-COMPONENTS.md).
 
 BarkoLink uses AG Grid Community 36.2.0 and its Vue 3 adapter. Community packages have an MIT license; no Enterprise package or license key is installed. The implementation follows the [Vue quick start](https://www.ag-grid.com/vue-data-grid/getting-started/) and [Grid API](https://www.ag-grid.com/vue-data-grid/grid-api/) documentation.

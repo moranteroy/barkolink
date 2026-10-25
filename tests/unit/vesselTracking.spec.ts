@@ -21,6 +21,8 @@ it('automatically refreshes from origin to underway to destination and stops whe
     .mockResolvedValue({data:{...data,ports,vessels:[{...data.vessels[0],position:{state:'EXPECTED',portId:'CAL',portName:'Calapan Port'}}]}});
   const wrapper=mount(VesselTrackingPanel);await flushPromises();
   expect(wrapper.text()).toContain('Batangas Port');
+  expect(wrapper.find('.tracking-sync').exists()).toBe(false);
+  expect(wrapper.findAll('button').some(button => button.text() === 'Refresh')).toBe(false);
   await vi.advanceTimersByTimeAsync(30000);await flushPromises();
   expect(wrapper.text()).toContain('Expected underway');
   expect(wrapper.text()).toContain('Batangas Port \u2192 Calapan Port');

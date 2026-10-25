@@ -10,7 +10,7 @@ const adminUser = account('ADMIN', '11111111-1111-4111-8111-111111111111');
 const passengerUser = account('PASSENGER', '22222222-2222-4222-8222-222222222222');
 function session(user) {
   const exp = Math.floor(Date.now() / 1000) + 3600;
-  return { access_token: `${encode({ alg: 'HS256', typ: 'JWT' })}.${encode({ sub: user.id, exp, role: 'authenticated', app_metadata: user.app_metadata })}.fixture`, refresh_token: `fixture-${user.id}`, token_type: 'bearer', expires_in: 3600, expires_at: exp, user };
+  return { access_token: `${encode({ alg: 'HS256', typ: 'JWT' })}.${encode({ sub: user.id, exp, aal: 'aal2', role: 'authenticated', app_metadata: user.app_metadata })}.fixture`, refresh_token: `fixture-${user.id}`, token_type: 'bearer', expires_in: 3600, expires_at: exp, user };
 }
 const browser = await chromium.launch({ channel: 'msedge', headless: true });
 try {
@@ -51,7 +51,7 @@ try {
   await admin.locator('.admin-account-trigger').waitFor();
   assert.equal(await admin.locator('.sidebar nav a[href="/admin/inbox"]').count(), 0);
   await staleForm.getByRole('button', { name: 'Sign in', exact: true }).click();
-  await staleForm.getByRole('alert').filter({ hasText: 'already signed in' }).waitFor();
+  await staleForm.locator('.form-message[role="alert"]').filter({ hasText: 'already signed in' }).waitFor();
   assert.deepEqual(signins, [adminUser.email]);
   const newTab = await context.newPage();
   await newTab.goto(`${baseUrl}/login`);

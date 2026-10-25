@@ -1,12 +1,12 @@
 <template>
-  <section v-if="ports.length" class="port-map" :class="{ 'admin-map': admin }" :aria-label="admin ? 'Port location directory' : 'Port location guide'">
+  <section v-if="visiblePorts.length" class="port-map" :class="{ 'admin-map': admin }" :aria-label="admin ? 'Port location directory' : 'Port location guide'">
     <div class="map-heading">
       <p class="map-eyebrow">{{ admin ? 'PORT LOCATIONS' : journey ? 'YOUR JOURNEY ON THE MAP' : 'KNOW YOUR PORT' }}</p>
       <h2>{{ admin ? 'Location map' : journey ? 'Know your departure and arrival ports.' : 'Find your way to the terminal.' }}</h2>
       <p>{{ admin ? 'Select a port to review its area and open directions.' : 'Explore the port areas before you travel.' }}</p>
     </div>
     <div class="port-tabs" role="group" aria-label="Choose a port">
-      <button v-for="(port, index) in ports" :key="port.id" type="button"
+      <button v-for="(port, index) in visiblePorts" :key="port.id" type="button"
         :aria-pressed="selected?.id === port.id" :class="{ selected: selected?.id === port.id }" @click="choosePort(port)">
         <span class="port-letter" :class="{ arrival: journey && index > 0 }">{{ portLetter(index) }}</span>
         <span><small>{{ portRole(index) }}</small>{{ port.name }}</span>
@@ -34,13 +34,16 @@ import { openOutline } from 'ionicons/icons';
 import type { Map, LayerGroup, Marker, TileLayer } from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { googleMapDirections, portCoordinates, type MapPort } from '../../data/portMaps';
+import { loadLeaflet } from '../../services/leaflet';
 const props = defineProps<{ ports: MapPort[]; journey?: boolean; admin?: boolean }>();
+// A booked journey keeps its actual terminals, even if a port is later disabled.
+const visiblePorts = computed(() => props.journey ? props.ports : props.ports.filter(port => port.isActive !== false));
 const portLetter = (index: number) => props.journey ? (index === 0 ? 'A' : 'B') : String(index + 1);
 const portRole = (index: number) => props.journey ? (index === 0 ? 'Departure' : 'Arrival') : 'Port location';
 const selectedId = ref(''), mapElement = ref<HTMLElement>(), ready = ref(false), tileError = ref(false), mapError = ref('');
-const selected = computed(() => props.ports.find(p => p.id === selectedId.value));
+const selected = computed(() => visiblePorts.value.find(p => p.id === selectedId.value));
 const directionsUrl = computed(() => selected.value ? googleMapDirections(selected.value) : '');
-const locatedPorts = computed(() => props.ports.flatMap((port, index) => {
+const locatedPorts = computed(() => visiblePorts.value.flatMap((port, index) => {
   const point = portCoordinates(port); return point ? [{ port, point, index }] : [];
 }));
 let map: Map | undefined, layers: LayerGroup | undefined, tiles: TileLayer | undefined;
@@ -63,7 +66,7 @@ function choosePort(port: MapPort) {
   if (map && point) { map.setView(point, 14); markers.get(port.id)?.openPopup(); }
 }
 function retryTiles() { tileError.value = false; tiles?.redraw(); }
-watch(() => props.ports, ports => {
+watch(visiblePorts, ports => {
   if (!ports.some(p => p.id === selectedId.value)) selectedId.value = ports[0]?.id || '';
 }, { immediate: true, deep: true });
 watch([mapElement, locatedPorts], async () => {
@@ -71,7 +74,7 @@ watch([mapElement, locatedPorts], async () => {
   mapError.value = ''; tileError.value = false;
   if (!mapElement.value || !locatedPorts.value.length) { destroyMap(); return; }
   try {
-    const L = await import('leaflet');
+    const L = await loadLeaflet();
     if (current !== generation || !mapElement.value) return;
     if (!map) {
       map = L.map(mapElement.value, { scrollWheelZoom: false });

@@ -14,7 +14,7 @@
     <p v-if="!loading && !error && ports.length < 2" class="route-note">Add at least two active ports to create a route. <router-link to="/admin/ports">Manage ports</router-link></p>
     <div class="route-directory" v-if="!loading && !error">
       <div class="directory-heading"><div><p class="eyebrow">FERRY NETWORK</p><h2>Route directory</h2><p class="directory-hint">{{ table.records.value.length }} of {{ rows.length }} routes · {{ rows.filter(r => r.isActive).length }} active</p></div><Button :disabled="busy || ports.length < 2" @click="start()"><AppIcon :icon="addOutline" aria-hidden="true" />Add route</Button></div>
-      <RecordsGrid title="Route directory" :columns="['Code', 'Origin', 'Destination', 'Duration', 'Status']" :rows="gridRows" density="compact" :column-min-widths="[110, 170, 170, 110, 100]" :action-width="150" :max-grid-height="360">
+      <RecordsGrid title="Route directory" :columns="['Code', 'Origin', 'Destination', 'Duration', 'Status']" :rows="gridRows" density="compact" :column-min-widths="[160, 210, 210, 130, 125]" :action-width="150" :max-grid-height="360">
         <template #cell="{ row, index, value }">
           <div v-if="index === 0"><strong class="route-code">{{ value }}</strong></div>
           <strong v-else-if="index === 1 || index === 2" class="route-port-name">{{ value }}</strong>
@@ -40,7 +40,7 @@
               <label for="new-route-destination">Destination<select id="new-route-destination" v-model="form.destinationPortId" required><option value="" disabled>Select destination port</option><option v-for="p in ports" :key="p.id" :value="p.id" :disabled="p.id === form.originPortId">{{ p.name }}</option></select></label>
             </div>
             <p v-if="form.originPortId && form.originPortId === form.destinationPortId" class="route-form-error" role="alert">Choose different origin and destination ports.</p>
-            <label class="route-availability"><input v-model="form.isActive" type="checkbox" /><span><strong>Active route</strong><small>Available when creating new sailings.</small></span></label>
+            <label class="route-availability"><input v-model="form.isActive" type="checkbox" role="switch" class="ui-switch" /><span><strong>Active route</strong><small>Available when creating new sailings.</small></span></label>
           </fieldset>
           <footer class="route-modal-footer"><Button variant="outline" type="button" :disabled="busy" @click="close">Cancel</Button><Button type="submit" :disabled="busy || loading || !form.originPortId || !form.destinationPortId || form.originPortId === form.destinationPortId">{{ busy ? 'Saving…' : 'Save route' }}</Button></footer>
         </form>

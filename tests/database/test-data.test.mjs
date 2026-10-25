@@ -32,6 +32,7 @@ await db.exec(`create role anon; create role authenticated; create role service_
 after(async () => { await db?.close() })
 
 it('resets all operational tables while preserving complete user and auth records', async () => {
+  assert.equal((await db.query("select tgenabled from pg_trigger where tgrelid='public.sailing'::regclass and tgname='vessel_port_chain'")).rows[0].tgenabled, 'O')
   assert.deepEqual((await db.query(`select ${usersExpression} as users`)).rows[0].users, originalUsers)
   await db.exec(fixtureChecks)
   assert.equal((await db.query('select count(*)::int as n from public.sailing')).rows[0].n, 15)

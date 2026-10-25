@@ -14,7 +14,7 @@ try {
     const user = { id, email: 'staff@example.invalid', app_metadata: { role }, user_metadata: { fullName: 'Test Staff' }, aud: 'authenticated', created_at: '2026-01-01T00:00:00Z' };
     const encoded = value => Buffer.from(JSON.stringify(value)).toString('base64url');
     const exp = Math.floor(Date.now() / 1000) + 3600;
-    const session = { access_token: `${encoded({ alg: 'HS256', typ: 'JWT' })}.${encoded({ sub: id, exp, role: 'authenticated', app_metadata: { role } })}.test`, refresh_token: 'ui-test', token_type: 'bearer', expires_at: exp, expires_in: 3600, user };
+    const session = { access_token: `${encoded({ alg: 'HS256', typ: 'JWT' })}.${encoded({ sub: id, exp, aal: 'aal2', role: 'authenticated', app_metadata: { role } })}.test`, refresh_token: 'ui-test', token_type: 'bearer', expires_at: exp, expires_in: 3600, user };
     await context.addInitScript(({ key, session }) => { localStorage.setItem('barkolink-theme', 'dark'); localStorage.setItem(key, JSON.stringify(session)); }, { key: `sb-${projectRef}-auth-token`, session });
     let assigned = false, profileReads = 0, terminalReads = 0;
     const forbidden = [], errors = [];
@@ -41,8 +41,8 @@ try {
     const root = `/staff/${role.toLowerCase()}`;
     await page.goto(baseUrl + root);
     await page.getByRole('heading', { name: 'Port assignment needed' }).waitFor();
-    await page.locator('ion-toast').waitFor({ state: 'attached' });
-    assert.match(await page.locator('ion-toast').evaluate(el => el.message), /Ask your administrator/);
+    await page.locator('.app-toast.info').waitFor();
+    assert.match(await page.locator('.app-toast.info').innerText(), /Ask your administrator/);
     assert.equal(await page.getByText('Access was denied', { exact: false }).count(), 0);
     assert.equal(await page.getByRole('link', { name: 'New walk-in ticket' }).count(), 0);
     if (width === 1240) {
@@ -61,17 +61,18 @@ try {
     await page.goto(baseUrl + root);
     await page.getByRole('heading', { name: 'Port assignment needed' }).waitFor();
     await page.waitForTimeout(400); // Finish the toast entrance animation before capturing its appearance.
-    const toastBox = await page.locator('ion-toast').evaluate(el => {
-      const box = el.shadowRoot.querySelector('[part="wrapper"]').getBoundingClientRect();
+    const toastBox = await page.locator('.app-toast.info').evaluate(el => {
+      const box = el.getBoundingClientRect();
       return { top: box.top, right: box.right, left: box.left, width: box.width };
     });
-    const headerBox = await page.locator('.staff-workspace-header').boundingBox();
-    assert.ok(toastBox.top >= headerBox.y + headerBox.height, `${role}: toast below workspace header`);
+    assert.ok(toastBox.top >= 0, `${role}: notification stays within the viewport`);
     assert.ok(toastBox.width <= 421 && toastBox.left >= 0 && toastBox.right <= width, `${role}: compact toast within screen ${JSON.stringify(toastBox)}`);
     fs.mkdirSync('docs/screenshots/experience', { recursive: true });
     await page.screenshot({ path: `docs/screenshots/experience/${role.toLowerCase()}-${width}-port-required.png` });
-    await page.getByRole('button', { name: 'Dismiss port notice', exact: true }).click();
-    await page.getByRole('button', { name: 'Dismiss port notice', exact: true }).waitFor({ state: 'hidden' });
+    await page.getByRole('button', { name: 'Dismiss notification', exact: true }).click();
+    await page.waitForTimeout(300);
+    assert.equal(await page.locator('.app-toast.error').count(),0,'Expected port setup must not queue a generic error');
+    await page.getByRole('button', { name: 'Dismiss notification', exact: true }).waitFor({ state: 'hidden' });
     assigned = true;
     await page.getByRole('button', { name: 'Check assignment', exact: true }).click();
     await page.getByRole('heading', { name: 'Port assignment needed' }).waitFor({ state: 'detached' });

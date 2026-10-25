@@ -13,6 +13,7 @@ describe('trip weather display',()=>{
     const wrapper=mount(TripWeather,{props:{sailingCode:'TRIP-1'}});await flushPromises();
     expect(wrapper.text()).toContain('Forecast at departure');
     expect(wrapper.text()).toContain('75%');
+    expect(wrapper.text()).not.toContain('Last updated');
     expect(wrapper.text()).toContain('Powered by Open-Meteo');
     expect(wrapper.text()).toContain('They do not confirm sailing safety');
     wrapper.unmount();
@@ -22,7 +23,7 @@ describe('trip weather display',()=>{
     const wrapper=mount(TripWeather,{props:{sailingCode:'TRIP-1'}});await flushPromises();
     expect(wrapper.text()).toContain('Current weather');
     expect(wrapper.text()).toContain('Departure forecast is not available yet');
-    expect(wrapper.text()).toContain('update delayed');
+    expect(wrapper.text()).toContain('Weather updates delayed.');
     wrapper.unmount();
   });
   it('shows an unavailable state without measurements when the API key is not configured',async()=>{

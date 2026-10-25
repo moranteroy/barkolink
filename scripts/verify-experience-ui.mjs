@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import { chromium } from 'playwright-core'
+import { boardingTimingFixture } from './boarding-timing-fixture.mjs'
 
 // Every Supabase request is intercepted. These checks never use real account tokens or write hosted data.
 const baseUrl = process.env.BARKOLINK_UI_URL || 'http://127.0.0.1:8110'
@@ -9,6 +10,7 @@ const projectRef = new URL(projectUrl).hostname.split('.')[0]
 const id = '11111111-1111-4111-8111-111111111111'
 const sailing = { code: 'UI-TRIP', departureAt: '2099-01-01T08:00:00Z', arrivalAt: '2099-01-01T10:00:00Z', durationMinutes: 120, status: 'SCHEDULED', availableSeats: 98, regularFare: 600, studentFare: 480, seniorFare: 480, pwdFare: 480, childFare: 300, pregnantFare: 600, origin: { id: 'origin', name: 'Calapan Port', city: 'Calapan' }, destination: { id: 'destination', name: 'Batangas Port', city: 'Batangas' }, vessel: { id: 'vessel', name: 'UI Ferry', passengerCapacity: 100, isActive: true } }
 const passenger = { fare: 600, sex: 'FEMALE', id, fullName: 'UI Traveler', passengerType: 'REGULAR', ticketCode: id, ticketStatus: 'ISSUED', checkedInAt: null, boardedAt: null, noShow: false }
+passenger.ticketQrPayload = JSON.stringify({ BarkoLink:'Ticket v2',Name:passenger.fullName,Date:'2099-01-01 16:00 Philippine time',Vessel:sailing.vessel.name,Route:'Calapan Port to Batangas Port',Booking:'UI-BOOKING',Ticket:id,Verification:'a'.repeat(64) })
 const booking = { owner: { fullName: 'UI User', email: 'ui@example.invalid' }, createdAt: '2026-01-01T08:00:00Z', bookingChannel: 'ONLINE', id, reference: 'UI-BOOKING', status: 'CONFIRMED', paymentStatus: 'PAID', total: 600, passengerCount: 1, sailing, bookingPassengers_on_booking: [passenger] }
 const advisory = { id, title: 'Terminal reminder', message: 'Keep your booking reference ready.', category: 'GENERAL', priority: 'MEDIUM', sailingCode: null, startsAt: '2000-01-01T00:00:00Z', endsAt: '2099-01-01T00:00:00Z', published: true }
 const errors = []
@@ -20,7 +22,7 @@ try {
     const user = { id, email: 'ui@example.invalid', app_metadata: { role }, user_metadata: { fullName: 'UI User' }, aud: 'authenticated', created_at: '2026-01-01T00:00:00Z' }
     const exp = Math.floor(Date.now() / 1000) + 3600
     const encoded = value => Buffer.from(JSON.stringify(value)).toString('base64url')
-    const session = { access_token: `${encoded({ alg: 'HS256', typ: 'JWT' })}.${encoded({ sub: id, exp, role: 'authenticated', app_metadata: { role } })}.test`, refresh_token: 'ui-test', token_type: 'bearer', expires_at: exp, expires_in: 3600, user }
+    const session = { access_token: `${encoded({ alg: 'HS256', typ: 'JWT' })}.${encoded({ sub: id, exp, aal: 'aal2', role: 'authenticated', app_metadata: { role } })}.test`, refresh_token: 'ui-test', token_type: 'bearer', expires_at: exp, expires_in: 3600, user }
     await context.addInitScript(({ key, session }) => { if (!localStorage.getItem('barkolink-theme')) localStorage.setItem('barkolink-theme', 'light'); localStorage.setItem(key, JSON.stringify(session)) }, { key: `sb-${projectRef}-auth-token`, session })
     let fareConfig = {code:'vessel',regularFare:600,studentDiscount:20,seniorDiscount:20,childDiscount:50,pwdDiscount:20,pregnantDiscount:0,customDiscounts:[]}, fareSaves=0
     let readAt = null, markAllCalls = 0, lastBookingArgs = null, lastAuditArgs = null
@@ -29,6 +31,8 @@ try {
     let profile = { uid: id, fullName: 'UI User', email: user.email, role, phone: '09123456789', assignedPortId: sailing.origin.id, assignedPort: { ...sailing.origin, isActive: true } }
     await context.route(`${projectUrl}/**`, async route => {
       const url = route.request().url()
+      if (url.endsWith('/rpc/my_mfa_settings')) return route.fulfill({ json: { role, enabled: true, staffRequired: true, policyRequired: ['TICKETING','BOARDING'].includes(role), mfaRequired: role !== 'PASSENGER' } })
+      if (url.includes('/functions/v1/weather')) return route.fulfill({ json: { configured: false, ports: [] } })
       if (url.includes('/auth/v1/')) return route.fulfill({ json: user })
       if (url.includes('/functions/v1/manage-account')) {
         const { action, input } = route.request().postDataJSON()
@@ -64,12 +68,20 @@ try {
         MyNotifications: { notifications: [{ id, title: 'Booking updated', message: 'Your ticket is ready.', category: 'BOOKING', createdAt: new Date().toISOString(), readAt }] },
         MySavedTravelers: { travelers: [{ id, fullName: 'UI Traveler', birthDate: '1990-01-01', sex: 'FEMALE', phone: '09123456789', nationality: 'Filipino' }] },
         ActiveAdvisories: { advisories: [advisory] }, AdminAdvisories: { advisories: [advisory] },
+        ActiveTravelAdvisories: { advisories: [] },
+        PassengerSailingBoard: { date: '2099-01-01', updatedAt: new Date().toISOString(), sailings: [] },
+        QuoteLoyaltyVoucher: { quote: null },
+        MyLoyalty: { completedTrips: 0, rewardValue: 100, tripsToNextReward: 5, tripsPerReward: 5, currentTier: 'Bronze', tiers: [{ name: 'Bronze', trips: 5, value: 100 }], vouchers: [] },
         AdminSailingOptions: { sailings: [sailing] }, AdminReports: { sailings: [] }, TicketingSailings: { sailings: [sailing] }, AdminSailings: { sailings: [sailing], totalCount: 1 }, BrowseSailings: { sailings: [sailing] },
         BrowseActivePorts: { ports: [sailing.origin, sailing.destination] },
         AdminPorts: { ports: [sailing.origin, sailing.destination].map(p => ({ ...p, isActive: true })) }, AdminVessels: { vessels: [sailing.vessel] },
         AdminSailingBookings:{bookings:[]}, AdminUsers: { users: [{uid:'user-z',fullName:'Zelda User',email:'zelda@example.invalid',role:'PASSENGER',createdAt:'2026-10-05T01:00:00Z'},{uid:'user-a',fullName:'Anna User',email:'anna@example.invalid',role:'TICKETING',createdAt:'2026-10-05T01:00:00Z'},{uid:'user-m',fullName:'Marco User',email:'marco@example.invalid',role:'BOARDING',createdAt:'2026-10-05T01:00:00Z'}],totalCount:3 }, AdminPassengerRecords: { bookingPassengers: [], totalCount: 0 },
         AdminOperationsSettings: { reservationMinutes: 1440 },
+        AdminDailySchedules: { schedules: [], routes: [] },
+        AdminSailingStatusPolicies: { policies: [{ operator: 'UI Ferry Operator', boardingLeadMinutes: null, boardingTimeSource: null, autoComplete: true }] },
+        AdminVesselAvailability: { vessels: [{ id: sailing.vessel.id, issue: null }] },
         AdminActivityLog: { records: [{ id, actorName: 'UI Administrator', action: 'UPDATE', entityType: 'operation_settings', entityId: 'DEFAULT', createdAt: '2026-10-05T01:00:00Z', details: { reservationMinutes: { before: 1440, after: 720 } } }], totalCount: 1 },
+        BoardingSailingTiming: boardingTimingFixture(sailing),
         StaffBookings: { bookings: [booking], totalCount: 1 }, BoardingSailings: { sailings: [sailing] }, BoardingManifest: { bookings: [booking] }, BoardingActivity: { boardingEvents: [] }, AdminDashboardStats: {},
         AdminFareSettings: { fareSettings: null, vesselFareSettings: [fareConfig] }, AdminNextTripCode: { nextTripCode: { code: 'TRP2026-1004001' } },
         AdminOverview: {stats:{todayTrips:1,todayBookings:6,todayPassengers:9,checkedIn:7,boarded:4,noShow:1,cancelled:1,utilization:62},trips:[sailing],monthly:[{month:'May',bookings:10,passengers:18},{month:'Jun',bookings:18,passengers:24},{month:'Jul',bookings:22,passengers:35},{month:'Aug',bookings:25,passengers:41},{month:'Sep',bookings:30,passengers:46},{month:'Oct',bookings:34,passengers:50}],bookingStatus:[{name:'Confirmed',value:35},{name:'Pending',value:7},{name:'Cancelled',value:4}],categories:[{name:'REGULAR',value:30},{name:'STUDENT',value:8},{name:'SENIOR',value:4},{name:'CHILD',value:3}],routes:[{route:'Calapan ? Batangas',passengers:50}]},
@@ -104,7 +116,8 @@ try {
       assert.equal(overflow, false, `${role} ${width}px ${path} overflow`)
       assert.equal(await page.locator('[role=alert]').count(), 0, `${path}: unexpected error`)
       assert.equal(await page.evaluate(() => document.documentElement.dataset.theme), 'light')
-      assert.equal(await page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--page-background').trim()), 'hsl(220 29% 97%)')
+      assert.equal(await page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--cloud').trim()), 'hsl(220 29% 97%)')
+      assert.equal(await page.evaluate(() => CSS.supports('background',getComputedStyle(document.documentElement).getPropertyValue('--page-background').trim())), true)
       if (['/admin/audit-logs','/staff/ticketing','/staff/boarding','/home'].includes(path)) {
         const selector=role==='ADMIN' ? '.sidebar nav a svg.app-icon' : role==='PASSENGER' ? '.bottom-nav a svg.app-icon' : '.staff-navigation svg.app-icon'
         const icons=await page.locator(selector).evaluateAll(nodes=>nodes.map(node=>node.innerHTML))
@@ -114,9 +127,9 @@ try {
         if(role!=='PASSENGER') assert.equal(await page.locator(brand).count(),1,`${role}: one sidebar brand`)
       }
       if (path === '/admin/fares') {
-        await page.getByRole('button',{name:'+ Add discount',exact:true}).click()
+        await page.getByRole('button',{name:'Add passenger discount',exact:true}).click()
         await page.getByPlaceholder('Special discount',{exact:true}).fill('Special discount')
-        await page.locator('.custom-discount-row').last().getByLabel('Discount (%)',{exact:true}).fill('15')
+        await page.locator('.custom-discount-row').last().getByRole('spinbutton').fill('15')
         assert.ok((await page.locator('.fare-preview').innerText()).includes('PHP 510'))
         await page.getByRole('button',{name:'Save fares & discounts',exact:true}).click()
         await page.getByRole('status').filter({hasText:'Fares & discounts saved'}).waitFor()
@@ -125,7 +138,7 @@ try {
         await page.getByRole('button',{name:'Refresh',exact:true}).click()
         assert.equal(await page.getByPlaceholder('Special discount',{exact:true}).inputValue(),'Special discount')
         assert.equal(await page.locator('main').evaluate(el=>el.scrollWidth > el.clientWidth+2),false)
-        await page.locator('.custom-discount-row').last().getByLabel('Active',{exact:true}).uncheck()
+        await page.getByRole('switch',{name:'Enable discount Special discount',exact:true}).uncheck()
         await page.getByRole('button',{name:'Save fares & discounts',exact:true}).click()
         await page.waitForTimeout(100)
         assert.equal(fareConfig.passengerDiscounts.at(-1).isActive,false)
@@ -149,20 +162,20 @@ try {
         assert.equal(await page.getByPlaceholder('Student',{exact:true}).count(),0)
       }
       if (path === '/admin/trips') {
-        await page.getByRole('button',{name:'Edit',exact:true}).click()
-        await page.getByRole('heading',{name:'Edit sailing',exact:true}).waitFor()
+        await page.getByRole('button',{name:`Edit trip ${sailing.code}`,exact:true}).click()
+        await page.getByRole('heading',{name:'Edit trip',exact:true}).waitFor()
         await page.getByRole('button',{name:'Close dialog',exact:true}).click()
         await page.locator('ion-modal .modal-body').waitFor({state:'detached'})
       }
       if (path === '/admin/routes' && width === 390) {
         await page.getByRole('button', { name: 'Add route', exact: true }).click()
         await page.getByLabel('Route code', { exact: true }).fill('UNSAVED-ROUTE')
-        await page.getByRole('button', { name: 'Refresh', exact: true }).click()
+        await page.locator('.route-dialog').getByRole('button', { name: 'Cancel', exact: true }).click()
         await page.getByRole('button', { name: 'Go back', exact: true }).click()
         await page.locator('ion-alert').waitFor({ state: 'detached' })
         assert.equal(await page.getByLabel('Route code', { exact: true }).inputValue(), 'UNSAVED-ROUTE')
-        await page.getByRole('button', { name: 'Refresh', exact: true }).click()
-        await page.getByRole('button', { name: 'Discard and refresh', exact: true }).click()
+        await page.locator('.route-dialog').getByRole('button', { name: 'Cancel', exact: true }).click()
+        await page.getByRole('button', { name: 'Discard changes', exact: true }).click()
         await page.getByLabel('Route code', { exact: true }).waitFor({ state: 'detached' })
       }
       if (path === '/staff/boarding/check-in' && width === 390) {
@@ -204,7 +217,7 @@ try {
           await page.screenshot({path:`docs/screenshots/experience/admin-${width}-ag-grid-users.png`})
         } else {
           assert.equal(await page.locator('.mobile-record').count(),3)
-          assert.equal(await page.locator('.ag-root').count(),0)
+          assert.equal(await page.locator('.desktop-grid').isVisible(),false,'Mobile cards replace the retained desktop grid visually')
         }
         await page.getByRole('button', { name: 'Add user', exact: true }).click()
         const dialog = page.locator('ion-modal.user-modal .user-dialog')
@@ -240,50 +253,55 @@ try {
         const panel = page.locator('.staff-port-assignments')
         const navIcons = await Promise.all(['staff-ports', 'ports', 'vouchers', 'fares'].map(key => page.locator(`.sidebar a[href="/admin/${key}"] svg.app-icon`).evaluate(el => el.innerHTML)))
         assert.equal(new Set(navIcons).size, 4, 'Assignment, port, voucher and fare icons must be distinct')
-        await panel.getByLabel('Assigned port for Anna User', { exact: true }).waitFor()
+        const annaPort=panel.locator('select[aria-label="Assigned port for Anna User"]:visible');
+        const marcoPort=panel.locator('select[aria-label="Assigned port for Marco User"]:visible');
+        const saveButtons=panel.locator('.save-assignment:visible');
+        await annaPort.waitFor()
         assert.equal(await panel.getByText('zelda@example.invalid', { exact: true }).count(),0)
-        await panel.getByLabel('Assigned port for Anna User', { exact: true }).selectOption('origin')
-        await panel.getByRole('button', { name: 'Save', exact: true }).first().click()
-        await panel.getByRole('status').waitFor()
+        await annaPort.selectOption('origin')
+        await saveButtons.first().click()
+        await page.locator('.app-toast.success').filter({hasText:'Anna User is assigned to Calapan Port'}).waitFor()
         assert.deepEqual(lastPortAssignment, { uid: 'user-a', portId: 'origin' })
-        assert.match(await panel.getByRole('status').innerText(), /Calapan Port/)
-        assert.equal(await panel.locator('.assignment-state.assigned').count(),1)
-        assert.equal(await panel.getByRole('button', { name: 'Save', exact: true }).first().isDisabled(),true)
+        assert.match(await page.locator('.app-toast.success').innerText(), /Calapan Port/)
+        assert.equal(await panel.locator('.assignment-state.assigned:visible').count(),1)
+        assert.equal(await saveButtons.first().isDisabled(),true)
         await panel.getByLabel('Staff role', { exact: true }).selectOption('BOARDING')
-        await panel.getByLabel('Assigned port for Marco User', { exact: true }).waitFor()
-        assert.equal(await panel.getByLabel('Assigned port for Anna User', { exact: true }).count(),0)
-        await panel.getByLabel('Assigned port for Marco User', { exact: true }).selectOption('destination')
-        await panel.getByRole('button', { name: 'Save', exact: true }).click()
+        await marcoPort.waitFor()
+        assert.equal(await annaPort.count(),0)
+        await marcoPort.selectOption('destination')
+        await saveButtons.click()
         await page.waitForTimeout(100)
         assert.deepEqual(lastPortAssignment, { uid: 'user-m', portId: 'destination' })
-        assert.equal(await panel.locator('.assignment-state.assigned').count(),1)
+        assert.equal(await panel.locator('.assignment-state.assigned:visible').count(),1)
         await panel.getByLabel('Staff role', { exact: true }).selectOption('ALL')
-        await panel.getByLabel('Assigned port for Anna User', { exact: true }).waitFor()
+        await annaPort.waitFor()
       }
       if (path === '/admin/operations') {
         const visible=page.locator('.ion-page:not(.ion-page-hidden)').last()
         assert.equal(await visible.getByText('Operations activity log',{exact:true}).count(),0)
         await visible.getByRole('link',{name:'View settings history'}).click()
-        await visible.getByText('DEFAULT',{exact:true}).waitFor()
+        await visible.locator('.audit-record small[title="DEFAULT"]:visible').waitFor()
         assert.equal(new URL(page.url()).searchParams.get('entityType'),'operation_settings')
         assert.equal(lastAuditArgs.entityType,'operation_settings')
         assert.equal(await visible.getByLabel('Record type',{exact:true}).inputValue(),'operation_settings')
-        assert.equal(await visible.locator('.actor-role').innerText(),'Administrator')
-        const details=visible.locator('.records-grid details')
-        assert.equal(await details.evaluate(el=>el.open),false)
-        await visible.getByText('View changes',{exact:true}).click()
-        await visible.getByText('Changed from 24 hours to 12 hours',{exact:true}).waitFor()
+        assert.equal(await visible.locator('.actor-role:visible').innerText(),'Administrator')
+        assert.equal(await page.locator('.audit-dialog').count(),0)
+        await visible.locator('.view-changes:visible').click()
+        const details=page.locator('.audit-dialog')
+        await details.getByText('Changed from 24 hours to 12 hours',{exact:true}).waitFor()
         assert.equal((await details.innerText()).includes('"after"'),false)
         await page.screenshot({path:`docs/screenshots/experience/admin-${width}-settings-history.png`})
+        await details.getByRole('button',{name:'Close audit details',exact:true}).click()
+        await details.waitFor({state:'detached'})
         await visible.getByRole('button',{name:'Reset',exact:true}).click()
-        await visible.getByText('UI-BOOKING',{exact:true}).waitFor()
-        assert.equal(await visible.locator('.actor-role').innerText(),'Ticketing staff')
+        await visible.locator('.audit-record small[title="UI-BOOKING"]:visible').waitFor()
+        assert.equal(await visible.locator('.actor-role:visible').innerText(),'Ticketing staff')
         await page.goto(baseUrl+path)
         await visible.getByRole('link',{name:'View settings history'}).waitFor()
       }
       if (path === '/admin/audit-logs') {
-        assert.equal(await page.locator('.actor-role').innerText(),'Ticketing staff')
-        assert.equal((await page.locator('.actor-info').innerText()).includes('current role'),false)
+        assert.equal(await page.locator('.actor-role:visible').innerText(),'Ticketing staff')
+        assert.equal((await page.locator('.actor-info:visible').innerText()).includes('current role'),false)
         const legacyHelp=page.locator('.legacy-role-help')
         assert.equal(await legacyHelp.evaluate(el=>el.open),false)
         await legacyHelp.locator('summary').click()
@@ -294,21 +312,26 @@ try {
         await page.getByLabel('From date').fill('2026-10-05')
         await page.getByLabel('To date').fill('2026-10-05')
         await page.getByRole('button',{name:'Apply filters'}).click()
-        await page.getByText('UI-BOOKING',{exact:true}).waitFor()
+        await page.locator('.audit-record small[title="UI-BOOKING"]:visible').waitFor()
         assert.deepEqual(lastAuditArgs,{entityType:'',search:'UI-BOOKING',action:'PAYMENT_RECEIVED',fromDate:'2026-10-05',toDate:'2026-10-05',page:0})
         await page.getByLabel('Search activity').fill('no-match')
         await page.getByRole('button',{name:'Apply filters'}).click()
         await page.getByRole('heading',{name:'No matching activity'}).waitFor()
         await page.getByRole('button',{name:'Reset',exact:true}).click()
-        await page.getByText('UI-BOOKING',{exact:true}).waitFor()
-        await page.getByText('View changes',{exact:true}).click()
+        await page.locator('.audit-record small[title="UI-BOOKING"]:visible').waitFor()
+        await page.locator('.view-changes:visible').click()
         await page.getByText('Changed from Boarding to Completed',{exact:true}).waitFor()
         assert.equal(await page.getByText('PHP 600.00',{exact:true}).isVisible(),true)
-        if(width>=700) await page.waitForFunction(()=>{const content=document.querySelector('.records-grid .readable-changes');const cell=content?.closest('.ag-cell');return !!content && !!cell && content.getBoundingClientRect().bottom<=cell.getBoundingClientRect().bottom+2})
+        const dialog=page.locator('.audit-dialog');
+        await dialog.waitFor();
+        const bounds=await dialog.boundingBox();
+        assert.ok(bounds.x>=0 && bounds.x+bounds.width<=width+1,'Audit details dialog fits the viewport');
         assert.equal((await page.locator('.readable-changes').innerText()).includes('"after"'),false)
+        await dialog.getByRole('button',{name:'Close audit details',exact:true}).click()
+        await dialog.waitFor({state:'detached'})
       }
       if (path === '/home') {
-        assert.equal(await page.locator('.workspace-welcome').count(),1)
+        assert.equal(await page.locator('.welcome-section').count(),1)
         if (path === '/home') {
           const appWidth=await page.locator('ion-app > ion-router-outlet').evaluate(el=>el.getBoundingClientRect().width)
           assert.equal(Math.round(appWidth),Math.min(width,560),'Passenger web uses the compact mobile canvas')
@@ -322,16 +345,16 @@ try {
           await page.getByLabel('Search all bookings').press('Enter')
           await page.waitForTimeout(600)
           assert.equal(lastBookingArgs.search, 'missing-reference', 'Same-page header search reaches the database')
-          assert.equal(await page.getByLabel('Search Booking management').inputValue(), 'missing-reference')
+          assert.equal(await page.getByLabel('Search bookings',{exact:true}).inputValue(), 'missing-reference')
         }
-        await page.getByLabel('Search Booking management').fill('UI-BOOKING')
+        await page.getByLabel('Search bookings',{exact:true}).fill('UI-BOOKING')
         await page.waitForTimeout(600)
         assert.equal(lastBookingArgs.search, 'UI-BOOKING')
-        await page.getByLabel('Filter by status').selectOption('REFUND PENDING')
+        await page.locator('#directory-status').selectOption('REFUND PENDING')
         await page.waitForTimeout(600)
         assert.equal(lastBookingArgs.status, 'REFUND_PENDING')
         assert.equal(lastBookingArgs.page, 0)
-        await page.getByLabel('Filter by status').selectOption('ALL'); await page.waitForTimeout(500)
+        await page.locator('#directory-status').selectOption('ALL'); await page.waitForTimeout(500)
       }
       if (path.endsWith('/settings/account')) {
         await page.getByLabel('Mobile number').fill('+63 (912) 345-6789')
@@ -396,18 +419,18 @@ try {
         assert.equal(await page.getByLabel('Current password', { exact: true }).getAttribute('type'), 'text')
       }
       if (path.includes('trip-operations')) {
-        await page.getByRole('button', { name: 'Bookings', exact: true }).click()
+        await page.getByRole('navigation',{name:'Sailing operation tabs'}).getByRole('button', { name: /^Bookings(?:\s*\d+)?$/ }).click()
         await page.getByText('UI-BOOKING', { exact: true }).waitFor()
-        await page.getByRole('button', { name: 'No-shows', exact: true }).click()
+        await page.getByRole('navigation',{name:'Sailing operation tabs'}).getByRole('button', { name: /^No-shows(?:\s*\d+)?$/ }).click()
         assert.equal(await page.getByRole('button', { name: 'Reconcile no-shows', exact: true }).isDisabled(), true)
       }
       if (path === '/notifications') {
         await page.getByRole('button', { name: 'Mark all read', exact: true }).click()
-        await page.getByText('0 unread', { exact: true }).waitFor()
+        await page.getByText('You are all caught up', { exact: true }).waitFor()
         assert.equal(markAllCalls, 1)
       }
       if (path === '/bookings') {
-        assert.match(await page.locator('.booking-card').first().innerText(), /Booking total: PHP 600/)
+        assert.match(await page.locator('.booking-card .booking-total').first().innerText(), /Booking total\s+PHP 600/)
         await page.getByLabel('Payment status').selectOption('PAID')
         assert.equal(await page.locator('.booking-card').count(), 1)
         await page.getByLabel('Find a booking').fill('no-such-reference')
@@ -416,7 +439,7 @@ try {
         assert.equal(await page.locator('.booking-card').count(), 2)
         await page.getByRole('link', { name: 'View details', exact: true }).first().click()
         await page.getByRole('heading', { name: 'Booking details', exact: true }).last().waitFor()
-        assert.match(await page.locator('.booking-detail-card').last().innerText(), /Booking total: PHP 600/)
+        assert.match(await page.locator('.booking-detail-card .detail-fare-total').last().innerText(), /Booking total\s+PHP 600/)
         await page.goto(baseUrl + path)
         await page.locator('.booking-card').first().waitFor()
         if (width === 390) {
@@ -453,7 +476,7 @@ try {
         assert.match(await page.locator('.confirmed-card').innerText(), /BOOKING TOTAL\s+PHP 600/)
         await page.evaluate(() => Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText: async () => { throw new Error('Denied') } } }))
         await page.getByRole('button', { name: 'Copy', exact: true }).click()
-        await page.getByText('Could not copy the reference. Select the booking reference and copy it manually.', { exact: true }).waitFor()
+        await page.locator('main').getByText('Could not copy the reference. Select the booking reference and copy it manually.', { exact: true }).waitFor()
         assert.equal(await page.getByRole('button', { name: 'Copied', exact: true }).count(), 0)
         await page.evaluate(() => Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText: async () => {} } }))
       }
@@ -521,7 +544,7 @@ try {
         await page.locator('.qr-block img').waitFor()
         assert.match(await page.locator('.qr-block img').getAttribute('src'), /^data:image\/png;base64,/)
         const pending = page.waitForEvent('download')
-        await page.getByRole('button', { name: 'Download ticket', exact: true }).click()
+        await page.locator('.ticket-actions').getByRole('button', { name: 'Download', exact: true }).click()
         const download = await pending
         const text = fs.readFileSync(await download.path(), 'utf8')
         assert.ok(text.includes('data:image/png;base64,'), 'Downloaded ticket embeds its QR')
@@ -558,7 +581,12 @@ try {
         await page.locator('[data-slot="button"]').evaluateAll(nodes => Promise.all(nodes.flatMap(el => el.getAnimations()).map(animation => animation.finished.catch(() => {}))))
         if (path.startsWith('/search')) {
           const button = page.getByRole('button', { name: 'Modify search', exact: true })
-          assert.equal(await button.evaluate(el => getComputedStyle(el).backgroundColor), 'rgb(20, 34, 53)', 'Outline buttons follow the dark surface palette')
+          const colors=await button.evaluate(el=>{
+            const probe=document.createElement('span');probe.style.backgroundColor='var(--surface)';el.append(probe);
+            const expected=getComputedStyle(probe).backgroundColor;probe.remove();
+            return {actual:getComputedStyle(el).backgroundColor,expected};
+          });
+          assert.equal(colors.actual,colors.expected,'Outline buttons follow the current dark surface token')
         }
         await page.screenshot({ path: `docs/screenshots/experience/${role.toLowerCase()}-${width}-${path.split('?')[0].replaceAll('/', '-').slice(1)}-dark.png` })
         await page.evaluate(() => window.dispatchEvent(new StorageEvent('storage', { key: 'barkolink-theme', newValue: 'light' })))
@@ -568,6 +596,7 @@ try {
       await page.screenshot({ path: `docs/screenshots/experience/${role.toLowerCase()}-${width}-${path.split('?')[0].replaceAll('/', '-').slice(1)}.png` })
     }
     await context.close()
+    console.log(`${role} ${width}px: page layouts and workflow interactions passed`)
   }
   assert.deepEqual(errors, [])
   console.log('Experience UI checks passed at desktop, tablet, and mobile widths; all backend traffic used isolated fixtures.')

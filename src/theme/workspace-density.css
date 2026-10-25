@@ -16,7 +16,7 @@
 }
 :root body .design-workspace :is(.heading, .page-heading, .reference-heading, .page-intro) h1 {
   margin: 0 0 5px;
-  font-size: 24px;
+  font-size: 28px;
   line-height: 1.3;
 }
 :root body .design-workspace :is(.heading, .page-heading, .reference-heading, .page-intro) p:last-child {
@@ -39,7 +39,7 @@
 :root body .design-workspace .staff-navigation { margin-top: 14px; gap: 3px; }
 :root body .design-workspace .staff-navigation p { margin: 6px 12px; }
 :root body .design-workspace .staff-navigation a { min-height: 38px; padding: 8px 12px; gap: 10px; }
-:root body .design-workspace .staff-navigation a.active { background: #2478c2; color: #fff; }
+:root body .design-workspace .staff-navigation a.active { background: var(--nav-active); color: #fff; }
 :root body .design-workspace :is(.panel-heading, .insight-heading, .catalog-heading, .card-heading) {
   gap: 12px;
   margin-bottom: 14px;

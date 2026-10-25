@@ -3,7 +3,7 @@ describe('Supabase account navigation', () => {
 
   it('shows sign-in and registration forms', () => {
     cy.visit('/login')
-    cy.contains('Welcome back')
+    cy.contains('Welcome to BarkoLink')
     cy.get('input[type="email"]').should('be.visible')
     cy.get('input[name="password"]').should('be.visible')
     cy.visit('/register')

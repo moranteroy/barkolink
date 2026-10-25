@@ -119,13 +119,10 @@ try{
    await page.screenshot({path:`docs/screenshots/reference-catalog/routes-${width}-${theme}.png`,fullPage:true});
    const overflow=await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth+1);assert.equal(overflow,false);
    await page.goto('http://127.0.0.1:8110/admin/accommodation');
-   await page.getByText('Published accommodation classes',{exact:true}).click();
-   const classes=page.locator('.published-references');
-   await classes.getByLabel('Operator',{exact:true}).selectOption('FastCat');
-   assert.equal(await classes.locator('article').count(),4);
-   assert.ok(await classes.locator('article').first().getByText('Economy · Premium Economy · Business Class',{exact:true}).isVisible());
+   assert.equal(await page.locator('.published-references').count(),0);
    await page.getByRole('button',{name:'Add accommodation',exact:true}).click();
-   assert.ok(await page.locator('#accommodation-class-name option[value="Premium Economy"]').count());
+   assert.deepEqual(await page.locator('#accommodation-class-name option').allTextContents(),['Select class','Economy','Tourist Class','Business Class']);
+   assert.equal(await page.locator('#accommodation-class-name option[value="Premium Economy"]').count(),0);
    await page.locator('ion-modal').getByRole('button',{name:'Close dialog',exact:true}).click();
    await page.waitForTimeout(400);
    await page.screenshot({path:`docs/screenshots/reference-catalog/accommodation-${width}-${theme}.png`,fullPage:true});

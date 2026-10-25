@@ -18,6 +18,8 @@ describe('passenger departures and arrivals board', () => {
     const wrapper = mount(SailingBoard, { props: { initialPortId: 'batangas' } }); mocks.enter?.(); await flushPromises();
     expect(wrapper.findAll('article')).toHaveLength(1);
     expect(wrapper.text()).toContain('OUTBOUND'); expect(wrapper.text()).toContain('Boarding');
+    expect(wrapper.text()).not.toContain('Refreshes every');
+    expect(wrapper.find('footer').text()).not.toContain('Updated');
     await wrapper.findAll('.board-tabs button')[1].trigger('click');
     expect(wrapper.text()).toContain('OVERNIGHT'); expect(wrapper.text()).toContain('Completed');
     expect(wrapper.text()).toContain('Oct 7'); expect(wrapper.text()).not.toContain('OUTBOUND');

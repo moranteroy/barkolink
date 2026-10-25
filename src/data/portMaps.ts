@@ -5,6 +5,7 @@ export type MapPort = {
   region?: string | null;
   latitude?: number | null;
   longitude?: number | null;
+  isActive?: boolean;
 };
 
 // Port-area references, not specific boarding gates. See docs/port-maps.md.

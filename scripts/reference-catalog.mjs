@@ -4,6 +4,8 @@ export const catalog = JSON.parse(fs.readFileSync('src/data/ferryReferenceCatalo
 const literal = value => value === null ? 'null' : `'${String(value).replaceAll("'","''")}'`;
 const json = value => `${literal(JSON.stringify(value))}::jsonb`;
 const id = (kind,code) => {
+  // Keep the established database identity when the display code is normalized.
+  if(kind==='vessel' && code==='SL-STELLA-DEL-MAR')code='SL-SWM-STELLA-DEL-MAR';
   const legacy={CAL:'76a29980-5c27-4c4b-9ead-cae943202001',BTG:'76a29980-5c27-4c4b-9ead-cae943202002',PGA:'76a29980-5c27-4c4b-9ead-cae943202003'};
   if(kind==='port' && legacy[code])return legacy[code];
   const h=crypto.createHash('sha256').update(`barkolink-reference:${kind}:${code}`).digest('hex');

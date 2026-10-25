@@ -22,8 +22,9 @@
           <StaffWorkspaceHeader role="boarding" navigation :menu-open="menuOpen" @toggle-menu="menuOpen = !menuOpen" />
 
           <main id="overview" class="content">
-            <div class="page-heading">
-              <div>
+            <div class="page-heading staff-maritime-heading">
+              <MaritimeHeaderArt />
+              <div class="staff-heading-copy">
                 <p class="eyebrow">BOARDING WORKSPACE</p>
                 <h1>
                   {{
@@ -131,6 +132,7 @@
                 :boarded="boardedCount"
                 :total="passengers.length"
               />
+              <BoardingTimeEditor v-if="selectedSailing" :sailing-code="selectedSailing.code" :disabled="loading || busy" :refresh-token="queueUpdatedAt" @editing="boardingTimeEditing = $event" @updated="loadData" />
             </section>
 
             <div
@@ -138,15 +140,18 @@
               class="gate-note"
             >
               <AppIcon :icon="informationCircleOutline" /><span
-                >{{ selectedSailing.status === 'DELAYED' ? 'This sailing is delayed. Ask the administrator for an updated schedule before boarding.' : 'Check-in is open. Boarding opens automatically at the confirmed boarding time. Contact the administrator if no boarding time is set.' }}</span
+                >{{ selectedSailing.status === 'DELAYED' ? 'This sailing is delayed. Ask the administrator for an updated schedule before boarding.' : 'Check-in is open. Boarding opens automatically at the saved boarding time. Use Adjust time to confirm or change it for this trip.' }}</span
               >
             </div>
 
-            <section v-if="pageMode === 'check-in' || pageMode === 'boarding'" class="gate-stage" :aria-label="pageMode === 'check-in' ? 'Arrival check-in' : 'Vessel boarding'">
+            <details v-if="pageMode === 'check-in' || pageMode === 'boarding'" class="gate-guidance">
+              <summary><span>{{ pageMode === 'check-in' ? 'Check-in instructions' : 'Boarding instructions' }}</span><strong>{{ pageMode === 'check-in' ? `${issuedCount} awaiting check-in` : `${checkedInCount} ready to board` }}</strong></summary>
+              <div class="gate-stage">
               <span class="stage-icon"><AppIcon :icon="pageMode === 'check-in' ? scanOutline : boatOutline" aria-hidden="true" /></span>
               <div><p class="eyebrow">{{ pageMode === 'check-in' ? 'STEP 1 / PASSENGER ARRIVAL' : 'STEP 2 / VESSEL BOARDING' }}</p><h2>{{ pageMode === 'check-in' ? 'Record arrival at the gate' : 'Confirm passengers are on board' }}</h2><p>{{ pageMode === 'check-in' ? `${issuedCount} awaiting check-in. Verify each ticket and passenger ID before recording arrival.` : `${checkedInCount} ready to board · ${boardedCount} boarded. Only checked-in passengers can be marked as boarded.` }}</p></div>
               <router-link :to="operationPath(pageMode === 'check-in' ? 'boarding' : 'check-in')">{{ pageMode === 'check-in' ? 'Go to boarding' : 'Go to check-in' }} <AppIcon :icon="arrowForwardOutline" aria-hidden="true" /></router-link>
-            </section>
+              </div>
+            </details>
 
             <section v-if="pageMode === 'dashboard' || pageMode === 'manifest'" class="stats" aria-label="Boarding totals">
               <article>
@@ -507,16 +512,19 @@ import { notifyError, notifySuccess } from '@/composables/toast';
 import QueueFreshness from "../../../components/shared/QueueFreshness.vue";
 import StaffPortRequired from '../../../components/staff/StaffPortRequired.vue';
 import { useStaffPortGate } from '../../../composables/staffPortGate';
+import { StaffPortRequiredError } from '../../../services/staffPortAccess';
 const { portBlocked } = useStaffPortGate(loadData);
 import StaffWorkspaceHeader from "../../../components/staff/StaffWorkspaceHeader.vue";
 import StaffNavigation from "../../../components/staff/StaffNavigation.vue";
 import { confirmAction } from "../../../composables/confirmation";
 import BoardingProgress from "../../../components/staff/boarding/BoardingProgress.vue";
+import BoardingTimeEditor from '../../../components/staff/boarding/BoardingTimeEditor.vue';
 import { databaseRequestError } from "../../../data/databaseErrors";
 import { computed, nextTick, onBeforeUnmount, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { IonContent, IonModal, IonPage, onIonViewWillEnter, onIonViewWillLeave } from "@ionic/vue";
 import AppIcon from "@/components/ui/icon/AppIcon.vue";
+import MaritimeHeaderArt from "@/components/shared/MaritimeHeaderArt.vue";
 import {
   alertCircleOutline,
   arrowForwardOutline,
@@ -597,6 +605,7 @@ const error = ref("");
 const success = ref("");
 const menuOpen = ref(false);
 const scannerOpen = ref(false);
+const boardingTimeEditing = ref(false);
 const scannerVideo = ref<HTMLVideoElement | null>(null);
 const cameraActive = ref(false);
 const ticketLookup = ref("");
@@ -749,6 +758,7 @@ async function loadData() {
       selectedPassengerId.value = null;
   } catch (cause) {
     if (request === requestNumber) {
+      if (cause instanceof StaffPortRequiredError) { error.value = ''; return; }
       error.value = notifyError(databaseRequestError(
         cause,
         "Could not load boarding records.",
@@ -777,7 +787,8 @@ useQueueRefresh(
     /^\/staff\/boarding(?:\/(check-in|boarding|manifest))?$/.test(route.path) &&
     !loading.value &&
     !busy.value &&
-    !scannerOpen.value,
+    !scannerOpen.value &&
+    !boardingTimeEditing.value,
 );
 watch(pageMode, () => {
   search.value = '';
@@ -2393,7 +2404,10 @@ input:focus-visible {
 @media (max-width: 800px) { .boarding-shortcuts { grid-template-columns: minmax(0, 1fr); gap: 10px; } }
 
 
-.gate-stage { display: flex; align-items: center; gap: 16px; padding: 20px; margin: 20px 0; border: 1px solid var(--line); border-left: 3px solid var(--ocean); border-radius: 12px; background: var(--surface); }
+.gate-guidance { margin: 12px 0; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); }
+.gate-guidance summary { padding: 12px 16px; min-height: 44px; cursor: pointer; color: var(--ocean); font-size: var(--text-label); line-height: 1.6; }
+.gate-guidance summary strong { display: inline-block; margin-left: 12px; color: var(--muted); font-size: var(--text-caption); font-weight: 500; }
+.gate-stage { display: flex; align-items: center; gap: 16px; padding: 12px 16px; margin: 0; border-top: 1px solid var(--line); }
 .stage-icon { display: grid; place-items: center; width: 42px; height: 42px; border-radius: 11px; background: var(--light-blue); color: var(--ocean); font-size: 24px; flex: none; }
 .gate-stage > div { flex: 1; min-width: 0; }
 .gate-stage h2 { font-size: 18px; line-height: 1.4; margin: 5px 0 7px; }
@@ -2425,9 +2439,10 @@ input:focus-visible {
 :global(:root[data-theme="dark"]) .boarding-shell .ticket-status.checked-in { color: #c4b5fd; background: #30234e; }
 :global(:root[data-theme="dark"]) .boarding-shell .ticket-status.boarded { color: #86efac; background: #18382b; }
 .manifest-table-scroll { max-height: 540px; overflow: auto; margin-top: 18px; border: 1px solid var(--line); border-radius: 10px; scrollbar-width: thin; }
-.manifest-table { width: 100%; border-collapse: separate; border-spacing: 0; text-align: left; font-size: var(--text-label); }
+.manifest-table { width: 100%; min-width: 960px; table-layout: fixed; border-collapse: separate; border-spacing: 0; text-align: left; font-size: var(--text-label); }
 .manifest-table th { position: sticky; top: 0; background: var(--surface-soft); border-bottom: 1px solid var(--line); padding: 12px 14px; font-size: var(--text-caption); color: var(--muted); letter-spacing: .5px; text-transform: uppercase; white-space: nowrap; }
-.manifest-table td { padding: 16px 14px; border-bottom: 1px solid var(--line); line-height: 1.6; vertical-align: middle; }
+.manifest-table th:nth-child(1) { width: 22%; }.manifest-table th:nth-child(2) { width: 28%; }.manifest-table th:nth-child(3) { width: 16%; }.manifest-table th:nth-child(4) { width: 15%; }.manifest-table th:nth-child(5) { width: 19%; }
+.manifest-table td { overflow-wrap: anywhere; padding: 16px 14px; border-bottom: 1px solid var(--line); line-height: 1.6; vertical-align: middle; }
 .manifest-table tr:last-child td { border-bottom: 0; }
 .manifest-table tbody tr:hover { background: var(--surface-soft); }
 .manifest-table td > strong { font-size: 13px; }
@@ -2440,7 +2455,7 @@ input:focus-visible {
 @media (max-width: 700px) {
   .gate-stage { flex-wrap: wrap; padding: 16px; gap: 12px; }.gate-stage a { margin-left: 54px; }
   .manifest-table-scroll { max-height: none; }
-  .manifest-table, .manifest-table tbody { display: block; }
+  .manifest-table, .manifest-table tbody { display: block; min-width: 0; }
   .manifest-table thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
   .manifest-table tr { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; padding: 16px; border-bottom: 1px solid var(--line); }
   .manifest-table td { display: block; border: 0; padding: 0; min-width: 0; overflow-wrap: anywhere; }

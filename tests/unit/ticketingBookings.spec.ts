@@ -1,6 +1,8 @@
 import { flushPromises, mount } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import TicketingPage from '../../src/views/staff/ticketing/TicketingPage.vue'
+import { StaffPortRequiredError } from '../../src/services/staffPortAccess'
+import { clearToasts, toastMessages } from '../../src/composables/toast'
 
 vi.mock('../../src/composables/confirmation', () => ({ confirmAction: vi.fn(async () => true) }))
 const mocks = vi.hoisted(() => ({ enter: vi.fn(), bookings: vi.fn(), collectPayment: vi.fn(), verify: vi.fn(), refund: vi.fn() }))
@@ -53,15 +55,27 @@ async function openDetails(record = booking()) {
 }
 
 beforeEach(() => {
+  clearToasts()
   vi.clearAllMocks()
   mocks.collectPayment.mockResolvedValue({ data: {} })
   mocks.verify.mockResolvedValue({ data: {} })
   mocks.refund.mockResolvedValue({ data: {} })
   vi.spyOn(window, 'confirm').mockReturnValue(true)
 })
-afterEach(() => vi.restoreAllMocks())
+afterEach(() => { clearToasts(); vi.restoreAllMocks() })
 
 describe('ticketing booking details', () => {
+  it('leaves missing port assignment to the dedicated notice without queuing a generic error', async () => {
+    mocks.bookings.mockRejectedValueOnce(new StaffPortRequiredError())
+    const wrapper = mount(TicketingPage, {
+      global: { stubs: { StaffWorkspaceHeader: true, StaffLogoutButton: true, RouterLink: { template: '<a><slot /></a>' }, BrandMark: true, TicketingGuide: true } },
+    })
+    await mocks.enter.mock.calls.at(-1)![0]()
+    await flushPromises()
+    expect(toastMessages.value).toHaveLength(0)
+    expect(wrapper.text()).not.toContain('Could not load operations')
+    wrapper.unmount()
+  })
   it('offers a filter for received online payments awaiting staff verification', async () => {
     const wrapper=await openDetails();
     expect(wrapper.get('select[aria-label="Filter reservation status"]').text()).toContain('Awaiting staff verification');

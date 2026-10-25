@@ -17,8 +17,9 @@
         <div class="reference-main">
           <StaffWorkspaceHeader :role="role" navigation :menu-open="menuOpen" @toggle-menu="menuOpen = !menuOpen" />
           <main class="reference-content">
-            <div class="reference-heading">
-              <div>
+            <div class="reference-heading staff-maritime-heading">
+              <MaritimeHeaderArt />
+              <div class="staff-heading-copy">
                 <p v-if="section === 'passengers'" class="directory-kicker">TICKETING DESK / PASSENGER RECORDS</p>
                 <p v-if="section === 'trips' && role === 'ticketing'" class="directory-kicker">TICKETING DESK / SAILING SCHEDULES</p>
                 <p v-if="section === 'trips' && role === 'boarding'" class="directory-kicker">BOARDING WORKSPACE / SAILINGS</p>
@@ -114,7 +115,10 @@
                   :key="section"
                   :title="title"
                   :columns="gridColumns"
+                  :column-types="section === 'trips' ? ['text', 'text', 'text', 'date', 'text', 'text'] : []"
                   :rows="gridRows"
+                  :column-min-widths="section === 'passengers' ? [180, 220, 180, 160, 110, 140] : section === 'trips' ? [190, 250, 200, 180, 125, 150] : []"
+                  :column-flex="section === 'passengers' ? [1.2, 1.5, 1.1, 1, .7, .9] : section === 'trips' ? [1.1, 1.6, 1.2, 1, .7, .8] : []"
                   :loading="loading"
                   density="compact"
                   ><template #cell="{ row, index, value }"
@@ -160,6 +164,7 @@ import { notifyError } from '@/composables/toast';
 import { statusLabel } from "../../data/statusPresentation";
 import StaffPortRequired from '../../components/staff/StaffPortRequired.vue';
 import { useStaffPortGate } from '../../composables/staffPortGate';
+import { StaffPortRequiredError } from '../../services/staffPortAccess';
 const { portBlocked } = useStaffPortGate(load);
 import InboxPanel from '../../components/admin/InboxPanel.vue';
 import WeatherTripPicker from '../../components/shared/WeatherTripPicker.vue';
@@ -174,6 +179,7 @@ import { useRoute } from "vue-router";
 import { boatOutline, informationCircleOutline, searchOutline, refreshOutline, arrowForwardOutline } from "ionicons/icons";
 import { IonPage, IonContent, onIonViewWillEnter } from "@ionic/vue";
 import AppIcon from "@/components/ui/icon/AppIcon.vue";
+import MaritimeHeaderArt from "@/components/shared/MaritimeHeaderArt.vue";
 import BrandMark from "../../components/shared/BrandMark.vue";
 import StaffNavigation from "../../components/staff/StaffNavigation.vue";
 import RecordsGrid from "../../components/shared/RecordsGrid.vue";
@@ -364,6 +370,7 @@ async function load() {
       total.value = inbox.value.length;
     }
   } catch (e) {
+    if (e instanceof StaffPortRequiredError) { if (token === request) error.value = ''; return; }
     if (token === request)
       error.value = notifyError(databaseRequestError(e, "Could not load staff records."));
   } finally {
@@ -410,9 +417,10 @@ onIonViewWillEnter(load);
 .sailing-list-heading p { font-size: var(--text-label); color: var(--muted); margin: 0; line-height: 1.5; }
 .sailing-count { flex: none; padding: 6px 10px; background: var(--light-blue); color: var(--ocean); border-radius: 20px; font-size: var(--text-caption); font-weight: 650; }
 .sailing-table-scroll { max-height: 540px; overflow: auto; scrollbar-width: thin; scrollbar-color: var(--line) transparent; }
-.sailing-table { width: 100%; border-collapse: separate; border-spacing: 0; text-align: left; font-size: var(--text-label); }
+.sailing-table { width: 100%; min-width: 1050px; table-layout: fixed; border-collapse: separate; border-spacing: 0; text-align: left; font-size: var(--text-label); }
 .sailing-table th { position: sticky; top: 0; z-index: 1; padding: 12px 16px; border-block: 1px solid var(--line); background: var(--surface-soft); color: var(--muted); font-size: var(--text-caption); font-weight: 650; letter-spacing: .5px; text-transform: uppercase; white-space: nowrap; }
-.sailing-table td { padding: 16px; border-bottom: 1px solid var(--line); line-height: 1.6; vertical-align: middle; }
+.sailing-table th:nth-child(1) { width: 25%; }.sailing-table th:nth-child(2) { width: 17%; }.sailing-table th:nth-child(3) { width: 21%; }.sailing-table th:nth-child(4) { width: 12%; }.sailing-table th:nth-child(5) { width: 12%; }.sailing-table th:nth-child(6) { width: 13%; }
+.sailing-table td { overflow-wrap: anywhere; padding: 16px; border-bottom: 1px solid var(--line); line-height: 1.6; vertical-align: middle; }
 .sailing-table tbody tr:last-child td { border-bottom: 0; }
 .sailing-table tbody tr:hover td { background: var(--surface-soft); }
 .sailing-route { min-width: 180px; }
@@ -451,7 +459,7 @@ onIonViewWillEnter(load);
   .boarding-trips-directory .reference-content { padding: 20px 16px 32px; }
   .boarding-trips-directory .reference-heading { flex-wrap: wrap; }
   .sailing-table-scroll { max-height: none; }
-  .sailing-table, .sailing-table tbody { display: block; }
+  .sailing-table, .sailing-table tbody { display: block; min-width: 0; }
   .sailing-table thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
   .sailing-table tbody tr { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px 20px; padding: 18px; border-top: 1px solid var(--line); }
   .sailing-table td { display: block; padding: 0; border: 0; min-width: 0; }

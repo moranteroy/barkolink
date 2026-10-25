@@ -2,16 +2,37 @@
 .design-workspace {
   --workspace-radius: 16px;
 }
+/* Staff pages share the admin artwork while retaining their own actions/layout. */
+:root body .design-workspace .staff-maritime-heading {
+  position: relative;
+  isolation: isolate;
+  min-height: 112px;
+  padding-block: 12px;
+  border-bottom: 1px solid var(--line);
+}
+:root body .design-workspace .staff-maritime-heading > :not(.maritime-header-art) { position: relative; z-index: 1; }
+:root body .design-workspace .staff-maritime-heading > .maritime-header-art { position: absolute; min-width: 0; flex: none; z-index: 0; }
+:root body .design-workspace .staff-maritime-heading .staff-heading-copy { flex: 1; min-width: 0; max-width: calc(100% - 400px); }
+@media (min-width: 1101px) {
+  .staff-maritime-heading:has(.heading-actions) { --ferry-inset: 260px; }
+  .staff-maritime-heading:has(.dashboard-walk-in) { --ferry-inset: 300px; }
+}
+@media (max-width: 1100px) {
+  :root body .design-workspace .staff-maritime-heading .staff-heading-copy { max-width: calc(100% - 240px); }
+}
+@media (max-width: 700px) {
+  :root body .design-workspace .staff-maritime-heading { min-height: 0; flex-wrap: wrap; }
+  :root body .design-workspace .staff-maritime-heading .staff-heading-copy { flex-basis: 100%; max-width: 100%; }
+}
 :root body .design-workspace .sidebar,
 :root body .design-workspace .staff-sidebar {
-  background: linear-gradient(180deg, #102c4a 0%, #0c2038 100%);
+  background: var(--nav-background);
   border-right: 1px solid #ffffff0d;
 }
-:root body .design-workspace .sidebar nav a.active,
 :root body .design-workspace .staff-sidebar nav a.active {
-  background: #ffffff12;
+  background: var(--nav-active);
   color: #fff;
-  box-shadow: inset 3px 0 #65c6e3;
+  box-shadow: inset 3px 0 #5bd5ff;
   border-radius: 8px;
 }
 :root body .design-workspace .sidebar nav a:hover,
@@ -104,6 +125,7 @@
 }
 :root body .design-workspace .panel {
   border-radius: var(--workspace-radius);
+  background: var(--panel-background, var(--surface));
 }
 :root body .design-workspace table th {
   background: var(--surface-soft);
@@ -229,13 +251,13 @@
 }
 
 :root body .design-workspace .sidebar nav a.active {
-  background: #246fba;
+  background: var(--nav-active);
   color: white;
   box-shadow: none;
 }
 :root body .design-workspace .sidebar {
   width: 256px;
-  background: #0c203b;
+  background: var(--nav-background);
   padding: 22px 16px;
 }
 :root body .admin-global-search {
@@ -268,10 +290,11 @@
   margin-left: 0;
 }
 :root body .design-workspace .content > .heading .eyebrow {
-  display: none;
+  display: block;
+  margin: 0 0 6px;
 }
 :root body .design-workspace .content > .heading h1 {
-  font-size: 25px;
+  font-size: clamp(22px, 2.2vw, 30px);
   margin: 0 0 6px;
 }
 :root body .design-workspace .topbar {

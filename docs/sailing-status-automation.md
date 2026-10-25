@@ -1,5 +1,7 @@
 # Sailing status configuration
 
+Boarding staff can set a trip-specific override at their assigned departure port, with a required reason and audit trail. Admin retains operator defaults. See [Boarding staff timing](boarding-staff-timing.md) for permission boundaries and migration 048.
+
 Admin → Operations → Sailing status configuration stores a separate policy for each catalog operator. Boarding automation is unset until an administrator supplies a confirmed boarding lead time and reference/terminal confirmation. No one-hour default is assigned. Check-in/reporting reminders and boarding cutoffs are not treated as boarding opening times.
 
 Official guidance checked 11 October 2026:

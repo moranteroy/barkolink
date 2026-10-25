@@ -56,7 +56,7 @@ function corridor(chain, operator, sourceId, page = null, vesselName = null, cap
   let vessel;
   if(vesselName) {
     const name = normalizeName(vesselName);
-    const code = `${operator==='Starlite Ferries'?'SL':'MN'}-${name.replace(/^MV /,'').replace(/^Starlite /,'').toUpperCase().replace(/[^A-Z0-9]+/g,'-')}`;
+    const code = `${operator==='Starlite Ferries'?'SL':'MN'}-${name.replace(/^MV /,'').replace(/^Starlite /,'').toUpperCase().replace(/[^A-Z0-9]+/g,'-')}`.replace(/^SL-SWM-STELLA-DEL-MAR$/, 'SL-STELLA-DEL-MAR');
     if (!vesselMap.has(code)) vesselMap.set(code,{code,name,operator,capacities:[],routes:[],observations:[]});
     vessel=vesselMap.get(code);
     if (Number.isInteger(capacity) && capacity>0) vessel.capacities.push(capacity);

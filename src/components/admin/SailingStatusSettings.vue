@@ -19,7 +19,7 @@
           <div class="settings-editor">
             <section class="settings-card">
               <div class="card-heading"><span class="card-icon"><AppIcon :icon="timeOutline" aria-hidden="true" /></span><div><h3>Boarding time</h3><p>When passengers can start boarding for {{ operator || 'this operator' }}.</p></div></div>
-              <label class="toggle"><input v-model="form.autoBoarding" type="checkbox">Automatically start Boarding</label>
+              <label class="toggle"><input v-model="form.autoBoarding" type="checkbox" role="switch" class="ui-switch">Automatically start Boarding</label>
               <div v-if="form.autoBoarding" class="fields">
                 <label>Boarding lead time (minutes)<div class="unit-field"><input v-model.number="form.minutes" aria-label="Boarding lead time (minutes)" type="number" min="1" max="10080" step="1" required placeholder="Enter minutes"><span aria-hidden="true">min</span></div><small>Minutes before departure, confirmed by the operator.</small></label>
                 <div class="confirmation-field">
@@ -34,7 +34,7 @@
             </section>
             <section class="settings-card">
               <div class="card-heading"><span class="card-icon"><AppIcon :icon="checkmarkCircleOutline" aria-hidden="true" /></span><div><h3>Trip completion</h3><p>Choose how trips are marked Completed.</p></div></div>
-              <label class="toggle"><input v-model="form.autoComplete" type="checkbox">Automatically mark Completed at scheduled arrival</label>
+              <label class="toggle"><input v-model="form.autoComplete" type="checkbox" role="switch" class="ui-switch">Automatically mark Completed at scheduled arrival</label>
               <p class="field-hint">{{ form.autoComplete ? 'Uses the saved arrival time. Mark the trip Delayed if its actual schedule changes.' : 'Mark Completed manually in Trips & schedules.' }}</p>
             </section>
           </div>

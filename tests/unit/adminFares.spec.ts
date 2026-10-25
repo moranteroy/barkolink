@@ -4,15 +4,15 @@ import AdminWorkspacePage from '../../src/views/admin/AdminWorkspacePage.vue'
 import { recordsGridStub } from '../support/recordsGridStub'
 import { clearToasts, toastMessages } from '../../src/composables/toast'
 
-vi.mock('../../src/services/database/workspaces', () => ({ routes: vi.fn(async () => ({data:{routes:[]}})) }))
+vi.mock('../../src/services/database/workspaces', () => ({ routes: mocks.routes }))
 vi.mock('../../src/composables/confirmation', () => ({ confirmAction: vi.fn(async () => true) }))
 const mocks = vi.hoisted(() => ({
   route: { path: '/admin/trips', params: { section: 'trips' }, query: {} },
   enter: vi.fn(),
   settings: vi.fn(), saveSettings: vi.fn(), createTrip: vi.fn(), nextCode: vi.fn(),
-  bookings: vi.fn(), updateTrip: vi.fn(),
+  bookings: vi.fn(), directoryBookings: vi.fn(), updateTrip: vi.fn(),
   passengerRecords: vi.fn(), board: vi.fn(), checkIn: vi.fn(),
-  reports: vi.fn(),
+  reports: vi.fn(), updateVessel: vi.fn(), routes: vi.fn(),
   generatePassword: vi.fn(), createUser: vi.fn(),
 }))
 vi.mock('vue-router', () => ({ onBeforeRouteLeave: vi.fn(), onBeforeRouteUpdate: vi.fn(), useRoute: () => mocks.route, useRouter: () => ({ replace: vi.fn() }) }))
@@ -35,7 +35,7 @@ vi.mock('../../src/services/database/staff', () => ({
   adminFareSettings: mocks.settings, adminSaveFareSettings: mocks.saveSettings,
   adminNextTripCode: mocks.nextCode,
   adminCreateSailing: mocks.createTrip, adminSailingBookings: mocks.bookings, adminUpdateUnbookedSailing: mocks.updateTrip,
-  staffBookings: async () => ({ data: { bookings: [] } }),
+  staffBookings: mocks.directoryBookings,
   adminSailings: async () => ({ data: { sailings: [sailing] } }),
   adminSailingOptions: async () => ({ data: { sailings: [sailing] } }),
   adminUsers: async () => ({ data: { users: [] } }),
@@ -44,7 +44,7 @@ vi.mock('../../src/services/database/staff', () => ({
   adminPassengerRecords: mocks.passengerRecords,
   adminDashboardStats: async () => ({ data: {} }),
   adminCancelBooking: vi.fn(), adminCreatePort: vi.fn(), adminCreateVessel: vi.fn(), adminRescheduleSailing: vi.fn(),
-  adminUpdatePort: vi.fn(), adminUpdateSailingStatus: vi.fn(), adminUpdateVessel: vi.fn(), boardTicket: mocks.board, checkInTicket: mocks.checkIn,
+  adminUpdatePort: vi.fn(), adminUpdateSailingStatus: vi.fn(), adminUpdateVessel: mocks.updateVessel, boardTicket: mocks.board, checkInTicket: mocks.checkIn,
 }))
 
 async function load(section = 'trips') {
@@ -60,6 +60,7 @@ async function load(section = 'trips') {
 beforeEach(() => {
   clearToasts()
   vi.clearAllMocks()
+  mocks.routes.mockResolvedValue({data:{routes:[]}})
   mocks.reports.mockResolvedValue({ data: { sailings: [] } })
   mocks.generatePassword.mockResolvedValue({ data: { password: 'Generated-password123' } })
   mocks.createUser.mockResolvedValue({ data: { email: 'new@example.com', role: 'TICKETING' } })
@@ -71,11 +72,32 @@ beforeEach(() => {
   mocks.nextCode.mockResolvedValue({ data: { nextTripCode: { code: 'TRP2026-1002001' } } })
   mocks.createTrip.mockResolvedValue({ data: { sailing_insert: { code: 'TRP2026-1002002' } } })
   mocks.bookings.mockResolvedValue({ data: { bookings: [] } })
+  mocks.directoryBookings.mockResolvedValue({ data: { bookings: [], totalCount: 0 } })
   mocks.updateTrip.mockResolvedValue({ data: { sailing_update: { code: sailing.code } } })
   mocks.passengerRecords.mockResolvedValue({ data: { bookingPassengers: [] } })
   mocks.board.mockResolvedValue({ data: {} })
   mocks.checkIn.mockResolvedValue({ data: {} })
 })
+describe('booking directory details', () => {
+  it('keeps full references and voucher details accessible while restricting cancellation to eligible unpaid bookings', async () => {
+    const paid = { reference: 'BKG2026-101154048-LONG-REFERENCE', owner: { fullName: 'Camille Dela Cruz' }, sailing, passengerCount: 2, total: 780, status: 'CONFIRMED', paymentStatus: 'PAID', paymentMethod: 'CASH', voucherCode: 'VCH-X9JPTDF5K5EC6M4D', voucherDiscount: 75 }
+    mocks.directoryBookings.mockResolvedValue({ data: { bookings: [paid, { ...paid, reference: 'UNPAID-BOOKING', paymentStatus: 'UNPAID' }], totalCount: 2 } })
+    const wrapper = await load('bookings')
+    expect(wrapper.find('.booking-identity strong').text()).toBe(paid.reference)
+    expect(wrapper.find('.booking-total').text()).toContain('Saved PHP 75')
+    expect(wrapper.find('.booking-payment').text()).not.toContain(paid.voucherCode)
+    expect(wrapper.findAll('button[aria-label^="Cancel booking"]')).toHaveLength(1)
+    expect(wrapper.find('button[aria-label="Cancel booking UNPAID-BOOKING"]').exists()).toBe(true)
+    await wrapper.find(`button[aria-label="View booking ${paid.reference}"]`).trigger('click')
+    expect(wrapper.find('.booking-detail-dialog').text()).toContain(paid.voucherCode)
+    expect(wrapper.find('.booking-detail-dialog').text()).toContain('Camille Dela Cruz')
+    expect(wrapper.find('.booking-detail-dialog').text()).toContain('Discount: PHP 75')
+    await wrapper.find('button[aria-label="Close booking details"]').trigger('click')
+    expect(wrapper.find('.booking-detail-dialog').exists()).toBe(false)
+    wrapper.unmount()
+  })
+})
+
 describe('admin navigation accordion', () => {
   it('groups pricing separately, matches the page category and toggles one accessible panel at a time', async () => {
     const wrapper = await load('fares')
@@ -145,13 +167,35 @@ describe('vessel directory', () => {
     expect(wrapper.findAll('.records-grid tbody tr')).toHaveLength(3)
     wrapper.unmount()
   })
-  it('keeps existing vessel code and capacity locked while allowing name edits', async () => {
+  it('keeps the vessel code fixed and allows editing passenger capacity', async () => {
     const wrapper = await load('vessels')
     await wrapper.findAll('button').find(button => button.text() === 'Edit')!.trigger('click')
     expect(wrapper.find('#vessel-code').attributes('disabled')).toBeDefined()
-    expect(wrapper.find('#vessel-capacity').attributes('disabled')).toBeDefined()
+    expect(wrapper.find('#vessel-capacity').attributes('disabled')).toBeUndefined()
     expect(wrapper.find('#vessel-name').attributes('disabled')).toBeUndefined()
-    expect(wrapper.text()).toContain('Capacity is fixed after creation')
+    expect(wrapper.text()).toContain('Capacity can change when this vessel has no active sailings')
+    wrapper.unmount()
+  })
+  it('submits an edited capacity to the vessel update operation', async () => {
+    mocks.updateVessel.mockResolvedValue({ data: {} })
+    const wrapper = await load('vessels')
+    await wrapper.findAll('button').find(button => button.text() === 'Edit')!.trigger('click')
+    await wrapper.find('#vessel-capacity').setValue('120')
+    await wrapper.find('form.port-form').trigger('submit')
+    await flushPromises()
+    expect(mocks.updateVessel).toHaveBeenCalledWith({}, expect.objectContaining({ id: 'vessel', capacity: 120 }))
+    expect(wrapper.find('#vessel-capacity').exists()).toBe(false)
+    wrapper.unmount()
+  })
+  it('retains the edited capacity and explains a server rejection inside the dialog', async () => {
+    mocks.updateVessel.mockRejectedValue(new Error('Change capacity only when this vessel has no active sailings.'))
+    const wrapper = await load('vessels')
+    await wrapper.findAll('button').find(button => button.text() === 'Edit')!.trigger('click')
+    await wrapper.find('#vessel-capacity').setValue('120')
+    await wrapper.find('form.port-form').trigger('submit')
+    await flushPromises()
+    expect((wrapper.find('#vessel-capacity').element as HTMLInputElement).value).toBe('120')
+    expect(wrapper.find('.vessel-editor-dialog [role="alert"]').text()).toContain('Change capacity only when this vessel has no active sailings.')
     wrapper.unmount()
   })
 })
@@ -159,7 +203,7 @@ describe('vessel directory', () => {
 describe('reports workspace', () => {
   it('offers authorized export on the manifest page with sailing choices', async () => {
     const wrapper = await load('manifest')
-    expect(wrapper.findAll('button').some(b => b.text() === 'Export manifest')).toBe(true)
+    expect(wrapper.findAll('button').some(b => b.text() === 'Download manifest PDF')).toBe(true)
     expect(wrapper.find('#check-in-sailing').text()).toContain('TRP-EXISTING')
     wrapper.unmount()
   })
@@ -230,7 +274,7 @@ describe('editable passenger discounts', () => {
     expect(wrapper.find('.fare-preview').text()).toContain('PHP 650')
     await wrapper.find('main form').trigger('submit'); await flushPromises()
     expect(mocks.saveSettings).toHaveBeenLastCalledWith({},expect.objectContaining({passengerDiscounts:expect.arrayContaining([expect.objectContaining({name:'Scholar',percentage:35})])}))
-    for(const row of wrapper.findAll('.custom-discount-row')) await row.find('button').trigger('click')
+    for(const row of wrapper.findAll('.custom-discount-row')) await row.find('button[aria-label^="Delete discount"]').trigger('click')
     await wrapper.find('main form').trigger('submit'); await flushPromises()
     expect(mocks.saveSettings).toHaveBeenLastCalledWith({},expect.objectContaining({passengerDiscounts:[]}))
     expect(wrapper.text()).toContain('regular fare only')
@@ -238,21 +282,21 @@ describe('editable passenger discounts', () => {
   })
   it('adds, previews, saves and removes a named vessel discount', async () => {
     const wrapper = await load('fares')
-    await wrapper.findAll('button').find(b => b.text() === '+ Add discount')!.trigger('click')
+    await wrapper.findAll('button').find(b => b.text() === 'Add passenger discount')!.trigger('click')
     const row = wrapper.findAll('.custom-discount-row').at(-1)!
     await row.find('input[placeholder="Special discount"]').setValue('Special discount')
     await row.find('input[type="number"]').setValue('15')
     expect(wrapper.find('.fare-preview').text()).toContain('PHP 850')
     await wrapper.find('main form').trigger('submit'); await flushPromises()
     expect(mocks.saveSettings).toHaveBeenLastCalledWith({}, expect.objectContaining({passengerDiscounts:expect.arrayContaining([expect.objectContaining({name:'Special discount',percentage:15,isActive:true})])}))
-    await row.find('button').trigger('click')
+    await row.find('button[aria-label^="Delete discount"]').trigger('click')
     await wrapper.find('main form').trigger('submit'); await flushPromises()
     expect(mocks.saveSettings).toHaveBeenLastCalledWith({}, expect.objectContaining({passengerDiscounts:expect.not.arrayContaining([expect.objectContaining({name:'Special discount'})])}))
     wrapper.unmount()
   })
   it('rejects reserved names and keeps independent drafts per vessel', async () => {
     const wrapper = await load('fares')
-    await wrapper.findAll('button').find(b => b.text() === '+ Add discount')!.trigger('click')
+    await wrapper.findAll('button').find(b => b.text() === 'Add passenger discount')!.trigger('click')
     await wrapper.findAll('.custom-discount-row').at(-1)!.find('input').setValue('Student')
     await wrapper.find('main form').trigger('submit'); await flushPromises()
     expect(mocks.saveSettings).not.toHaveBeenCalled()
@@ -306,6 +350,27 @@ describe('admin boarding actions', () => {
 })
 
 describe('admin fare flow', () => {
+  const routeFixture = {id:'two-hours',code:'ORG-DST',originPortId:'origin',destinationPortId:'destination',origin:{name:'Origin'},destination:{name:'Destination'},durationMinutes:120,isActive:true};
+  it('updates arrival from the matching route even when ports are chosen manually and handles midnight', async () => {
+    mocks.routes.mockResolvedValue({data:{routes:[routeFixture]}})
+    const wrapper=await load()
+    await wrapper.findAll('button').find(b=>b.text()==='Create trip')!.trigger('click')
+    await wrapper.find('#trip-origin').setValue('origin');await wrapper.find('#trip-destination').setValue('destination')
+    await wrapper.find('#trip-departure').setValue('2099-01-02T20:00')
+    expect((wrapper.find('#trip-arrival').element as HTMLInputElement).value).toBe('2099-01-02T22:00')
+    expect(wrapper.find('#trip-arrival').attributes('readonly')).toBeDefined()
+    await wrapper.find('#trip-departure').setValue('2099-01-02T23:00')
+    expect((wrapper.find('#trip-arrival').element as HTMLInputElement).value).toBe('2099-01-03T01:00')
+    await wrapper.find('.trip-arrival-mode input').setValue(false)
+    await wrapper.find('#trip-arrival').setValue('2099-01-03T02:00')
+    await wrapper.find('#trip-departure').setValue('2099-01-02T23:30')
+    expect((wrapper.find('#trip-arrival').element as HTMLInputElement).value).toBe('2099-01-03T02:00')
+    await wrapper.find('.trip-arrival-mode input').setValue(true)
+    await wrapper.find('#trip-route').setValue('')
+    expect((wrapper.find('#trip-origin').element as HTMLSelectElement).value).toBe('')
+    expect((wrapper.find('#trip-arrival').element as HTMLInputElement).value).toBe('')
+    wrapper.unmount()
+  })
   it('blocks creation if the next daily trip code cannot be loaded', async () => {
     mocks.nextCode.mockRejectedValue(new Error('Unavailable'))
     const wrapper = await load()

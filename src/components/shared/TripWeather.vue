@@ -10,7 +10,7 @@
         <template v-else>
           <SmartWeatherCard v-if="port.forecast || port.current" :reading="(port.forecast || port.current)!" :label="port.forecast ? 'Forecast at departure time' : 'Current weather'" />
           <p v-if="!port.forecast" class="forecast-notice">Departure forecast is not available yet. Check again closer to your trip.</p>
-          <p class="weather-updated">{{ port.stale ? 'Saved weather · update delayed' : 'Last updated' }} · {{ timestamp(port.current?.at) }}</p>
+          <p v-if="port.stale" class="weather-delayed" role="status">Weather updates delayed.</p>
         </template>
       </article>
     </div>
@@ -38,7 +38,6 @@ async function load(){
   finally{if(id===requestId)loading.value=false;}
 }
 watch(()=>props.sailingCode,load,{immediate:true});
-const timestamp=(at?:string)=>at?new Date(at).toLocaleString('en-PH',{timeZone:'Asia/Manila',month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}):'Unavailable';
 </script>
 <style scoped>
 .trip-weather { margin: 20px 0; padding: 20px; border: 1px solid var(--line); border-radius: 16px; background: var(--surface); color: var(--ink); min-width: 0; }
@@ -58,7 +57,7 @@ const timestamp=(at?:string)=>at?new Date(at).toLocaleString('en-PH',{timeZone:'
 .weather-conditions small { display: block; color: var(--muted); font-size: var(--text-caption); margin-top: 4px; }
 dl { display: flex; flex-wrap: wrap; gap: 16px; border-top: 1px solid var(--line); padding-top: 14px; margin: 16px 0 0; }
 dt { font-size: var(--text-caption); color: var(--muted); } dd { margin: 5px 0 0; font-size: var(--text-label); font-weight: 600; }
-.forecast-notice,.weather-updated,.weather-message,.weather-footer p { color: var(--muted); font-size: var(--text-caption); line-height: 1.7; margin: 12px 0 0; }
+.forecast-notice,.weather-delayed,.weather-message,.weather-footer p { color: var(--muted); font-size: var(--text-caption); line-height: 1.7; margin: 12px 0 0; }
 .forecast-notice { padding: 9px; border-radius: 7px; background: var(--surface); }
 .weather-footer { margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--line); }
 .weather-footer a { font-size: var(--text-caption); color: var(--ocean); text-decoration: none; }
@@ -87,6 +86,6 @@ dl { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 8px; }
 .compact-weather .weather-conditions { grid-template-columns: 28px auto minmax(0, 1fr); gap: 7px; }.compact-weather .condition-icon { width: 28px; height: 28px; padding: 3px; border-radius: 8px; }
 .compact-weather .weather-conditions strong { font-size: 22px; }.compact-weather .weather-conditions strong span { font-size: var(--text-label); }.compact-weather .weather-conditions b { font-size: var(--text-caption); line-height: 1.4; }.compact-weather .weather-conditions small { font-size: var(--text-caption); margin-top: 2px; }
 .compact-weather dl { gap: 6px; padding-top: 7px; margin-top: 7px; }.compact-weather dt { font-size: var(--text-caption); }.compact-weather dd { font-size: var(--text-caption); margin-top: 3px; }
-.compact-weather .weather-updated { font-size: var(--text-caption); margin: 5px 0 0; line-height: 1.4; }.compact-weather .forecast-notice { padding: 6px; font-size: var(--text-caption); margin-top: 6px; }
+.compact-weather .weather-delayed { font-size: var(--text-caption); margin: 5px 0 0; line-height: 1.4; }.compact-weather .forecast-notice { padding: 6px; font-size: var(--text-caption); margin-top: 6px; }
 .compact-weather-details { margin-top: 7px; color: var(--muted); font-size: var(--text-caption); }.compact-weather-details summary { display: flex; align-items: center; min-height: 28px; gap: 5px; cursor: pointer; color: var(--ocean); }.compact-weather-details summary::before { content: '+'; font-size: 13px; }.compact-weather-details[open] summary::before { content: '-'; }.compact-weather-details summary:focus-visible { outline: 2px solid var(--ocean); outline-offset: 2px; }.compact-weather-details p { font-size: var(--text-caption); line-height: 1.6; margin: 4px 0; }.compact-weather-details a { color: var(--ocean); }
 </style>

@@ -31,10 +31,49 @@ async function openForm() {
   await flushPromises();
   await wrapper.find('.directory-heading button').trigger('click');
   await wrapper.find('.accommodation-field-grid select').setValue('v1');
-  await wrapper.find('#accommodation-class-name').setValue('Premium');
+  await wrapper.find('#accommodation-class-name').setValue('Tourist Class');
   return wrapper;
 }
 describe('accommodation modal and capacity', () => {
+  it('groups same-named classes under their own vessel and edits the selected vessel record', async () => {
+    mocks.list.mockResolvedValue({ data: { accommodations: [
+      { id: 'economy-1', vesselId: 'v1', vesselName: 'Ferry One', name: 'Economy', description: '', capacity: 70, surcharge: 0, isActive: true },
+      { id: 'tourist-1', vesselId: 'v1', vesselName: 'Ferry One', name: 'Tourist Class', description: '', capacity: 20, surcharge: 0, isActive: true },
+      { id: 'business-1', vesselId: 'v1', vesselName: 'Ferry One', name: 'Business Class', description: '', capacity: 10, surcharge: 0, isActive: true },
+      { id: 'economy-2', vesselId: 'v2', vesselName: 'Ferry Two', name: 'Economy', description: 'Second vessel seats', capacity: 140, surcharge: 0, isActive: true },
+    ] } });
+    mocks.vessels.mockResolvedValue({ data: { vessels: [{ id: 'v1', name: 'Ferry One', passengerCapacity: 100, isActive: true }, { id: 'v2', name: 'Ferry Two', passengerCapacity: 200, isActive: true }] } });
+    const wrapper = mount(AccommodationPanel, { global: { stubs: { RouterLink: true } } });
+    await flushPromises();
+    expect(wrapper.findAll('.vessel-class-card')).toHaveLength(2);
+    expect(wrapper.find('.vessel-class-card header').text()).toContain('100 / 100');
+    await wrapper.find('[aria-label="Edit Economy for Ferry Two"]').trigger('click');
+    expect((wrapper.find('#accommodation-form-vessel').element as HTMLSelectElement).value).toBe('v2');
+    await wrapper.find('.accommodation-form').trigger('submit');
+    await flushPromises();
+    expect(mocks.save).toHaveBeenCalledWith({}, expect.objectContaining({ id: 'economy-2', vesselId: 'v2', capacity: 140 }));
+    wrapper.unmount();
+  });
+  it('rejects 50 + 30 + 30 seats on a 100-seat vessel and accepts a 20-seat final class', async () => {
+    mocks.list.mockResolvedValue({ data: { accommodations: [
+      { id: 'economy', vesselId: 'v1', vesselName: 'Ferry One', name: 'Economy', description: '', capacity: 50, surcharge: 0, isActive: true },
+      { id: 'tourist', vesselId: 'v1', vesselName: 'Ferry One', name: 'Tourist Class', description: '', capacity: 30, surcharge: 0, isActive: true },
+    ] } });
+    const wrapper = await openForm();
+    await wrapper.find('#accommodation-class-name').setValue('Business Class');
+    expect(wrapper.find('.capacity-note').text()).toContain('20 seats available');
+    const capacity = wrapper.findAll('.accommodation-field-grid input[type="number"]')[0];
+    await capacity.setValue('30');
+    await wrapper.find('.accommodation-form').trigger('submit');
+    await flushPromises();
+    expect(mocks.save).not.toHaveBeenCalled();
+    expect(wrapper.find('.form-error').text()).toContain('remaining seats');
+    await capacity.setValue('20');
+    await wrapper.find('.accommodation-form').trigger('submit');
+    await flushPromises();
+    expect(mocks.save).toHaveBeenCalledWith({}, expect.objectContaining({ name: 'Business Class', capacity: 20 }));
+    wrapper.unmount();
+  });
   it('opens in a dialog and saves capacity and surcharge', async () => {
     const wrapper = await openForm();
     expect(wrapper.find('[role="dialog"]').exists()).toBe(true);
@@ -43,7 +82,7 @@ describe('accommodation modal and capacity', () => {
     await wrapper.findAll('.accommodation-field-grid input[type="number"]')[1].setValue('100');
     await wrapper.find('.accommodation-form').trigger('submit');
     await flushPromises();
-    expect(mocks.save).toHaveBeenCalledWith({}, expect.objectContaining({ vesselId: 'v1', name: 'Premium', capacity: 40, surcharge: 100, isActive: true }));
+    expect(mocks.save).toHaveBeenCalledWith({}, expect.objectContaining({ vesselId: 'v1', name: 'Tourist Class', capacity: 40, surcharge: 100, isActive: true }));
     expect(wrapper.find('[role="dialog"]').exists()).toBe(false);
     wrapper.unmount();
   });
@@ -66,7 +105,7 @@ describe('accommodation modal and capacity', () => {
     await wrapper.find('.accommodation-form').trigger('submit');
     await flushPromises();
     expect(wrapper.find('[role="dialog"] [role="alert"]').exists()).toBe(true);
-    expect((wrapper.find('#accommodation-class-name').element as HTMLSelectElement).value).toBe('Premium');
+    expect((wrapper.find('#accommodation-class-name').element as HTMLSelectElement).value).toBe('Tourist Class');
     wrapper.unmount();
   });
   it('filters inactive classes and resets the directory', async () => {
@@ -79,19 +118,33 @@ describe('accommodation modal and capacity', () => {
     expect(wrapper.findAll('.test-grid-row')).toHaveLength(2);
     wrapper.unmount();
   });
-  it('preserves an existing custom class in the dropdown when editing', async () => {
+  it('keeps only Starlite classes and preserves the saved vessel description when editing', async () => {
     mocks.list.mockResolvedValue({ data: { accommodations: [
-      { id: 'a3', vesselId: 'v1', vesselName: 'Ferry One', name: 'Private cabin', description: '', capacity: 10, surcharge: 300, isActive: true },
+      { id: 'a3', vesselId: 'v1', vesselName: 'Ferry One', name: 'Economy', description: 'Vessel-specific seating description.', capacity: 10, surcharge: 300, isActive: true },
     ] } });
     const wrapper = mount(AccommodationPanel, { global: { stubs: { RouterLink: true } } });
     await flushPromises();
     await wrapper.find('.class-edit').trigger('click');
     const select = wrapper.find('#accommodation-class-name');
-    expect(select.findAll('option').map(option => option.text())).toEqual(expect.arrayContaining(['Economy', 'Tourist', 'Premium', 'Business', 'Private cabin']));
-    expect((select.element as HTMLSelectElement).value).toBe('Private cabin');
+    expect(select.findAll('option').map(option => option.text())).toEqual(['Select class', 'Economy', 'Tourist Class', 'Business Class']);
+    expect((select.element as HTMLSelectElement).value).toBe('Economy');
+    expect((wrapper.find('textarea').element as HTMLTextAreaElement).value).toBe('Vessel-specific seating description.');
     await wrapper.find('.accommodation-form').trigger('submit');
     await flushPromises();
-    expect(mocks.save).toHaveBeenCalledWith({}, expect.objectContaining({ id: 'a3', name: 'Private cabin' }));
+    expect(mocks.save).toHaveBeenCalledWith({}, expect.objectContaining({ id: 'a3', name: 'Economy', description: 'Vessel-specific seating description.' }));
+    wrapper.unmount();
+  });
+  it('fills the selected class description and saves edits without resetting them on other field changes', async () => {
+    const wrapper = await openForm();
+    expect((wrapper.find('textarea').element as HTMLTextAreaElement).value).toContain('Tourist Class');
+    await wrapper.find('#accommodation-class-name').setValue('Business Class');
+    expect((wrapper.find('textarea').element as HTMLTextAreaElement).value).toContain('Business Class');
+    await wrapper.find('textarea').setValue('Confirmed seating on this vessel.');
+    await wrapper.findAll('.accommodation-field-grid input[type="number"]')[0].setValue('30');
+    expect((wrapper.find('textarea').element as HTMLTextAreaElement).value).toBe('Confirmed seating on this vessel.');
+    await wrapper.find('.accommodation-form').trigger('submit');
+    await flushPromises();
+    expect(mocks.save).toHaveBeenCalledWith({}, expect.objectContaining({ description: 'Confirmed seating on this vessel.' }));
     wrapper.unmount();
   });
 });

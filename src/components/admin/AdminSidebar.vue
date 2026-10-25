@@ -77,10 +77,13 @@ watch(navigationSection, section => {
   background: #0b2134;
   border-right: 1px solid #28445b;
 }
-.sidebar :deep(.brand-copy strong),
-.sidebar :deep(.brand-copy b) {
+.sidebar :deep(.brand-copy strong) {
   color: white;
 }
+.sidebar :deep(.brand-copy b) { color: #61c4ff; }
+.sidebar :deep(.brand-symbol) { width: 48px; height: 48px; box-shadow: 0 0 22px #008cff35; }
+.sidebar :deep(.brand-copy strong), .sidebar :deep(.brand-copy b) { font-size: 24px; }
+.sidebar :deep(.brand-copy small) { font-size: 9px; max-width: 145px; }
 .sidebar nav {
   overflow-y: auto;
   scrollbar-width: thin;

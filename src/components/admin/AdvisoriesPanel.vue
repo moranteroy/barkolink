@@ -86,7 +86,7 @@
         /></label>
       </div>
       <label class="check"
-        ><input v-model="form.published" type="checkbox" /> Publish during this
+        ><input v-model="form.published" type="checkbox" role="switch" class="ui-switch" /> Publish during this
         period</label
       >
 </fieldset></div><footer class="communication-footer"><Button variant="outline" type="button" :disabled="busy" @click="close">Cancel</Button><Button type="submit" :disabled="busy || loading">{{ busy ? 'Saving...' : 'Save advisory' }}</Button></footer></form></section></IonModal>

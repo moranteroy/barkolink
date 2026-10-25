@@ -56,9 +56,9 @@ try {
     await page.waitForTimeout(100);
     await page.screenshot({path:`.audit/payment-ui/payment-${theme}-${width}.png`,fullPage:true});
     await page.getByRole('button',{name:'Check payment',exact:true}).click();
-    await page.getByRole('status').filter({hasText:'No completed payment yet'}).waitFor();
+    await page.locator('.payment-notice[role="status"]').filter({hasText:'No completed payment yet'}).waitFor();
     await page.getByRole('button',{name:'Choose cash',exact:true}).click();
-    await page.getByRole('status').filter({hasText:'You can now pay cash'}).waitFor();
+    await page.locator('.payment-notice[role="status"]').filter({hasText:'You can now pay cash'}).waitFor();
     assert.equal(await page.getByRole('button',{name:'Online checkout closed'}).isDisabled(),true);
     await page.goto(`${base}/bookings?payment=returned&reference=${fixtures[2].reference}`,{waitUntil:'networkidle'});
     await page.locator('.payment-return.unpaid').waitFor();

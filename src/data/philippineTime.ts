@@ -15,3 +15,9 @@ export function parsePhilippineInput(value: string): Date {
   const date = new Date(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(value) ? `${value}:00+08:00` : NaN);
   return philippineInput(date) === value ? date : new Date(NaN);
 }
+
+export function routeArrivalInput(departure: string, durationMinutes: number | null | undefined): string {
+  const start = parsePhilippineInput(departure).getTime();
+  if (!Number.isFinite(start) || durationMinutes == null || !Number.isFinite(durationMinutes) || durationMinutes <= 0) return '';
+  return philippineInput(start + durationMinutes * 60000);
+}

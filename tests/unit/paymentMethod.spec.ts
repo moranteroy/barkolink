@@ -6,8 +6,9 @@ describe('Recorded payment method', () => {
       expect(paymentMethodLabel({paymentMethod:'PAYMONGO_TEST',paymentProviderMethod:provider})).toBe(label);
     expect(paymentMethodLabel({paymentMethod:'PAYMONGO_TEST'})).toBe('Online (PayMongo)');
   });
-  it('does not mislabel cash or unpaid bookings as an online payment', () => {
+  it('keeps missing method metadata separate from payment status', () => {
     expect(paymentMethodLabel({paymentMethod:'CASH',paymentProviderMethod:'gcash'})).toBe('Cash');
-    expect(paymentMethodLabel({paymentMethod:null,paymentProviderMethod:'gcash'})).toBe('Not yet paid');
+    expect(paymentMethodLabel({paymentMethod:null,paymentProviderMethod:'gcash'})).toBe('Not recorded');
+    expect(paymentMethodLabel(undefined)).toBe('Not recorded');
   });
 });

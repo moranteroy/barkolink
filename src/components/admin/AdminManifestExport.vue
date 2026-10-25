@@ -3,10 +3,10 @@
     <div class="export-heading">
       <span class="export-symbol"><FileText aria-hidden="true" /></span>
       <div>
-      <p class="eyebrow">CSV DOWNLOAD</p>
+      <p class="eyebrow">PDF DOWNLOAD</p>
       <h2 id="manifest-export-title">Passenger manifest export</h2>
       <p>
-        {{ sailingCode ? `Sailing ${sailingCode}.` : externalSelection ? 'Choose a sailing in the filters below.' : 'Choose a sailing below.' }} CSV includes all
+        {{ sailingCode ? `Sailing ${sailingCode}.` : externalSelection ? 'Choose a sailing in the filters below.' : 'Choose a sailing below.' }} PDF includes all
         passengers on paid, confirmed reservations.
       </p>
       </div>
@@ -25,7 +25,7 @@
         </select></label
       ><button data-slot="button" data-variant="default" data-size="default" :disabled="!selected || exporting" @click="exportManifest">
         <Download aria-hidden="true" />
-        {{ exporting ? "Exporting…" : "Export manifest" }}
+        {{ exporting ? "Exporting…" : "Download manifest PDF" }}
       </button>
     </div>
     <p v-if="!sailings.length">
@@ -44,7 +44,7 @@ import {
   type AdminExportManifestData,
 } from "../../services/database/staff";
 import { staffDatabase } from "../../services/session";
-import { reportCsv, type ReportSailing } from "../../data/reportAnalytics";
+import { type ReportSailing } from "../../data/reportAnalytics";
 import { ticketRequestError } from "../../data/ticketActions";
 const props = defineProps<{
   sailings: Pick<ReportSailing, "code" | "origin" | "destination" | "vessel">[];
@@ -113,7 +113,7 @@ async function exportManifest() {
         dateStyle: "medium",
         timeStyle: "short",
       }).format(new Date(value));
-    const csv = reportCsv(
+    const input = { headers:
       [
         "Passenger",
         "Sex",
@@ -123,7 +123,7 @@ async function exportManifest() {
         "Ticket",
         "Boarded at (PH)",
       ],
-      passengers.map((p) => [
+      rows: passengers.map((p) => [
         p.fullName,
         p.sex || "",
         p.passengerType,
@@ -132,15 +132,21 @@ async function exportManifest() {
         p.ticketStatus,
         p.boardedAt ? dateTime(p.boardedAt) : "",
       ]),
-    );
+      title: 'Passenger manifest',
+      scope: [`Sailing ${code}`, `${props.sailings.find(s => s.code === code)?.origin || ''} to ${props.sailings.find(s => s.code === code)?.destination || ''}`, props.sailings.find(s => s.code === code)?.vessel || '', `${passengers.length} passengers`],
+      note: 'All passengers on paid, confirmed reservations. Boarding timestamps use Philippine time. Handle passenger information securely.',
+    };
+    const { createReportPdf } = await import('../../data/reportPdf');
+    const pdf = await createReportPdf(input);
+    if (version !== request) return;
     const url = URL.createObjectURL(
-      new Blob([csv], { type: "text/csv;charset=utf-8;" }),
+      pdf.output("blob"),
     );
     const link = document.createElement("a");
     link.href = url;
-    link.download = `manifest-${code}.csv`;
+    link.download = `manifest-${code}.pdf`;
     link.click();
-    URL.revokeObjectURL(url);
+    setTimeout(() => URL.revokeObjectURL(url),10000);
     notifySuccess(`Exported ${passengers.length} passengers for ${code}.`);
   } catch (e) {
     if (version === request)

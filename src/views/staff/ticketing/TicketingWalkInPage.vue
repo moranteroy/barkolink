@@ -382,6 +382,7 @@ import BackIcon from "@/components/ui/icon/BackIcon.vue";
 import { bookingReference } from '@/data/recordCodes';
 import StaffPortRequired from '../../../components/staff/StaffPortRequired.vue';
 import { useStaffPortGate } from '../../../composables/staffPortGate';
+import { StaffPortRequiredError } from '../../../services/staffPortAccess';
 const { portBlocked } = useStaffPortGate(loadSailings);
 import BrandMark from "../../../components/shared/BrandMark.vue";
 import StaffNavigation from "../../../components/staff/StaffNavigation.vue";
@@ -573,6 +574,7 @@ async function loadSailings() {
     });
     sailings.value = result.data.sailings;
   } catch (error) {
+    if (error instanceof StaffPortRequiredError) { errorMessage.value = ''; return; }
     errorMessage.value = notifyError(databaseRequestError(
       error,
       "Could not load sailings.",

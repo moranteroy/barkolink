@@ -56,6 +56,11 @@
       "url": "https://montenegrolines.com.ph/booking.php",
       "published": null,
       "title": "Montenegro date-specific schedule lookup"
+    },
+    "marinaSaga": {
+      "url": "https://marina.gov.ph/2026/04/02/good-news-marina-issues-special-permit-to-m-v-starlite-saga-for-batangas-calapan-route/",
+      "published": "2026-04-02",
+      "title": "MARINA special permit for MV Starlite Saga, Batangas-Calapan, 300 passengers"
     }
   },
   "ports": [
@@ -7337,7 +7342,7 @@
       "accommodationProfiles": []
     },
     {
-      "code": "SL-SWM-STELLA-DEL-MAR",
+      "code": "SL-STELLA-DEL-MAR",
       "name": "MV SWM Stella del Mar",
       "operator": "Starlite Ferries",
       "passengerCapacity": 977,
@@ -7960,6 +7965,30 @@
           "route": "BTG-PGA"
         }
       ],
+      "accommodationProfiles": []
+    },
+    {
+      "code": "SL-SAGA",
+      "name": "MV Starlite Saga",
+      "operator": "Starlite Ferries",
+      "passengerCapacity": 300,
+      "isActive": true,
+      "capacityStatus": "published special-permit capacity (April 2026)",
+      "publishedCapacities": [
+        300
+      ],
+      "routes": [
+        "BTG-CAL",
+        "CAL-BTG"
+      ],
+      "observations": [
+        {
+          "sourceId": "marinaSaga",
+          "page": null,
+          "capacity": 300
+        }
+      ],
+      "serviceNote": "Added to the application fleet at administrator request. MARINA documented a special permit on 1 April 2026; this reference does not assert a current regular-service permit.",
       "accommodationProfiles": []
     }
   ],

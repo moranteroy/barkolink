@@ -5,7 +5,7 @@ const labels: Record<string, string> = {
 };
 export function paymentMethodLabel(booking: PaymentDetails | null | undefined): string {
   const method = booking?.paymentMethod?.toUpperCase();
-  if (!method) return 'Not yet paid';
+  if (!method) return 'Not recorded';
   if (method === 'PAYMONGO_TEST' || method === 'PAYMONGO') {
     const provider = booking?.paymentProviderMethod?.toUpperCase();
     return (provider && labels[provider]) || 'Online (PayMongo)';

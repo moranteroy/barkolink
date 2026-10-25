@@ -5,6 +5,7 @@ import path from 'node:path';
 import http from 'node:http';
 import { chromium } from 'playwright-core';
 
+async function main() {
 const root = path.resolve('dist');
 const headers = JSON.parse(fs.readFileSync('vercel.json', 'utf8')).headers[0].headers;
 const server = http.createServer((request, response) => {
@@ -29,7 +30,19 @@ try {
     document.addEventListener('securitypolicyviolation', event => window.portCspErrors.push(event.violatedDirective));
   });
   const errors = [];
-  let fail = false, calls = 0, smallSample = false, terminalSample = false;
+  let fail = false, calls = 0, smallSample = false, terminalSample = false, emptySample = false, weatherFail = false, weatherCode = 3, weatherIsDay = 1;
+  const weatherRequests = [];
+  await context.route('https://api.open-meteo.com/**', async route => {
+    const url = new URL(route.request().url());
+    weatherRequests.push(Object.fromEntries(url.searchParams));
+    if (weatherFail) return route.fulfill({ status: 503, json: { error: true } });
+    const date = url.searchParams.get('start_date');
+    const epoch = Date.parse(`${date}T00:00:00+08:00`) / 1000;
+    return route.fulfill({ json: {
+      current: { time: epoch, temperature_2m: 28, weather_code: weatherCode, is_day: weatherIsDay }, hourly: { time: [] },
+      daily: { time: [epoch], weather_code: [61], temperature_2m_max: [30], temperature_2m_min: [25], precipitation_probability_max: [80], wind_speed_10m_max: [24] },
+    } });
+  });
   context.on('page', page => page.on('pageerror', error => errors.push(error.message)));
   await context.route(`${projectUrl}/**`, async route => {
     const url = new URL(route.request().url());
@@ -51,6 +64,7 @@ try {
       { ...sailings[2], status: 'SCHEDULED', arrivalAt: `${today}T19:30:00+08:00` },
       { ...sailings[4], code: 'TV-EXTRA', status: 'COMPLETED', arrivalAt: `${today}T14:00:00+08:00` },
     ];
+    if (emptySample) sailings = [];
     return route.fulfill({ json: { date: today, updatedAt: new Date().toISOString(), portId, ports, sailings, advisories: terminalSample ? [] : [{ id: 'notice', title: 'Terminal advisory', message: 'Please follow terminal staff instructions before boarding.', priority: 'HIGH', endsAt: new Date(Date.now() + 3600000).toISOString() }, { id: 'routine', title: 'Routine reminder', message: 'Keep the terminal clean.', priority: 'LOW', endsAt: new Date(Date.now() + 3600000).toISOString() }] } });
   });
   const page = await context.newPage();
@@ -64,9 +78,26 @@ try {
     assert.equal(await page.getByRole('button', { name: 'Copy TV link' }).count(), 0);
     assert.equal(await page.getByRole('button', { name: 'Display controls', exact: true }).count(), 0, 'TV mode must hide configuration controls');
     assert.match(await page.locator('.boarding-banner').innerText(), /NOW BOARDING/);
+    assert.match(await page.locator('.boarding-destination h2').innerText(), /Calapan Port → Batangas Port/);
+    assert.match(await page.locator('.boarding-origin').innerText(), /Boarding at Calapan Port/);
+    await page.locator('.maritime-header-art[data-weather="cloudy"]').waitFor();
+    assert.equal(await page.locator('.display-weather').count(), 0, 'Weather must not consume a separate board row');
+    assert.equal(await page.locator('footer').count(), 0, 'The display must not show the removed footer');
+    const weatherTooltip = page.getByRole('tooltip', { includeHidden: true });
+    assert.equal(await weatherTooltip.isVisible(), false, 'Weather text stays hidden until hover or focus');
+    await page.getByRole('img', { name: 'Port weather' }).hover();
+    assert.match(await weatherTooltip.innerText(), /Overcast/);
+    assert.equal(await weatherTooltip.isVisible(), true);
+    await page.mouse.move(0, 0);
+    assert.equal(await weatherTooltip.isVisible(), false);
+    await page.getByRole('img', { name: 'Port weather' }).focus();
+    assert.equal(await weatherTooltip.isVisible(), true, 'Keyboard focus also reveals the weather');
+    await page.getByRole('img', { name: 'Port weather' }).evaluate(el => el.blur());
+    await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+    await page.waitForFunction(() => Array.from(document.querySelectorAll('.sailing-rows li')).every(row => row.getBoundingClientRect().bottom <= row.closest('.display-board').getBoundingClientRect().bottom + 1));
     assert.match(await page.locator('.connection-state').innerText(), /Live updates/);
     if (viewport.width === 1920) {
-      const statuses = await page.locator('.sailing-status').evaluateAll(elements => elements.map(el => {
+      const readStatuses = () => page.locator('.sailing-status').evaluateAll(elements => elements.map(el => {
         const style = getComputedStyle(el);
         const luminance = color => color.match(/[\d.]+/g).slice(0, 3).map(Number).map(value => {
           const channel = value / 255;
@@ -75,6 +106,9 @@ try {
         const fg = luminance(style.color), bg = luminance(style.backgroundColor);
         return { status: el.classList[1], background: style.backgroundColor, contrast: (Math.max(fg, bg) + .05) / (Math.min(fg, bg) + .05) };
       }));
+      const statuses = await readStatuses();
+      await page.clock.fastForward(12000);
+      statuses.push(...await readStatuses());
       for (const status of ['scheduled', 'boarding', 'delayed', 'cancelled', 'completed']) assert.ok(statuses.some(badge => badge.status === status), `Missing status: ${status}`);
       for (const badge of statuses) {
         assert.ok(badge.contrast >= 4.5, `Insufficient ${badge.status} text contrast: ${badge.contrast}`);
@@ -87,6 +121,8 @@ try {
     assert.equal(await page.locator('.sailing-details').evaluateAll(elements => elements.some(el => el.getBoundingClientRect().bottom > el.closest('li').getBoundingClientRect().bottom - 2)), false, 'Vessel and trip details must fit inside their rows');
     assert.ok(dimensions.width <= viewport.width, `Horizontal overflow at ${viewport.width}: ${JSON.stringify(dimensions)}`);
     if (viewport.width > 800) assert.ok(dimensions.height <= viewport.height, `TV content needs scrolling at ${viewport.width}: ${JSON.stringify(dimensions)}`);
+    const clippedRows = await page.locator('.sailing-rows li').evaluateAll(rows => rows.filter(row => row.getBoundingClientRect().bottom > row.closest('.display-board').getBoundingClientRect().bottom + 1).map(row => ({ rowBottom: row.getBoundingClientRect().bottom, boardBottom: row.closest('.display-board').getBoundingClientRect().bottom })));
+    assert.deepEqual(clippedRows, [], `Every visible trip row must fit inside its board at ${viewport.width}`);
     await page.screenshot({ path: `.audit/port-display/board-${viewport.width}.png` });
     assert.deepEqual(await page.evaluate(() => window.portCspErrors), []);
     console.log(`Port display layout passed: ${viewport.width} x ${viewport.height}`);
@@ -102,8 +138,12 @@ try {
     assert.match(await page.locator('.arrivals .sailing-status.boarding').innerText(), /Boarding at origin/);
     assert.notEqual(await page.locator('.arrivals .sailing-status.boarding').evaluate(el => getComputedStyle(el).backgroundColor), await page.locator('.sailing-status.scheduled').first().evaluate(el => getComputedStyle(el).backgroundColor), 'Boarding at origin must be distinct from scheduled');
     const visibleRows = await page.locator('.sailing-rows li').count();
-    assert.ok(visibleRows >= 4 && visibleRows <= 5);
-    if (viewport.height >= 636) assert.equal(visibleRows, 5, 'Two departures and three arrivals fit the laptop/TV layout');
+    assert.ok(visibleRows >= 2 && visibleRows <= 5, 'Each board shows at least one sailing');
+    const capacity = await page.locator('.display-board').first().evaluate(board => {
+      const rowHeight = parseFloat(getComputedStyle(board.closest('.port-screen')).getPropertyValue('--sailing-row-height'));
+      return Math.max(1, Math.min(6, Math.floor((board.clientHeight - board.querySelector('.board-heading').getBoundingClientRect().height - board.querySelector('.board-columns').getBoundingClientRect().height) / rowHeight)));
+    });
+    assert.equal(visibleRows, Math.min(2, capacity) + Math.min(3, capacity), 'Paging uses the space below the header');
     assert.equal(await page.locator('.sailing-details').evaluateAll(elements => elements.some(el => el.getBoundingClientRect().bottom > el.closest('li').getBoundingClientRect().bottom - 2)), false, 'Expanded rows must fit long vessel details');
     assert.equal(await page.locator('.sailing-rows time').evaluateAll(elements => elements.some(el => el.scrollWidth > el.clientWidth + 1)), false, 'Large scheduled times must fit their column');
     const rowHeights = await page.locator('.sailing-rows li').evaluateAll(rows => rows.map(row => row.getBoundingClientRect().height));
@@ -112,6 +152,18 @@ try {
     assert.ok(dimensions.width <= viewport.width && dimensions.height <= viewport.height, 'Sparse board must fit the screen');
     await page.screenshot({ path: `.audit/port-display/refined-${viewport.width}.png` });
   }
+  emptySample = true;
+  for (const viewport of [{ width: 1834, height: 858 }, { width: 1366, height: 636 }, { width: 390, height: 844 }, { width: 320, height: 740 }]) {
+    await page.setViewportSize(viewport);
+    await page.goto(baseUrl + '/port-display?port=batangas-port');
+    await page.getByRole('heading', { name: 'No departures listed for today.', exact: true }).waitFor();
+    await page.getByRole('heading', { name: 'No arrivals listed for today.', exact: true }).waitFor();
+    const dimensions = await page.locator('.port-screen').evaluate(el => ({ width: el.scrollWidth, height: el.scrollHeight }));
+    assert.ok(dimensions.width <= viewport.width, 'Empty board must not overflow horizontally');
+    if (viewport.width > 800) assert.ok(dimensions.height <= viewport.height, 'Empty TV board must fit vertically');
+    await page.screenshot({ path: '.audit/port-display/empty-' + viewport.width + '.png' });
+  }
+  emptySample = false;
   terminalSample = false;
   smallSample = true;
   await page.setViewportSize({ width: 1240, height: 580 });
@@ -146,6 +198,9 @@ try {
   await page.getByLabel('Port', { exact: true }).selectOption(ports[1].id);
   await page.getByRole('heading', { name: 'Batangas Port', exact: true }).waitFor();
   await page.waitForURL('**port=batangas-port');
+  await page.locator('.maritime-header-art[data-weather="cloudy"]').waitFor();
+  assert.match(await page.locator('.boarding-destination h2').innerText(), /Batangas Port → Calapan Port/);
+  assert.equal(weatherRequests.at(-1).latitude, '13.7580556');
   await page.reload();
   await page.getByRole('heading', { name: 'Batangas Port', exact: true }).waitFor();
   await page.getByRole('button', { name: 'Display controls', exact: true }).click();
@@ -153,7 +208,6 @@ try {
   await page.getByRole('button', { name: 'Refresh', exact: true }).click();
   await page.getByRole('alert').waitFor();
   assert.ok(await page.locator('.sailing-rows li').count() > 0, 'Offline board should preserve the last successful schedule');
-  assert.match(await page.locator('footer').innerText(), /Updates delayed/);
   assert.match(await page.locator('.connection-state').innerText(), /Updates delayed/);
   assert.match(await page.locator('.boarding-banner').innerText(), /LAST REPORTED/);
   assert.equal(await page.getByText('NOW BOARDING', { exact: true }).count(), 0, 'Stale boarding information must not be labelled live');
@@ -173,6 +227,43 @@ try {
   await page.getByRole('button', { name: 'Fullscreen', exact: true }).click();
   await page.waitForFunction(() => Boolean(document.fullscreenElement));
   await page.evaluate(() => document.exitFullscreen());
+  // The board stays open across Philippine midnight, including a failed weather request.
+  weatherFail = true;
+  const oldDate = weatherRequests.at(-1).start_date;
+  const nextMidnight = new Date(Date.parse(`${oldDate}T00:00:00+08:00`) + 86400000);
+  await page.clock.setSystemTime(nextMidnight);
+  await page.clock.fastForward(1000);
+  await page.locator('.maritime-header-art[data-weather="neutral"]').waitFor();
+  assert.equal(await page.locator('.header-weather-target').count(), 0, 'Yesterday’s weather must disappear even when the next forecast fails');
+  const nextDate = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Manila' }).format(nextMidnight);
+  assert.equal(weatherRequests.at(-1).start_date, nextDate);
+  weatherFail = false;
+  await page.clock.fastForward(5 * 60000 + 30000);
+  await page.locator('.maritime-header-art[data-weather="cloudy"]').waitFor();
+  assert.equal(weatherRequests.at(-1).start_date, nextDate);
+  // Preview every weather scene in the same header without changing sailing behavior.
+  await page.clock.setSystemTime(new Date());
+  await page.setViewportSize({ width: 1366, height: 636 });
+  for (const [code, scene, isDay] of [[0, 'clear', 1], [3, 'cloudy', 1], [61, 'rain', 1], [95, 'storm', 1], [45, 'fog', 1], [71, 'snow', 1], [0, 'clear', 0], [3, 'cloudy', 0], [61, 'rain', 0]]) {
+    weatherCode = code; weatherIsDay = isDay;
+    await page.reload();
+    const art = page.locator(`.maritime-header-art[data-weather="${scene}"]`);
+    await art.waitFor();
+    await art.locator('img').evaluate(img => img.decode());
+    assert.ok((await art.getAttribute('class')).includes(isDay ? 'weather-day' : 'weather-night'));
+    await page.screenshot({ path: `.audit/port-display/weather-${scene}-${isDay ? 'day' : 'night'}.png` });
+    assert.equal(await page.locator('.display-weather').count(), 0);
+    if (['rain', 'storm', 'snow'].includes(scene)) {
+      assert.ok(await page.locator('.weather-particle').count() >= 20);
+      assert.notEqual(await page.locator('.sky-precipitation').evaluate(el => getComputedStyle(el).animationName), 'none');
+    }
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    assert.equal(await art.locator('.sky-orb,.sky-stars,.sky-cloud,.sky-mist,.sky-precipitation,.weather-particle').evaluateAll(elements => elements.every(el => getComputedStyle(el).animationName === 'none')), true, 'Reduced motion must stop every weather layer');
+    await page.emulateMedia({ reducedMotion: 'no-preference' });
+  }
+  assert.deepEqual(await page.evaluate(() => window.portCspErrors), []);
   assert.deepEqual(errors, []);
   console.log('Public access, page rotation, refresh, port selection and offline recovery passed.');
 } finally { await browser?.close(); await new Promise(resolve => server.close(resolve)); }
+}
+main().catch(error => { console.error(error); process.exitCode = 1; });

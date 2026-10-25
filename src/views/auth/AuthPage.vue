@@ -403,8 +403,8 @@ async function submit() {
 </script>
 
 <style scoped>
-.auth-page { display: grid; grid-template-columns: minmax(0, .95fr) minmax(0, 1.05fr); min-height: 100vh; min-height: 100dvh; color: var(--ink); background: var(--surface-soft); line-height: 1.6; }
-.auth-art { position: sticky; top: 0; display: flex; flex-direction: column; height: 100vh; height: 100dvh; min-height: 600px; overflow: hidden; padding: 36px clamp(28px, 4.5vw, 72px); background: radial-gradient(ellipse at bottom right, #229ab055, transparent 65%), linear-gradient(150deg, #0b2948, #0d6584); color: #fff; }
+.auth-page { display: grid; grid-template-columns: minmax(0, .95fr) minmax(0, 1.05fr); min-height: 100vh; min-height: 100dvh; color: var(--ink); background: var(--page-background); line-height: 1.6; }
+.auth-art { position: sticky; top: 0; display: flex; flex-direction: column; height: 100vh; height: 100dvh; min-height: 600px; overflow: hidden; padding: 36px clamp(28px, 4.5vw, 72px); background: var(--ocean-night-background); color: #fff; }
 .auth-art::after { content: ''; position: absolute; width: 650px; height: 650px; bottom: -460px; left: -180px; border: 1px solid #ffffff24; border-radius: 50%; box-shadow: 0 0 0 80px #ffffff08, 0 0 0 160px #ffffff05; pointer-events: none; }
 .brand-link { display: inline-flex; align-self: flex-start; text-decoration: none; }
 .auth-art :deep(.brand-copy strong), .auth-art :deep(.brand-copy b) { color: #fff; }
