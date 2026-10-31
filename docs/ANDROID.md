@@ -14,7 +14,7 @@ The repository workflow `.github/workflows/build-apk.yml` runs on pushes to `mai
 
 Under **Settings > Secrets and variables > Actions**, configure `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY` as repository variables or secrets. Secrets take precedence. A legacy `VITE_SUPABASE_ANON_KEY` is accepted as an alternative. These are browser-public credentials; never use a service-role key, Supabase management token or database password. The workflow validates this before building. No Firebase configuration or external API server is required.
 
-After a successful run, download **BarkoLink-Android-APK** from the run's Artifacts section and extract `BarkoLink-debug.apk`. This debug-signed package is suitable for installation and presentation testing. Store distribution requires a separately configured release signing key.
+After a successful run, download **BarkoLink-Android-APK** from the run's Artifacts section and extract `BarkoLink.apk`. This debug-signed package is suitable for installation and presentation testing. Store distribution requires a separately configured release signing key.
 
 The app uses the single client in `src/services/supabase.ts`, with persistent sessions and automatic token refresh enabled. There is no `firebase.ts` or duplicate authentication client. Android launcher icons use the BarkoLink ferry mark, including the adaptive foreground vector.
 
