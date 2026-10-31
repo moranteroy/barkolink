@@ -22,7 +22,7 @@ try {
     const user = { id, email: 'ui@example.invalid', app_metadata: { role }, user_metadata: { fullName: 'UI User' }, aud: 'authenticated', created_at: '2026-01-01T00:00:00Z' }
     const exp = Math.floor(Date.now() / 1000) + 3600
     const encoded = value => Buffer.from(JSON.stringify(value)).toString('base64url')
-    const session = { access_token: `${encoded({ alg: 'HS256', typ: 'JWT' })}.${encoded({ sub: id, exp, role: 'authenticated', app_metadata: { role } })}.test`, refresh_token: 'ui-test', token_type: 'bearer', expires_at: exp, expires_in: 3600, user }
+    const session = { access_token: `${encoded({ alg: 'HS256', typ: 'JWT' })}.${encoded({ sub: id, exp, aal: 'aal2', role: 'authenticated', app_metadata: { role } })}.test`, refresh_token: 'ui-test', token_type: 'bearer', expires_at: exp, expires_in: 3600, user }
     await context.addInitScript(({ key, session }) => { if (!localStorage.getItem('barkolink-theme')) localStorage.setItem('barkolink-theme', 'light'); localStorage.setItem(key, JSON.stringify(session)) }, { key: `sb-${projectRef}-auth-token`, session })
     let fareConfig = {code:'vessel',regularFare:600,studentDiscount:20,seniorDiscount:20,childDiscount:50,pwdDiscount:20,pregnantDiscount:0,customDiscounts:[]}, fareSaves=0
     let readAt = null, markAllCalls = 0, lastBookingArgs = null, lastAuditArgs = null
@@ -33,6 +33,7 @@ try {
     await context.route(`${projectUrl}/**`, async route => {
       const url = route.request().url()
       if (url.includes('/auth/v1/')) return route.fulfill({ json: user })
+      if (url.endsWith('/rpc/my_mfa_settings')) return route.fulfill({json:{role,enabled:true,mfaRequired:role!=='PASSENGER',staffRequired:true,policyRequired:false}})
       if (url.includes('/functions/v1/weather') && process.env.BARKOLINK_WEATHER_CHECK === '1') {
         const {portId} = route.request().postDataJSON()
         const current = {at:new Date().toISOString(),condition:'Partly cloudy',temperatureC:28,windKph:18,gustKph:25,visibilityKm:9,rainChance:35,cloudCover:42}
@@ -83,7 +84,7 @@ try {
         PassengerSailingBoard: { date: '2099-01-01', updatedAt: new Date().toISOString(), sailings: [] },
         ActiveTravelAdvisories: { advisories: [] },
         QuoteLoyaltyVoucher: { quote: null },
-        MyLoyalty: { completedTrips: 0, rewardValue: 100, tripsToNextReward: 5, tripsPerReward: 5, currentTier: "Bronze", tiers: [{ name: 'Bronze', trips: 5, value: 100 }], vouchers: [] },
+        MyLoyalty: process.env.BARKOLINK_LOYALTY_CHECK==='1' ? {completedTrips:10,rewardValue:300,tripsToNextReward:5,tripsPerReward:5,currentTier:'Gold',tiers:[{name:'Silver',trips:5,value:100},{name:'Gold',trips:10,value:200},{name:'Platinum',trips:15,value:300}],vouchers:[{code:'VCH-PRESENTATION23',value:200,expiresAt:'2027-01-29T00:00:00Z'}]} : { completedTrips: 0, rewardValue: 100, tripsToNextReward: 5, tripsPerReward: 5, currentTier: "Bronze", tiers: [{ name: 'Bronze', trips: 5, value: 100 }], vouchers: [] },
         AdminPorts: { ports: [sailing.origin, sailing.destination].map(p => ({ ...p, isActive: true })) }, AdminVessels: { vessels: [sailing.vessel] },
         AdminSailingBookings:{bookings:[]}, AdminUsers: { users: [{uid:'user-z',fullName:'Zelda User',email:'zelda@example.invalid',role:'PASSENGER',createdAt:'2026-10-05T01:00:00Z'},{uid:'user-a',fullName:'Anna User',email:'anna@example.invalid',role:'TICKETING',createdAt:'2026-10-05T01:00:00Z'},{uid:'user-m',fullName:'Marco User',email:'marco@example.invalid',role:'BOARDING',createdAt:'2026-10-05T01:00:00Z'}],totalCount:3 }, AdminPassengerRecords: { bookingPassengers: [], totalCount: 0 },
         AdminOperationsSettings: { reservationMinutes: 1440 },
@@ -106,7 +107,7 @@ try {
     const page = await context.newPage()
     page.on('pageerror', error => errors.push(error.message))
     page.on('console', message => { if(['error','warning'].includes(message.type()) && message.text().includes('AG Grid')) errors.push(message.text()) })
-    const paths = role === 'ADMIN' ? ['/admin', '/admin/accommodation', '/admin/routes', '/admin/no-shows', '/admin/notifications', '/admin/analytics', '/admin/audit-logs', '/admin/advisories', '/admin/trip-operations?sailing=UI-TRIP', '/admin/trips', '/admin/bookings', '/admin/settings/profile', '/admin/settings/password', '/admin/settings/appearance'] : role === 'TICKETING' || role === 'BOARDING' ? [`/staff/${role.toLowerCase()}`, ...((role === 'TICKETING' ? ['bookings','passengers','trips','fares','notifications'] : ['trips','check-in','boarding','manifest','no-shows','notifications']).map(section=>`/staff/${role.toLowerCase()}/${section}`)), ...['account','security','appearance'].map(section => `/staff/${role.toLowerCase()}/settings/${section}`)] : ['/home', '/profile', '/settings/profile', '/settings/password', '/settings/appearance', '/notifications', '/bookings', '/ticket?reference=UI-BOOKING', '/travelers', '/help', '/search?all=1']
+    const paths = role === 'ADMIN' ? ['/admin', '/admin/accommodation', '/admin/routes', '/admin/no-shows', '/admin/notifications', '/admin/reports', '/admin/audit-logs', '/admin/advisories', '/admin/trip-operations?sailing=UI-TRIP', '/admin/trips', '/admin/bookings', '/admin/settings/profile', '/admin/settings/password', '/admin/settings/appearance'] : role === 'TICKETING' || role === 'BOARDING' ? [`/staff/${role.toLowerCase()}`, ...((role === 'TICKETING' ? ['bookings','passengers','trips','fares','notifications'] : ['trips','check-in','boarding','manifest','no-shows','notifications']).map(section=>`/staff/${role.toLowerCase()}/${section}`)), ...['account','security','appearance'].map(section => `/staff/${role.toLowerCase()}/settings/${section}`)] : ['/home', '/profile', '/settings/profile', '/settings/password', '/settings/appearance', '/notifications', '/bookings', '/ticket?reference=UI-BOOKING', '/travelers', '/help', '/search?all=1']
     if (role === 'ADMIN') paths.push('/admin/users', '/admin/staff-ports', '/admin/operations', '/admin/fares')
     if (role === 'ADMIN') paths.push('/admin/manifest', '/admin/inbox')
     if (role === 'ADMIN') paths.push('/admin/ports', '/admin/vessels')
@@ -125,14 +126,16 @@ try {
       booking.paymentVerificationRequired = path === '/home'
       await page.goto(baseUrl + path)
       await page.locator('h1').first().waitFor()
+      if(path==='/admin/reports'){await page.locator('.reports .table-note').waitFor();assert.ok((await page.locator('.reports .table-note').innerText()).includes('Legal paper (8.5 x 14 inches)'))}
       await page.waitForTimeout(450)
+      assert.deepEqual((await page.locator('main').first().innerText()).match(/.{0,25}[\u00c2\u00c3\u00e2\ufffd].{0,30}/g)||[],[],`Visible page text has no broken encoding sequences: ${path}`)
       if (path === '/admin/trips') {
         assert.equal(await page.locator('.trip-records-panel').isVisible(), true, 'Actual trips are the default view')
         await page.getByRole('button', { name:'Daily schedules', exact:true }).click()
         await page.locator('.daily-schedules').waitFor()
         assert.equal(await page.locator('.trip-records-panel').isVisible(), false, 'Templates do not bury actual trip records')
         await page.getByRole('button', { name:'Actual trips', exact:true }).click()
-        await page.locator('.trip-records-panel').getByText('Jan 1, 2099, 4:00 PM', { exact:true }).waitFor()
+        await page.locator('.trip-records-panel').getByText('Jan 1, 2099, 4:00 PM', { exact:true }).filter({visible:true}).first().waitFor()
         assert.ok((await page.locator('.trip-records-panel').innerText()).includes('4:00 PM'), 'Admin departures stay in Philippine time on an overseas device')
         if (process.env.BARKOLINK_UX_DRAFT_CHECK === '1') {
           await page.getByRole('button',{name:'Create trip',exact:true}).click()
@@ -151,6 +154,16 @@ try {
           await page.keyboard.press('Escape')
           await page.locator('.trip-form').waitFor({state:'hidden'})
         }
+      }
+      if (path === '/home' && process.env.BARKOLINK_LOYALTY_CHECK==='1') {
+        await page.locator('.reward-code code').waitFor();
+        assert.equal(await page.locator('.reward-code code').innerText(),'VCH-PRESENTATION23');
+        await page.locator('.reward-code').scrollIntoViewIfNeeded();
+        assert.equal(await page.locator('.loyalty-card').evaluate(el=>el.scrollWidth>el.clientWidth+1),false,'Loyalty code fits the passenger card');
+        await page.locator('.reward-code button').click();
+        await page.getByText('Loyalty voucher code copied.',{exact:true}).waitFor();
+        await page.getByRole('button',{name:'Dismiss notification',exact:true}).click();
+        await page.locator('.app-toast').waitFor({state:'hidden'});
       }
       if (path === '/home') {
         assert.ok((await page.locator('.upcoming-block').innerText()).includes('Do not pay again'), 'Received online payments never prompt another payment')
@@ -193,18 +206,23 @@ try {
       assert.equal(await page.locator('[role=alert]').count(), 0, `${path}: unexpected error`)
       if (process.env.BARKOLINK_TOAST_CHECK === '1' && path === '/travelers') {
         await page.getByRole('button', { name: 'Save traveler', exact: true }).click()
-        assert.equal(await page.locator('.app-toast').count(), 0, 'Required fields remain inline/browser validation')
+        await page.locator('.app-toast.error').waitFor()
+        assert.equal(await page.locator('.travelers-page .field-error').count(), 0, 'Validation uses the toast without duplicated field text')
+        await page.getByRole('button', { name: 'Dismiss notification' }).click()
+        await page.locator('.app-toast').waitFor({state:'hidden'})
         await page.getByLabel('Full name', { exact: true }).fill('Toast Test Traveler')
         await page.getByLabel('Birth date', { exact: true }).fill('1990-01-01')
         await page.locator('.travelers-page form select').selectOption('FEMALE')
         await page.getByLabel('Mobile number', { exact: true }).fill('09123456789')
         await page.getByRole('button', { name: 'Save traveler', exact: true }).click()
+        await page.getByRole('alertdialog').getByRole('button', { name: 'Save passenger', exact: true }).click()
         await page.locator('.app-toast.success').getByText('Traveler saved.', { exact: true }).waitFor()
         await page.getByRole('button', { name: 'Dismiss notification' }).click()
         await page.locator('.app-toast').waitFor({state:'hidden'})
         await page.getByRole('button', { name: 'Edit', exact: true }).click()
         travelerSaveFails = true
         await page.getByRole('button', { name: 'Save traveler', exact: true }).click()
+        await page.getByRole('alertdialog').getByRole('button', { name: 'Save changes', exact: true }).click()
         await page.locator('.app-toast.error').waitFor()
         assert.match(await page.locator('.app-toast.error').innerText(), /Could not save traveler/)
         assert.equal(await page.getByLabel('Full name', { exact: true }).inputValue(), 'UI Traveler', 'Failed save retains form input')

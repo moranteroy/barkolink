@@ -27,7 +27,7 @@
   </section>
 </template>
 <script setup lang="ts">
-import { notifySuccess, notifyError } from '@/composables/toast';
+import { notifyError } from '@/composables/toast';
 import { ref } from 'vue';
 import AppIcon from "@/components/ui/icon/AppIcon.vue";
 import { walletOutline, shieldCheckmarkOutline, cardOutline, lockClosedOutline, arrowForwardOutline, cashOutline, informationCircleOutline } from 'ionicons/icons';
@@ -47,13 +47,13 @@ async function run(action: 'checkout' | 'status' | 'close') {
       return;
     }
     closed.value = result.status === 'CLOSED';
-    notice.value = notifySuccess(result.status === 'PAID' ? 'Payment received. Open My bookings to check staff verification and e-ticket availability.'
+    notice.value = result.status === 'PAID' ? 'Payment received. Open My bookings to check staff verification and e-ticket availability.'
       : result.status === 'REVIEW' ? 'Payment requires administrator review. Do not pay again.'
       : closed.value ? 'Online checkout is closed. You can now pay cash at ticketing.'
-      : 'No completed payment yet. You can resume checkout or close it before paying cash.');
+      : 'No completed payment yet. You can resume checkout or close it before paying cash.';
     if (result.status !== 'UNPAID') emit('updated');
   } catch (cause) {
-    error.value = notifyError(cause instanceof Error ? cause.message : 'Could not process payment.');
+    notifyError(cause instanceof Error ? cause.message : 'Could not process payment.');
   } finally { busy.value = false; }
 }
 </script>

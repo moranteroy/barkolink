@@ -21,7 +21,7 @@
               v-bind="fieldAttrs('traveler-name')"
               required
               maxlength="120"
-          /><small v-if="fieldErrors['traveler-name']" :id="errorId('traveler-name')" class="field-error">{{ fieldErrors['traveler-name'] }}</small></label>
+          /></label>
           <div class="fields">
             <label
               >Birth date<input
@@ -30,14 +30,14 @@
                 type="date"
                 :max="today"
                 min="1900-01-01"
-                required /><small v-if="fieldErrors['traveler-birth']" :id="errorId('traveler-birth')" class="field-error">{{ fieldErrors['traveler-birth'] }}</small></label
+                required /></label
             ><label
               >Sex<select v-model="form.sex" v-bind="fieldAttrs('traveler-sex')" required>
                 <option value="" disabled>Select sex</option>
                 <option value="MALE">Male</option>
                 <option value="FEMALE">Female</option>
                 <option value="OTHER">Other</option>
-              </select><small v-if="fieldErrors['traveler-sex']" :id="errorId('traveler-sex')" class="field-error">{{ fieldErrors['traveler-sex'] }}</small></label
+              </select></label
             >
           </div>
           <div class="fields">
@@ -46,16 +46,18 @@
                 v-model.trim="form.phone"
                 v-bind="fieldAttrs('traveler-phone')"
                 type="tel"
-                minlength="7"
+                inputmode="tel"
+                autocomplete="tel"
+                placeholder="09171234567 or +639171234567"
                 maxlength="30"
-                required /><small v-if="fieldErrors['traveler-phone']" :id="errorId('traveler-phone')" class="field-error">{{ fieldErrors['traveler-phone'] }}</small></label
+                required /></label
             ><label
               >Nationality<input
                 v-model.trim="form.nationality"
                 v-bind="fieldAttrs('traveler-nationality')"
                 maxlength="60"
                 required
-            /><small v-if="fieldErrors['traveler-nationality']" :id="errorId('traveler-nationality')" class="field-error">{{ fieldErrors['traveler-nationality'] }}</small></label>
+            /></label>
           </div>
           <div class="actions">
             <button :disabled="busy">
@@ -93,12 +95,12 @@
   ></ion-page>
 </template>
 <script setup lang="ts">
-import { validName, validPhone, validNationality } from '../../data/securityValidation';
+import { validName, validPhone, validNationality, mobileNumberError } from '../../data/securityValidation';
 import { validBirthDate } from '../../data/travelDate';
-import { notifyError, notifySuccess } from '@/composables/toast';
+import { notifyError, notifySuccess, notifyValidationError } from '@/composables/toast';
 import { confirmAction } from "../../composables/confirmation";
 import { useFieldErrors } from '../../composables/fieldErrors';
-import { onMounted, reactive, ref } from "vue";
+import { onMounted, reactive, ref, watch } from "vue";
 import { IonPage, IonContent, onIonViewWillEnter } from "@ionic/vue";
 import AppIcon from "@/components/ui/icon/AppIcon.vue";
 import { personOutline } from "ionicons/icons";
@@ -129,7 +131,7 @@ const empty = () => ({
 });
 const form = reactive(empty());
 const loadError = ref('');
-const { fieldErrors, fieldAttrs, errorId, clearErrors, showErrors } = useFieldErrors();
+const { fieldErrors, clearErrors, showErrors } = useFieldErrors();
 const contentRef = ref<InstanceType<typeof IonContent> | null>(null);
 function reset() {
   clearErrors();
@@ -150,38 +152,58 @@ async function load() {
   try {
     items.value = (await savedTravelers(database)).data.travelers;
   } catch (cause) {
-    loadError.value = notifyError(databaseRequestError(
+    loadError.value = databaseRequestError(
       cause,
       "Could not load saved travelers.",
-    ));
+    );
   } finally {
     loading.value = false;
   }
 }
+function travelerErrors() {
+  const errors: Record<string, string> = {};
+  if (!validName(form.fullName)) errors['traveler-name'] = 'Enter a full name using letters, spaces, apostrophes, periods or hyphens (up to 120 characters).';
+  if (!validBirthDate(form.birthDate)) errors['traveler-birth'] = 'Enter a valid birth date that is not in the future.';
+  if (!['MALE', 'FEMALE', 'OTHER'].includes(form.sex)) errors['traveler-sex'] = 'Select the traveler’s sex.';
+  if (!validPhone(form.phone)) errors['traveler-phone'] = mobileNumberError;
+  if (!validNationality(form.nationality)) errors['traveler-nationality'] = 'Enter a nationality using letters, spaces, apostrophes or hyphens (up to 60 characters).';
+  return errors;
+}
+function fieldAttrs(key: string) {
+  return { 'aria-invalid': !!fieldErrors[key] };
+}
+watch(form, () => {
+  const errors = travelerErrors();
+  for (const key of Object.keys(fieldErrors)) fieldErrors[key] = errors[key] || '';
+});
 async function save() {
   if (!database || busy.value) return;
   error.value = '';
   clearErrors();
-  const errors: Record<string, string> = {};
-  if (!validName(form.fullName)) errors['traveler-name'] = 'Enter the traveler’s full name.';
-  if (!validBirthDate(form.birthDate)) errors['traveler-birth'] = 'Enter a valid birth date that is not in the future.';
-  if (!['MALE', 'FEMALE', 'OTHER'].includes(form.sex)) errors['traveler-sex'] = 'Select the traveler’s sex.';
-  if (!validPhone(form.phone)) errors['traveler-phone'] = 'Enter a valid mobile number.';
-  if (!validNationality(form.nationality)) errors['traveler-nationality'] = 'Enter the traveler’s nationality.';
+  const errors = travelerErrors();
   if (Object.keys(errors).length) {
+    notifyValidationError(Object.values(errors)[0]);
     await showErrors(errors);
     return;
   }
   busy.value = true;
   error.value = "";
   notice.value = "";
+  const passenger = { ...form, id: form.id || undefined };
   try {
-    await saveTraveler(database, { ...form, id: form.id || undefined });
+    if (!(await confirmAction({
+      title: passenger.id ? 'Save passenger changes?' : 'Save this passenger?',
+      message: passenger.id
+        ? `Would you like to save the updated details for ${passenger.fullName}?`
+        : `Would you like to add ${passenger.fullName} to your saved passengers for future bookings?`,
+      confirmText: passenger.id ? 'Save changes' : 'Save passenger',
+    }))) return;
+    await saveTraveler(database, passenger);
     reset();
     await load();
-    notice.value = notifySuccess("Traveler saved.");
+    notifySuccess("Traveler saved.");
   } catch (cause) {
-    error.value = notifyError(databaseRequestError(cause, "Could not save traveler."));
+    notifyError(databaseRequestError(cause, "Could not save traveler."));
   } finally {
     busy.value = false;
   }
@@ -203,9 +225,9 @@ async function remove(person: SavedTraveler) {
     await deleteTraveler(database, person.id);
     if (form.id === person.id) reset();
     await load();
-    notice.value = notifySuccess("Traveler deleted.");
+    notifySuccess("Traveler deleted.");
   } catch (cause) {
-    error.value = notifyError(databaseRequestError(cause, "Could not delete traveler."));
+    notifyError(databaseRequestError(cause, "Could not delete traveler."));
   } finally {
     busy.value = false;
   }

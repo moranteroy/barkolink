@@ -50,6 +50,7 @@
         <section class="section-block quick-block" aria-labelledby="quick-heading">
           <div class="section-heading"><h2 id="quick-heading"><AppIcon :icon="sparklesOutline" aria-hidden="true" /> Travel essentials</h2></div>
           <div class="essentials-grid">
+            <router-link to="/vouchers" class="voucher-shortcut"><span class="quick-icon"><Gift :size="20" aria-hidden="true" /></span><span><strong>Claim vouchers</strong><small>Discover promos &amp; trip missions</small></span><ChevronRight :size="16" class="shortcut-arrow" aria-hidden="true" /></router-link>
             <router-link to="/travelers" class="travelers-shortcut"><span class="quick-icon"><UsersRound :size="20" aria-hidden="true" /></span><span><strong>Saved travelers</strong><small>Save details for faster booking</small></span><ChevronRight :size="16" class="shortcut-arrow" aria-hidden="true" /></router-link>
             <router-link to="/help" class="guide-shortcut"><span class="quick-icon"><LifeBuoy :size="20" aria-hidden="true" /></span><span><strong>Travel guide</strong><small>Payment & boarding help</small></span><ChevronRight :size="16" class="shortcut-arrow" aria-hidden="true" /></router-link>
           </div>
@@ -72,7 +73,6 @@
   </ion-page>
 </template>
 <script setup lang="ts">
-import { notifyError } from '@/composables/toast';
 import PaymentDeadline from "../../components/passenger/PaymentDeadline.vue";
 import { bookingPaymentGuidance, bookingTicketReady } from "../../data/paymentVerification";
 import { databaseRequestError } from "../../data/databaseErrors";
@@ -81,7 +81,7 @@ import { useSectionNavigation } from '../../composables/useSectionNavigation';
 import { IonButton, IonContent, IonPage, onIonViewWillEnter, onIonViewDidLeave, useIonRouter } from "@ionic/vue";
 import AppIcon from "@/components/ui/icon/AppIcon.vue";
 import { myBookings, myProfile, browseSailings, type MyBookingsData, type BrowseSailingsData } from "../../services/database/passenger";
-import { UsersRound, LifeBuoy, ChevronRight, Search, CalendarDays, ArrowRight, ArrowUpRight } from '@lucide/vue';
+import { Gift, UsersRound, LifeBuoy, ChevronRight, Search, CalendarDays, ArrowRight, ArrowUpRight } from '@lucide/vue';
 import { frequentRoutes, type FrequentRoute } from '../../data/frequentRoutes';
 import FrequentRoutes from '../../components/passenger/FrequentRoutes.vue';
 import { auth, database } from "../../services/session";
@@ -245,10 +245,10 @@ async function loadData() {
       : null;
   } catch (error) {
     if (request === loadRequest && auth?.currentUser?.uid === user.uid) {
-      loadError.value = notifyError(databaseRequestError(
+      loadError.value = databaseRequestError(
         error,
         "Could not load your trips.",
-      ));
+      );
     }
   } finally {
     if (request === loadRequest) loading.value = false;
@@ -315,6 +315,7 @@ onIonViewDidLeave(() => { boardActive.value = false; });
 .essentials-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; }
 .essentials-grid a { display:grid; grid-template-columns:36px minmax(0,1fr) 12px; align-items:center; gap:9px; min-width:0; min-height:90px; padding:14px 12px; border:1px solid var(--line); border-radius:14px; background:var(--surface); color:var(--ink); text-decoration:none; transition:border-color .18s,background .18s; }
 .essentials-grid a > span:nth-child(2) { min-width:0; }.essentials-grid strong { display:block; font-size: var(--text-label); line-height:1.5; }.essentials-grid small { display:block; margin-top:4px; font-size: var(--text-caption); line-height:1.6; color:var(--muted); }.shortcut-arrow { color:var(--muted); }
+.essentials-grid .voucher-shortcut { grid-column:1 / -1; background:linear-gradient(115deg,var(--light-blue),var(--surface)); }
 .guide-shortcut .quick-icon { color:#299e91; background:color-mix(in srgb,#299e91 12%,var(--surface)); }.essentials-grid a:hover { border-color:var(--ocean); background:color-mix(in srgb,var(--ocean) 3%,var(--surface)); }
 .recent-list { display:grid; gap:9px; }.recent-list article { display:grid; grid-template-columns:30px minmax(0,1fr) auto; align-items:center; gap:10px; padding:13px; border:1px solid var(--line); border-radius:13px; background:var(--surface); }.recent-list article > div { min-width:0; }
 .recent-icon { display:grid; place-items:center; width:30px; height:30px; border-radius:9px; color:var(--ocean); background:var(--light-blue); }.recent-list strong { display:flex; align-items:center; flex-wrap:wrap; gap:5px; font-size: var(--text-label); line-height:1.6; overflow-wrap:anywhere; }.recent-list strong svg { color:var(--muted); flex-shrink:0; }

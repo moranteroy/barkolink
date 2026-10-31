@@ -165,7 +165,7 @@ async function loadMoreSailings() {
     sailingPage.value++;
     sailingTotal.value = result.data.totalCount || sailings.value.length;
   } catch (cause) {
-    formError.value = notifyError(databaseRequestError(cause, "Could not load more sailings."));
+    formError.value = databaseRequestError(cause, "Could not load more sailings.");
   } finally {
     moreLoading.value = false;
   }
@@ -202,7 +202,13 @@ const status = (item: Advisory) =>
       : Date.parse(item.startsAt) > Date.now()
         ? "SCHEDULED"
         : "ACTIVE";
-const filteredItems = computed(() => items.value.filter(item => (statusFilter.value === 'ALL' || status(item) === statusFilter.value) && [item.title, item.message, item.sailingCode || 'All passengers'].join(' ').toLowerCase().includes(query.value.trim().toLowerCase())));
+const statusOrder = { ACTIVE: 0, SCHEDULED: 1, DRAFT: 2, ENDED: 3 };
+const filteredItems = computed(() => items.value
+  .filter(item => (statusFilter.value === 'ALL' || status(item) === statusFilter.value) && [item.title, item.message, item.sailingCode || 'All passengers'].join(' ').toLowerCase().includes(query.value.trim().toLowerCase()))
+  .sort((a, b) => statusOrder[status(a)] - statusOrder[status(b)]
+    || Date.parse(b.startsAt) - Date.parse(a.startsAt)
+    || a.title.localeCompare(b.title)
+    || a.id.localeCompare(b.id)));
 async function canDismiss() { return !busy.value && (!hasUnsavedChanges() || await confirmAction({ title: 'Discard advisory changes?', message: 'Your unsaved changes will be lost.', confirmText: 'Discard changes' })); }
 async function close() { if (await canDismiss()) editing.value = false; }
 function start() { reset(); formError.value = ''; editing.value = true; }
@@ -243,7 +249,7 @@ async function load() {
     sailingPage.value = 0;
     sailingTotal.value = trips.data.totalCount || sailings.value.length;
   } catch (cause) {
-    error.value = notifyError(databaseRequestError(cause, "Could not load advisories."));
+    error.value = databaseRequestError(cause, "Could not load advisories.");
   } finally {
     loading.value = false;
   }
@@ -273,7 +279,7 @@ async function save() {
     await load();
     notifySuccess("Advisory saved. Published advisories appear during their effective period.");
   } catch (cause) {
-    formError.value = notifyError(databaseRequestError(cause, "Could not save advisory."));
+    notifyError(databaseRequestError(cause, "Could not save advisory."));
   } finally {
     busy.value = false;
   }

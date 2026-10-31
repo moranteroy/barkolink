@@ -72,7 +72,7 @@ async function send(text?:string) {
   await nextTick(); scrollToLatest();
   if (current !== generation) return;
   try { const reply=await askAssistant(message,history);if(current===generation)turns.value.push({role:'assistant',content:reply.answer,reply}); }
-  catch(cause){if(current===generation){error.value=notifyError(cause instanceof Error?cause.message:'Try again.');question.value=message;turns.value.pop();}}
+  catch(cause){if(current===generation){notifyError(cause instanceof Error?cause.message:'Try again.');question.value=message;turns.value.pop();}}
   finally {if(current===generation){busy.value=false;await nextTick();scrollToLatest();}}
 }
 onIonViewDidLeave(()=>{generation++;busy.value=false;turns.value=[];question.value='';error.value='';});

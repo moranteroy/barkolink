@@ -1,3 +1,4 @@
+import { clearToasts, toastMessages } from '../../src/composables/toast';
 import { flushPromises, mount } from '@vue/test-utils';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import AccommodationPanel from '../../src/components/admin/AccommodationPanel.vue';
@@ -17,7 +18,7 @@ vi.mock('@ionic/vue', () => ({
   IonModal: { props: ['isOpen', 'canDismiss'], template: '<div v-if="isOpen" role="dialog"><slot /></div>' },
 }));
 beforeEach(() => {
-  vi.clearAllMocks();
+  clearToasts(); vi.clearAllMocks();
   mocks.list.mockResolvedValue({ data: { accommodations: [
     { id: 'a1', vesselId: 'v1', vesselName: 'Ferry One', name: 'Economy', description: '', capacity: 60, surcharge: 0, isActive: true },
     { id: 'a2', vesselId: 'v1', vesselName: 'Ferry One', name: 'Business', description: '', capacity: 20, surcharge: 200, isActive: false },
@@ -99,12 +100,13 @@ describe('accommodation modal and capacity', () => {
     expect(wrapper.find('[role="dialog"]').exists()).toBe(true);
     wrapper.unmount();
   });
-  it('retains input and shows save failures inside the modal', async () => {
+  it('retains input and shows save failures once in a toast', async () => {
     mocks.save.mockRejectedValue(new Error('Request failed'));
     const wrapper = await openForm();
     await wrapper.find('.accommodation-form').trigger('submit');
     await flushPromises();
-    expect(wrapper.find('[role="dialog"] [role="alert"]').exists()).toBe(true);
+    expect(wrapper.find('[role="dialog"] [role="alert"]').exists()).toBe(false);
+    expect(toastMessages.value.some(toast => toast.message.includes('Request failed'))).toBe(true);
     expect((wrapper.find('#accommodation-class-name').element as HTMLSelectElement).value).toBe('Tourist Class');
     wrapper.unmount();
   });

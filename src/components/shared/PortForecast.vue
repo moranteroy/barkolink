@@ -48,7 +48,6 @@
   </section>
 </template>
 <script setup lang="ts">
-import { notifyError } from '@/composables/toast';
 import { computed, ref, watch, onMounted } from 'vue';
 import { onIonViewWillEnter } from '@ionic/vue';
 import { CloudSun, Wind, Droplets, MoveRight, ExternalLink, X, MapPin, ChevronDown, Anchor, Check } from '@lucide/vue';
@@ -70,7 +69,7 @@ async function loadLocations() {
   try {
     if (!database) throw new Error('Unavailable');
     locations.value = (await browseActivePorts(database)).data.ports;
-  } catch { locationError.value = notifyError('Could not load other weather locations.'); }
+  } catch { locationError.value = 'Could not load other weather locations.'; }
 }
 function choosePort(id: unknown) {
   if (typeof id === 'string' && locations.value.some(location => location.id === id)) chosenPortId.value = id;

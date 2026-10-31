@@ -137,7 +137,7 @@ async function load() {
     rows.value = r.data.routes;
     ports.value = p.data.ports.filter((p) => p.isActive);
   } catch (e) {
-    error.value = notifyError(databaseRequestError(e, "Could not load routes."));
+    error.value = databaseRequestError(e, "Could not load routes.");
   } finally {
     loading.value = false;
   }
@@ -165,7 +165,7 @@ async function save() {
     await load();
     notifySuccess("Route saved.");
   } catch (e) {
-    formError.value = notifyError(databaseRequestError(e, "Could not save route."));
+    notifyError(databaseRequestError(e, "Could not save route."));
   } finally {
     busy.value = false;
   }

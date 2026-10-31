@@ -90,6 +90,21 @@ try{
         const card=await last.boundingBox(),nav=await page.locator('.bottom-nav').boundingBox();
         assert.ok(card.y+card.height<=nav.y-8,'Last notification must clear the bottom navigation');
       }
+      if(width===1440){
+        const heading=role==='PASSENGER'?'Your booking was updated':'New booking received';
+        items.unshift({id:'arriving-notice',category:'BOOKING',title:heading,message:'Booking BKG-NEW: Calapan Port to Batangas Port.',createdAt:new Date().toISOString(),readAt:null,bookingReference:'BKG-NEW',sailingCode:'UI-TRIP'});
+        await page.evaluate(()=>window.dispatchEvent(new Event('focus')));
+        await inbox.getByRole('heading',{name:heading,exact:true}).waitFor();
+        assert.equal(await inbox.locator('.notifications article').count(),13,'The open inbox receives a newly polled notification');
+        const bell=page.locator('[aria-label="Notifications, 1 unread"]').first();await bell.waitFor();
+        await page.locator('.app-toast strong').filter({hasText:heading}).waitFor();
+        if(role!=='PASSENGER'){
+          const expected=role==='BOARDING'?'/staff/boarding/manifest?sailing=UI-TRIP':role==='ADMIN'?'/admin/bookings?search=BKG-NEW':'/staff/ticketing/bookings?search=BKG-NEW';
+          assert.equal(await inbox.locator('.notifications article').first().locator('.notice-footer a').getAttribute('href'),expected);
+        }
+        await inbox.locator('.notifications article').first().scrollIntoViewIfNeeded();
+        await page.screenshot({path:`.audit/notifications/${role}-live-update.png`});
+      }
       assert.ok(operations.includes('MarkNotificationRead')&&operations.includes('MyMarkAllNotificationsRead'));
       assert.deepEqual(errors,[]);assert.deepEqual(await page.evaluate(()=>window.inboxCspErrors),[]);
       await context.close();

@@ -54,7 +54,8 @@ describe('admin communication compose dialogs', () => {
     await wrapper.find('form').trigger('submit'); expect(mocks.save).not.toHaveBeenCalled();
     await dates[1].setValue('2026-10-06T10:00'); mocks.save.mockRejectedValue(new Error('Failed'));
     await wrapper.find('form').trigger('submit'); await flushPromises();
-    expect(wrapper.find('[role="dialog"] [role="alert"]').exists()).toBe(true);
+    expect(wrapper.find('[role="dialog"] [role="alert"]').exists()).toBe(false);
+    expect(toastMessages.value.some(toast => toast.message === 'Failed')).toBe(true);
     expect((wrapper.find('form input').element as HTMLInputElement).value).toBe('Weather update'); wrapper.unmount();
   });
   it('preserves advisory input when discard is declined', async () => {
@@ -71,10 +72,11 @@ describe('admin communication compose dialogs', () => {
   it('keeps broadcast input on failure and does not send to an empty audience', async () => {
     const wrapper = await broadcast(); mocks.recipients.mockResolvedValue({ data: { recipients: 0 } });
     await wrapper.find('form').trigger('submit'); await flushPromises();
-    expect(mocks.send).not.toHaveBeenCalled(); expect(wrapper.find('form').text()).toContain('No eligible accounts');
+    expect(mocks.send).not.toHaveBeenCalled(); expect(toastMessages.value.some(toast => toast.message.includes('No eligible accounts'))).toBe(true); expect(wrapper.find('form').text()).not.toContain('No eligible accounts');
     mocks.recipients.mockResolvedValue({ data: { recipients: 7 } }); mocks.send.mockRejectedValue(new Error('Failed'));
     await wrapper.find('form').trigger('submit'); await flushPromises();
-    expect(wrapper.find('[role="dialog"] [role="alert"]').exists()).toBe(true);
+    expect(wrapper.find('[role="dialog"] [role="alert"]').exists()).toBe(false);
+    expect(toastMessages.value.some(toast => toast.message === 'Failed')).toBe(true);
     expect((wrapper.find('form input').element as HTMLInputElement).value).toBe('Welcome aboard'); wrapper.unmount();
   });
   it('finds a broadcast beyond the original server page and sorts the complete history', async () => {

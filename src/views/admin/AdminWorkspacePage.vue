@@ -1268,7 +1268,7 @@
 import AdminSidebar from '../../components/admin/AdminSidebar.vue';
 import AdminWorkspaceHeader from '../../components/admin/AdminWorkspaceHeader.vue';
 import { adminNavigation } from '../../data/adminNavigation';
-import { notifyError, notifySuccess, notify } from '@/composables/toast';
+import { notifyError, notifySuccess } from '@/composables/toast';
 import { orderedDirectory } from "../../data/directoryOrdering";
 import { useFieldErrors } from "../../composables/fieldErrors";
 import { defineAsyncComponent } from "vue";
@@ -1761,7 +1761,7 @@ async function loadData(event?: unknown) {
   ] as const);
   if (["check-in", "boarding", "manifest"].includes(section.value)) {
     try { sailingOptions.value = (await adminSailingOptions(dc)).data.sailings; }
-    catch { error.value = notifyError("Could not load sailing choices. Refresh to retry."); }
+    catch { error.value = "Could not load sailing choices. Refresh to retry."; }
   }
   if (request !== loadRequest || !isWorkspaceRoute.value) return;
   const failed: string[] = [];
@@ -2007,7 +2007,7 @@ async function restoreTripDraft() {
     tripPublishedOperator.value = draft.operator || '';
     if (!editingId.value && tripVesselFares.value) Object.assign(tripForm, calculateFares(tripVesselFares.value.regularFare, tripVesselFares.value));
     editorBaseline = editorSnapshot();
-    notice.value = notify('Trip draft restored. Review the updated setup before saving.');
+    notice.value = 'Trip draft restored. Review the updated setup before saving.';
   } catch { sessionStorage.removeItem(tripDraftKey()); }
 }
 const tripVesselFares = computed(() =>
@@ -2027,7 +2027,7 @@ watch(() => [modal.value, tripForm.originPortId, tripForm.departureAt, editingId
   try {
     const result = await vesselAvailability(staffDatabase,{originPortId:tripForm.originPortId,departureAt:departure.toISOString(),excludeCode:editingId.value || undefined});
     if (request === vesselAvailabilityRequest) vesselDepartureIssues.value = Object.fromEntries(result.data.vessels.map(v => [v.id,v.issue]));
-  } catch { if (request === vesselAvailabilityRequest) vesselAvailabilityError.value = notifyError('Vessel location check is unavailable. The database will check availability when you save.'); }
+  } catch { if (request === vesselAvailabilityRequest) vesselAvailabilityError.value = 'Vessel location check is unavailable. The database will check availability when you save.'; }
 });
 const tripVesselIssue = computed(() => vesselDepartureIssues.value[tripForm.vesselId]);
 const tripVesselOptions = computed(() => vessels.value.filter(v => {
@@ -2197,7 +2197,7 @@ async function saveFareSettings() {
     fareDrafts.value[vesselId] = settings;
     notifySuccess(`Fares & discounts saved for ${selectedFareVessel.value.name}. New trips for this vessel will use these rates.`);
   } catch (cause) {
-    error.value = notifyError(databaseRequestError(cause, "Could not save fare settings."));
+    notifyError(databaseRequestError(cause, "Could not save fare settings."));
   } finally {
     busy.value = "";
   }
@@ -2359,8 +2359,7 @@ async function mutate(label: string, work: () => Promise<unknown>) {
     await loadData();
   } catch (e) {
     const message = databaseRequestError(e, "Could not save changes.");
-    if (modal.value) formError.value = notifyError(message);
-    else error.value = notifyError(message);
+    notifyError(message);
   } finally {
     busy.value = "";
   }
@@ -2510,7 +2509,7 @@ async function openTripEditor(sailing: AdminSailingsData["sailings"][number]) {
     tripBookings.value = result.data.bookings;
     tripBookingsLoaded.value = true;
   } catch (cause) {
-    formError.value = notifyError(databaseRequestError(
+    notifyError(databaseRequestError(
       cause,
       "Could not check reservations. Close and try again.",
     ));
@@ -2636,7 +2635,7 @@ async function saveTrip() {
     modal.value = "";
     await loadData();
   } catch (cause) {
-    formError.value = notifyError(databaseRequestError(cause, "Could not save this trip."));
+    notifyError(databaseRequestError(cause, "Could not save this trip."));
   } finally {
     busy.value = "";
   }
@@ -2708,7 +2707,7 @@ async function changeSailingStatus(
     notifySuccess(`${s.code} status changed to ${status}. ${result.data.notified ?? 0} account(s) notified.`);
   } catch (e) {
     select.value = s.status;
-    error.value = notifyError(databaseRequestError(e, "Could not update the trip."));
+    notifyError(databaseRequestError(e, "Could not update the trip."));
   } finally {
     busy.value = "";
   }
@@ -2748,7 +2747,7 @@ async function processTicket(
       "The ticket or sailing has changed. Refresh and check the ticket, payment, and sailing status before trying again.",
     );
     await loadData();
-    error.value = notifyError(message);
+    notifyError(message);
   } finally {
     busy.value = "";
   }
@@ -2774,7 +2773,7 @@ async function generatePassword() {
     userForm.password = result.data.password;
     notifySuccess('Temporary password generated.');
   } catch (e) {
-    formError.value = notifyError(accountRequestError(
+    notifyError(accountRequestError(
       e,
       "Could not generate a password. Try again.",
     ));
@@ -2807,7 +2806,7 @@ async function saveUser() {
     notifySuccess('Account created.');
     await loadData();
   } catch (e) {
-    formError.value = notifyError(accountRequestError(
+    notifyError(accountRequestError(
       e,
       "Could not create account. Try again.",
     ));
@@ -2826,8 +2825,7 @@ async function copyPassword() {
     accountPasswordCopied.value = true;
     notifySuccess('Password copied.');
   } catch {
-    formError.value =
-      notifyError("Could not copy the password. Select it and copy it manually.");
+    notifyError("Could not copy the password. Select it and copy it manually.");
   }
 }
 

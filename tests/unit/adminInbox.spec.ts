@@ -1,7 +1,8 @@
+import { clearToasts, toastMessages } from '../../src/composables/toast';
 import { flushPromises, mount } from '@vue/test-utils';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import InboxPanel from '../../src/components/admin/InboxPanel.vue';
-import { clearNotificationUnread, notificationUnreadCount } from '../../src/composables/notificationUnread';
+import { clearNotificationUnread, notificationUnreadCount, refreshNotificationUnread } from '../../src/composables/notificationUnread';
 
 const mocks = vi.hoisted(() => ({ list: vi.fn(), markRead: vi.fn(), markAll: vi.fn() }));
 vi.mock('../../src/services/session', () => ({
@@ -13,7 +14,7 @@ vi.mock('../../src/services/database/passenger', () => ({
 vi.mock('../../src/services/database/experience', () => ({ markAllNotificationsRead: mocks.markAll }));
 
 beforeEach(() => {
-  vi.clearAllMocks();
+  clearToasts(); vi.clearAllMocks();
   clearNotificationUnread();
   mocks.list.mockResolvedValue({ data: { notifications: [
     { id: '1', title: 'New notice', message: 'Trip updated', createdAt: '2026-10-06T00:00:00Z', readAt: null },
@@ -44,7 +45,8 @@ describe('admin inbox unread count', () => {
     await flushPromises();
     expect(notificationUnreadCount.value).toBe(1);
     expect(wrapper.find('article button').exists()).toBe(true);
-    expect(wrapper.find('[role="alert"]').exists()).toBe(true);
+    expect(wrapper.find('[role="alert"]').exists()).toBe(false);
+    expect(toastMessages.value.some(toast => toast.tone === 'error')).toBe(true);
     wrapper.unmount();
   });
   it('filters unread notifications and removes a read item from that view', async () => {
@@ -85,6 +87,18 @@ describe('admin inbox unread count', () => {
     expect(wrapper.findAll('article')).toHaveLength(1);
     expect(wrapper.find('article').text()).toContain('Sailing update');
     wrapper.unmount();
+  });
+
+  it('updates the open inbox when background notifications arrive',async()=>{
+    const wrapper=mount(InboxPanel,{global:{stubs:{RouterLink:true}}});await flushPromises();
+    mocks.list.mockResolvedValue({data:{notifications:[{id:'fresh',title:'New booking received',message:'Booking BKG-NEW',category:'BOOKING',createdAt:'2026-10-31T11:00:00Z',readAt:null}]}});
+    await refreshNotificationUnread();await flushPromises();
+    expect(wrapper.text()).toContain('Booking BKG-NEW');expect(wrapper.findAll('article')).toHaveLength(1);wrapper.unmount();
+  });
+  it('opens the boarding manifest for boarding staff instead of ticketing management',async()=>{
+    mocks.list.mockResolvedValue({data:{notifications:[{id:'booking',title:'New booking received',message:'Booking BKG-NEW',bookingReference:'BKG-NEW',sailingCode:'TRP-NEW',createdAt:'2026-10-31T11:00:00Z',readAt:null}]}});
+    const wrapper=mount(InboxPanel,{props:{staffRole:'BOARDING',showBroadcast:false},global:{stubs:{RouterLink:{name:'RouterLink',props:['to'],template:'<a><slot /></a>'}}}});await flushPromises();
+    const link=wrapper.findComponent({name:'RouterLink'});expect(link.props('to')).toEqual({path:'/staff/boarding/manifest',query:{sailing:'TRP-NEW'}});expect(link.text()).toContain('View manifest');wrapper.unmount();
   });
 
 });

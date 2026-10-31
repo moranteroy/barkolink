@@ -24,7 +24,7 @@
                 <h2>{{ notice.title }}</h2>
                 <p>{{ notice.body }}</p>
                 <div class="notice-footer"><time :datetime="notice.createdAt"><AppIcon :icon="timeOutline" aria-hidden="true" />{{ notice.time }}</time>
-                  <button v-if="notice.unread" :disabled="noticeBusy || !!noticeUpdating" :aria-label="`Mark read: ${notice.title}`" @click="markNotice(notice)"><AppIcon :icon="checkmarkOutline" aria-hidden="true" />{{ noticeUpdating === notice.id ? 'Updating...' : 'Mark read' }}</button>
+                  <router-link v-if="noticeAction(notice)" :to="noticeAction(notice)!">{{ props.staffRole === 'BOARDING' ? 'View manifest' : 'View booking' }}</router-link><button v-if="notice.unread" :disabled="noticeBusy || !!noticeUpdating" :aria-label="`Mark read: ${notice.title}`" @click="markNotice(notice)"><AppIcon :icon="checkmarkOutline" aria-hidden="true" />{{ noticeUpdating === notice.id ? 'Updating...' : 'Mark read' }}</button>
                   <span v-else class="notice-read"><AppIcon :icon="checkmarkCircleOutline" aria-hidden="true" />Read</span>
                 </div>
               </div>
@@ -39,15 +39,15 @@
 </section></template>
 <script setup lang="ts">
 import { notifyError, notifySuccess } from '@/composables/toast';
-import { computed, onMounted, ref } from 'vue';
+import { computed, onMounted, ref, watch } from 'vue';
 import AppIcon from "@/components/ui/icon/AppIcon.vue";
 import { notificationsOutline, checkmarkOutline, checkmarkCircleOutline, timeOutline, boatOutline, giftOutline, ticketOutline } from 'ionicons/icons';
 import { staffDatabase, auth } from '../../services/session';
 import { myNotifications, markNotificationRead, type MyNotificationsData } from '../../services/database/passenger';
 import { markAllNotificationsRead } from '../../services/database/experience';
 import { databaseRequestError } from '../../data/databaseErrors';
-import { clearNotificationUnread, setUnreadNotifications } from '../../composables/notificationUnread';
-withDefaults(defineProps<{ showBroadcast?: boolean }>(), { showBroadcast: true });
+import { clearNotificationUnread, setUnreadNotifications, notificationUpdates } from '../../composables/notificationUnread';
+const props=withDefaults(defineProps<{ showBroadcast?: boolean;staffRole?:'ADMIN'|'TICKETING'|'BOARDING' }>(), { showBroadcast: true,staffRole:'ADMIN' });
 const items = ref<MyNotificationsData['notifications']>([]), loading = ref(false), error = ref(''), busy = ref('');
 const query = ref(''), unreadOnly = ref(false), notificationFilter = ref('ALL');
 const noticeBusy = computed(() => loading.value || busy.value === 'ALL'), noticeUpdating = computed(() => busy.value);
@@ -59,11 +59,21 @@ const filteredNotices = computed(() => notices.value.filter(item => (!unreadOnly
 function notificationCategoryLabel(value: string) { return ({ ALL: 'All categories', BOOKING: 'Bookings', TRIPS: 'Sailings', PROMO: 'Promos', GENERAL: 'General', SYSTEM: 'System' } as Record<string,string>)[value] || value.charAt(0) + value.slice(1).toLowerCase().replaceAll('_', ' '); }
 function notificationCategoryCount(value: string) { return notices.value.filter(item => (value === 'ALL' || item.type === value) && (!unreadOnly.value || item.unread)).length; }
 function noticeIcon(value: string) { return value === 'TRIPS' ? boatOutline : value === 'PROMO' ? giftOutline : value === 'BOOKING' ? ticketOutline : notificationsOutline; }
+function noticeAction(notice:{bookingReference?:string|null;sailingCode?:string|null}){
+ if(!notice.bookingReference)return null;
+ if(props.staffRole==='BOARDING')return notice.sailingCode ? {path:'/staff/boarding/manifest',query:{sailing:notice.sailingCode}} : null;
+ return {path:props.staffRole==='ADMIN'?'/admin/bookings':'/staff/ticketing/bookings',query:{search:notice.bookingReference}};
+}
+watch(notificationUpdates,update=>{
+ if(!update || update.uid!==auth?.currentUser?.uid || loading.value || busy.value)return;
+ items.value=update.items.map(item=>({...item}));error.value='';
+ if(!notificationCategories.value.includes(notificationFilter.value))notificationFilter.value='ALL';
+});
 async function load() {
  if (!staffDatabase || loading.value || busy.value) return;
  loading.value = true; error.value = '';
  try { items.value = (await myNotifications(staffDatabase, { fetchPolicy: 'SERVER_ONLY' })).data.notifications.slice().sort((a,b) => Date.parse(b.createdAt)-Date.parse(a.createdAt)); setUnreadNotifications(items.value); if(!notificationCategories.value.includes(notificationFilter.value)) notificationFilter.value = 'ALL'; }
- catch(cause) { error.value = notifyError(databaseRequestError(cause, 'Could not load your inbox.')); }
+ catch(cause) { error.value = databaseRequestError(cause, 'Could not load your inbox.'); }
  finally { loading.value = false; }
 }
 async function markNotice(notice: { id: string }) {
@@ -71,7 +81,7 @@ async function markNotice(notice: { id: string }) {
  const uid = auth?.currentUser?.uid;
  busy.value = notice.id; error.value = '';
  try { await markNotificationRead(staffDatabase, { id: notice.id }); clearNotificationUnread(notice.id, uid); const item = items.value.find(item => item.id === notice.id); if(item) item.readAt = new Date().toISOString(); }
- catch(cause) { error.value = notifyError(databaseRequestError(cause, 'Could not mark the notification read.')); }
+ catch(cause) { notifyError(databaseRequestError(cause, 'Could not mark the notification read.')); }
  finally { busy.value = ''; }
 }
 async function markAllRead() {
@@ -79,7 +89,7 @@ async function markAllRead() {
  const uid = auth?.currentUser?.uid;
  busy.value = 'ALL'; error.value = '';
  try { await markAllNotificationsRead(staffDatabase); items.value.forEach(item => { if(!item.readAt) item.readAt = new Date().toISOString(); }); clearNotificationUnread(undefined, uid); notifySuccess('All notifications marked as read.'); }
- catch(cause) { error.value = notifyError(databaseRequestError(cause, 'Could not mark notifications read.')); }
+ catch(cause) { notifyError(databaseRequestError(cause, 'Could not mark notifications read.')); }
  finally { busy.value = ''; }
 }
 onMounted(load);
@@ -91,7 +101,7 @@ onMounted(load);
 .inbox-actions { display:flex; align-items:end; flex-wrap:wrap; gap:12px; margin-bottom:14px; }
 .inbox-actions label { display:grid; gap:7px; flex:1; min-width:180px; color:var(--muted); font-size: var(--text-label); }
 .inbox-actions input { width:100%; min-width:0; min-height:40px; padding:8px 12px; border:1px solid var(--line); border-radius:9px; color:var(--ink); background:var(--surface-soft); font:inherit; }
-.inbox-actions button,.inbox-actions a,.notice-footer button,.notice-error button { display:inline-flex; align-items:center; justify-content:center; gap:6px; border:1px solid var(--line); border-radius:9px; background:var(--surface); color:var(--ocean); min-height:40px; padding:8px 12px; font:inherit; font-size: var(--text-label); text-decoration:none; }
+.inbox-actions button,.inbox-actions a,.notice-footer button,.notice-footer a,.notice-error button { display:inline-flex; align-items:center; justify-content:center; gap:6px; border:1px solid var(--line); border-radius:9px; background:var(--surface); color:var(--ocean); min-height:40px; padding:8px 12px; font:inherit; font-size: var(--text-label); text-decoration:none; }
 .notice-icon { display:grid; place-items:center; font-size:22px; }
 .notifications { display:grid; }
 .notice-copy { min-width:0; }

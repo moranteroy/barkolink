@@ -12,12 +12,13 @@
   </label>
 </template>
 <script setup lang="ts">
-import { onMounted, ref } from "vue";
+import { onMounted, ref, watch } from "vue";
 import {
   savedTravelers,
   type SavedTraveler,
 } from "../../services/database/experience";
 import { database } from "../../services/session";
+const props = defineProps<{ refreshToken?: number }>();
 const emit = defineEmits<{ select: [traveler: SavedTraveler] }>();
 const travelers = ref<SavedTraveler[]>([]);
 const loading = ref(false), error = ref(false);
@@ -35,6 +36,7 @@ async function load() {
   }
 }
 onMounted(load);
+watch(() => props.refreshToken, load);
 function select(event: Event) {
   const traveler = travelers.value.find(
     (p) => p.id === (event.target as HTMLSelectElement).value,

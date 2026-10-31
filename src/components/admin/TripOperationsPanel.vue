@@ -319,7 +319,7 @@ async function loadMoreSailings() {
     sailingPage.value++;
     sailingTotal.value = result.data.totalCount || sailings.value.length;
   } catch (cause) {
-    error.value = notifyError(databaseRequestError(cause, "Could not load more sailings."));
+    error.value = databaseRequestError(cause, "Could not load more sailings.");
   } finally {
     moreLoading.value = false;
   }
@@ -454,7 +454,7 @@ async function setTripStatus(status: 'DELAYED' | 'CANCELLED') {
     await adminUpdateSailingStatus(staffDatabase, { code: trip.code, status, reason });
     await load();
     notifySuccess(status === 'CANCELLED' ? 'Trip cancelled. Review paid bookings for refunds.' : 'Trip marked Delayed. Automatic status changes are paused until the schedule is updated and resumed.');
-  } catch (cause) { error.value = notifyError(databaseRequestError(cause, 'Could not update trip status.')); }
+  } catch (cause) { notifyError(databaseRequestError(cause, 'Could not update trip status.')); }
   finally { busy.value = false; }
 }
 const filteredBookings = computed(() => (data.value?.bookings || []).filter(b => matchesSearch(b.reference)));
@@ -472,10 +472,10 @@ async function load() {
         sailings.value.push(data.value.sailing);
     }
   } catch (cause) {
-    error.value = notifyError(databaseRequestError(
+    error.value = databaseRequestError(
       cause,
       "Could not load trip operations.",
-    ));
+    );
   } finally {
     loading.value = false;
   }
@@ -508,7 +508,7 @@ async function reconcile() {
     await load();
     notifySuccess(`${result.data.marked} no-show records added.`);
   } catch (cause) {
-    error.value = notifyError(databaseRequestError(cause, "Could not reconcile no-shows."));
+    notifyError(databaseRequestError(cause, "Could not reconcile no-shows."));
   } finally {
     busy.value = false;
   }
@@ -522,7 +522,7 @@ onMounted(async () => {
     sailingPage.value = 0;
     sailingTotal.value = result.data.totalCount || sailings.value.length;
   } catch (cause) {
-    error.value = notifyError(databaseRequestError(cause, "Could not load sailings."));
+    error.value = databaseRequestError(cause, "Could not load sailings.");
   } finally {
     loading.value = false;
   }

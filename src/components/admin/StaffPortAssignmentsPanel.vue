@@ -58,7 +58,7 @@ async function load() {
     const result = await executeDatabase<Directory>(staffDatabase, 'AdminStaffPortAssignments', { search: search.value, role: role.value, page: page.value, pageSize });
     staff.value = result.data.staff; ports.value = result.data.ports; total.value = result.data.totalCount;
     for (const user of staff.value) drafts[user.uid] = user.assignedPortId || '';
-  } catch (cause) { error.value = notifyError(databaseRequestError(cause, 'Could not load staff port assignments.')); }
+  } catch (cause) { error.value = databaseRequestError(cause, 'Could not load staff port assignments.'); }
   finally { loading.value = false; }
 }
 async function save(user: Staff) {
@@ -70,7 +70,7 @@ async function save(user: Staff) {
     user = staff.value.find(current => current.uid === user.uid) || user;
     user.assignedPortId = portId; user.assignedPort = ports.value.find(p => p.id === portId) || null;
     notifySuccess(`${user.fullName} is assigned to ${user.assignedPort?.name}.`);
-  } catch (cause) { error.value = notifyError(databaseRequestError(cause, 'Could not save the staff port assignment.')); }
+  } catch (cause) { notifyError(databaseRequestError(cause, 'Could not save the staff port assignment.')); }
   finally { busy.value = ''; }
 }
 onMounted(load);

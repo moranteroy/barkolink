@@ -533,7 +533,7 @@ const activeSection = ref("overview");
 const loading = ref(false);
 const busy = ref(false);
 const loadError = ref("");
-const searchText = ref("");
+const searchText = ref(String(route.query.search || ""));
 const statusFilter = ref("ALL");
 const queuePage = ref(0);
 const queueTotal = ref(0);
@@ -793,13 +793,14 @@ const queueItems = computed(() =>
 );
 let searchTimer: ReturnType<typeof setTimeout> | undefined;
 watch(isBookingsPage, () => {
-  searchText.value = "";
+  searchText.value = String(route.query.search || "");
   statusFilter.value = "ALL";
   queuePage.value = 0;
   selectedBooking.value = null;
   menuOpen.value = false;
   if (isWorkspaceRoute.value) void refreshQueues();
 });
+watch(()=>route.query.search,value=>{if(isBookingsPage.value){searchText.value=String(value||'');statusFilter.value='ALL';selectedBooking.value=null;}});
 watch([searchText, statusFilter], () => {
   queuePage.value = 0;
   if (searchTimer) clearTimeout(searchTimer);
@@ -925,10 +926,10 @@ async function refreshQueues() {
   } catch (error) {
     if (requestId === refreshToken) {
       if (error instanceof StaffPortRequiredError) { loadError.value = ''; return; }
-      loadError.value = notifyError(databaseRequestError(
+      loadError.value = databaseRequestError(
         error,
         "Could not load operations. Try refreshing again.",
-      ));
+      );
     }
   } finally {
     if (requestId === refreshToken) loading.value = false;
@@ -1005,7 +1006,7 @@ async function processItem(item: QueueItem) {
     notifySuccess(item.status === 'ISSUED' ? 'Passenger checked in.' : 'Passenger marked as boarded.');
     await refreshQueues();
   } catch (error) {
-    loadError.value = notifyError(databaseRequestError(
+    notifyError(databaseRequestError(
       error,
       "Could not update ticket status.",
     ));
@@ -1020,7 +1021,7 @@ async function lookupTicket() {
   try{
     const {data}=await verifyTicketQr(staffDatabase,raw,code);
     if(code===activeSailing.value && showScanner.value && raw===ticketLookup.value)scannedTicket.value=data.passenger;
-  }catch(cause){scanError.value=notifyError(databaseRequestError(cause,'Could not verify this ticket. Check your connection and try again.'));}
+  }catch(cause){notifyError(databaseRequestError(cause,'Could not verify this ticket. Check your connection and try again.'));}
   finally{scanBusy.value=false;}
 }
 async function confirmScannedTicket(){
@@ -1080,7 +1081,7 @@ async function startCamera() {
     scanFrame = requestAnimationFrame(scan);
   } catch (error) {
     stopCamera();
-    scanError.value = notifyError(databaseRequestError(
+    notifyError(databaseRequestError(
       error,
       "Could not start camera. Enter the ticket code instead.",
     ));
@@ -1119,7 +1120,7 @@ async function collectPayment() {
     selectedBooking.value = null;
     await refreshQueues();
   } catch (error) {
-    loadError.value = notifyError(databaseRequestError(error, "Could not record payment."));
+    notifyError(databaseRequestError(error, "Could not record payment."));
   } finally {
     busy.value = false;
   }
@@ -1135,7 +1136,7 @@ async function verifyPayment() {
     notifySuccess('Online payment verified. Ticket issued.');
     selectedBooking.value = null;
     await refreshQueues();
-  } catch (cause) { loadError.value = notifyError(databaseRequestError(cause, 'Could not verify payment.')); }
+  } catch (cause) { notifyError(databaseRequestError(cause, 'Could not verify payment.')); }
   finally { busy.value = false; }
 }
 function initialsFor(name: string) {

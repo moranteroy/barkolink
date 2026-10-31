@@ -4,11 +4,21 @@ The Android project is in `android/`, with application ID `com.barkolink.app`, c
 
 ## Current machine limitation
 
-APK compilation was attempted. Gradle stopped because `JAVA_HOME` points to a nonexistent JDK directory. No Android SDK was found at the standard installation path or through `ANDROID_HOME`. A debug APK and real-device tests have **not** been completed.
+Local APK compilation requires a valid JDK and Android SDK. On this machine the previously configured JDK directory was missing, and no Android SDK was detected. GitHub Actions provides a separate Linux build environment, so it can build the APK without installing Android Studio on this computer. Real-device acceptance still needs to be recorded separately.
 
 Install Android Studio 2025.2.1 or newer and Android SDK Platform 36, Build Tools and Platform Tools. Android Studio includes a compatible JDK. Point `JAVA_HOME` to the actual JDK folder containing `bin/java.exe`, and `ANDROID_HOME` to the SDK folder. See [Capacitor environment setup](https://capacitorjs.com/docs/getting-started/environment-setup).
 
-## Build
+## GitHub Actions APK
+
+The repository workflow `.github/workflows/build-apk.yml` runs on pushes to `main` and from **Actions > Build BarkoLink Android APK > Run workflow**. It uses Node 24, Java 21, Android SDK 36 and the checked-in Capacitor Android project.
+
+Under **Settings > Secrets and variables > Actions**, configure `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY` as repository variables or secrets. Secrets take precedence. A legacy `VITE_SUPABASE_ANON_KEY` is accepted as an alternative. These are browser-public credentials; never use a service-role key, Supabase management token or database password. The workflow validates this before building. No Firebase configuration or external API server is required.
+
+After a successful run, download **BarkoLink-Android-APK** from the run's Artifacts section and extract `BarkoLink-debug.apk`. This debug-signed package is suitable for installation and presentation testing. Store distribution requires a separately configured release signing key.
+
+The app uses the single client in `src/services/supabase.ts`, with persistent sessions and automatic token refresh enabled. There is no `firebase.ts` or duplicate authentication client. Android launcher icons use the BarkoLink ferry mark, including the adaptive foreground vector.
+
+## Local build
 
 From the BarkoLink project directory:
 

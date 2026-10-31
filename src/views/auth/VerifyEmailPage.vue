@@ -19,7 +19,6 @@
   </main></IonContent></IonPage>
 </template>
 <script setup lang="ts">
-import { notifyError, notifySuccess } from '@/composables/toast';
 import BackIcon from "@/components/ui/icon/BackIcon.vue";
 import { computed, onBeforeUnmount, ref } from 'vue';
 import { IonPage, IonContent, IonButton, onIonViewWillEnter } from '@ionic/vue';
@@ -56,14 +55,14 @@ async function verify() {
     sessionStorage.removeItem('barkolink-pending-email');
     await router.replace({ path: '/login', query: { ...(typeof route.query.redirect === 'string' ? { redirect: route.query.redirect } : {}), verified: '1' } });
   } catch (failure) {
-    error.value = notifyError(verified.value ? (failure as Error).message : 'The code is invalid or expired. Check your email or request a new code.');
+    error.value = verified.value ? (failure as Error).message : 'The code is invalid or expired. Check your email or request a new code.';
   } finally { busy.value = false; }
 }
 async function resend() {
   if (busy.value || remaining.value > 0) return;
   busy.value = true; error.value = ''; notice.value = '';
-  try { await resendEmailCode(email.value, purpose.value); remaining.value = 60; code.value = ''; notice.value = notifySuccess('A new code was requested. Check your inbox and Spam folder.'); }
-  catch { error.value = notifyError('Could not resend the code. Wait a moment and try again.'); }
+  try { await resendEmailCode(email.value, purpose.value); remaining.value = 60; code.value = ''; notice.value = 'A new code was requested. Check your inbox and Spam folder.'; }
+  catch { error.value = 'Could not resend the code. Wait a moment and try again.'; }
   finally { busy.value = false; }
 }
 </script>

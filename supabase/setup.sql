@@ -5601,3 +5601,416 @@ begin
     end loop;
   end loop;
 end $$;
+
+-- Migration 055: automatic welcome notification.
+-- Only the designated welcome campaign follows future account registrations.
+alter table public.notification_campaign add column is_welcome boolean not null default false;
+alter table public.notification_campaign add constraint welcome_audience check (not is_welcome or (audience='ALL' and sailing_code is null));
+create unique index notification_one_welcome on public.notification_campaign(is_welcome) where is_welcome;
+
+create function barkolink_private.welcome_account() returns trigger
+language plpgsql security definer set search_path='' as $$
+declare campaign public.notification_campaign; delivered integer;
+begin
+  if new.role not in ('PASSENGER','TICKETING','BOARDING','ADMIN') then return new; end if;
+  select * into campaign from public.notification_campaign where is_welcome;
+  if not found then return new; end if;
+  insert into public.notification(owner_uid,title,message,category,campaign_id)
+    values(new.uid,campaign.title,campaign.message,'GENERAL',campaign.id)
+    on conflict(campaign_id,owner_uid) where campaign_id is not null do nothing;
+  get diagnostics delivered=row_count;
+  if delivered>0 then
+    update public.notification_campaign set recipient_count=recipient_count+delivered where id=campaign.id;
+  end if;
+  return new;
+end $$;
+revoke all on function barkolink_private.welcome_account() from public,anon,authenticated;
+create trigger account_welcome after insert or update of role on public.app_user
+  for each row execute function barkolink_private.welcome_account();
+
+create function barkolink_private.welcome_existing_accounts() returns trigger
+language plpgsql security definer set search_path='' as $$
+begin
+  if not new.is_welcome then return new; end if;
+  insert into public.notification(owner_uid,title,message,category,campaign_id)
+    select uid,new.title,new.message,'GENERAL',new.id from public.app_user
+    where role in ('PASSENGER','TICKETING','BOARDING','ADMIN')
+    on conflict(campaign_id,owner_uid) where campaign_id is not null do nothing;
+  update public.notification_campaign set recipient_count=(select count(*) from public.notification where campaign_id=new.id) where id=new.id;
+  return new;
+end $$;
+revoke all on function barkolink_private.welcome_existing_accounts() from public,anon,authenticated;
+create trigger campaign_welcome after insert or update of is_welcome on public.notification_campaign
+  for each row when(new.is_welcome) execute function barkolink_private.welcome_existing_accounts();
+
+-- Hold registrations until both the backfill and future-registration trigger are ready.
+lock table public.app_user in share row exclusive mode;
+update public.notification_campaign set is_welcome=true
+where id=(select id from public.notification_campaign
+  where title='Welcome aboard BarkoLink' and audience='ALL' and sailing_code is null
+  order by created_at,id limit 1);
+
+-- Migration 056: claimable promos and optional trip missions.
+alter table public.voucher add column claimable boolean not null default false;
+alter table public.voucher add column title text not null default 'Travel promo' check(length(trim(title)) between 3 and 120);
+alter table public.voucher add column description text not null default '' check(length(description)<=1000);
+alter table public.voucher add column required_trips integer not null default 0 check(required_trips between 0 and 1000);
+alter table public.voucher add constraint public_voucher_mission check((not claimable and required_trips=0) or (claimable and owner_uid is null));
+create table public.voucher_claim (
+  voucher_id uuid not null references public.voucher(id) on delete cascade,
+  owner_uid text not null references public.app_user(uid) on delete cascade,
+  claimed_at timestamptz not null default now(), primary key(voucher_id,owner_uid)
+);
+alter table public.voucher_claim enable row level security;
+revoke all on public.voucher_claim from public,anon,authenticated;
+grant all on public.voucher_claim to service_role;
+
+-- Existing general promotions become discoverable; personal loyalty codes remain private.
+update public.voucher set claimable=true where owner_uid is null;
+insert into public.voucher_claim(voucher_id,owner_uid,claimed_at)
+  select b.voucher_id,b.owner_uid,b.created_at from public.booking b join public.voucher v on v.id=b.voucher_id where v.claimable
+  on conflict do nothing;
+
+-- A claim reserves a use. Legacy reservations also count, without counting an account twice.
+create function barkolink_private.voucher_allocations(offer uuid) returns integer
+language sql stable set search_path='' as $$
+  select ((select count(*) from public.voucher_claim where voucher_id=offer)+
+    (select count(*) from public.booking b where b.voucher_id=offer and not exists(
+      select 1 from public.voucher_claim c where c.voucher_id=offer and c.owner_uid=b.owner_uid)))::integer;
+$$;
+
+create or replace function barkolink_private.voucher_quote(args jsonb,actor text) returns jsonb
+language plpgsql set search_path='' as $$
+declare voucher_owner text; listed boolean; claimed boolean;
+begin
+  select v.owner_uid,v.claimable,c.owner_uid is not null into voucher_owner,listed,claimed from public.voucher v
+    left join public.voucher_claim c on c.voucher_id=v.id and c.owner_uid=actor where v.code=upper(trim(args->>'voucherCode'));
+  if voucher_owner is not null and voucher_owner is distinct from actor then raise exception 'This loyalty voucher belongs to another passenger.' using errcode='42501'; end if;
+  if listed and not claimed then
+    raise exception 'Claim this voucher from Claim vouchers before applying it to a booking.';
+  end if;
+  return barkolink_private.voucher_quote_v25(args,actor);
+end $$;
+
+create function barkolink_private.execute_claim_vouchers(operation text,args jsonb,actor_uid text,actor_role text) returns jsonb
+language plpgsql set search_path='' as $$
+declare offer public.voucher; result jsonb; completed integer; claimed timestamptz; listed boolean; trips integer;
+begin
+  if operation in ('PassengerVouchers','ClaimVoucher') then
+    if nullif(actor_uid,'') is null or actor_role is distinct from 'PASSENGER' then raise exception 'Passenger access required.' using errcode='42501'; end if;
+    completed:=barkolink_private.loyalty_trip_count(actor_uid);
+    if operation='ClaimVoucher' then
+      select * into offer from public.voucher where id=(args->>'voucherId')::uuid for update;
+      if not found or not offer.claimable or offer.owner_uid is not null then raise exception 'This voucher is not available to claim.'; end if;
+      select claimed_at into claimed from public.voucher_claim where voucher_id=offer.id and owner_uid=actor_uid;
+      if not found then
+        if not offer.is_active or now()<offer.starts_at or now()>=offer.expires_at then raise exception 'This voucher is paused, not yet available, or expired.'; end if;
+        if completed<offer.required_trips then raise exception 'Complete % paid % with a boarded passenger to unlock this voucher.',offer.required_trips,case when offer.required_trips=1 then 'trip' else 'trips' end; end if;
+        if barkolink_private.voucher_allocations(offer.id)>=offer.usage_limit then raise exception 'All available voucher slots have been claimed.'; end if;
+        insert into public.voucher_claim(voucher_id,owner_uid) values(offer.id,actor_uid) returning claimed_at into claimed;
+      end if;
+      return jsonb_build_object('code',offer.code,'claimed_at',claimed);
+    end if;
+    return jsonb_build_object('completed_trips',completed,'vouchers',(
+      select coalesce(jsonb_agg(jsonb_build_object('id',v.id,'title',v.title,'description',v.description,
+        'discount_type',v.discount_type,'value',v.value,'minimum_spend',v.minimum_spend,
+        'starts_at',v.starts_at,'expires_at',v.expires_at,'is_active',v.is_active,'required_trips',v.required_trips,
+        'remaining',greatest(0,v.usage_limit-barkolink_private.voucher_allocations(v.id)),
+        'claimed_at',c.claimed_at,'code',case when c.owner_uid is not null then v.code else null end,
+        'used',exists(select 1 from public.booking b where b.voucher_id=v.id and b.owner_uid=actor_uid))
+        order by v.expires_at,v.id),'[]')
+      from public.voucher v left join public.voucher_claim c on c.voucher_id=v.id and c.owner_uid=actor_uid
+      where v.claimable and v.owner_uid is null and (c.owner_uid is not null or
+        (v.is_active and v.starts_at<=now() and v.expires_at>now() and barkolink_private.voucher_allocations(v.id)<v.usage_limit))));
+  end if;
+  if operation='AdminVouchers' then
+    if nullif(actor_uid,'') is null or actor_role is distinct from 'ADMIN' then raise exception 'Administrator access required.' using errcode='42501'; end if;
+    return jsonb_build_object('vouchers',(select coalesce(jsonb_agg(to_jsonb(x) order by x.expires_at desc),'[]') from
+      (select v.*,(select count(*) from public.booking b where b.voucher_id=v.id) used,
+        barkolink_private.voucher_allocations(v.id) claimed from public.voucher v) x));
+  end if;
+  if operation='AdminSaveVoucher' and nullif(args->>'id','') is null then
+    listed:=coalesce((args->>'claimable')::boolean,false);
+    trips:=coalesce((args->>'requiredTrips')::integer,0);
+    if trips not between 0 and 1000 or (not listed and trips<>0) then raise exception 'Choose a valid voucher mission.'; end if;
+    if length(trim(coalesce(args->>'title','Travel promo'))) not between 3 and 120 or length(coalesce(args->>'description',''))>1000 then raise exception 'Enter a promo name (3 to 120 characters) and description (up to 1,000 characters).'; end if;
+    result:=barkolink_private.execute_flexible_discounts_v25(operation,args,actor_uid,actor_role);
+    update public.voucher set claimable=listed,title=trim(coalesce(args->>'title','Travel promo')),
+      description=trim(coalesce(args->>'description','')),required_trips=trips where id=(result->>'id')::uuid;
+    return result;
+  end if;
+  raise exception 'Unsupported voucher request.';
+end $$;
+-- Add an early branch to the existing dispatcher instead of nesting another wrapper
+-- around every booking/payment request. Preserve the complete existing dispatcher body.
+do $$
+declare definition text; insertion integer; branch text;
+begin
+  definition:=replace(pg_get_functiondef('barkolink_private.execute_flexible_discounts(text,jsonb,text,text)'::regprocedure),E'\r\n',E'\n');
+  insertion:=position(E'\nbegin\n' in definition);
+  if insertion=0 then raise exception 'Voucher dispatcher insertion point was not found.'; end if;
+  branch:=E'  if operation in (\'PassengerVouchers\',\'ClaimVoucher\',\'AdminVouchers\') or (operation=\'AdminSaveVoucher\' and nullif(args->>\'id\',\'\') is null) then\n    return barkolink_private.execute_claim_vouchers(operation,args,actor_uid,actor_role);\n  end if;\n';
+  execute overlay(definition placing branch from insertion+length(E'\nbegin\n') for 0);
+end $$;
+revoke all on all functions in schema barkolink_private from public,anon,authenticated;
+
+-- Migration 057: editable promo missions and limits.
+create function barkolink_private.update_voucher_details(args jsonb,actor_uid text,actor_role text) returns jsonb
+language plpgsql set search_path='' as $$
+declare offer public.voucher; reserved integer; required integer; limit_value integer; title_value text; description_value text;
+begin
+  if nullif(actor_uid,'') is null or actor_role is distinct from 'ADMIN' then raise exception 'Administrator access required.' using errcode='42501'; end if;
+  select * into offer from public.voucher where id=(args->>'id')::uuid for update;
+  if not found then raise exception 'Voucher was not found.'; end if;
+  if offer.owner_uid is not null then raise exception 'Personal loyalty rewards keep their original reward terms.'; end if;
+  title_value:=trim(coalesce(args->>'title','')); description_value:=trim(coalesce(args->>'description',''));
+  required:=(args->>'requiredTrips')::integer; limit_value:=(args->>'usageLimit')::integer;
+  if length(title_value) not between 3 and 120 or length(description_value)>1000 then raise exception 'Enter a promo name (3 to 120 characters) and description (up to 1,000 characters).'; end if;
+  if required is null or required not between 0 and 1000 or (not offer.claimable and required<>0) then raise exception 'Choose a valid voucher mission.'; end if;
+  reserved:=barkolink_private.voucher_allocations(offer.id);
+  if limit_value is null or limit_value<greatest(1,reserved) then raise exception 'The limit must be at least % to cover existing claims and uses.',greatest(1,reserved); end if;
+  if reserved>0 and required<>offer.required_trips then raise exception 'The mission cannot change after a passenger has claimed or used this voucher.'; end if;
+  update public.voucher set title=title_value,description=description_value,required_trips=required,usage_limit=limit_value where id=offer.id;
+  insert into public.activity_log(actor_uid,action,entity_type,entity_id,details)
+    values(actor_uid,'VOUCHER_DETAILS_UPDATED','voucher',offer.id::text,jsonb_build_object('requiredTrips',required,'usageLimit',limit_value));
+  return jsonb_build_object('id',offer.id);
+end $$;
+do $$
+declare definition text; insertion integer;
+begin
+  definition:=replace(pg_get_functiondef('barkolink_private.execute_flexible_discounts(text,jsonb,text,text)'::regprocedure),E'\r\n',E'\n');
+  insertion:=position(E'\nbegin\n' in definition);
+  if insertion=0 then raise exception 'Voucher dispatcher insertion point was not found.'; end if;
+  execute overlay(definition placing E'  if operation=\'AdminUpdateVoucherDetails\' then return barkolink_private.update_voucher_details(args,actor_uid,actor_role); end if;\n' from insertion+length(E'\nbegin\n') for 0);
+end $$;
+revoke all on function barkolink_private.update_voucher_details(jsonb,text,text) from public,anon,authenticated;
+
+-- Migration 058: correct voucher availability errors.
+-- Report voucher availability before asking for a claim; all quote and booking
+-- eligibility rules continue through the existing validator.
+create or replace function barkolink_private.voucher_quote(args jsonb,actor text) returns jsonb
+language plpgsql set search_path='' as $$
+declare offer public.voucher; claimed boolean;
+begin
+  select * into offer from public.voucher where code=upper(trim(args->>'voucherCode'));
+  if offer.owner_uid is not null and offer.owner_uid is distinct from actor then
+    raise exception 'This loyalty voucher belongs to another passenger.' using errcode='42501';
+  end if;
+  if found then
+    if now()>=offer.expires_at then raise exception 'This voucher has expired. Choose another voucher.';end if;
+    if now()<offer.starts_at then raise exception 'This voucher is not available yet. Check its start date.';end if;
+    if not offer.is_active then raise exception 'This voucher is inactive. Choose another voucher.';end if;
+    if offer.claimable then
+      select exists(select 1 from public.voucher_claim c where c.voucher_id=offer.id and c.owner_uid=actor) into claimed;
+      if not claimed then raise exception 'Claim this voucher on the Claim vouchers page before using it.';end if;
+    end if;
+  end if;
+  return barkolink_private.voucher_quote_v25(args,actor);
+end $$;
+revoke all on function barkolink_private.voucher_quote(jsonb,text) from public,anon,authenticated;
+
+-- Migration 059: personal loyalty voucher codes in notifications.
+create or replace function barkolink_private.issue_loyalty_vouchers(actor text) returns void language plpgsql set search_path='' as $$
+declare earned integer; reward integer; created_id uuid; created_code text; amount integer; config barkolink_private.loyalty_settings;
+begin
+  if not exists(select 1 from auth.users where id::text=actor and coalesce(raw_app_meta_data->>'role','PASSENGER')='PASSENGER') then return; end if;
+  perform pg_advisory_xact_lock(hashtextextended('loyalty:'||actor,0));
+  select * into config from barkolink_private.loyalty_settings where code='DEFAULT' for share;
+  earned:=barkolink_private.loyalty_trip_count(actor)/config.trips_per_reward;
+  for reward in 1..earned loop
+    created_id:=null; amount:=case when reward=1 then config.silver_reward when reward=2 then config.gold_reward else config.platinum_reward end;
+    insert into public.voucher(code,discount_type,value,minimum_spend,usage_limit,starts_at,expires_at,is_active,owner_uid,loyalty_reward_number)
+    values(barkolink_private.new_voucher_code(),'FIXED',amount,0,1,now(),now()+make_interval(days=>config.expiry_days),true,actor,reward)
+    on conflict (owner_uid,loyalty_reward_number) where owner_uid is not null do nothing returning id,code into created_id,created_code;
+    if created_id is not null then
+      insert into public.notification(owner_uid,title,message,category) values(actor,'Your loyalty voucher is ready',
+        'Voucher code: '||created_code||'. You earned PHP '||amount||' off regular fares after '||(reward*config.trips_per_reward)||' completed, paid trips. Your personal voucher applies automatically to your next eligible booking and is valid for '||config.expiry_days||' days.','PROMO');
+    end if;
+  end loop;
+end $$;
+
+revoke all on function barkolink_private.issue_loyalty_vouchers(text) from public,anon,authenticated;
+
+-- Migration 060: role-scoped operational notifications.
+-- Role- and departure-port-scoped operational alerts. Existing notifications stay
+-- personal to their owner; legacy staff broadcasts are also checked on every read.
+alter table public.notification add column event_key text;
+alter table public.notification add column recipient_role text;
+alter table public.notification add column port_id uuid references public.port(id);
+alter table public.notification add column booking_reference text;
+alter table public.notification add column sailing_code text;
+alter table public.notification add constraint notification_recipient_role check(recipient_role is null or recipient_role in('PASSENGER','ADMIN','TICKETING','BOARDING'));
+create unique index notification_event_owner on public.notification(owner_uid,event_key) where event_key is not null;
+
+create function barkolink_private.notification_visible(n public.notification,actor text,actor_role text) returns boolean
+language sql stable set search_path='' as $$
+  select n.owner_uid=actor and exists(select 1 from public.app_user u where u.uid=actor and u.role=actor_role)
+    and (n.recipient_role is null or n.recipient_role=actor_role)
+    and (n.port_id is null or (actor_role in('TICKETING','BOARDING') and barkolink_private.staff_port_matches(n.port_id,actor,actor_role)))
+    and (n.campaign_id is null or exists(select 1 from public.notification_campaign c where c.id=n.campaign_id and (
+      c.audience='ALL' or (c.audience='STAFF' and actor_role in('ADMIN','TICKETING','BOARDING'))
+      or (c.audience in('PASSENGERS','TRIP') and actor_role='PASSENGER'))));
+$$;
+create function barkolink_private.execute_notifications(operation text,args jsonb,actor text,actor_role text) returns jsonb
+language plpgsql set search_path='' as $$
+declare result jsonb;changed integer;
+begin
+  if nullif(actor,'') is null or actor_role not in('PASSENGER','ADMIN','TICKETING','BOARDING')
+    or not exists(select 1 from public.app_user u where u.uid=actor and u.role=actor_role)
+    then raise exception 'Your account access changed. Sign in again.' using errcode='42501';end if;
+  if operation='MyNotifications' then
+    perform barkolink_private.deliver_due_advisory_notifications();
+    select jsonb_build_object('notifications',coalesce(jsonb_agg(to_jsonb(n)||jsonb_build_object('category',case when n.category='TRIP' then 'TRIPS' else n.category end) order by n.created_at desc,n.id),'[]')) into result
+      from public.notification n where barkolink_private.notification_visible(n,actor,actor_role);
+    return result;
+  elsif operation='MarkNotificationRead' then
+    update public.notification n set read_at=coalesce(read_at,now()) where id=(args->>'id')::uuid and barkolink_private.notification_visible(n,actor,actor_role);
+    if not found then raise exception 'Notification was not found.' using errcode='42501';end if;
+    return '{}';
+  elsif operation='MyMarkAllNotificationsRead' then
+    update public.notification n set read_at=now() where read_at is null and barkolink_private.notification_visible(n,actor,actor_role);
+    get diagnostics changed=row_count;return jsonb_build_object('marked',changed);
+  end if;
+  raise exception 'Unsupported notification operation.';
+end $$;
+
+do $$declare definition text;insertion integer;begin
+  definition:=replace(pg_get_functiondef('barkolink_private.execute_flexible_discounts(text,jsonb,text,text)'::regprocedure),E'\r\n',E'\n');
+  insertion:=position(E'\nbegin\n' in definition);
+  if insertion=0 then raise exception 'Notification dispatcher insertion point was not found.';end if;
+  execute overlay(definition placing E'  if operation in(\'MyNotifications\',\'MarkNotificationRead\',\'MyMarkAllNotificationsRead\') then return barkolink_private.execute_notifications(operation,args,actor_uid,actor_role);end if;\n' from insertion+length(E'\nbegin\n') for 0);
+end $$;
+
+create function barkolink_private.notify_booking_staff(b public.booking,event_name text,heading text,detail text,roles text[]) returns void
+language plpgsql set search_path='' as $$
+declare trip public.sailing;passenger_name text;route_text text;description text;
+begin
+  select * into trip from public.sailing where code=b.sailing_code;
+  select full_name into passenger_name from public.app_user where uid=b.owner_uid;
+  select o.name||' to '||d.name into route_text from public.port o,public.port d where o.id=trip.origin_port_id and d.id=trip.destination_port_id;
+  description:='Booking '||b.reference||' - '||coalesce(passenger_name,'Passenger')||', '||b.passenger_count||' passenger'||case when b.passenger_count=1 then '' else 's' end||'. '||route_text||', '||to_char(trip.departure_at at time zone 'Asia/Manila','Mon DD, YYYY HH12:MI AM')||' PH. '||detail;
+  insert into public.notification(owner_uid,title,message,category,event_key,recipient_role,port_id,booking_reference,sailing_code)
+    select u.uid,heading,description,'BOOKING',b.id::text||':'||event_name,u.role,
+      case when u.role='ADMIN' then null else trip.origin_port_id end,b.reference,b.sailing_code
+    from public.app_user u where u.role=any(roles) and (u.role='ADMIN' or barkolink_private.staff_port_matches(trip.origin_port_id,u.uid,u.role))
+    on conflict(owner_uid,event_key) where event_key is not null do nothing;
+end $$;
+
+create function barkolink_private.booking_operational_notifications() returns trigger
+language plpgsql security definer set search_path='' as $$
+begin
+  if tg_op='INSERT' then
+    if new.status in('PENDING','CONFIRMED') then
+      perform barkolink_private.notify_booking_staff(new,'created','New booking received',
+        case when new.payment_status='PAID' then 'Payment received.' else 'Awaiting passenger payment.' end,array['ADMIN','TICKETING','BOARDING']);
+    end if;
+  else
+    if new.status is distinct from old.status and new.status in('CANCELLED','EXPIRED') then
+      perform barkolink_private.notify_booking_staff(new,lower(new.status),'Reservation '||lower(new.status),
+        case when new.status='EXPIRED' then 'Payment deadline passed.' else coalesce(nullif(new.cancellation_reason,''),'The reservation was cancelled.') end,array['ADMIN','TICKETING','BOARDING']);
+      if new.status='CANCELLED' and not exists(select 1 from public.sailing s where s.code=new.sailing_code and s.status='CANCELLED') then
+        insert into public.notification(owner_uid,title,message,category,event_key,recipient_role,booking_reference,sailing_code)
+          select u.uid,'Reservation cancelled','Reservation '||new.reference||' has been cancelled. Check My Bookings for its latest details.','BOOKING',new.id::text||':owner-cancelled','PASSENGER',new.reference,new.sailing_code
+          from public.app_user u where u.uid=new.owner_uid and u.role='PASSENGER'
+          on conflict(owner_uid,event_key) where event_key is not null do nothing;
+      end if;
+    end if;
+    if new.payment_status='PAID' and old.payment_status is distinct from new.payment_status then
+      if new.payment_method='PAYMONGO_TEST' and new.payment_verified_at is null then
+        perform barkolink_private.notify_booking_staff(new,'payment-review','Online payment needs verification','The provider confirmed payment. Verify it before issuing passenger tickets.',array['ADMIN','TICKETING']);
+      elsif new.status='CONFIRMED' then
+        perform barkolink_private.notify_booking_staff(new,'tickets-ready','Passenger tickets ready','Payment is verified. Check the passenger manifest for boarding.',array['ADMIN','BOARDING']);
+      end if;
+    end if;
+    if old.payment_verified_at is null and new.payment_verified_at is not null and new.payment_status='PAID' and new.status='CONFIRMED' then
+      perform barkolink_private.notify_booking_staff(new,'tickets-ready','Passenger tickets ready','Payment is verified. Check the passenger manifest for boarding.',array['ADMIN','BOARDING']);
+    end if;
+    if new.payment_status is distinct from old.payment_status and new.payment_status in('REFUND_PENDING','REFUNDED') then
+      perform barkolink_private.notify_booking_staff(new,lower(new.payment_status),case when new.payment_status='REFUND_PENDING' then 'Booking refund needs attention' else 'Booking refund recorded' end,
+        case when new.payment_status='REFUND_PENDING' then 'Review the booking and arrange the refund.' else 'The refund has been recorded.' end,array['ADMIN','TICKETING']);
+    end if;
+  end if;
+  return new;
+end $$;
+create trigger booking_operational_notifications after insert or update of status,payment_status,payment_verified_at on public.booking
+  for each row execute function barkolink_private.booking_operational_notifications();
+
+create function barkolink_private.sailing_operational_notifications() returns trigger
+language plpgsql security definer set search_path='' as $$
+declare detail text;event_name text;heading text;
+begin
+  if row(new.status,new.departure_at,new.arrival_at,new.origin_port_id,new.destination_port_id,new.vessel_id) is not distinct from row(old.status,old.departure_at,old.arrival_at,old.origin_port_id,old.destination_port_id,old.vessel_id) then return new;end if;
+  event_name:='sailing:'||new.code||':'||md5(jsonb_build_array(new.status,new.departure_at,new.arrival_at,new.origin_port_id,new.destination_port_id,new.vessel_id)::text);
+  heading:=case when new.status is distinct from old.status then 'Sailing '||lower(new.status) else 'Sailing schedule updated' end;
+  select 'Trip '||new.code||': '||o.name||' to '||d.name||', '||to_char(new.departure_at at time zone 'Asia/Manila','Mon DD, YYYY HH12:MI AM')||' PH. Status: '||initcap(new.status)||'. Check the latest sailing board and passenger manifest.' into detail
+    from public.port o,public.port d where o.id=new.origin_port_id and d.id=new.destination_port_id;
+  insert into public.notification(owner_uid,title,message,category,event_key,recipient_role,port_id,sailing_code)
+    select u.uid,heading,detail,'TRIPS',event_name,u.role,case when u.role='ADMIN' then null else u.assigned_port_id end,new.code
+    from public.app_user u where u.role='ADMIN' or (u.role in('TICKETING','BOARDING') and u.assigned_port_id in(old.origin_port_id,new.origin_port_id) and barkolink_private.staff_port_matches(u.assigned_port_id,u.uid,u.role))
+    on conflict(owner_uid,event_key) where event_key is not null do nothing;
+  return new;
+end $$;
+create trigger sailing_operational_notifications after update of status,departure_at,arrival_at,origin_port_id,destination_port_id,vessel_id on public.sailing
+  for each row execute function barkolink_private.sailing_operational_notifications();
+
+create function barkolink_private.passenger_attendance_notification() returns trigger
+language plpgsql security definer set search_path='' as $$
+declare b public.booking;
+begin
+  if new.ticket_status is not distinct from old.ticket_status or new.ticket_status not in('CHECKED_IN','BOARDED') then return new;end if;
+  select * into b from public.booking where id=new.booking_id;
+  insert into public.notification(owner_uid,title,message,category,event_key,recipient_role,booking_reference,sailing_code)
+    select u.uid,case when new.ticket_status='BOARDED' then 'Passenger boarded' else 'Passenger checked in' end,
+      new.full_name||case when new.ticket_status='BOARDED' then ' has boarded' else ' has checked in' end||' for booking '||b.reference||', trip '||b.sailing_code||'.',
+      'BOOKING',new.id::text||':'||new.ticket_status,'PASSENGER',b.reference,b.sailing_code
+    from public.app_user u where u.uid=b.owner_uid and u.role='PASSENGER'
+    on conflict(owner_uid,event_key) where event_key is not null do nothing;
+  return new;
+end $$;
+create trigger passenger_attendance_notification after update of ticket_status on public.booking_passenger
+  for each row execute function barkolink_private.passenger_attendance_notification();
+
+revoke all on function barkolink_private.notification_visible(public.notification,text,text),barkolink_private.execute_notifications(text,jsonb,text,text),
+ barkolink_private.notify_booking_staff(public.booking,text,text,text,text[]),barkolink_private.booking_operational_notifications(),
+ barkolink_private.sailing_operational_notifications(),barkolink_private.passenger_attendance_notification() from public,anon,authenticated;
+
+-- Published travel advisories reach passengers only. Drafts stay private; scheduled
+-- notices are delivered when active, even if their page is not open.
+alter table public.travel_advisory add column notification_revision uuid not null default gen_random_uuid();
+alter table public.travel_advisory add column notification_announced_at timestamptz;
+update public.travel_advisory set notification_announced_at=now() where published and starts_at<=now();
+create function barkolink_private.deliver_due_advisory_notifications() returns integer
+language plpgsql set search_path='' as $$
+declare advisory public.travel_advisory;delivered integer:=0;changed integer;
+begin
+  for advisory in select * from public.travel_advisory where published and starts_at<=now() and ends_at>now()
+    and notification_announced_at is null order by starts_at,id limit 50 for update skip locked loop
+    insert into public.notification(owner_uid,title,message,category,event_key,recipient_role,sailing_code)
+      select u.uid,'Travel advisory: '||advisory.title,advisory.message||' Valid until '||to_char(advisory.ends_at at time zone 'Asia/Manila','Mon DD, YYYY HH12:MI AM')||' PH.',
+        'TRIPS','advisory:'||advisory.id::text||':'||advisory.notification_revision::text,'PASSENGER',advisory.sailing_code
+      from public.app_user u where u.role='PASSENGER' and (advisory.sailing_code is null or exists(select 1 from public.booking b where b.owner_uid=u.uid and b.sailing_code=advisory.sailing_code and b.status in('PENDING','CONFIRMED')))
+      on conflict(owner_uid,event_key) where event_key is not null do nothing;
+    get diagnostics changed=row_count;delivered:=delivered+changed;
+    update public.travel_advisory set notification_announced_at=now() where id=advisory.id;
+  end loop;
+  return delivered;
+end $$;
+create function barkolink_private.advisory_notification_revision() returns trigger language plpgsql set search_path='' as $$
+begin
+  if tg_op='UPDATE' then
+    if row(new.title,new.message,new.category,new.priority,new.sailing_code,new.starts_at,new.ends_at,new.published) is not distinct from row(old.title,old.message,old.category,old.priority,old.sailing_code,old.starts_at,old.ends_at,old.published) then return new;end if;
+  end if;
+  new.notification_revision:=gen_random_uuid();new.notification_announced_at:=null;return new;
+end $$;
+create function barkolink_private.advisory_notification_delivery() returns trigger language plpgsql security definer set search_path='' as $$
+begin
+  if new.published and new.starts_at<=now() and new.ends_at>now() and new.notification_announced_at is null then
+    perform barkolink_private.deliver_due_advisory_notifications();
+  end if;
+  return new;
+end $$;
+create trigger advisory_notification_revision before insert or update of title,message,category,priority,sailing_code,starts_at,ends_at,published on public.travel_advisory
+ for each row execute function barkolink_private.advisory_notification_revision();
+create trigger advisory_notification_delivery after insert or update of title,message,category,priority,sailing_code,starts_at,ends_at,published on public.travel_advisory
+ for each row execute function barkolink_private.advisory_notification_delivery();
+revoke all on function barkolink_private.deliver_due_advisory_notifications(),barkolink_private.advisory_notification_revision(),barkolink_private.advisory_notification_delivery() from public,anon,authenticated;

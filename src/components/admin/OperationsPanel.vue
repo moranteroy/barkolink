@@ -64,7 +64,7 @@ async function save() {
     hours.value = minutes / 60;
     notifySuccess("Payment deadline saved for new reservations.");
   } catch (cause) {
-    error.value = notifyError(databaseRequestError(cause, "Could not save the deadline."));
+    notifyError(databaseRequestError(cause, "Could not save the deadline."));
   } finally {
     saving.value = false;
   }
@@ -80,7 +80,7 @@ async function load() {
       (await operationSettings(staffDatabase)).data.reservationMinutes / 60;
     loaded.value = true;
   } catch (cause) {
-    error.value = notifyError(databaseRequestError(cause, "Could not load the deadline."));
+    error.value = databaseRequestError(cause, "Could not load the deadline.");
   } finally {
     loading.value = false;
   }

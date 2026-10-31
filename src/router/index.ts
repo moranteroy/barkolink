@@ -8,6 +8,7 @@ import { resolveAccountRole, roleDestination } from "../data/sessionRole";
 import { databaseRequestError } from "../data/databaseErrors";
 
 const routes: Array<RouteRecordRaw> = [
+  { path: "/vouchers", name: "claim-vouchers", component: () => import("../views/passenger/VouchersPage.vue") },
   { path: '/verify-staff', component: () => import('../views/auth/MfaPage.vue') },
   { path: '/port-display', component: () => import('../views/public/PortDisplayPage.vue') },
   { path: '/verify-email', component: () => import('../views/auth/VerifyEmailPage.vue') },
@@ -237,6 +238,7 @@ router.beforeEach(async (to) => {
   )
     return "/admin";
   const protectedPassenger = [
+    "/vouchers",
     "/assistant",
     "/travelers",
     "/home",

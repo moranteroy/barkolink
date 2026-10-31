@@ -11,7 +11,7 @@ vi.mock('../../src/services/payments', () => ({ verifyOnlinePayment: online.veri
 vi.mock('../../src/services/database/workspaces', () => ({ staffDashboard: vi.fn(async () => ({data:{bookings:1,paid:0,unpaid:1,trips:1}})) }))
 vi.mock('../../src/services/database/operations', () => ({ verifyPassengerDiscount: mocks.verify, refundBooking: mocks.refund }))
 vi.mock('vue-router', () => ({
-  useRoute: () => ({ path: '/staff/ticketing/bookings', params: { role: 'ticketing' } }),
+  useRoute: () => ({ path: '/staff/ticketing/bookings', params: { role: 'ticketing' }, query: {} }),
   useRouter: () => ({ replace: vi.fn() }),
 }))
 vi.mock('../../src/services/session', () => ({ auth: null, staffDatabase: {} }))

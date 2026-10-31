@@ -180,6 +180,8 @@ export interface MyNotificationsData {
     title: string;
     message: string;
     category: string;
+    bookingReference?: string | null;
+    sailingCode?: string | null;
     readAt?: TimestampString | null;
     createdAt: TimestampString;
   } & Notification_Key)[];

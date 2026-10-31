@@ -27,7 +27,6 @@
   </section>
 </template>
 <script setup lang="ts">
-import { notifyError } from '@/composables/toast';
 import { computed, ref, watch, onBeforeUnmount } from 'vue';
 import AppIcon from "@/components/ui/icon/AppIcon.vue";
 import { openOutline } from 'ionicons/icons';
@@ -102,7 +101,7 @@ watch([mapElement, locatedPorts], async () => {
     }
     if (props.journey && locatedPorts.value.length > 1) L.polyline(locatedPorts.value.map(p => p.point), { color: '#297bc1', weight: 3, dashArray: '7 9', interactive: false }).addTo(layers);
     ready.value = true; showAll();
-  } catch { if (current === generation) { destroyMap(); mapError.value = notifyError('The map could not open. Use Get directions below.'); } }
+  } catch { if (current === generation) { destroyMap(); mapError.value = 'The map could not open. Use Get directions below.'; } }
 }, { flush: 'post' });
 onBeforeUnmount(() => { generation++; destroyMap(); });
 </script>

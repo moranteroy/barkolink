@@ -4,7 +4,7 @@ import crypto from 'node:crypto'
 import { fileURLToPath } from 'node:url'
 
 export const projectRef = 'utobfkfmuepuoseszxks'
-export const dataTables = ['port', 'vessel', 'fare_settings', 'sailing', 'booking', 'booking_passenger', 'online_payment', 'port_weather_cache', 'voucher',
+export const dataTables = ['port', 'vessel', 'fare_settings', 'sailing', 'booking', 'booking_passenger', 'online_payment', 'port_weather_cache', 'voucher', 'voucher_claim',
   'notification', 'boarding_event', 'operation_settings', 'activity_log', 'travel_advisory',
   'saved_traveler', 'passenger_no_show', 'accommodation', 'ferry_route', 'vessel_route', 'notification_campaign']
 const tableRows = table => `(select coalesce(jsonb_agg(to_jsonb(t) order by to_jsonb(t)::text),'[]'::jsonb) from public.${table} t)`

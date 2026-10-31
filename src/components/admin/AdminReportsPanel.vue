@@ -221,7 +221,7 @@
             aria-label="Search report table"
           /></label>
         </div>
-        <RecordsGrid :key="tab" :title="tabs[tab] + ' report details'" :columns="gridHeaders" :column-types="gridColumnTypes" :rows="gridRows" density="compact" :column-min-widths="columnWidths" :max-grid-height="360">
+        <RecordsGrid ref="reportGrid" :key="tab" :title="tabs[tab] + ' report details'" :columns="gridHeaders" :column-types="gridColumnTypes" :rows="gridRows" density="compact" :column-min-widths="columnWidths" :max-grid-height="360">
           <template #cell="{ row, index, value }">
             <Badge v-if="tab === 'sailings' && index === 6" :variant="value === 'COMPLETED' ? 'success' : value === 'CANCELLED' ? 'destructive' : value === 'DELAYED' ? 'warning' : 'default'">{{ String(value).charAt(0) + String(value).slice(1).toLowerCase() }}</Badge>
             <div v-else-if="index === 0" class="report-identity"><strong>{{ value }}</strong><small v-if="tab === 'sailings'">{{ row.source[1] }}</small><small v-else-if="tab === 'collections'">{{ row.source[8] }} online &middot; {{ row.source[9] }} walk-in</small></div>
@@ -231,8 +231,8 @@
           </template>
         </RecordsGrid>
         <p class="table-note">
-          PDF includes the selected report, dates, route, vessel, and search
-          results, before table column filters or sorting. Collection amounts are gross paid bookings; refunds are not
+          Legal paper (8.5 x 14 inches). Orientation adjusts automatically: landscape for more than 6 columns, portrait for 6 or fewer. PDF includes only matching rows in the selected report, with the current
+          date, route, vessel, search, column filters and sorting. Collection amounts are gross paid bookings; refunds are not
           deducted.
         </p>
       </section>
@@ -344,6 +344,7 @@ const activePoint = ref('');
 const selectedPoint = computed(() => chart.value.plotted.find(point => point.date === activePoint.value) || chart.value.plotted.find(point => point.revenue === chart.value.max));
 const compactMoney = (value: number) => 'PHP ' + new Intl.NumberFormat('en-PH', { notation:'compact', maximumFractionDigits:1 }).format(value);
 const exporting = ref(false);
+const reportGrid = ref<InstanceType<typeof RecordsGrid> | null>(null);
 const bookingMix = computed(() => [
   { label: "Paid active", count: totals.value.paidBookings, color: "#26b99a" },
   {
@@ -515,10 +516,10 @@ async function loadReports() {
     ready.value = true;
   } catch (e) {
     if (version === request)
-      error.value = notifyError(ticketRequestError(
+      error.value = ticketRequestError(
         e,
         "Unable to load reports. Try Refresh.",
-      ));
+      );
   } finally {
     if (version === request) {
       loading.value = false;
@@ -548,12 +549,33 @@ function customDates() {
 async function exportReport() {
   if (exporting.value || !tableRows.value.length) return;
   exporting.value = true;
+  const api = reportGrid.value?.getApi();
+  const rows: (string | number)[][] = [];
+  if (api && !api.isDestroyed()) {
+    api.forEachNodeAfterFilterAndSort(node => {
+      if (node.data) rows.push(node.data.source as (string | number)[]);
+    });
+  } else rows.push(...tableRows.value);
+  if (!rows.length) {
+    exporting.value = false;
+    notifyError('No matching rows to export. Adjust the report filters.');
+    return;
+  }
+  const sum = (index: number) => rows.reduce((total, row) => total + Number(row[index]), 0);
+  const currency = (amount: number) => `PHP ${amount.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   const input = {
     title: `${tabs[tab.value]} report`,
-    scope: [`${start.value} to ${end.value} (Philippine departure dates)`, route.value === 'ALL' ? 'All routes' : routes.value.find(item => item.key === route.value)?.label || route.value, vessel.value === 'ALL' ? 'All vessels' : vessels.value.find(item => item.key === vessel.value)?.label || vessel.value, ...(search.value ? [`Search: ${search.value}`] : [])],
-    headers: [...headers.value], rows: tableRows.value.map(row => row.map((value,index) => moneyColumns.value.includes(index) ? `PHP ${Number(value).toLocaleString('en-PH')}` : value)),
-    summary: metrics.value.map(metric => ({label:metric.label,value:String(metric.value).replace(/₱/g,'PHP ')})),
-    note: 'Summary uses date, route and vessel filters. Table also applies report search, before column filters/sorting. Collections are gross paid bookings before refunds.',
+    scope: [`Period: ${start.value} to ${end.value} (Philippine departure dates)`, `Route: ${route.value === 'ALL' ? 'All routes' : routes.value.find(item => item.key === route.value)?.label || route.value}`, `Vessel: ${vessel.value === 'ALL' ? 'All vessels' : vessels.value.find(item => item.key === vessel.value)?.label || vessel.value}`, ...(search.value ? [`Search: ${search.value}`] : []), ...(api?.isAnyFilterPresent() ? ['Table column filters applied'] : []), `${rows.length} matching records`],
+    headers: [...headers.value],
+    rows: rows.map(row => row.map((value,index) => moneyColumns.value.includes(index) ? currency(Number(value)) : tab.value === 'sailings' && index === 10 ? String(value).charAt(0) + String(value).slice(1).toLowerCase() : value)),
+    summary: [
+      { label: `${tabs[tab.value]} included`, value: String(rows.length) },
+      { label: 'Collected revenue', value: currency(sum(tab.value === 'sailings' ? 7 : 6)) },
+      tab.value === 'collections'
+        ? { label: 'Awaiting payment', value: currency(sum(7)) }
+        : { label: 'Reservations', value: String(sum(tab.value === 'sailings' ? 6 : 5)) },
+    ],
+    note: 'Totals reflect the exported rows only. Collections are gross paid booking amounts before refunds, grouped by sailing departure date. All amounts are in PHP; dates and times use Asia/Manila.',
   };
   const filename = `BarkoLink-${tab.value}-${start.value}-to-${end.value}.pdf`;
   try { const {downloadReportPdf} = await import('../../data/reportPdf');await downloadReportPdf(input,filename);notifySuccess('Report PDF downloaded.'); }

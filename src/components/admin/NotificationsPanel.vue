@@ -150,10 +150,10 @@ async function load() {
     rows.value = [...new Map(all.map(row => [row.id, row])).values()];
     total.value = rows.value.length;
   } catch (e) {
-    error.value = notifyError(databaseRequestError(
+    error.value = databaseRequestError(
       e,
       "Could not load notification campaigns.",
-    ));
+    );
   } finally {
     loading.value = false;
   }
@@ -166,7 +166,7 @@ async function moreTrips() {
     tripPage.value++;
     tripTotal.value = r.data.totalCount;
   } catch (e) {
-    formError.value = notifyError(databaseRequestError(e, "Could not load trips."));
+    formError.value = databaseRequestError(e, "Could not load trips.");
   }
 }
 async function send() {
@@ -181,7 +181,7 @@ async function send() {
     const count = (await notificationRecipients(staffDatabase, args)).data
       .recipients;
     if (!count) {
-      formNotice.value = notify("No eligible accounts in this audience.");
+      notify("No eligible accounts in this audience.");
       return;
     }
     if (
@@ -199,7 +199,7 @@ async function send() {
     page.value = 0;
     await load();
   } catch (e) {
-    formError.value = notifyError(databaseRequestError(e, "Could not send notification."));
+    notifyError(databaseRequestError(e, "Could not send notification."));
   } finally {
     busy.value = false;
   }
@@ -212,7 +212,7 @@ onMounted(async () => {
       sailings.value = r.data.sailings;
       tripTotal.value = r.data.totalCount;
     } catch (e) {
-      error.value = notifyError(databaseRequestError(e, "Could not load trips."));
+      error.value = databaseRequestError(e, "Could not load trips.");
     }
   }
 });

@@ -1,5 +1,5 @@
 <template>
-  <div class="maritime-header-art" :class="[{ 'is-night': night, 'has-weather': weather, 'weather-day': weather && daylight, 'weather-night': weather && !daylight }, weather && `weather-${weather}`]" :data-weather="weather || 'neutral'" aria-hidden="true">
+  <div class="maritime-header-art" :class="[{ 'is-night': night, 'has-weather': weather, 'weather-day': weather && daylight, 'weather-night': weather && !daylight, immersive }, weather && `weather-${weather}`, phase && `phase-${phase}`]" :data-weather="weather || 'neutral'" :data-phase="phase || 'unknown'" aria-hidden="true">
     <img :src="ferryHeaderSrc" alt="" width="1440" height="480" decoding="async" />
     <div v-if="weather" class="harbor-sky">
       <div class="weather-stage">
@@ -22,11 +22,12 @@
 </template>
 
 <script setup lang="ts">
+import type { HarborPhase } from '../../data/portAtmosphere';
 import type { HarborWeather } from '../../data/harborWeather';
 import { computed, useId } from 'vue';
 // Public URL avoids treating this served asset as a Node filesystem import in tests.
 const ferryHeaderSrc = '/images/ferry-seascape-v2.webp';
-const props = defineProps<{ night?: boolean; weather?: HarborWeather | null; daylight?: boolean }>();
+const props = defineProps<{ night?: boolean; weather?: HarborWeather | null; daylight?: boolean; immersive?: boolean; phase?: HarborPhase }>();
 const cloudId = `harbor-cloud-${useId().replace(/[^a-zA-Z0-9_-]/g, '')}`;
 const particles = computed(() => Array.from({ length: props.weather === 'storm' ? 32 : 20 }, (_, index) => ({
   id: index,
@@ -74,6 +75,46 @@ const particles = computed(() => Array.from({ length: props.weather === 'storm' 
 .weather-snow .weather-particle { width: 3px; height: 3px; border-radius: 50%; background: #eaf5ff; animation-name: harbor-snow; }
 .sky-mist { position: absolute; inset: 22% -12% -12% 3%; opacity: 0; background: radial-gradient(ellipse at 30% 55%, #c6dce333, transparent 60%), radial-gradient(ellipse at 70% 75%, #c6dce340, transparent 55%); filter: blur(5px); }
 .weather-fog .sky-mist { opacity: .65; animation: harbor-mist 24s ease-in-out infinite alternate; }.weather-fog .mist-front { inset-block-start: 48%; animation-delay: -12s; animation-direction: alternate-reverse; }
+.maritime-header-art.immersive { inset: 0; mask-image: none; border-radius: 0; background: linear-gradient(180deg, var(--harbor-sky-top, #14354e), var(--harbor-sky-horizon, #35546a) 72%, var(--harbor-sea, #173950)); }
+.maritime-header-art.immersive img { opacity: .95; }
+.immersive.weather-day img { mix-blend-mode: normal; filter: brightness(1.4) contrast(.95) saturate(.8); }
+.immersive.weather-day.weather-cloudy img { filter: brightness(1.45) saturate(.55); }
+.immersive.weather-day.weather-rain img { filter: brightness(1.15) saturate(.45); }
+.immersive.weather-day.weather-storm img { filter: brightness(.9) saturate(.35); }
+.immersive.weather-day.weather-fog img { filter: brightness(.8) saturate(.3); opacity: .55; }
+.immersive.weather-night img { mix-blend-mode: normal; filter: brightness(.85) saturate(.8); }
+.immersive.phase-dawn img,.immersive.phase-dusk img { mix-blend-mode: normal; filter: brightness(1.25) sepia(.2) saturate(.8); }
+.immersive.weather-day::before { content: ''; position: absolute; z-index: 1; inset: 0; pointer-events: none; background: linear-gradient(180deg, var(--harbor-sky-top), var(--harbor-sky-horizon) 30%, transparent 78%); mix-blend-mode: screen; opacity: .48; }
+.immersive.weather-day.weather-cloudy::before { opacity: .34; }
+.immersive.weather-day.weather-rain::before,.immersive.weather-day.weather-storm::before { opacity: .2; }
+.immersive.weather-day.phase-dawn::before,.immersive.weather-day.phase-dusk::before { opacity: .28; }
+.immersive::after { content: ''; position: absolute; z-index: 4; inset: 0; background: linear-gradient(90deg, #061b32f5 0%, #061b32d9 29%, #061b3222 54%, #061b320d 74%, #061b32d9 91%, #061b32f2 100%); }
+.immersive .harbor-sky { z-index: 2; inset: 0; background: transparent; mask-image: none; }
+.immersive .weather-stage { right: 18%; width: 53%; }
+.immersive .sky-orb { left: var(--sun-x, 45%); top: var(--sun-y, 16%); width: 44px; height: 44px; z-index: 1; }
+.immersive .sky-cloud { z-index: 2; width: 220px; top: -26%; left: 14%; }
+.immersive .cloud-2 { width: 210px; top: -22%; left: 33%; }
+.immersive.weather-cloudy .sky-cloud { opacity: .88; }
+.immersive.weather-cloudy .cloud-1 { opacity: .74; }
+.immersive.weather-rain .sky-cloud,.immersive.weather-storm .sky-cloud { opacity: .92; }
+.immersive.weather-day { --cloud-top: #f2f6f7; --cloud-bottom: #9baeb9; }
+.immersive.weather-day.weather-rain { --cloud-top: #adbdc7; --cloud-bottom: #697d8e; }
+.immersive.weather-day.weather-storm { --cloud-top: #7c8d9e; --cloud-bottom: #3d5064; }
+.immersive.weather-partly-cloudy .sky-orb { opacity: 1; background: radial-gradient(circle at 36% 31%, #fffce0, #ffe59b 67%, #edbb5e); box-shadow: 0 0 18px 6px #ffdf8c55, 0 0 64px 24px #ffd47c1f; }
+.immersive.weather-partly-cloudy .cloud-1 { opacity: .85; width: 160px; left: 45%; top: 4%; }
+.immersive.weather-partly-cloudy .cloud-2 { opacity: .5; width: 130px; left: 15%; top: -13%; }
+.immersive.weather-night .sky-orb { top: 12%; left: 43%; }
+.immersive.weather-night.weather-partly-cloudy .sky-orb { width: 30px; height: 30px; background: linear-gradient(145deg, #f1f7ff, #b6cddd); box-shadow: 0 0 22px #c3ddff55; }
+.immersive.phase-dawn.weather-night .sky-orb,.immersive.phase-dusk.weather-night .sky-orb { opacity: 0; }
+.immersive.phase-dawn .sky-stars,.immersive.phase-dusk .sky-stars { opacity: 0; }
+.immersive.weather-storm .harbor-sky { background: #182b4130; }
+.immersive .sky-precipitation { z-index: 3; inset: 0 12% 0 28%; }
+.immersive.weather-fog .sky-mist { z-index: 3; inset: 25% -20% -25%; opacity: .88; }
+@media (max-width: 800px) {
+  .immersive .weather-stage { right: 12%; width: 60%; opacity: .8; }
+  .immersive::after { background: linear-gradient(90deg, #061b32e8, #061b3280 54%, #061b32cf); }
+  .immersive .sky-cloud { width: 140px; }.immersive .cloud-2 { width: 160px; }
+}
 @keyframes harbor-sun { from { transform: scale(.98); } to { transform: scale(1.03); } }
 @keyframes harbor-rays { to { transform: rotate(360deg); } }
 @keyframes harbor-stars { from { opacity: .4; } to { opacity: .8; } }

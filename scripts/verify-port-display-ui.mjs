@@ -30,7 +30,7 @@ try {
     document.addEventListener('securitypolicyviolation', event => window.portCspErrors.push(event.violatedDirective));
   });
   const errors = [];
-  let fail = false, calls = 0, smallSample = false, terminalSample = false, emptySample = false, weatherFail = false, weatherCode = 3, weatherIsDay = 1;
+  let fail = false, calls = 0, smallSample = false, terminalSample = false, emptySample = false, weatherFail = false, weatherCode = 3, weatherIsDay = 1, weatherAgeMinutes = 0;
   const weatherRequests = [];
   await context.route('https://api.open-meteo.com/**', async route => {
     const url = new URL(route.request().url());
@@ -39,8 +39,8 @@ try {
     const date = url.searchParams.get('start_date');
     const epoch = Date.parse(`${date}T00:00:00+08:00`) / 1000;
     return route.fulfill({ json: {
-      current: { time: epoch, temperature_2m: 28, weather_code: weatherCode, is_day: weatherIsDay }, hourly: { time: [] },
-      daily: { time: [epoch], weather_code: [61], temperature_2m_max: [30], temperature_2m_min: [25], precipitation_probability_max: [80], wind_speed_10m_max: [24] },
+      current: { time: Math.floor((await page.evaluate(() => Date.now())) / 1000) - weatherAgeMinutes * 60, temperature_2m: 28, weather_code: weatherCode, is_day: weatherIsDay }, hourly: { time: [] },
+      daily: { sunrise: [epoch + 6 * 3600], sunset: [epoch + 18 * 3600], time: [epoch], weather_code: [61], temperature_2m_max: [30], temperature_2m_min: [25], precipitation_probability_max: [80], wind_speed_10m_max: [24] },
     } });
   });
   context.on('page', page => page.on('pageerror', error => errors.push(error.message)));
@@ -244,13 +244,16 @@ try {
   // Preview every weather scene in the same header without changing sailing behavior.
   await page.clock.setSystemTime(new Date());
   await page.setViewportSize({ width: 1366, height: 636 });
-  for (const [code, scene, isDay] of [[0, 'clear', 1], [3, 'cloudy', 1], [61, 'rain', 1], [95, 'storm', 1], [45, 'fog', 1], [71, 'snow', 1], [0, 'clear', 0], [3, 'cloudy', 0], [61, 'rain', 0]]) {
+  for (const [code, scene, isDay] of [[0, 'clear', 1], [2, 'partly-cloudy', 1], [3, 'cloudy', 1], [61, 'rain', 1], [95, 'storm', 1], [45, 'fog', 1], [71, 'snow', 1], [0, 'clear', 0], [3, 'cloudy', 0], [61, 'rain', 0]]) {
     weatherCode = code; weatherIsDay = isDay;
+    await page.clock.setSystemTime(new Date(`${nextDate}T${isDay ? "12" : "21"}:00:00+08:00`));
     await page.reload();
     const art = page.locator(`.maritime-header-art[data-weather="${scene}"]`);
     await art.waitFor();
     await art.locator('img').evaluate(img => img.decode());
+    assert.equal(await art.locator('img').evaluate(img => getComputedStyle(img).display !== 'none' && img.getAttribute('src') === '/images/ferry-seascape-v2.webp'), true, 'Keep the original ferry photo visible in every weather scene');
     assert.ok((await art.getAttribute('class')).includes(isDay ? 'weather-day' : 'weather-night'));
+    await page.waitForTimeout(1900); // Let the photo lighting transition settle before visual inspection.
     await page.screenshot({ path: `.audit/port-display/weather-${scene}-${isDay ? 'day' : 'night'}.png` });
     assert.equal(await page.locator('.display-weather').count(), 0);
     if (['rain', 'storm', 'snow'].includes(scene)) {
@@ -261,6 +264,41 @@ try {
     assert.equal(await art.locator('.sky-orb,.sky-stars,.sky-cloud,.sky-mist,.sky-precipitation,.weather-particle').evaluateAll(elements => elements.every(el => getComputedStyle(el).animationName === 'none')), true, 'Reduced motion must stop every weather layer');
     await page.emulateMedia({ reducedMotion: 'no-preference' });
   }
+  // Local time and solar boundaries drive the scene, independent of an older provider day flag.
+  weatherCode = 0; weatherIsDay = 1;
+  for (const [time, phase] of [['05:40','dawn'], ['08:00','morning'], ['12:00','midday'], ['15:00','afternoon'], ['17:55','dusk'], ['21:00','night']]) {
+    await page.clock.setSystemTime(new Date(`${nextDate}T${time}:00+08:00`));
+    await page.reload();
+    await page.locator(`.port-screen[data-phase="${phase}"][data-weather="clear"]`).waitFor();
+    await page.screenshot({ path: `.audit/port-display/time-${phase}.png` });
+  }
+  await page.clock.setSystemTime(new Date(`${nextDate}T17:59:00+08:00`));
+  await page.reload();
+  await page.locator('.maritime-header-art.weather-day[data-weather="clear"]').waitFor();
+  const beforeSunsetRequests = weatherRequests.length;
+  await page.clock.fastForward(61000);
+  await page.locator('.maritime-header-art.weather-night[data-weather="clear"]').waitFor();
+  assert.equal(weatherRequests.length, beforeSunsetRequests, 'Sunset switches live without waiting for the next weather request');
+  await page.getByRole('img', { name: 'Port weather' }).hover();
+  assert.match(await page.getByRole('tooltip').innerText(), /Clear sky/);
+  assert.doesNotMatch(await page.getByRole('tooltip').innerText(), /Sunny/);
+  for (const age of [60, -20]) {
+    weatherAgeMinutes = age;
+    await page.reload();
+    await page.getByRole('heading', { name: 'Batangas Port', exact: true }).waitFor();
+    await page.keyboard.press('Escape');
+    await page.waitForFunction(() => document.querySelector('.header-weather-status')?.textContent.includes('Unavailable'));
+    assert.equal(await page.locator('.port-screen').getAttribute('data-weather'), 'neutral');
+    assert.equal(await page.locator('.header-weather-target').count(), 0, 'Old or future readings must not imply live weather');
+  }
+  weatherAgeMinutes = 0;
+  weatherCode = 2;
+  await page.clock.setSystemTime(new Date(`${nextDate}T12:00:00+08:00`));
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.reload();
+  await page.locator('.port-screen[data-phase="midday"][data-weather="partly-cloudy"]').waitFor();
+  await page.screenshot({ path: '.audit/port-display/weather-mobile.png', fullPage: true });
+  assert.equal(await page.locator('.port-screen').evaluate(el => el.scrollWidth <= innerWidth), true);
   assert.deepEqual(await page.evaluate(() => window.portCspErrors), []);
   assert.deepEqual(errors, []);
   console.log('Public access, page rotation, refresh, port selection and offline recovery passed.');

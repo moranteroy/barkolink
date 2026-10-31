@@ -80,7 +80,6 @@
   </ion-page>
 </template>
 <script setup lang="ts">
-import { notifyError } from '@/composables/toast';
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -319,10 +318,10 @@ async function loadTrips() {
         pregnantFare: sailing.pregnantFare ?? sailing.regularFare,
       }));
   } catch (error) {
-    errorMessage.value = notifyError(databaseRequestError(
+    errorMessage.value = databaseRequestError(
       error,
       "Could not load sailings.",
-    ));
+    );
   } finally {
     loading.value = false;
   }

@@ -9,7 +9,7 @@
   </section>
 </template>
 <script setup lang="ts">
-import { notifyError, notify } from '@/composables/toast';
+import { notify } from '@/composables/toast';
 import { ref, watch } from 'vue';
 import AppIcon from "@/components/ui/icon/AppIcon.vue";
 import { idCardOutline, refreshOutline } from 'ionicons/icons';
@@ -26,7 +26,7 @@ async function check() {
   if (!staffDatabase || checking.value) return;
   checking.value = true; error.value = '';
   try { if (!(await checkStaffPortAccess(staffDatabase, true))) await showToast(); }
-  catch (cause) { error.value = notifyError(databaseRequestError(cause, 'Could not check your assignment. Please try again.')); }
+  catch (cause) { error.value = databaseRequestError(cause, 'Could not check your assignment. Please try again.'); }
   finally { checking.value = false; }
 }
 </script>

@@ -2,7 +2,7 @@ import { mount } from '@vue/test-utils';
 import { nextTick } from 'vue';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import ToastHost from '../../src/components/shared/ToastHost.vue';
-import { clearToasts, dismissToast, notifyError, notifySuccess, toastMessages } from '../../src/composables/toast';
+import { clearToasts, dismissToast, notifyError, notifySuccess, notifyValidationError, toastMessages } from '../../src/composables/toast';
 
 describe('shared action feedback', () => {
   beforeEach(() => { clearToasts(); vi.useFakeTimers(); });
@@ -23,6 +23,15 @@ describe('shared action feedback', () => {
     expect(wrapper.find('[role="alert"]').exists()).toBe(true);
     await vi.advanceTimersByTimeAsync(1);
     expect(wrapper.find('.app-toast').exists()).toBe(false);
+    wrapper.unmount();
+  });
+  it('uses an input-validation title without presenting a system failure', async () => {
+    const wrapper = mountHost();
+    notifyValidationError('Use 11 digits for Philippine mobile numbers, or include + and the country code.');
+    await nextTick();
+    expect(wrapper.get('strong').text()).toBe('Check your details');
+    expect(wrapper.text()).not.toContain('Something went wrong');
+    expect(wrapper.get('p').text()).toContain('11 digits');
     wrapper.unmount();
   });
   it('pauses expiry while reading and allows dismissing an error', async () => {

@@ -35,7 +35,7 @@
             <template v-else>
             <p v-if="error" role="alert" class="catalog-error">{{ error }}</p>
             <WeatherTripPicker v-if="section === 'trips'" :trips="trips" />
-            <InboxPanel v-if="section === 'notifications'" :key="refresh" :show-broadcast="false" />
+            <InboxPanel v-if="section === 'notifications'" :key="refresh" :show-broadcast="false" :staff-role="role === 'ticketing' ? 'TICKETING' : 'BOARDING'" />
             <NoShowsPanel
               v-else-if="section === 'no-shows'"
               :key="refresh"
@@ -372,7 +372,7 @@ async function load() {
   } catch (e) {
     if (e instanceof StaffPortRequiredError) { if (token === request) error.value = ''; return; }
     if (token === request)
-      error.value = notifyError(databaseRequestError(e, "Could not load staff records."));
+      error.value = databaseRequestError(e, "Could not load staff records.");
   } finally {
     if (token === request) loading.value = false;
   }
@@ -384,7 +384,7 @@ async function read(id: string) {
     clearNotificationUnread(id);
     await load();
   } catch (e) {
-    error.value = notifyError(databaseRequestError(e, "Could not mark notification read."));
+    notifyError(databaseRequestError(e, "Could not mark notification read."));
   }
 }
 

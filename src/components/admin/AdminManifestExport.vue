@@ -5,10 +5,7 @@
       <div>
       <p class="eyebrow">PDF DOWNLOAD</p>
       <h2 id="manifest-export-title">Passenger manifest export</h2>
-      <p>
-        {{ sailingCode ? `Sailing ${sailingCode}.` : externalSelection ? 'Choose a sailing in the filters below.' : 'Choose a sailing below.' }} PDF includes all
-        passengers on paid, confirmed reservations.
-      </p>
+
       </div>
     </div>
     <div class="export-controls">
@@ -36,7 +33,7 @@
   </section>
 </template>
 <script setup lang="ts">
-import { notifySuccess, notifyError, notify } from '@/composables/toast';
+import { notifySuccess, notifyError } from '@/composables/toast';
 import { onBeforeUnmount, ref, watch } from "vue";
 import { FileText, Download } from "@lucide/vue";
 import {
@@ -103,8 +100,7 @@ async function exportManifest() {
       if (result.data.bookingPassengers.length < 500) break;
     }
     if (!passengers.length) {
-      notice.value =
-        notify("No paid, confirmed passengers to export for this sailing.");
+      notice.value = "No paid, confirmed passengers to export for this sailing.";
       return;
     }
     const dateTime = (value: string) =>
@@ -125,7 +121,7 @@ async function exportManifest() {
       ],
       rows: passengers.map((p) => [
         p.fullName,
-        p.sex || "",
+        p.sex?.trim() || "Not provided",
         p.passengerType,
         p.booking.reference,
         p.booking.sailing.code,
@@ -134,7 +130,7 @@ async function exportManifest() {
       ]),
       title: 'Passenger manifest',
       scope: [`Sailing ${code}`, `${props.sailings.find(s => s.code === code)?.origin || ''} to ${props.sailings.find(s => s.code === code)?.destination || ''}`, props.sailings.find(s => s.code === code)?.vessel || '', `${passengers.length} passengers`],
-      note: 'All passengers on paid, confirmed reservations. Boarding timestamps use Philippine time. Handle passenger information securely.',
+      note: 'Paid, confirmed reservations. Boarding timestamps use Philippine time. Handle passenger information securely.',
     };
     const { createReportPdf } = await import('../../data/reportPdf');
     const pdf = await createReportPdf(input);
@@ -150,7 +146,7 @@ async function exportManifest() {
     notifySuccess(`Exported ${passengers.length} passengers for ${code}.`);
   } catch (e) {
     if (version === request)
-      error.value = notifyError(ticketRequestError(
+      notifyError(ticketRequestError(
         e,
         "Could not export the manifest. Try again.",
       ));

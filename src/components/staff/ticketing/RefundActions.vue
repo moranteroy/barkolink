@@ -51,7 +51,7 @@ async function refund() {
     notifySuccess('Cash refund recorded.');
     emit("refunded");
   } catch (cause) {
-    error.value = notifyError(databaseRequestError(cause, "Could not record refund."));
+    notifyError(databaseRequestError(cause, "Could not record refund."));
   } finally {
     busy.value = false;
   }

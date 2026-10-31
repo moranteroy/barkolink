@@ -145,7 +145,7 @@
               Enter each passenger name exactly as shown on their ID.
               Passenger 1 uses your account details when available. You can edit them or choose a saved traveler.
             </p>
-            <form @submit.prevent="go('summary')">
+            <form novalidate @submit.prevent="go('summary')">
               <p v-if="errorMessage" role="alert">{{ errorMessage }}</p>
               <article
                 v-for="(person, index) in passengers"
@@ -165,19 +165,20 @@
                   </button>
                 </div>
                 <SavedTravelerPicker
+                  :refresh-token="savedPassengerRefresh"
                   @select="Object.assign(person, travelerPassengerDetails($event))"
                 />
                 <div class="form-grid">
                   <label
                     >Full name<input
                       v-model.trim="person.name"
-                      :aria-invalid="attempted && invalidField(person) === 'name'"
-                      :aria-describedby="attempted && invalidField(person) === 'name' ? `passenger-error-${person.id}` : undefined"
+                      v-bind="passengerFieldAttrs(person, 'name')"
                       required
+                      maxlength="120"
                       autocomplete="name"
                       placeholder="Juan Dela Cruz" /></label
                   ><label
-                    >Passenger type<select v-model="person.type">
+                    >Passenger type<select v-model="person.type" v-bind="passengerFieldAttrs(person, 'type')">
                       <option>Regular</option>
                       <option
                         v-for="discount in selectedTrip
@@ -192,13 +193,13 @@
                   ><label
                     >Date of birth<input
                       v-model="person.birthDate"
-                      :aria-invalid="attempted && invalidField(person) === 'birthDate'"
-                      :aria-describedby="attempted && invalidField(person) === 'birthDate' ? `passenger-error-${person.id}` : undefined"
+                      v-bind="passengerFieldAttrs(person, 'birthDate')"
                       type="date"
+                      min="1900-01-01"
                       :max="philippineDateKey()"
                       required /></label
                   ><label
-                    >Sex<select v-model="person.sex" required :aria-invalid="attempted && invalidField(person) === 'sex'" :aria-describedby="attempted && invalidField(person) === 'sex' ? `passenger-error-${person.id}` : undefined">
+                    >Sex<select v-model="person.sex" required v-bind="passengerFieldAttrs(person, 'sex')">
                       <option disabled value="">Select</option>
                       <option>Female</option>
                       <option>Male</option>
@@ -208,26 +209,27 @@
                   ><label
                     >Mobile number<input
                       v-model.trim="person.phone"
-                      :aria-invalid="attempted && invalidField(person) === 'phone'"
-                      :aria-describedby="attempted && invalidField(person) === 'phone' ? `passenger-error-${person.id}` : undefined"
+                      v-bind="passengerFieldAttrs(person, 'phone')"
                       type="tel"
+                      inputmode="tel"
+                      autocomplete="tel"
+                      maxlength="30"
                       required
                       placeholder="09XX XXX XXXX" /></label
                   ><label
                     >Nationality<input
+                      maxlength="60"
                       v-model.trim="person.nationality"
-                      :aria-invalid="attempted && invalidField(person) === 'nationality'"
-                      :aria-describedby="attempted && invalidField(person) === 'nationality' ? `passenger-error-${person.id}` : undefined"
+                      v-bind="passengerFieldAttrs(person, 'nationality')"
                       required
                       placeholder="Filipino"
                   /></label>
                 </div>
-                <p v-if="attempted && passengerError(person)" :id="`passenger-error-${person.id}`" role="alert">Passenger {{ index + 1 }}: {{ passengerError(person) }}</p>
               </article>
               <button
                 class="add-passenger"
                 type="button"
-                :disabled="passengers.length >= maxPassengers"
+                :disabled="passengers.length >= maxPassengers || passengerSaveBusy"
                 @click="addPassenger"
               >
                 + Add passenger
@@ -239,7 +241,7 @@
                   aria-label="Back to trip details"
                   title="Back to trip details"
                   ><BackIcon /></router-link
-                ><ion-button class="continue" type="submit"
+                ><ion-button class="continue" type="submit" :disabled="passengerSaveBusy"
                   >Review booking <AppIcon :icon="arrowForwardOutline" aria-hidden="true" /></ion-button
                 >
               </div>
@@ -343,7 +345,7 @@
               <p v-if="voucherError" role="alert">{{voucherError}}</p>
               <button v-if="voucherError && !voucherCode && !automaticVoucherRemoved" type="button" :disabled="saving || voucherBusy" @click="applyAutomaticVoucher">Check loyalty reward again</button>
               <p v-if="voucherQuote" role="status">{{ loyaltyApplied ? 'Loyalty voucher automatically applied' : voucherQuote.code + ' applied' }}: PHP {{voucherQuote.discount.toLocaleString()}} off regular fares <button type="button" :disabled="saving" @click="removeVoucher">Remove</button></p>
-              <small>One voucher per booking. Applies to regular passenger fares.</small>
+              <small>One voucher per booking. Applies to regular passenger fares. <router-link to="/vouchers">Claim vouchers &amp; view codes</router-link></small>
             </section>
             <div v-if="voucherQuote" class="fare-row voucher-discount"><span>Voucher discount</span><b>- PHP {{voucherQuote.discount.toLocaleString()}}</b></div>
             <div class="total">
@@ -481,8 +483,8 @@
 </template>
 
 <script setup lang="ts">
-import { validName, validPhone, validNationality } from '../../data/securityValidation';
-import { notifyError, notifySuccess } from '@/composables/toast';
+import { passengerFieldErrors, type PassengerField } from '../../data/passengerValidation';
+import { notify, notifyError, notifySuccess, notifyValidationError } from '@/composables/toast';
 import BackIcon from "@/components/ui/icon/BackIcon.vue";
 import { bookingReference } from '@/data/recordCodes';
 import OnlinePayment from "../../components/passenger/OnlinePayment.vue";
@@ -509,6 +511,7 @@ import { ticketOutline, arrowForwardOutline, chevronDownOutline, boatOutline, ca
 import PortLocationMap from "../../components/shared/PortLocationMap.vue";
 import PassengerHeader from "../../components/passenger/PassengerHeader.vue";
 import { accountPassengerDetails, travelerPassengerDetails } from "../../data/bookingPassenger";
+import { offerToSaveBookingPassengers } from '../../composables/bookingPassengerSave';
 import { savedTravelers } from "../../services/database/experience";
 import {
   browseSailings,
@@ -526,6 +529,8 @@ import {
 import { auth, database } from "../../services/session";
 
 type Passenger = {
+  isAccountPassenger?: boolean;
+  savedPassengerDecision?: string;
   id: string;
   name: string;
   type: string;
@@ -611,6 +616,7 @@ const tripPorts = computed(() =>
   ].filter((port) => port.city),
 );
 const makePassenger = (): Passenger => ({
+  isAccountPassenger: false,
   id: crypto.randomUUID(),
   name: "",
   type: "Regular",
@@ -648,16 +654,17 @@ function readDraft(
     ) {
       return draft.passengers
         .slice(0, 8)
-        .map((person: Partial<Passenger>) => ({
+        .map((person: Partial<Passenger>, index: number) => ({
           ...makePassenger(),
           ...person,
+          isAccountPassenger: person.isAccountPassenger ?? index === 0,
           id: person.id || crypto.randomUUID(),
         }));
     }
   } catch {
     /* Discard an invalid local draft. */
   }
-  return Array.from({ length: fallbackCount }, makePassenger);
+  return Array.from({ length: fallbackCount }, (_, index) => ({ ...makePassenger(), isAccountPassenger: index === 0 }));
 }
 const passengers = ref<Passenger[]>(
   readDraft(
@@ -760,7 +767,7 @@ async function applyAutomaticVoucher(){
     if(id===voucherRequest && context===voucherContext.value && response.quote){
       voucherQuote.value=response.quote;voucherCode.value=response.quote.code;loyaltyApplied.value=true;
     }
-  }catch{if(id===voucherRequest)voucherError.value=notifyError('Could not check loyalty rewards. You can continue without a voucher or try again.');}
+  }catch{if(id===voucherRequest)voucherError.value = 'Could not check loyalty rewards. You can continue without a voucher or try again.';}
   finally{if(id===voucherRequest)voucherBusy.value=false;}
 }
 async function applyVoucher(){
@@ -772,7 +779,7 @@ async function applyVoucher(){
     const args={...voucherArgs(),voucherCode:voucherCode.value};
     const response=(await quoteVoucher(database,args)).data;
     if(id===voucherRequest && context===voucherContext.value)voucherQuote.value=response;
-  }catch(e){if(id===voucherRequest)voucherError.value=notifyError(databaseRequestError(e,'Could not apply voucher.'));}finally{if(id===voucherRequest)voucherBusy.value=false;}
+  }catch(e){if(id===voucherRequest)notify(databaseRequestError(e,'Could not apply voucher.'),'error','Voucher unavailable');}finally{if(id===voucherRequest)voucherBusy.value=false;}
 }
 const booking = ref<Booking>({
   reference: "",
@@ -803,9 +810,17 @@ function clearDuplicateNotice() {
   errorMessage.value = '';
 }
 watch(passengers, () => { if (duplicateReference.value) clearDuplicateNotice(); }, { deep: true });
+const passengerSaveBusy = ref(false), savedPassengerRefresh = ref(0);
+async function offerPassengerSave() {
+  if (!database || !auth?.currentUser) return;
+  const owner = auth.currentUser.uid, selection = selectedTrip.value?.selectionId;
+  const count = await offerToSaveBookingPassengers(database, passengers.value.filter(person => !passengerError(person)),
+    () => auth?.currentUser?.uid === owner && selectedTrip.value?.selectionId === selection && flow.value === 'passengers');
+  if (count) savedPassengerRefresh.value++;
+}
 function addPassenger() {
-  if (passengers.value.length < maxPassengers.value)
-    passengers.value.push(makePassenger());
+  if (passengerSaveBusy.value || passengers.value.length >= maxPassengers.value) return;
+  passengers.value.push(makePassenger());
 }
 function removePassenger(index: number) {
   if (passengers.value.length > 1) passengers.value.splice(index, 1);
@@ -824,10 +839,13 @@ function displayBirthDate(value: string) {
   if (!value || !validBirthDate(value)) return value || 'Missing';
   return new Date(`${value}T00:00:00Z`).toLocaleDateString('en-PH', { timeZone: 'UTC', month: 'short', day: 'numeric', year: 'numeric' });
 }
-function go(name: string) {
+async function go(name: string) {
+  if (passengerSaveBusy.value) return;
   if (name === "summary") attempted.value = true;
-  if (name === "summary" && passengers.value.some(person => passengerError(person))) {
-    errorMessage.value = "Complete the passenger details before reviewing your booking.";
+  const invalidIndex = name === 'summary' ? passengers.value.findIndex(person => passengerError(person)) : -1;
+  if (invalidIndex >= 0) {
+    errorMessage.value = '';
+    notifyValidationError(`Passenger ${invalidIndex + 1}: ${passengerError(passengers.value[invalidIndex])}`);
     void focusInvalidPassenger();
     return;
   }
@@ -839,16 +857,20 @@ function go(name: string) {
     errorMessage.value = "Choose an accommodation to continue.";
     return;
   }
+  if (name === 'summary') {
+    passengerSaveBusy.value = true;
+    try { await offerPassengerSave(); }
+    finally { passengerSaveBusy.value = false; }
+    if (flow.value !== 'passengers') return;
+  }
   router.push({ name });
 }
 const attempted = ref(false);
-function invalidField(person: Passenger): string {
-  if (!validName(person.name)) return "name";
-  if (!validBirthDate(person.birthDate)) return "birthDate";
-  if (!person.sex) return "sex";
-  if (!validPhone(person.phone)) return "phone";
-  if (!validNationality(person.nationality)) return "nationality";
-  return "";
+function errorsForPassenger(person: Passenger) {
+  return passengerFieldErrors(person, ['Regular', ...(selectedTrip.value ? passengerDiscountChoices(selectedTrip.value).map(choice => choice.name) : [])]);
+}
+function passengerFieldAttrs(person: Passenger, field: PassengerField) {
+  return { 'aria-invalid': attempted.value && !!errorsForPassenger(person)[field] };
 }
 async function focusInvalidPassenger() {
   await nextTick();
@@ -857,12 +879,7 @@ async function focusInvalidPassenger() {
   field?.focus({ preventScroll: true });
 }
 function passengerError(person: Passenger): string {
-  if (!validName(person.name)) return "Enter the full name using 1 to 120 characters.";
-  if (!validBirthDate(person.birthDate)) return "Enter a valid birth date that is not in the future.";
-  if (!person.sex) return "Select sex.";
-  if (!validPhone(person.phone)) return "Enter a valid contact number with 7 to 15 digits.";
-  if (!validNationality(person.nationality)) return "Enter nationality using 1 to 80 characters.";
-  return "";
+  return Object.values(errorsForPassenger(person))[0] || '';
 }
 const bookingIntentKey = "barkolink-booking-intent";
 type BookingIntent = {
@@ -902,7 +919,7 @@ async function confirm() {
   attempted.value = true;
   const invalidIndex = passengers.value.findIndex(person => passengerError(person));
   if (invalidIndex >= 0) {
-    errorMessage.value = `Passenger ${invalidIndex + 1}: ${passengerError(passengers.value[invalidIndex])}`;
+    notifyValidationError(`Passenger ${invalidIndex + 1}: ${passengerError(passengers.value[invalidIndex])}`);
     await router.push({ name: "passengers" });
     await focusInvalidPassenger();
     return;
@@ -986,8 +1003,7 @@ async function confirm() {
         "The selected accommodation no longer has enough seats. Choose another class or sailing.",
       );
     if (total.value + serviceFee.value !== oldTotal) {
-      errorMessage.value =
-        notifySuccess("The fare changed. Review the updated total and confirm again.");
+      notifySuccess("The fare changed. Review the updated total and confirm again.");
       return;
     }
     if (existingIntent) {
@@ -1068,7 +1084,7 @@ async function confirm() {
     const duplicate = databaseRequestError(error, '').match(/Duplicate booking: ([A-Za-z0-9-]+)\./);
     if (duplicate) {
       duplicateReference.value = duplicate[1];
-      errorMessage.value = notifyError(`You already have booking ${duplicate[1]} for this trip with the same passenger details. Open your existing booking instead of reserving again.`);
+      notifyError(`You already have booking ${duplicate[1]} for this trip with the same passenger details. Open your existing booking instead of reserving again.`);
       sessionStorage.removeItem(bookingIntentKey);
       return;
     }
@@ -1080,7 +1096,7 @@ async function confirm() {
     } catch {
       /* The reservation may exist even when its status cannot be checked. */
     }
-    errorMessage.value = notifyError(`${databaseRequestError(error, "Could not complete the reservation.")} If you already confirmed, check My Bookings before trying again.`);
+    notifyError(`${databaseRequestError(error, "Could not complete the reservation.")} If you already confirmed, check My Bookings before trying again.`);
   } finally {
     saving.value = false;
   }
@@ -1095,7 +1111,7 @@ async function copyReference() {
     window.setTimeout(() => (copied.value = false), 1800);
   } catch {
     copied.value = false;
-    errorMessage.value = notifyError("Could not copy the reference. Select the booking reference and copy it manually.");
+    notifyError("Could not copy the reference. Select the booking reference and copy it manually.");
   }
 }
 async function loadConfirmedBooking() {
@@ -1161,10 +1177,10 @@ async function loadConfirmedBooking() {
       if (intent?.reference === saved.reference) sessionStorage.removeItem(bookingIntentKey);
     } catch { /* Invalid saved intent must not interrupt reservation loading. */ }
   } catch (error) {
-    errorMessage.value = notifyError(databaseRequestError(
+    errorMessage.value = databaseRequestError(
       error,
       "Could not load your reservation. Open My Bookings to try again.",
-    ));
+    );
   }
 }
 onMounted(() => {

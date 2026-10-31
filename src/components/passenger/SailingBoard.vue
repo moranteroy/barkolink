@@ -24,7 +24,6 @@
   </section>
 </template>
 <script setup lang="ts">
-import { notifyError } from '@/composables/toast';
 import { computed, onUnmounted, ref, watch } from 'vue';
 import { Ship, MapPin, RefreshCw, ArrowUpRight, ArrowDownLeft, ChevronDown } from '@lucide/vue';
 import { browseActivePorts } from '../../services/database/passenger';
@@ -63,7 +62,7 @@ async function load() {
     data.value = result.data;
     if (portResult) ports.value = portResult.data.ports;
     if (!ports.value.some(port => port.id === selectedPort.value)) selectedPort.value = ports.value.find(port => port.id === props.initialPortId)?.id || ports.value[0]?.id || '';
-  } catch { error.value = notifyError(data.value ? 'Update delayed. Showing the last loaded schedule.' : 'Could not load today’s sailings. Tap Refresh to try again.'); }
+  } catch { error.value = data.value ? 'Update delayed. Showing the last loaded schedule.' : 'Could not load today’s sailings. Tap Refresh to try again.'; }
   finally { loading.value = false; }
 }
 let timer: ReturnType<typeof setInterval> | undefined;

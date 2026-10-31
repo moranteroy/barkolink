@@ -1,19 +1,20 @@
 import { readonly, ref } from 'vue';
 
 export type ToastTone = 'success' | 'error' | 'info';
-export interface ToastMessage { id: number; message: string; tone: ToastTone; duration: number }
+export interface ToastMessage { id: number; message: string; tone: ToastTone; duration: number; title?: string }
 const messages = ref<ToastMessage[]>([]);
 let nextId = 0;
 export const toastMessages = readonly(messages);
 
 /** Return the message so existing persistent feedback can remain available. */
-export function notify(message: string, tone: ToastTone = 'info'): string {
+export function notify(message: string, tone: ToastTone = 'info', title?: string): string {
   const text = message.trim();
-  if (!text || messages.value.some(item => item.message === text && item.tone === tone)) return message;
-  messages.value.push({ id: ++nextId, message: text, tone, duration: tone === 'error' ? 8000 : 4500 });
+  if (!text || messages.value.some(item => item.message === text && item.tone === tone && item.title === title)) return message;
+  messages.value.push({ id: ++nextId, message: text, tone, title, duration: tone === 'error' ? 8000 : 4500 });
   return message;
 }
 export const notifySuccess = (message: string) => notify(message, 'success');
+export const notifyValidationError = (message: string) => notify(message, 'error', 'Check your details');
 export const notifyError = (message: string) => notify(message, 'error');
 export function dismissToast(id: number) {
   messages.value = messages.value.filter(item => item.id !== id);

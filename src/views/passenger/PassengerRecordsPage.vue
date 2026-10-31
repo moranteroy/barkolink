@@ -569,7 +569,7 @@ import { confirmAction } from "../../composables/confirmation";
 import PaymentDeadline from "../../components/passenger/PaymentDeadline.vue";
 import OnlinePayment from "../../components/passenger/OnlinePayment.vue";
 import { markAllNotificationsRead } from "../../services/database/experience";
-import { clearNotificationUnread, setUnreadNotifications } from "../../composables/notificationUnread";
+import { clearNotificationUnread, setUnreadNotifications, notificationUpdates } from "../../composables/notificationUnread";
 import { downloadTicket, shareTicket } from "../../data/ticketExport";
 import { useQueueRefresh } from "../../composables/queueRefresh";
 import { databaseRequestError } from "../../data/databaseErrors";
@@ -614,6 +614,7 @@ import {
   markNotificationRead,
   myBookings,
   myNotifications,
+  type MyNotificationsData,
   myProfile,
   updateMyProfile,
 } from "../../services/database/passenger";
@@ -690,6 +691,20 @@ const notificationFilter = ref("ALL"),
   noticeBusy = ref(false),
   ticketBusy = ref(false),
   ticketNotice = ref("");
+function applyNotificationItems(items:ReadonlyArray<MyNotificationsData['notifications'][number]>){
+  notices.value = items.map((item) => ({
+        id: item.id,
+        title: item.title,
+        body: item.message,
+        type: item.category,
+        createdAt: item.createdAt,
+        time: new Date(item.createdAt).toLocaleString('en-PH', { timeZone: 'Asia/Manila', month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' }),
+        unread: !item.readAt,
+      })).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+}
+watch(notificationUpdates,update=>{
+  if(update && kind.value==='notifications' && update.uid===auth?.currentUser?.uid && !noticeBusy.value && !noticeUpdating.value){applyNotificationItems(update.items);loadError.value='';}
+});
 const unreadCount = computed(
   () => notices.value.filter((n) => n.unread).length,
 );
@@ -715,7 +730,7 @@ async function markAllRead() {
     notices.value.forEach(notice => { notice.unread = false; });
 
   } catch (cause) {
-    noticeError.value = notifyError(databaseRequestError(
+    notifyError(databaseRequestError(
       cause,
       "Could not mark notifications read.",
     ));
@@ -953,15 +968,7 @@ async function loadData() {
       const result = await myNotifications(database, {
         fetchPolicy: "SERVER_ONLY",
       });
-      notices.value = result.data.notifications.map((item) => ({
-        id: item.id,
-        title: item.title,
-        body: item.message,
-        type: item.category,
-        createdAt: item.createdAt,
-        time: new Date(item.createdAt).toLocaleString('en-PH', { timeZone: 'Asia/Manila', month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' }),
-        unread: !item.readAt,
-      })).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+      applyNotificationItems(result.data.notifications);
       setUnreadNotifications(result.data.notifications, uid);
     }
     if (kind.value === "profile") {
@@ -974,10 +981,10 @@ async function loadData() {
       };
     }
   } catch (error) {
-    loadError.value = notifyError(databaseRequestError(
+    loadError.value = databaseRequestError(
       error,
       "Could not load account data.",
-    ));
+    );
   } finally {
     loading.value = false;
   }
@@ -1023,7 +1030,7 @@ async function cancel(reference: string) {
     await loadData();
     selectedTab.value = "Cancelled";
   } catch (error) {
-    loadError.value = notifyError(databaseRequestError(
+    notifyError(databaseRequestError(
       error,
       "Could not cancel reservation.",
     ));
@@ -1052,7 +1059,7 @@ async function markNotice(notice: { id: string; unread: boolean }) {
     notice.unread = false;
     clearNotificationUnread(notice.id, uid);
   } catch (error) {
-    noticeError.value = notifyError(databaseRequestError(error, 'Could not update notification. Try marking it read again.'));
+    notifyError(databaseRequestError(error, 'Could not update notification. Try marking it read again.'));
   } finally {
     noticeUpdating.value = '';
   }
@@ -1068,7 +1075,7 @@ async function saveProfile() {
     notifySuccess('Profile saved.');
     window.setTimeout(() => (saved.value = false), 1800);
   } catch (error) {
-    loadError.value = notifyError(databaseRequestError(error, "Could not save profile."));
+    notifyError(databaseRequestError(error, "Could not save profile."));
   }
 }
 </script>

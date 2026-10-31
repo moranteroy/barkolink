@@ -759,10 +759,10 @@ async function loadData() {
   } catch (cause) {
     if (request === requestNumber) {
       if (cause instanceof StaffPortRequiredError) { error.value = ''; return; }
-      error.value = notifyError(databaseRequestError(
+      error.value = databaseRequestError(
         cause,
         "Could not load boarding records.",
-      ));
+      );
     }
   } finally {
     if (request === requestNumber) loading.value = false;
@@ -848,7 +848,7 @@ async function updateSelectedTicket() {
     await loadData();
     notifySuccess(`${person.name} ${person.status === "ISSUED" ? "checked in" : "marked as boarded"}.`);
   } catch (cause) {
-    error.value = notifyError(databaseRequestError(
+    notifyError(databaseRequestError(
       cause,
       "Could not update this ticket. Refresh and try again.",
     ));
@@ -881,7 +881,7 @@ async function findTicket() {
     const index=passengers.value.findIndex(item=>item.id===person.id);
     if(index<0)passengers.value.push(person);else passengers.value[index]=person;
     selectPassenger(person);statusFilter.value='ALL';search.value='';closeScanner();void revealReview();
-  }catch(cause){scanError.value=notifyError(databaseRequestError(cause,'Could not verify this ticket. Check your connection and try again.'));}
+  }catch(cause){notifyError(databaseRequestError(cause,'Could not verify this ticket. Check your connection and try again.'));}
   finally{scanBusy.value=false;}
 }
 function stopCamera() {
@@ -942,8 +942,7 @@ async function startCamera() {
   } catch (cause) {
     stopCamera();
     const cameraError = cause as DOMException;
-    scanError.value =
-      notifyError(cameraError.name === "NotAllowedError"
+    notifyError(cameraError.name === "NotAllowedError"
         ? "Camera permission was denied. Allow camera access in your browser and try again."
         : cameraError.name === "NotFoundError"
           ? "No camera was found on this device. Enter the ticket code instead."

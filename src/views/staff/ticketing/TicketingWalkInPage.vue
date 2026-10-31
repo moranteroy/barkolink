@@ -492,7 +492,7 @@ async function retrySale() {
     try {
       if (await recover()) { pendingSale.value = null; sessionStorage.removeItem(saleKey); return; }
     } catch { /* Keep the original intent while the result is uncertain. */ }
-    errorMessage.value = notifyError(`${databaseRequestError(error, "Could not confirm this sale.")} Retry this same sale when the connection is restored. Do not collect cash again.`);
+    notifyError(`${databaseRequestError(error, "Could not confirm this sale.")} Retry this same sale when the connection is restored. Do not collect cash again.`);
   } finally { busy.value = false; }
 }
 const selectedSailing = computed(() =>
@@ -575,10 +575,10 @@ async function loadSailings() {
     sailings.value = result.data.sailings;
   } catch (error) {
     if (error instanceof StaffPortRequiredError) { errorMessage.value = ''; return; }
-    errorMessage.value = notifyError(databaseRequestError(
+    errorMessage.value = databaseRequestError(
       error,
       "Could not load sailings.",
-    ));
+    );
   } finally {
     loadingSailings.value = false;
   }
@@ -677,7 +677,7 @@ async function issueTicket() {
     busy.value = false;
     await retrySale();
   } catch (error) {
-    errorMessage.value = notifyError(databaseRequestError(
+    notifyError(databaseRequestError(
       error,
       "Could not issue the ticket.",
     ));

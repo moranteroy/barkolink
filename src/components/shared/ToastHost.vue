@@ -6,7 +6,7 @@
         :role="current.tone === 'error' ? 'alert' : 'status'" aria-atomic="true"
         @mouseenter="pause" @mouseleave="resume" @focusin="pause" @focusout="resume">
         <AppIcon :icon="current.tone === 'error' ? alertCircleOutline : current.tone === 'success' ? checkmarkCircleOutline : informationCircleOutline" aria-hidden="true" />
-        <div><strong>{{ current.tone === 'error' ? 'Something went wrong' : current.tone === 'success' ? 'Success' : 'Notice' }}</strong><p>{{ current.message }}</p></div>
+        <div><strong>{{ current.title || (current.tone === 'error' ? 'Something went wrong' : current.tone === 'success' ? 'Success' : 'Notice') }}</strong><p>{{ current.message }}</p></div>
         <button type="button" aria-label="Dismiss notification" @click="dismissToast(current.id)"><AppIcon :icon="closeOutline" aria-hidden="true" /></button>
       </div>
     </Transition>

@@ -1,3 +1,4 @@
+import { clearToasts, toastMessages } from '../../src/composables/toast';
 import { flushPromises, mount } from '@vue/test-utils';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import RoutesPanel from '../../src/components/admin/RoutesPanel.vue';
@@ -21,7 +22,7 @@ const ports = [
   { id: 'cal', name: 'Calapan Port', isActive: true },
 ];
 beforeEach(() => {
-  vi.clearAllMocks();
+  clearToasts(); vi.clearAllMocks();
   mocks.routes.mockResolvedValue({ data: { routes: [
     { id: 'r1', code: 'BTG-CAL', originPortId: 'btg', destinationPortId: 'cal', origin: ports[0], destination: ports[1], durationMinutes: 90, isActive: true },
     { id: 'r2', code: 'CAL-BTG', originPortId: 'cal', destinationPortId: 'btg', origin: ports[1], destination: ports[0], durationMinutes: 120, isActive: false },
@@ -58,7 +59,8 @@ describe('route directory and modal', () => {
     await wrapper.find('#new-route-destination').setValue('cal');
     await wrapper.find('.route-form').trigger('submit');
     await flushPromises();
-    expect(wrapper.find('.route-form-error[role="alert"]').exists()).toBe(true);
+    expect(wrapper.find('.route-form-error[role="alert"]').exists()).toBe(false);
+    expect(toastMessages.value.some(toast => toast.tone === 'error')).toBe(true);
     expect((wrapper.find('#new-route-code').element as HTMLInputElement).value).toBe('BTG-CAL-NEW');
     wrapper.unmount();
   });

@@ -2,15 +2,17 @@ import { flushPromises, mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import AdminReportsPanel from '../../src/components/admin/AdminReportsPanel.vue'
 import { reportNumberFields } from '../../src/data/reportAnalytics'
-const mocks = vi.hoisted(() => ({ reports: vi.fn() }))
+const mocks = vi.hoisted(() => ({ reports: vi.fn(), pdf: vi.fn(), gridApi: undefined as unknown }))
+vi.mock('../../src/data/reportPdf', () => ({ downloadReportPdf: mocks.pdf }))
 vi.mock('../../src/services/session', () => ({ staffDatabase: {} }))
 vi.mock('../../src/services/database/staff', () => ({ adminReports: mocks.reports }))
 vi.mock('../../src/components/shared/RecordsGrid.vue', () => ({ default: {
   props: ['rows', 'columns'],
+  setup() { return { getApi: () => mocks.gridApi } },
   template: '<div class="records-grid"><div v-for="row in rows" :key="row.key" class="test-grid-row"><slot name="cell" v-for="(value, index) in row.cells" :row="row" :value="value" :index="index" /></div><p v-if="!rows.length">No matching records.</p></div>',
 } }))
 const row = (code: string, vesselId: string, vessel: string, revenue: number) => ({ ...Object.fromEntries(reportNumberFields.map(k => [k,0])), code, vesselId, vessel, departureAt: '2026-10-02T08:00:00Z', originId: 'a', origin: 'Origin', destinationId: 'b', destination: 'Destination', status: 'SCHEDULED', collectedRevenue: revenue, capacity: 100, reservedSeats: 25 })
-beforeEach(() => { mocks.reports.mockReset(); mocks.reports.mockResolvedValue({ data: { sailings: [row('TRP1','v1','Ferry One',100),row('TRP2','v2','Ferry Two',300)] } }) })
+beforeEach(() => { mocks.gridApi = undefined; mocks.pdf.mockReset(); mocks.reports.mockReset(); mocks.reports.mockResolvedValue({ data: { sailings: [row('TRP1','v1','Ferry One',100),row('TRP2','v2','Ferry Two',300)] } }) })
 describe('admin reports panel', () => {
   it('loads reports, filters analytics by vessel, and groups the details', async () => {
     const wrapper = mount(AdminReportsPanel, { props: { refreshToken: 0 } }); await flushPromises()
@@ -62,6 +64,33 @@ describe('admin reports panel', () => {
     expect((wrapper.find('input[type="search"]').element as HTMLInputElement).value).toBe('')
     expect(wrapper.findAll('.test-grid-row')).toHaveLength(2)
     expect(mocks.reports).toHaveBeenCalledTimes(2)
+    wrapper.unmount()
+  })
+
+  it('exports only column-filtered rows in table order and reconciles the summary', async () => {
+    const wrapper = mount(AdminReportsPanel, { props: { refreshToken: 0 } }); await flushPromises()
+    const source = ['TRP2', 'Oct 2, 2026', 'Origin to Destination', 'Ferry Two', '25 / 100', '25%', 3, 300, 0, 0, 'SCHEDULED']
+    mocks.gridApi = {
+      isDestroyed: () => false,
+      isAnyFilterPresent: () => true,
+      forEachNodeAfterFilterAndSort: (callback: (node: unknown) => void) => callback({ data: { source } }),
+    }
+    await wrapper.find('.export').trigger('click'); await flushPromises()
+    await vi.waitFor(() => expect(mocks.pdf).toHaveBeenCalledTimes(1))
+    const report = mocks.pdf.mock.calls[0][0]
+    expect(report.rows).toHaveLength(1)
+    expect(report.rows[0][0]).toBe('TRP2')
+    expect(report.rows[0][7]).toBe('PHP 300.00')
+    expect(report.summary).toContainEqual({ label: 'Collected revenue', value: 'PHP 300.00' })
+    expect(report.summary).toContainEqual({ label: 'Reservations', value: '3' })
+    expect(report.scope).toContain('Table column filters applied')
+    wrapper.unmount()
+  })
+  it('does not export all records when column filters match no rows', async () => {
+    const wrapper = mount(AdminReportsPanel, { props: { refreshToken: 0 } }); await flushPromises()
+    mocks.gridApi = { isDestroyed: () => false, forEachNodeAfterFilterAndSort: () => undefined }
+    await wrapper.find('.export').trigger('click'); await flushPromises()
+    expect(mocks.pdf).not.toHaveBeenCalled()
     wrapper.unmount()
   })
 

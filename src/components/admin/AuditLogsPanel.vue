@@ -82,7 +82,6 @@
   </section>
 </template>
 <script setup lang="ts">
-import { notifyError } from '@/composables/toast';
 import WorkspacePagination from "../shared/WorkspacePagination.vue";
 import { computed, onMounted, ref, watch } from "vue";
 import { useRoute } from "vue-router";
@@ -174,7 +173,7 @@ async function load() {
     total.value = result.data.totalCount;
     actions.value = result.data.actions;
   } catch (cause) {
-    error.value = notifyError(databaseRequestError(cause, "Could not load audit records."));
+    error.value = databaseRequestError(cause, "Could not load audit records.");
     total.value = 0;
   } finally {
     loading.value = false;

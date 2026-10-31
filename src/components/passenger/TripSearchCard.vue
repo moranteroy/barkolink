@@ -39,7 +39,6 @@
   </form>
 </template>
 <script setup lang="ts">
-import { notifyError } from '@/composables/toast';
 import { computed, onMounted, ref, watch, useId } from "vue";
 import { useRouter } from "vue-router";
 import { Button } from "@/components/ui/button";
@@ -106,7 +105,7 @@ onMounted(async () => {
     if (cities.value.length < 2)
       portError.value = "At least two active port cities are needed to search.";
   } catch (error) {
-    portError.value = notifyError((error as Error).message || "Could not load ports.");
+    portError.value = (error as Error).message || "Could not load ports.";
   } finally {
     loading.value = false;
   }

@@ -42,7 +42,9 @@ describe('Passenger profile and settings', () => {
     await wrapper.get('input[autocomplete="name"]').setValue('  Maria   Santos  ')
     await wrapper.get('input[type="tel"]').setValue('bad number')
     await wrapper.get('form').trigger('submit'); expect(mocks.save).not.toHaveBeenCalled()
-    expect(wrapper.get('[role="alert"]').text()).toContain('valid contact number')
+    expect(toastMessages.value[toastMessages.value.length - 1]?.message).toContain('11 digits for Philippine mobile numbers')
+    expect(wrapper.find('[role="alert"]').exists()).toBe(false)
+    expect(toastMessages.value[toastMessages.value.length - 1]?.title).toBe('Check your details')
     await wrapper.get('input[type="tel"]').setValue('+63 (912) 345-6789')
     let finish!: (value: unknown) => void
     mocks.save.mockReturnValueOnce(new Promise(resolve => { finish = resolve }))
@@ -100,7 +102,7 @@ describe('Passenger profile and settings', () => {
 
 describe('All-role settings', () => {
   beforeEach(() => {
-    vi.clearAllMocks(); mocks.route.params = {}
+    clearToasts(); vi.clearAllMocks(); mocks.route.params = {}
     mocks.profile.mockResolvedValue({ data: { user: original } }); mocks.save.mockResolvedValue({ data: {} })
     mocks.reauth.mockResolvedValue(undefined); mocks.password.mockResolvedValue(undefined)
   })
@@ -123,7 +125,8 @@ describe('All-role settings', () => {
       const wrapper = mount(StaffSettingsPage, options); await flushPromises()
       await wrapper.get('input[type="tel"]').setValue('invalid')
       await wrapper.get('form').trigger('submit'); await flushPromises()
-      expect(mocks.save).not.toHaveBeenCalled(); expect(wrapper.get('[role="alert"]').text()).toContain('valid contact number')
+      expect(mocks.save).not.toHaveBeenCalled(); expect(toastMessages.value[toastMessages.value.length - 1]?.message).toContain('11 digits for Philippine mobile numbers')
+    expect(wrapper.find('[role="alert"]').exists()).toBe(false)
       await wrapper.get('input[type="tel"]').setValue('+63 (998) 765-4321')
       let fail!: (error: Error) => void
       mocks.save.mockReturnValueOnce(new Promise((resolve, reject) => { fail = reject }))

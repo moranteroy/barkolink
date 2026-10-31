@@ -6,9 +6,9 @@ import VouchersPanel from '../../src/components/admin/VouchersPanel.vue';
 import type { Voucher } from '../../src/services/vouchers';
 const voucherStyles = readFileSync('src/theme/admin-vouchers.css', 'utf8');
 
-const mocks = vi.hoisted(() => ({ list: vi.fn(), save: vi.fn(), settings: vi.fn(), saveSettings: vi.fn() }));
+const mocks = vi.hoisted(() => ({ list: vi.fn(), save: vi.fn(), settings: vi.fn(), saveSettings: vi.fn(), details: vi.fn() }));
 vi.mock('../../src/services/supabase', () => ({ requireSupabase: () => ({}) }));
-vi.mock('../../src/services/vouchers', () => ({ listVouchers: mocks.list, saveVoucher: mocks.save, adminLoyaltySettings: mocks.settings, saveLoyaltySettings: mocks.saveSettings }));
+vi.mock('../../src/services/vouchers', () => ({ listVouchers: mocks.list, saveVoucher: mocks.save, updateVoucherDetails: mocks.details, adminLoyaltySettings: mocks.settings, saveLoyaltySettings: mocks.saveSettings }));
 vi.mock('@ionic/vue', () => ({
   IonIcon: { template: '<span />' },
   IonModal: { props: ['isOpen'], template: '<div v-if="isOpen"><slot /></div>' },
@@ -26,6 +26,7 @@ beforeEach(() => { clearToasts();
   vi.setSystemTime(new Date('2026-10-08T12:00:00Z'));
   mocks.list.mockResolvedValue({ data: { vouchers: records } });
   mocks.save.mockResolvedValue({ data: {} });
+  mocks.details.mockResolvedValue({ data: {} });
   mocks.settings.mockResolvedValue({ data: { settings: { tripsPerReward: 4, silverReward: 125, goldReward: 250, platinumReward: 400, expiryDays: 60 } } });
   mocks.saveSettings.mockImplementation(async (_client, settings) => ({ data: { settings } }));
 });
@@ -121,13 +122,13 @@ describe('voucher management', () => {
   it('pauses a voucher and refreshes its status without changing offer details', async () => {
     mocks.list.mockResolvedValueOnce({ data: { vouchers: [voucher] } }).mockResolvedValueOnce({ data: { vouchers: [{ ...voucher, isActive: false }] } });
     const wrapper = mount(VouchersPanel); await flushPromises();
-    await wrapper.find('.action-cell button').trigger('click'); await flushPromises();
+    await wrapper.find('.action-cell button[aria-label^="Pause voucher"]').trigger('click'); await flushPromises();
     expect(mocks.save).toHaveBeenCalledWith({}, { id: 'one', isActive: false });
     expect(wrapper.find('.status-badge').text()).toBe('Paused');
-    expect(wrapper.find('.action-cell button').text()).toContain('Activate');
+    expect(wrapper.find('.action-cell button[aria-label^="Activate voucher"]').text()).toContain('Activate');
     wrapper.unmount();
   });
-  it('shows a creation failure inside the modal and keeps the draft editable', async () => {
+  it('shows a creation failure in a toast and keeps the draft editable', async () => {
     mocks.save.mockRejectedValue(new Error('Unavailable'));
     const wrapper = mount(VouchersPanel); await flushPromises();
     await wrapper.find('.create-voucher').trigger('click');
@@ -136,9 +137,38 @@ describe('voucher management', () => {
     expect(wrapper.find('input[aria-label="Voucher code"]').attributes('readonly')).toBeDefined();
     await wrapper.findAll('input[type="datetime-local"]')[1].setValue('2026-10-19T08:00');
     await wrapper.find('form.voucher-dialog').trigger('submit'); await flushPromises();
-    expect(wrapper.find('.voucher-dialog [role="alert"]').exists()).toBe(true);
+    expect(wrapper.find('.voucher-dialog [role="alert"]').exists()).toBe(false);
+    expect(toastMessages.value.some(toast => toast.tone === 'error' && toast.message.includes('Unavailable'))).toBe(true);
     expect(wrapper.find('.voucher-dialog fieldset').attributes('disabled')).toBeUndefined();
     expect((wrapper.find('input[aria-label="Voucher code"]').element as HTMLInputElement).value).toBe(generated);
     wrapper.unmount();
   });
+  it('edits an unclaimed mission and limit, then allows direct claim without a mission', async () => {
+    mocks.list.mockResolvedValue({data:{vouchers:[{...voucher,claimable:true,claimed:0,used:0,title:'Family sailing promo'}]}});
+    const wrapper=mount(VouchersPanel);await flushPromises();
+    await wrapper.find('button[aria-label="Edit details for SAIL50"]').trigger('click');
+    await wrapper.find('.voucher-dialog select').setValue('TRIPS');
+    await wrapper.find('.voucher-dialog input[max="1000"]').setValue('3');
+    await wrapper.find('input[max="2147483647"]').setValue('20');
+    await wrapper.find('form.voucher-dialog').trigger('submit');await flushPromises();
+    expect(mocks.details).toHaveBeenLastCalledWith({},expect.objectContaining({id:'one',requiredTrips:3,usageLimit:20}));
+    await wrapper.find('button[aria-label="Edit details for SAIL50"]').trigger('click');
+    await wrapper.find('.voucher-dialog select').setValue('NONE');
+    await wrapper.find('form.voucher-dialog').trigger('submit');await flushPromises();
+    expect(mocks.details).toHaveBeenLastCalledWith({},expect.objectContaining({requiredTrips:0}));wrapper.unmount();
+  });
+  it('locks claimed missions and retains the edit draft after a failed save', async () => {
+    mocks.list.mockResolvedValue({data:{vouchers:[{...voucher,claimable:true,claimed:7,requiredTrips:3}]}});
+    mocks.details.mockRejectedValue(new Error('Connection unavailable'));
+    const wrapper=mount(VouchersPanel);await flushPromises();
+    await wrapper.find('button[aria-label="Edit details for SAIL50"]').trigger('click');
+    expect(wrapper.find('.voucher-dialog select').attributes('disabled')).toBeDefined();
+    expect(wrapper.find('input[max="2147483647"]').attributes('min')).toBe('7');
+    await wrapper.find('input[minlength="3"]').setValue('Updated promo name');
+    await wrapper.find('form.voucher-dialog').trigger('submit');await flushPromises();
+    expect(wrapper.find('.voucher-dialog').exists()).toBe(true);
+    expect((wrapper.find('input[minlength="3"]').element as HTMLInputElement).value).toBe('Updated promo name');
+    expect(toastMessages.value.some(t=>t.message.includes('Connection unavailable'))).toBe(true);wrapper.unmount();
+  });
+
 });

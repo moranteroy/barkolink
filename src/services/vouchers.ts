@@ -1,9 +1,14 @@
 import { executeDatabase, type DatabaseClient } from './database/client';
 export type VoucherQuote = {code:string; discount:number; subtotal:number; total:number};
-export type Voucher = {id:string;code:string;discountType:'FIXED'|'PERCENT';value:number;minimumSpend:number;usageLimit:number;used:number;startsAt:string;expiresAt:string;isActive:boolean};
+export type Voucher = {id:string;code:string;discountType:'FIXED'|'PERCENT';value:number;minimumSpend:number;usageLimit:number;used:number;startsAt:string;expiresAt:string;isActive:boolean;claimable?:boolean;claimed?:number;title?:string;description?:string;requiredTrips?:number;ownerUid?:string|null};
+export type PassengerVoucher = {id:string;title:string;description:string;discountType:'FIXED'|'PERCENT';value:number;minimumSpend:number;startsAt:string;expiresAt:string;isActive:boolean;requiredTrips:number;remaining:number;claimedAt:string|null;code:string|null;used:boolean};
+export type PassengerVoucherData = {completedTrips:number;vouchers:PassengerVoucher[]};
+export const passengerVouchers = (client:DatabaseClient) => executeDatabase<PassengerVoucherData>(client,'PassengerVouchers',{});
+export const claimVoucher = (client:DatabaseClient,voucherId:string) => executeDatabase<{code:string;claimedAt:string}>(client,'ClaimVoucher',{voucherId});
 export const quoteVoucher=(client:DatabaseClient,args:object)=>executeDatabase<VoucherQuote>(client,'QuoteVoucher',args);
 export const listVouchers=(client:DatabaseClient)=>executeDatabase<{vouchers:Voucher[]}>(client,'AdminVouchers',{});
 export const saveVoucher=(client:DatabaseClient,args:object)=>executeDatabase(client,'AdminSaveVoucher',args);
+export const updateVoucherDetails=(client:DatabaseClient,args:{id:string;title:string;description:string;requiredTrips:number;usageLimit:number})=>executeDatabase<{id:string}>(client,'AdminUpdateVoucherDetails',args);
 export type LoyaltySettings = { tripsPerReward:number; silverReward:number; goldReward:number; platinumReward:number; expiryDays:number };
 export const adminLoyaltySettings = (client:DatabaseClient) => executeDatabase<{settings:LoyaltySettings}>(client,'AdminLoyaltySettings',{});
 export const saveLoyaltySettings = (client:DatabaseClient,args:LoyaltySettings) => executeDatabase<{settings:LoyaltySettings}>(client,'AdminSaveLoyaltySettings',args);

@@ -4,6 +4,7 @@ export interface ConfirmationOptions {
   title: string;
   message: string;
   confirmText?: string;
+  cancelText?: string;
   danger?: boolean;
 }
 
@@ -29,7 +30,7 @@ export async function confirmAction(
       : "barkolink-confirmation",
     backdropDismiss: false,
     buttons: [
-      { text: "Go back", role: "cancel", cssClass: "confirmation-back" },
+      { text: options.cancelText || "Go back", role: "cancel", cssClass: "confirmation-back" },
       {
         text: options.confirmText || "Confirm",
         role: "confirm",
@@ -59,7 +60,7 @@ export async function requestReason(
       },
     ],
     buttons: [
-      { text: "Go back", role: "cancel", cssClass: "confirmation-back" },
+      { text: options.cancelText || "Go back", role: "cancel", cssClass: "confirmation-back" },
       {
         text: "Continue",
         role: "confirm",

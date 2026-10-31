@@ -126,7 +126,7 @@ async function load() {
     rows.value = r.data.passengers;
     sailing.value = r.data.sailing;
   } catch (e) {
-    error.value = notifyError(databaseRequestError(e, "Could not load no-shows."));
+    error.value = databaseRequestError(e, "Could not load no-shows.");
   } finally {
     loading.value = false;
   }
@@ -143,7 +143,7 @@ async function more() {
     sailingPage.value++;
     sailingTotal.value = r.data.totalCount;
   } catch (e) {
-    error.value = notifyError(databaseRequestError(e, "Could not load trips."));
+    error.value = databaseRequestError(e, "Could not load trips.");
   } finally {
     loading.value = false;
   }
@@ -165,7 +165,7 @@ async function mark(id?: string) {
     await load();
     notifySuccess(`${r.data.marked} no-show records added.`);
   } catch (e) {
-    error.value = notifyError(databaseRequestError(e, "Could not record attendance."));
+    notifyError(databaseRequestError(e, "Could not record attendance."));
   } finally {
     busy.value = false;
   }
@@ -179,7 +179,7 @@ onMounted(async () => {
     if (!code.value) code.value = sailings.value[0]?.code || "";
     if (code.value) await load();
   } catch (e) {
-    error.value = notifyError(databaseRequestError(e, "Could not load completed trips."));
+    error.value = databaseRequestError(e, "Could not load completed trips.");
   }
 });
 </script>

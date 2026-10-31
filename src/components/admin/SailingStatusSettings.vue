@@ -89,14 +89,14 @@ async function load() {
   if (!staffDatabase) return;
   loading.value = true; error.value = '';
   try { policies.value = (await sailingStatusPolicies(staffDatabase)).data.policies; operator.value ||= policies.value[0]?.operator || ''; selectPolicy(); loaded.value = true; }
-  catch (e) { error.value = notifyError(databaseRequestError(e, 'Could not load sailing status settings.')); }
+  catch (e) { error.value = databaseRequestError(e, 'Could not load sailing status settings.'); }
   finally { loading.value = false; }
 }
 async function save() {
   if (!staffDatabase || !canSave.value) return;
   error.value = ''; notice.value = ''; saving.value = true;
   try { policies.value = (await saveSailingStatusPolicy(staffDatabase, { operator: operator.value, boardingLeadMinutes: form.autoBoarding ? form.minutes : null, boardingTimeSource: form.autoBoarding ? form.source.trim() : null, autoComplete: form.autoComplete })).data.policies; selectPolicy(); notifySuccess('Sailing status configuration saved.'); }
-  catch (e) { error.value = notifyError(databaseRequestError(e, 'Could not save status configuration.')); }
+  catch (e) { notifyError(databaseRequestError(e, 'Could not save status configuration.')); }
   finally { saving.value = false; }
 }
 onMounted(load);

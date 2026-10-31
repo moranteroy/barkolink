@@ -9,7 +9,7 @@
           item.to === '/profile'
             ? currentPath === '/profile' ||
               currentPath.startsWith('/settings') ||
-              currentPath === '/travelers'
+              currentPath === '/travelers' || currentPath === '/vouchers'
             : currentPath === item.to.split('?')[0],
       }"
       :aria-current="
@@ -17,7 +17,7 @@
           item.to === '/profile'
             ? currentPath === '/profile' ||
               currentPath.startsWith('/settings') ||
-              currentPath === '/travelers'
+              currentPath === '/travelers' || currentPath === '/vouchers'
             : currentPath === item.to.split('?')[0]
         )
           ? 'page'

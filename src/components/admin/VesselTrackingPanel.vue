@@ -60,7 +60,7 @@ async function load(background=false){
   } catch(e) {
     if(disposed || version!==requestVersion)return;
     const message=databaseRequestError(e,'Could not load vessel locations.');
-    error.value=background ? message : notifyError(message);
+    error.value=message;
   } finally { if(!disposed && version===requestVersion)loading.value=false; }
 }
 function resume(){if(document.visibilityState==='visible')void load(true);}
@@ -68,7 +68,7 @@ function resume(){if(document.visibilityState==='visible')void load(true);}
 function open(vessel:VesselPositions['vessels'][number]){selected.value=vessel;Object.assign(form,{portId:vessel.position.portId || '',observedAt:localNow(),note:''});baseline=JSON.stringify(form);formError.value='';}
 async function canDismiss(){return !saving.value && (!dirty() || await confirmAction({title:'Discard location correction?',message:'The location correction has not been saved.',confirmText:'Discard changes'}));}
 async function close(){if(await canDismiss())selected.value=null;}
-async function save(){if(!staffDatabase || !selected.value || saving.value)return;requestVersion++;loading.value=false;saving.value=true;formError.value='';try{data.value=(await confirmVesselPort(staffDatabase,{vesselId:selected.value.id,portId:form.portId,observedAt:new Date(`${form.observedAt}:00+08:00`).toISOString(),note:form.note})).data;updatedAt.value=new Date().toISOString();error.value='';baseline=JSON.stringify(form);selected.value=null;notifySuccess('Location correction saved. Automatic tracking continues from this port.');}catch(e){formError.value=notifyError(databaseRequestError(e,'Could not save the location correction.'));}finally{saving.value=false;}}
+async function save(){if(!staffDatabase || !selected.value || saving.value)return;requestVersion++;loading.value=false;saving.value=true;formError.value='';try{data.value=(await confirmVesselPort(staffDatabase,{vesselId:selected.value.id,portId:form.portId,observedAt:new Date(`${form.observedAt}:00+08:00`).toISOString(),note:form.note})).data;updatedAt.value=new Date().toISOString();error.value='';baseline=JSON.stringify(form);selected.value=null;notifySuccess('Location correction saved. Automatic tracking continues from this port.');}catch(e){notifyError(databaseRequestError(e,'Could not save the location correction.'));}finally{saving.value=false;}}
 onMounted(()=>{void load();refreshTimer=setInterval(()=>void load(true),30000);document.addEventListener('visibilitychange',resume);});
 onBeforeUnmount(()=>{disposed=true;requestVersion++;clearInterval(refreshTimer);document.removeEventListener('visibilitychange',resume);});
 </script>

@@ -40,7 +40,7 @@ function refreshVisibleNotifications() {
   if (document.visibilityState === "visible") void refreshNotificationUnread();
 }
 onMounted(() => {
-  notificationTimer = setInterval(refreshVisibleNotifications, 30000);
+  notificationTimer = setInterval(refreshVisibleNotifications, 15000);
   window.addEventListener("focus", refreshVisibleNotifications);
   document.addEventListener("visibilitychange", refreshVisibleNotifications);
 });
@@ -50,6 +50,7 @@ onUnmounted(() => {
   document.removeEventListener("visibilitychange", refreshVisibleNotifications);
 });
 const passengerPaths = new Set([
+  "/vouchers",
   "/assistant",
   "/home",
   "/trips",

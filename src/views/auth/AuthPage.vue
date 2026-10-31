@@ -188,7 +188,6 @@
 
 <script setup lang="ts">
 import { safeDestination, validEmail, validName } from '../../data/securityValidation';
-import { notifyError, notifySuccess } from '@/composables/toast';
 import BackIcon from "@/components/ui/icon/BackIcon.vue";
 import { computed, ref, watch } from "vue";
 import { RouterLink, useRoute, useRouter } from "vue-router";
@@ -266,9 +265,8 @@ async function resetPassword() {
     sessionStorage.setItem('barkolink-pending-email', JSON.stringify({ email: email.value.trim(), purpose: 'recovery' }));
     await router.replace({ path: '/verify-email', query: { purpose: 'recovery' } });
   } catch (error) {
-    errorMessage.value =
-      notifyError((error as { message?: string }).message ||
-      "Could not send password reset email.");
+    errorMessage.value = (error as { message?: string }).message ||
+      "Could not send password reset email.";
   } finally {
     resetting.value = false;
   }
@@ -362,7 +360,7 @@ async function submit() {
         sessionStorage.setItem('barkolink-pending-email', JSON.stringify({ email: email.value.trim(), purpose: 'signup' }));
         await router.replace({ path: '/verify-email', query: { ...authLocation('/register').query, purpose: 'signup' } });
       } catch {
-        errorMessage.value = notifySuccess('Your email still needs verification, but a new code could not be sent. Wait a minute and try signing in again.');
+        errorMessage.value = 'Your email still needs verification, but a new code could not be sent. Wait a minute and try signing in again.';
       }
       return;
     }
@@ -384,8 +382,7 @@ async function submit() {
       over_email_send_rate_limit:
         "Too many email requests. Wait a moment and try again.",
     };
-    errorMessage.value =
-      notifyError((code && errors[code]) ||
+    errorMessage.value = (code && errors[code]) ||
       databaseRequestError(error, "") ||
       (message?.includes("Supabase is not configured")
         ? "Supabase is not configured yet. Add the project URL and publishable key to .env.local to enable sign in."
@@ -395,7 +392,7 @@ async function submit() {
             ? "Supabase sign-in succeeded, but your passenger profile could not be loaded. Please try again."
             : stage === "navigation"
               ? "Sign-in succeeded, but the destination page could not be opened. Please try again."
-              : "We could not complete sign in. Please check your email and password."));
+              : "We could not complete sign in. Please check your email and password.");
   } finally {
     submitting.value = false;
   }

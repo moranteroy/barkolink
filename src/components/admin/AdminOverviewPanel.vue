@@ -55,7 +55,6 @@
 </template>
 
 <script setup lang="ts">
-import { notifyError } from '@/composables/toast';
 import { computed, onMounted, ref, useId, watch } from 'vue';
 import { RouterLink } from 'vue-router';
 import AppIcon from "@/components/ui/icon/AppIcon.vue";
@@ -122,7 +121,7 @@ async function load() {
   if (!staffDatabase) return;
   const token = ++request; loading.value = true; error.value = '';
   try { const result = await overview(staffDatabase); if (token === request) { data.value = result.data; updatedAt.value = new Date(); } }
-  catch (cause) { if (token === request) error.value = notifyError(databaseRequestError(cause, 'Could not load operational insights.')); }
+  catch (cause) { if (token === request) error.value = databaseRequestError(cause, 'Could not load operational insights.'); }
   finally { if (token === request) loading.value = false; }
 }
 onMounted(load);

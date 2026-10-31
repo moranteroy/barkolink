@@ -1,11 +1,11 @@
 <template>
   <IonPage class="port-display-page">
     <IonContent :fullscreen="true">
-      <main ref="screen" class="port-screen" :class="{ 'is-kiosk': kiosk }">
+      <main ref="screen" class="port-screen" :class="{ 'is-kiosk': kiosk }" :data-weather="headerWeather?.scene || 'neutral'" :data-phase="atmosphere?.phase || 'unknown'" :style="atmosphere?.style">
         <header class="display-header">
-          <MaritimeHeaderArt night :weather="headerWeather?.scene" :daylight="headerWeather?.isDay" />
+          <MaritimeHeaderArt immersive :night="!atmosphere?.isDay" :weather="headerWeather?.scene" :daylight="atmosphere?.isDay" :phase="atmosphere?.phase" />
           <div v-if="headerWeather" class="header-weather-target" tabindex="0" role="img" aria-label="Port weather" aria-describedby="header-weather-tooltip">
-            <span id="header-weather-tooltip" class="header-weather-tooltip" role="tooltip">{{ headerWeather.currentCondition }} · {{ selectedPort?.name }} · {{ weatherDateLabel }}</span>
+            <span id="header-weather-tooltip" class="header-weather-tooltip" role="tooltip">{{ headerCondition }} &middot; {{ selectedPort?.name }} &middot; {{ atmosphere ? harborPhaseLabel[atmosphere.phase] : '' }} &middot; Updated {{ timeLabel(headerWeather.currentAt) }} PH</span>
           </div>
           <div class="display-identity"><img src="/images/brand/barkolink-mark.svg" alt="BarkoLink" width="44" height="44" /><div><p class="display-brand">TERMINAL SAILING BOARD</p><h1>{{ selectedPort?.name || 'Port sailing board' }}</h1><p>{{ dateLabel }} · Philippine time</p></div></div>
           <div class="display-clock"><strong>{{ clockLabel }}</strong><div class="clock-meta"><span class="connection-state" :class="{ stale: isStale, connecting: !data }" role="status"><i aria-hidden="true"></i>{{ isStale ? 'Updates delayed' : data ? 'Live updates' : 'Connecting' }}</span><button v-if="!kiosk || settingsOpen" type="button" @click="settingsOpen = !settingsOpen">{{ settingsOpen ? 'Hide controls' : 'Display controls' }}</button></div></div>
@@ -14,7 +14,7 @@
           <label for="display-port">Port</label><select id="display-port" :value="data?.portId || ''" :disabled="loading || !data?.ports.length" @change="changePort"><option v-if="!data?.ports.length" value="">No ports available</option><option v-for="port in data?.ports" :key="port.id" :value="port.id">{{ port.name }}</option></select>
           <button type="button" @click="copyLink">Copy TV link</button><button type="button" @click="fullscreen">Fullscreen</button><button type="button" :disabled="loading" @click="refresh">Refresh</button><button type="button" @click="enterKiosk">TV mode</button>
           <span role="status">{{ controlNotice || 'Open the TV link in the terminal screen browser.' }}</span>
-          <p class="header-weather-status" role="status">Header weather · {{ weatherDateLabel }}: {{ headerWeather ? headerWeather.currentCondition : weatherLoading ? 'Updating…' : 'Unavailable · Retrying automatically' }} · <a class="weather-credit" href="https://open-meteo.com/" target="_blank" rel="noopener noreferrer">Weather: Open-Meteo</a></p>
+          <p class="header-weather-status" role="status">Header weather · {{ weatherDateLabel }}: {{ headerWeather ? headerCondition : weatherLoading ? 'Updating…' : 'Unavailable · Retrying automatically' }} · <a class="weather-credit" href="https://open-meteo.com/" target="_blank" rel="noopener noreferrer">Weather: Open-Meteo</a></p>
           <div class="display-responsibility"><strong>Who updates this board?</strong><p>Administrator: update trip schedules, statuses, and published advisories. Boarding desk: confirm actual boarding conditions and report corrections to the administrator. Connection or screen problems: contact the system administrator.</p><p v-if="reviewSailings.length" class="review-note">Schedule review needed: {{ reviewSailings.map(sailing => sailing.code).join(', ') }}. The scheduled departure has passed; confirm operations before the administrator updates the trip.</p></div>
         </section>
         <p v-if="error" class="display-error" role="alert">{{ error }} {{ data ? 'Showing the last received schedule. Confirm your sailing at the boarding desk.' : '' }}</p>
@@ -55,6 +55,7 @@ import { IonContent, IonPage, onIonViewDidEnter, onIonViewWillLeave } from '@ion
 import { computed, nextTick, onUnmounted, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { Ship, Megaphone } from '@lucide/vue';
+import { currentPortWeather, portAtmosphere, harborPhaseLabel } from '../../data/portAtmosphere';
 import MaritimeHeaderArt from '@/components/shared/MaritimeHeaderArt.vue';
 import { displaySailings, loadPortDisplay, manilaDate, portDisplayKey, type PortDisplayData } from '../../services/portDisplay';
 import { loadDisplayWeather, type DisplayWeather } from '../../services/portDisplayWeather';
@@ -75,11 +76,13 @@ let weatherController: AbortController | undefined, weatherVersion = 0, weatherA
 const weatherKey = computed(() => `${selectedPort.value?.id || ''}:${today.value}`);
 const visibleWeather = computed(() => weather.value?.portId === selectedPort.value?.id && weather.value?.date === today.value ? weather.value : null);
 const weatherDateLabel = computed(() => today.value.split('-').reverse().join('/'));
-const weatherStale = computed(() => weatherError.value || now.value.getTime() - weatherReceivedAt.value > 35 * 60000);
-const headerWeather = computed(() => !weatherStale.value ? visibleWeather.value : null);
+const weatherStale = computed(() => weatherError.value || now.value.getTime() - weatherReceivedAt.value > 15 * 60000);
+const headerWeather = computed(() => !weatherStale.value && currentPortWeather(visibleWeather.value, now.value) ? visibleWeather.value : null);
+const atmosphere = computed(() => portAtmosphere(headerWeather.value, now.value));
+const headerCondition = computed(() => !atmosphere.value?.isDay && headerWeather.value?.currentCondition === 'Sunny' ? 'Clear sky' : headerWeather.value?.currentCondition);
 async function refreshWeather() {
   const port = selectedPort.value;
-  const delay = weatherError.value ? 5 * 60000 : 30 * 60000;
+  const delay = weatherError.value ? 5 * 60000 : 10 * 60000;
   if (!active || !port || weatherLoading.value || (weatherAttemptAt && Date.now() - weatherAttemptAt < delay)) return;
   const version = ++weatherVersion, key = weatherKey.value;
   weatherController?.abort();
@@ -91,6 +94,7 @@ async function refreshWeather() {
   try {
     const result = await loadDisplayWeather(port, today.value, pending.signal);
     if (!active || version !== weatherVersion || key !== weatherKey.value) return;
+    if (!currentPortWeather(result, new Date())) throw new Error('Weather reading is outdated.');
     weather.value = result; weatherError.value = false; weatherReceivedAt.value = Date.now();
   } catch {
     if (active && version === weatherVersion && key === weatherKey.value) weatherError.value = true;
@@ -224,7 +228,7 @@ onUnmounted(stop);
 
 <style scoped>
 .port-display-page ion-content { --background: #091827; --color: #f0f6fc; color-scheme: dark; }
-.port-screen { --sailing-row-height: 120px; position: relative; display: flex; flex-direction: column; gap: 14px; height: 100dvh; min-height: 100dvh; padding: 24px 28px; box-sizing: border-box; background: var(--ocean-night-background); color: #f0f6fc; font-family: var(--ion-font-family, Arial, sans-serif); }
+.port-screen { --sailing-row-height: 120px; position: relative; display: flex; flex-direction: column; gap: 14px; height: 100dvh; min-height: 100dvh; padding: 24px 28px; box-sizing: border-box; background: radial-gradient(ellipse at 65% 0, var(--harbor-glow, #19395830), transparent 65%), linear-gradient(145deg, #061b31, #07182b); color: #f0f6fc; font-family: var(--ion-font-family, Arial, sans-serif); }
 .port-screen:fullscreen { overflow: auto; }
 .display-header { position: relative; isolation: isolate; display: flex; align-items: center; justify-content: space-between; gap: 20px; min-height: 112px; padding-block: 8px 14px; border-bottom: 1px solid #294359; flex-shrink: 0; }
 .display-identity { display: flex; align-items: center; gap: 14px; min-width: 0; }
@@ -240,6 +244,7 @@ onUnmounted(stop);
 .header-weather-target:hover .header-weather-tooltip, .header-weather-target:focus .header-weather-tooltip { visibility: visible; opacity: 1; }
 .header-weather-status { flex-basis: 100%; margin: 0; color: #b8cbd9; font-size: 12px; }.weather-credit { color: inherit; }
 .display-header :deep(.maritime-header-art) { inset: -16px 0 0; }
+.display-header :deep(.maritime-header-art.immersive) { inset: -16px 0 0; }
 .display-header :deep(.maritime-header-art img) { right: clamp(160px, 13vw, 250px); width: 930px; bottom: -48px; }
 .board-heading-copy { min-width: 0; }.board-heading-copy p { margin: 5px 0 0; color: #b3d7e8; font-size: clamp(13px, 1.1vw, 20px); line-height: 1.4; }
 .display-clock { text-align: right; flex: none; }

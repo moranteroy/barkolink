@@ -207,7 +207,7 @@ async function load() {
     rows.value = a.data.accommodations;
     vessels.value = v.data.vessels.filter(v => v.isActive && v.passengerCapacity != null).map(v => ({ id: v.id, name: v.name, passengerCapacity: v.passengerCapacity! }));
   } catch (e) {
-    error.value = notifyError(databaseRequestError(e, "Could not load accommodations."));
+    error.value = databaseRequestError(e, "Could not load accommodations.");
   } finally {
     loading.value = false;
   }
@@ -229,7 +229,7 @@ async function save() {
     await load();
     notifySuccess("Accommodation saved.");
   } catch (e) {
-    formError.value = notifyError(databaseRequestError(e, "Could not save accommodation."));
+    notifyError(databaseRequestError(e, "Could not save accommodation."));
   } finally {
     busy.value = false;
   }

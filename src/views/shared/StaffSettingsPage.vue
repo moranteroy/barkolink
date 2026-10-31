@@ -196,7 +196,7 @@
 </template>
 
 <script setup lang="ts">
-import { notifyError, notifySuccess } from '@/composables/toast';
+import { notifyError, notifySuccess, notifyValidationError } from '@/composables/toast';
 import BackIcon from "@/components/ui/icon/BackIcon.vue";
 import BrandMark from "../../components/shared/BrandMark.vue";
 import StaffNavigation from "../../components/staff/StaffNavigation.vue";
@@ -335,10 +335,10 @@ async function loadProfile() {
     }
     phone.value = profile.value.phone || "";
   } catch (error) {
-    profileError.value = notifyError(databaseRequestError(
+    profileError.value = databaseRequestError(
       error,
       "Could not load staff profile.",
-    ));
+    );
   } finally {
     if (request === profileRequest) profileLoading.value = false;
   }
@@ -353,10 +353,18 @@ async function savePhone() {
     !phoneDirty.value
   )
     return;
+  let values: ReturnType<typeof validatedProfile>;
+  try {
+    values = validatedProfile(profile.value.fullName, phone.value);
+  } catch (cause) {
+    phoneMessageType.value = 'error';
+    phoneMessage.value = '';
+    notifyValidationError((cause as Error).message);
+    return;
+  }
   savingPhone.value = true;
   phoneMessage.value = "";
   try {
-    const values = validatedProfile(profile.value.fullName, phone.value);
     await updateMyProfile(database, values);
     profile.value = { ...profile.value, phone: values.phone };
     phone.value = values.phone || "";
@@ -364,7 +372,7 @@ async function savePhone() {
     notifySuccess("Contact number saved.");
   } catch (error) {
     phoneMessageType.value = "error";
-    phoneMessage.value = notifyError(databaseRequestError(
+    notifyError(databaseRequestError(
       error,
       "Could not save contact number.",
     ));
@@ -424,8 +432,7 @@ async function changePassword() {
   } catch (error) {
     passwordMessageType.value = "error";
     const code = (error as { code?: string }).code;
-    passwordMessage.value =
-      notifyError(code === "auth/invalid-credential" ||
+    notifyError(code === "auth/invalid-credential" ||
       code === "auth/wrong-password" ||
       code === "invalid_credentials"
         ? "Current password is incorrect."

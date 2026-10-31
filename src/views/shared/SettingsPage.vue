@@ -236,7 +236,7 @@
 </template>
 
 <script setup lang="ts">
-import { notifyError, notifySuccess } from '@/composables/toast';
+import { notifyError, notifySuccess, notifyValidationError } from '@/composables/toast';
 import BackIcon from "@/components/ui/icon/BackIcon.vue";
 import { useUnsavedChanges } from "../../composables/unsavedChanges";
 import { validatedProfile } from "../../data/profileValidation";
@@ -361,10 +361,10 @@ async function loadProfile() {
     profileLoaded.value = true;
   } catch (cause) {
     if (request === profileRequest)
-      loadError.value = notifyError(databaseRequestError(
+      loadError.value = databaseRequestError(
         cause,
         "Could not load your profile.",
-      ));
+      );
   } finally {
     if (request === profileRequest) profileLoading.value = false;
   }
@@ -460,7 +460,7 @@ async function saveProfile() {
   try {
     values = validatedProfile(profile.name, profile.phone);
   } catch (cause) {
-    loadError.value = notifyError((cause as Error).message);
+    notifyValidationError((cause as Error).message);
     return;
   }
   savingProfile.value = true;
@@ -475,7 +475,7 @@ async function saveProfile() {
     syncAccountProfileName(user.uid, values.fullName);
     notifySuccess("Your profile has been updated.");
   } catch (cause) {
-    loadError.value = notifyError(databaseRequestError(
+    notifyError(databaseRequestError(
       cause,
       "Could not update your profile. Your changes are kept so you can retry.",
     ));
@@ -521,8 +521,7 @@ async function changePassword() {
     notifySuccess("Your password has been changed.");
   } catch (error) {
     const code = (error as { code?: string }).code;
-    loadError.value =
-      notifyError(code === "auth/wrong-password" ||
+    notifyError(code === "auth/wrong-password" ||
       code === "auth/invalid-credential" ||
       code === "invalid_credentials"
         ? "Your current password is incorrect."

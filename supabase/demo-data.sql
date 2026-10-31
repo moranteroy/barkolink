@@ -1786,3 +1786,7 @@ update public.port set is_active=false,reference_metadata='{"kind":"demo-archive
 update public.ferry_route set is_active=false,reference_metadata='{"kind":"demo-archive"}'::jsonb where code='CAL-PGA';
 update public.port set is_active=(coalesce(region in ('Batangas','Oriental Mindoro','Occidental Mindoro'),false) and coalesce(reference_metadata->>'kind','') <> 'demo-archive');
 update public.ferry_route r set is_active=false from public.port o,public.port d where r.origin_port_id=o.id and r.destination_port_id=d.id and (not o.is_active or not d.is_active);
+
+-- Continue welcoming new accounts after the initial demonstration import.
+update public.notification_campaign set is_welcome=true where id='eeeeeeee-0000-4000-8000-000000000301';
+update public.voucher set claimable=true where owner_uid is null;

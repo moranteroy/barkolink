@@ -118,6 +118,7 @@ const groups = [
   {
     title: "Account & travel",
     items: [
+      { label: "Claim vouchers", description: "Discover promos and view your claimed codes", icon: ticketOutline, to: "/vouchers" },
       {
         label: "Personal information",
         description: "Edit your name and contact number",
@@ -202,7 +203,7 @@ async function load() {
     });
   } catch (cause) {
     if (token === request)
-      error.value = notifyError(databaseRequestError(cause, "Could not load your profile."));
+      error.value = databaseRequestError(cause, "Could not load your profile.");
   } finally {
     if (token === request) loading.value = false;
   }
@@ -218,7 +219,7 @@ async function logout() {
     clearSessionViews();
     await router.replace("/login");
   } catch (cause) {
-    error.value = notifyError(databaseRequestError(cause, "Could not sign out. Try again."));
+    notifyError(databaseRequestError(cause, "Could not sign out. Try again."));
   } finally {
     loggingOut.value = false;
   }

@@ -92,7 +92,7 @@ export function buildDemoSeed() {
 ` + sql.slice(savedEnd)
   sql = remapCodes(sql)
   sql = sql.replace("'dataset','TEST'", "'dataset','BARKOLINK-DEMO'")
-  return sql + '\n' + demoPassengerDetailsSql + '\n' + referenceCatalogSql()
+  return sql + "\nupdate public.voucher set claimable=true where owner_uid is null;\nupdate public.notification_campaign set is_welcome=true where id='eeeeeeee-0000-4000-8000-000000000301';\n" + demoPassengerDetailsSql + '\n' + referenceCatalogSql()
 }
 
 if (process.argv[2] === 'generate') {

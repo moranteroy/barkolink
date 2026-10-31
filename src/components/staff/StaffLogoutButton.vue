@@ -28,7 +28,7 @@ async function logout() {
     await router.replace('/login');
     clearSessionViews();
   } catch {
-    error.value = notifyError('Could not sign out. Please try again.');
+    notifyError('Could not sign out. Please try again.');
   } finally { busy.value = false; }
 }
 </script>

@@ -6,7 +6,7 @@
     <template v-else-if="data">
       <div class="reward-overview"><div><span class="reward-eyebrow">YOUR NEXT REWARD</span><strong class="reward-amount">{{ money(data.rewardValue) }}<small>off</small></strong><p>Eligible regular passenger fares</p></div><span class="reward-art" aria-hidden="true"><Ticket :size="34" :stroke-width="1.6" /><Sparkles :size="16" /></span></div>
       <div class="progress-section"><div class="progress-heading"><strong>{{ data.tripsToNextReward }} more trip{{ data.tripsToNextReward === 1 ? '' : 's' }} to unlock</strong><span>{{ progressTrips }} / {{ cycleSize }}</span></div><progress :value="progressTrips" :max="cycleSize" aria-label="Trips toward your next loyalty voucher" :aria-valuetext="`${progressTrips} of ${cycleSize} trips toward your next reward`" /><p><Ship :size="13" aria-hidden="true" />{{ data.completedTrips }} completed trip{{ data.completedTrips === 1 ? '' : 's' }}<span>Rewards grow with your journeys</span></p></div>
-      <div v-if="data.vouchers.length" class="voucher-list"><div class="voucher-heading"><strong>Ready to use</strong><span>{{ data.vouchers.length }} reward{{ data.vouchers.length === 1 ? '' : 's' }}</span></div><article v-for="voucher in data.vouchers" :key="voucher.code" class="reward-ready"><span class="voucher-icon"><Ticket :size="22" aria-hidden="true" /></span><div><strong>{{ money(voucher.value) }} off your next eligible booking</strong><p>Applies automatically at booking review.</p><small>Valid until {{ expiry(voucher.expiresAt) }} · Regular fares only</small></div><CheckCircle2 :size="17" class="voucher-check" aria-hidden="true" /></article></div>
+      <div v-if="data.vouchers.length" class="voucher-list"><div class="voucher-heading"><strong>Ready to use</strong><span>{{ data.vouchers.length }} reward{{ data.vouchers.length === 1 ? '' : 's' }}</span></div><article v-for="voucher in data.vouchers" :key="voucher.code" class="reward-ready"><span class="voucher-icon"><Ticket :size="22" aria-hidden="true" /></span><div><strong>{{ money(voucher.value) }} off your next eligible booking</strong><p>Applies automatically at booking review.</p><small>Valid until {{ expiry(voucher.expiresAt) }} · Regular fares only</small><div class="reward-code"><code>{{ voucher.code }}</code><button type="button" :aria-label="`Copy loyalty voucher code ${voucher.code}`" @click="copyCode(voucher.code)"><Copy :size="14" aria-hidden="true" />Copy code</button></div></div><CheckCircle2 :size="17" class="voucher-check" aria-hidden="true" /></article></div>
       <div class="milestone-heading"><h3>Your milestones</h3><span>One reward per booking</span></div>
       <div class="reward-tiers" aria-label="Loyalty reward milestones"><div v-for="tier in data.tiers" :key="tier.name" class="milestone" :data-tier="tier.name.toLowerCase()" :class="{ reached: data.completedTrips >= tier.trips, next: nextTier?.name === tier.name }"><span class="milestone-icon"><Medal :size="20" :stroke-width="1.8" aria-hidden="true" /></span><strong class="tier-name">{{ tier.name }}</strong><b>{{ money(tier.value) }}</b><small>{{ tier.trips }} trips</small><span class="milestone-state"><Check :size="10" v-if="data.completedTrips >= tier.trips" aria-hidden="true" />{{ data.completedTrips >= tier.trips ? 'Unlocked' : nextTier?.name === tier.name ? 'Up next' : 'Milestone' }}</span></div></div>
       <details class="reward-rules"><summary>How rewards work <ChevronDown :size="14" aria-hidden="true" /></summary><p>Counted once per sailing, after boarding and trip completion. After {{ data.tiers.at(-1)?.trips }} trips, earn {{ money(data.tiers.at(-1)?.value || 0) }} every {{ data.tripsPerReward }} more trips. Rewards apply to eligible regular fares.</p></details>
@@ -15,7 +15,8 @@
 </template>
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue';
-import { Gift, Medal, Ticket, Sparkles, Ship, Check, CheckCircle2, ChevronDown } from '@lucide/vue';
+import { Gift, Medal, Ticket, Sparkles, Ship, Check, CheckCircle2, ChevronDown, Copy } from '@lucide/vue';
+import { notify, notifySuccess } from '../../composables/toast';
 import { database } from '../../services/session';
 import { myLoyalty, type LoyaltyData } from '../../services/vouchers';
 const props = withDefaults(defineProps<{active?:boolean}>(),{active:true});
@@ -24,6 +25,10 @@ const cycleSize = computed(() => Math.max(1, data.value?.tripsPerReward || 5));
 const progressTrips = computed(() => (data.value?.completedTrips || 0) % cycleSize.value);
 const nextTier = computed(() => data.value?.tiers.find(tier => tier.trips > (data.value?.completedTrips || 0)));
 const money = (value: number) => `₱${value.toLocaleString('en-PH')}`;
+async function copyCode(code:string){
+  try{await navigator.clipboard.writeText(code);notifySuccess('Loyalty voucher code copied.');}
+  catch{notify('Could not copy the code. Select the code and copy it manually.','error','Copy unavailable');}
+}
 async function load(){
   if(loading.value)return;
   loading.value=true;error.value=false;
@@ -57,6 +62,7 @@ progress::-webkit-progress-bar { background:var(--line); border-radius:10px; }pr
 .voucher-heading { display:flex; align-items:center; justify-content:space-between; gap:8px; margin:0 0 8px; font-size: var(--text-label); }.voucher-heading > span { color:var(--success); font-size: var(--text-caption); }
 .reward-ready { display:flex; align-items:center; gap:9px; margin-bottom:9px; padding:12px; border:1px dashed color-mix(in srgb,var(--success) 45%,var(--line)); border-radius:12px; background:var(--success-soft); }
 .voucher-icon { color:var(--success); flex-shrink:0; }.reward-ready > div { flex:1; min-width:0; }.reward-ready strong { display:block; font-size: var(--text-label); line-height:1.5; }.reward-ready p { margin:4px 0; color:var(--muted); font-size: var(--text-caption); line-height:1.6; }.reward-ready small { color:var(--muted); font-size: var(--text-caption); line-height:1.6; }.voucher-check { flex-shrink:0; color:var(--success); }
+.reward-code { display:flex; align-items:center; flex-wrap:wrap; gap:8px; margin-top:10px; padding-top:8px; border-top:1px solid var(--line); }.reward-code code { min-width:0; overflow-wrap:anywhere; font-size:12px; letter-spacing:.03em; color:var(--ink); user-select:all; }.reward-code button { display:inline-flex; align-items:center; justify-content:center; gap:5px; padding:6px 10px; border:1px solid var(--line); border-radius:8px; background:var(--surface); font-size:12px; flex:none; }
 .milestone-heading { display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:10px; }h3 { margin:0; font-size: var(--text-label); }.milestone-heading > span { color:var(--muted); font-size: var(--text-caption); }
 .reward-tiers { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:8px; }
 .milestone { --tier-color:#829fb8; display:flex; align-items:center; flex-direction:column; gap:5px; min-width:0; padding:12px 5px 9px; border:1px solid var(--line); border-radius:12px; background:var(--surface-soft); }

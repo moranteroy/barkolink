@@ -1,3 +1,4 @@
+import { clearToasts, toastMessages } from '../../src/composables/toast';
 import { flushPromises, mount } from '@vue/test-utils';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import AdminAccountMenu from '../../src/components/admin/AdminAccountMenu.vue';
@@ -16,7 +17,7 @@ vi.mock('@/components/ui/dropdown-menu', () => ({
   DropdownMenuItem: { props: ['disabled'], emits: ['select'], template: '<button :disabled="disabled" @click="$emit(\'select\', $event)"><slot /></button>' },
 }));
 vi.mock('reka-ui', () => ({ DropdownMenuSeparator: { template: '<hr />' } }));
-beforeEach(() => { vi.clearAllMocks(); mocks.signOut.mockResolvedValue(undefined); mocks.replace.mockResolvedValue(undefined); });
+beforeEach(() => { clearToasts(); vi.clearAllMocks(); mocks.signOut.mockResolvedValue(undefined); mocks.replace.mockResolvedValue(undefined); });
 describe('administrator account menu', () => {
   it('shows the administrator identity and links to profile settings', () => {
     const wrapper = mount(AdminAccountMenu);
@@ -38,7 +39,8 @@ describe('administrator account menu', () => {
     mocks.signOut.mockRejectedValueOnce(new Error('Offline'));
     const wrapper = mount(AdminAccountMenu);
     await wrapper.find('.account-logout').trigger('click'); await flushPromises();
-    expect(wrapper.find('[role="alert"]').text()).toContain('Please try again');
+    expect(wrapper.find('[role="alert"]').exists()).toBe(false);
+    expect(toastMessages.value.some(toast => toast.message.includes('Please try again'))).toBe(true);
     expect(mocks.replace).not.toHaveBeenCalled();
     expect(mocks.clear).not.toHaveBeenCalled();
     await wrapper.find('.account-logout').trigger('click'); await flushPromises();

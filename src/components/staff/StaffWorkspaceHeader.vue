@@ -56,7 +56,7 @@ async function logout() {
     accountOpen.value = false;
     await router.replace('/login');
     clearSessionViews();
-  } catch { logoutError.value = notifyError('Could not sign out. Please try again.'); }
+  } catch { notifyError('Could not sign out. Please try again.'); }
   finally { signingOut.value = false; }
 }
 const name = computed(() => auth?.currentUser?.displayName || auth?.currentUser?.email?.split('@')[0] || 'My account');

@@ -31,7 +31,6 @@
   </section>
 </template>
 <script setup lang="ts">
-import { notifyError } from '@/composables/toast';
 import { onMounted, ref, watch } from "vue";
 import { onIonViewWillEnter } from "@ionic/vue";
 import AppIcon from "@/components/ui/icon/AppIcon.vue";
@@ -61,10 +60,10 @@ async function load() {
   } catch (cause) {
     if (token === request) {
       items.value = [];
-      error.value = notifyError(databaseRequestError(
+      error.value = databaseRequestError(
         cause,
         "Travel advisories are unavailable.",
-      ));
+      );
     }
   } finally { if (token === request) loading.value = false; }
 }

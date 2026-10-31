@@ -47,7 +47,7 @@ async function verify() {
     notifySuccess('Discount eligibility verified.');
     emit("verified");
   } catch (cause) {
-    error.value = notifyError(databaseRequestError(cause, "Could not verify discount."));
+    notifyError(databaseRequestError(cause, "Could not verify discount."));
   } finally {
     busy.value = false;
   }

@@ -44,7 +44,7 @@ describe('manifest export in reports', () => {
     wrapper.unmount()
   })
   it('exports the selected sailing with every page of passengers', async () => {
-    mocks.query.mockResolvedValueOnce({ data: { bookingPassengers: Array.from({ length: 500 }, () => passenger) } }).mockResolvedValueOnce({ data: { bookingPassengers: [{ ...passenger, fullName: 'Last Passenger' }] } })
+    mocks.query.mockResolvedValueOnce({ data: { bookingPassengers: Array.from({ length: 500 }, () => passenger) } }).mockResolvedValueOnce({ data: { bookingPassengers: [{ ...passenger, fullName: 'Last Passenger',sex:'  ' }] } })
     const wrapper = mount(AdminManifestExport,{ props: { sailings: [sailing] } })
     expect(wrapper.find('button').attributes('disabled')).toBeDefined()
     await wrapper.find('select').setValue('TRP1'); await wrapper.find('button').trigger('click'); await flushPromises(); await vi.dynamicImportSettled(); await flushPromises()
@@ -53,6 +53,8 @@ describe('manifest export in reports', () => {
     const input = mocks.pdf.mock.calls[0][0]
     expect(input.rows).toHaveLength(501)
     expect(input.rows.at(-1)[0]).toBe('Last Passenger')
+    expect(input.rows[0][1]).toBe('F')
+    expect(input.rows.at(-1)[1]).toBe('Not provided')
     expect(toastMessages.value.filter(toast => toast.message === 'Exported 501 passengers for TRP1.')).toHaveLength(1)
     expect(wrapper.text()).not.toContain('Exported 501 passengers for TRP1.')
     wrapper.unmount()
@@ -72,7 +74,8 @@ describe('manifest export in reports', () => {
     mocks.query.mockResolvedValueOnce({ data: { bookingPassengers: Array.from({ length: 500 }, () => passenger) } }).mockRejectedValueOnce(new Error('Unavailable'))
     const wrapper = mount(AdminManifestExport,{ props: { sailings: [sailing] } })
     await wrapper.find('select').setValue('TRP1'); await wrapper.find('button').trigger('click'); await flushPromises(); await vi.dynamicImportSettled(); await flushPromises()
-    expect(wrapper.find('[role="alert"]').exists()).toBe(true)
+    expect(wrapper.find('[role="alert"]').exists()).toBe(false)
+    expect(toastMessages.value.some(toast => toast.tone === 'error')).toBe(true)
     expect(mocks.url).not.toHaveBeenCalled()
     wrapper.unmount()
   })

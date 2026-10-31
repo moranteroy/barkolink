@@ -31,7 +31,6 @@
   >
 </template>
 <script setup lang="ts">
-import { notifyError } from '@/composables/toast';
 import BackIcon from "@/components/ui/icon/BackIcon.vue";
 import { ref } from "vue";
 import { RouterLink } from "vue-router";
@@ -53,7 +52,7 @@ async function checkRecovery() {
 onIonViewWillEnter(async () => {
   recoveryReady.value = false;
   try { await checkRecovery(); recoveryReady.value = true; }
-  catch (error) { failed.value = true; message.value = notifyError((error as Error).message); }
+  catch (error) { failed.value = true; message.value = (error as Error).message; }
 });
 async function save() {
   if (busy.value || !recoveryReady.value) return;
@@ -86,8 +85,7 @@ async function save() {
     message.value = "Password saved. Sign in with your new password.";
   } catch (error) {
     failed.value = true;
-    message.value =
-      notifyError(error instanceof Error ? error.message : "Could not save password.");
+    message.value = error instanceof Error ? error.message : "Could not save password.";
   } finally {
     busy.value = false;
   }
