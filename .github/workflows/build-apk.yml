@@ -44,13 +44,15 @@ jobs:
         run: npm run build -- --configLoader native
 
       - name: Set up Java 21
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v6
         with:
           distribution: temurin
           java-version: '21'
 
-      - name: Install Android SDK platform
-        run: sdkmanager "platforms;android-36" "build-tools;35.0.0"
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v4
+        with:
+          packages: 'platform-tools platforms;android-36 build-tools;35.0.0'
 
       - name: Sync Capacitor Android
         run: npx cap sync android
