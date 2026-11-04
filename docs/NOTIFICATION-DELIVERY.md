@@ -16,9 +16,10 @@ Notifications are private to their owner. Operational notices also require the r
 | Broadcast | Selected PASSENGERS, ALL or TRIP audience only | STAFF or ALL | STAFF or ALL | STAFF or ALL |
 
 - Operational writes and their alerts commit or roll back together. Event keys prevent duplicate delivery on retries.
-- Draft and expired advisories generate no new inbox notifications. Scheduled notices are delivered once active, on the next authenticated inbox refresh. Existing active advisories are not replayed during deployment.
+- Draft and expired advisories generate no new inbox notifications. After migration 061, pg_cron delivers due notices every minute where available; authenticated inbox refresh remains a fallback. Existing active advisories are not replayed during deployment.
 - The bell and open inbox refresh every 15 seconds while visible, and on focus or route changes. Old history is loaded silently; genuinely new unread notices show a toast.
 - Unread state is isolated by account. Failed background requests retain the last count; authorization failures clear private cached notices. Mark-read races cannot resurrect unread items.
+- Bell refreshes return at most 50 recent notices plus the global unread count. Inbox history loads 30 records per page, with search/category/unread filters applied by the server and global category counts. Old history is accessible through Previous/Next.
 - Staff booking alerts link to the matching booking queue or boarding manifest. Existing authorization still governs the destination.
 
 Validation: isolated PostgreSQL delivery and security tests, the main business-rule suite, unit coverage for synchronization and account changes, and production browser fixtures for all four roles. Native deployment probes use a transaction that is rolled back.

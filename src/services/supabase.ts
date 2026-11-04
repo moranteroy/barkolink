@@ -1,4 +1,5 @@
 import { createClient } from "@supabase/supabase-js";
+import { Capacitor } from '@capacitor/core';
 
 const url = import.meta.env.VITE_SUPABASE_URL;
 const key =
@@ -12,6 +13,7 @@ export const supabase = supabaseConfigured
         persistSession: true,
         autoRefreshToken: true,
         detectSessionInUrl: true,
+        flowType: Capacitor.isNativePlatform() ? 'pkce' : 'implicit',
       },
     })
   : null;

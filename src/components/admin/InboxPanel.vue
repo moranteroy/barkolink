@@ -6,7 +6,7 @@
 <div class="inbox-actions"><label>Search notifications<input v-model="query" type="search" placeholder="Title or message" /></label><button :disabled="loading || !!busy" @click="load">Refresh inbox</button><router-link v-if="showBroadcast" to="/admin/notifications">Send a broadcast</router-link></div>
 <p v-if="loading" role="status">Loading your inbox...</p><p v-if="error" role="alert" class="notice-error">{{ error }}<button :disabled="loading || !!busy" @click="load">Retry</button></p>
           <div class="notification-view" role="group" aria-label="Read status">
-            <button :aria-pressed="!unreadOnly" :class="{ selected: !unreadOnly }" @click="unreadOnly = false">All updates <small>{{ notices.length }}</small></button>
+            <button :aria-pressed="!unreadOnly" :class="{ selected: !unreadOnly }" @click="unreadOnly = false">All updates <small>{{ inboxCount }}</small></button>
             <button :aria-pressed="unreadOnly" :class="{ selected: unreadOnly }" @click="unreadOnly = true">Unread <small>{{ unreadCount }}</small></button>
           </div>
           <div class="notification-filters" tabindex="0" role="group" aria-label="Notification category">
@@ -36,28 +36,32 @@
             <p>{{ unreadOnly ? 'You have read all updates in this view. Check all updates to see your history.' : 'Account notices and operational updates will appear here.' }}</p>
             <button v-if="query || unreadOnly || notificationFilter !== 'ALL'" class="reset-notices" @click="query = ''; unreadOnly = false; notificationFilter = 'ALL'">View all updates</button>
           </div>
+<WorkspacePagination :page="inboxPage" :total="inboxTotal" item-label="notifications" :disabled="loading || !!busy" @change="inboxPage = $event" />
 </section></template>
 <script setup lang="ts">
 import { notifyError, notifySuccess } from '@/composables/toast';
-import { computed, onMounted, ref, watch } from 'vue';
+import { computed, nextTick, onMounted, ref, watch } from 'vue';
 import AppIcon from "@/components/ui/icon/AppIcon.vue";
+import WorkspacePagination from '../shared/WorkspacePagination.vue';
 import { notificationsOutline, checkmarkOutline, checkmarkCircleOutline, timeOutline, boatOutline, giftOutline, ticketOutline } from 'ionicons/icons';
 import { staffDatabase, auth } from '../../services/session';
 import { myNotifications, markNotificationRead, type MyNotificationsData } from '../../services/database/passenger';
 import { markAllNotificationsRead } from '../../services/database/experience';
 import { databaseRequestError } from '../../data/databaseErrors';
-import { clearNotificationUnread, setUnreadNotifications, notificationUpdates } from '../../composables/notificationUnread';
+import { clearNotificationUnread, setUnreadNotifications, notificationUpdates, notificationUnreadCount } from '../../composables/notificationUnread';
 const props=withDefaults(defineProps<{ showBroadcast?: boolean;staffRole?:'ADMIN'|'TICKETING'|'BOARDING' }>(), { showBroadcast: true,staffRole:'ADMIN' });
 const items = ref<MyNotificationsData['notifications']>([]), loading = ref(false), error = ref(''), busy = ref('');
 const query = ref(''), unreadOnly = ref(false), notificationFilter = ref('ALL');
+const inboxPage=ref(0),inboxTotal=ref(0),serverCategories=ref<string[]>([]);
+const inboxCount=ref(0),categoryCounts=ref<Record<string,number>|undefined>();
 const noticeBusy = computed(() => loading.value || busy.value === 'ALL'), noticeUpdating = computed(() => busy.value);
 const date = (value: string) => new Date(value).toLocaleString('en-PH', { timeZone: 'Asia/Manila', dateStyle: 'medium', timeStyle: 'short' });
 const notices = computed(() => items.value.map(item => ({ ...item, type: item.category || 'GENERAL', body: item.message, unread: !item.readAt, time: date(item.createdAt) })));
-const unreadCount = computed(() => items.value.filter(item => !item.readAt).length);
-const notificationCategories = computed(() => ['ALL', ...new Set(notices.value.map(item => item.type))]);
+const unreadCount = notificationUnreadCount;
+const notificationCategories = computed(() => ['ALL', ...new Set([...serverCategories.value,...notices.value.map(item => item.type)])]);
 const filteredNotices = computed(() => notices.value.filter(item => (!unreadOnly.value || item.unread) && (notificationFilter.value === 'ALL' || item.type === notificationFilter.value) && (item.title + ' ' + item.body).toLowerCase().includes(query.value.trim().toLowerCase())));
 function notificationCategoryLabel(value: string) { return ({ ALL: 'All categories', BOOKING: 'Bookings', TRIPS: 'Sailings', PROMO: 'Promos', GENERAL: 'General', SYSTEM: 'System' } as Record<string,string>)[value] || value.charAt(0) + value.slice(1).toLowerCase().replaceAll('_', ' '); }
-function notificationCategoryCount(value: string) { return notices.value.filter(item => (value === 'ALL' || item.type === value) && (!unreadOnly.value || item.unread)).length; }
+function notificationCategoryCount(value: string) { return categoryCounts.value ? value==='ALL' ? (unreadOnly.value?unreadCount.value:inboxCount.value) : categoryCounts.value[value]??0 : notices.value.filter(item => (value === 'ALL' || item.type === value) && (!unreadOnly.value || item.unread)).length; }
 function noticeIcon(value: string) { return value === 'TRIPS' ? boatOutline : value === 'PROMO' ? giftOutline : value === 'BOOKING' ? ticketOutline : notificationsOutline; }
 function noticeAction(notice:{bookingReference?:string|null;sailingCode?:string|null}){
  if(!notice.bookingReference)return null;
@@ -66,21 +70,30 @@ function noticeAction(notice:{bookingReference?:string|null;sailingCode?:string|
 }
 watch(notificationUpdates,update=>{
  if(!update || update.uid!==auth?.currentUser?.uid || loading.value || busy.value)return;
+ if(update.totalCount!==undefined){void load();return;}
  items.value=update.items.map(item=>({...item}));error.value='';
  if(!notificationCategories.value.includes(notificationFilter.value))notificationFilter.value='ALL';
 });
+watch([query,unreadOnly,notificationFilter],()=>{if(inboxPage.value!==0)inboxPage.value=0;else void load();});
+watch(inboxPage,()=>{void load().then(async()=>{await nextTick();document.querySelector('.notification-inbox .notification-toolbar')?.scrollIntoView({block:'start'});});});
+let inboxVersion=0;
 async function load() {
- if (!staffDatabase || loading.value || busy.value) return;
+ if (!staffDatabase || busy.value) return;
+ const version=++inboxVersion;
  loading.value = true; error.value = '';
- try { items.value = (await myNotifications(staffDatabase, { fetchPolicy: 'SERVER_ONLY' })).data.notifications.slice().sort((a,b) => Date.parse(b.createdAt)-Date.parse(a.createdAt)); setUnreadNotifications(items.value); if(!notificationCategories.value.includes(notificationFilter.value)) notificationFilter.value = 'ALL'; }
- catch(cause) { error.value = databaseRequestError(cause, 'Could not load your inbox.'); }
- finally { loading.value = false; }
+ try { const result=(await myNotifications(staffDatabase, { fetchPolicy: 'SERVER_ONLY',page:inboxPage.value,pageSize:30,search:query.value,unreadOnly:unreadOnly.value,category:notificationFilter.value })).data;
+ if(version!==inboxVersion)return;
+ items.value = result.notifications.slice().sort((a,b) => Date.parse(b.createdAt)-Date.parse(a.createdAt));inboxTotal.value=result.totalCount??items.value.length;serverCategories.value=result.categories??[];
+ inboxCount.value=result.inboxCount??items.value.length;categoryCounts.value=result.categoryCounts;
+ setUnreadNotifications(items.value,auth?.currentUser?.uid,result.unreadCount); if(!notificationCategories.value.includes(notificationFilter.value)) notificationFilter.value = 'ALL'; }
+ catch(cause) { if(version===inboxVersion)error.value = databaseRequestError(cause, 'Could not load your inbox.'); }
+ finally { if(version===inboxVersion)loading.value = false; }
 }
 async function markNotice(notice: { id: string }) {
  if (!staffDatabase || busy.value || loading.value) return;
  const uid = auth?.currentUser?.uid;
  busy.value = notice.id; error.value = '';
- try { await markNotificationRead(staffDatabase, { id: notice.id }); clearNotificationUnread(notice.id, uid); const item = items.value.find(item => item.id === notice.id); if(item) item.readAt = new Date().toISOString(); }
+ try { await markNotificationRead(staffDatabase, { id: notice.id }); clearNotificationUnread(notice.id, uid,true); const item = items.value.find(item => item.id === notice.id); if(item) {item.readAt = new Date().toISOString();if(unreadOnly.value&&categoryCounts.value)categoryCounts.value[item.category]=Math.max(0,(categoryCounts.value[item.category]??0)-1);} }
  catch(cause) { notifyError(databaseRequestError(cause, 'Could not mark the notification read.')); }
  finally { busy.value = ''; }
 }
@@ -88,7 +101,7 @@ async function markAllRead() {
  if (!staffDatabase || busy.value || loading.value || !unreadCount.value) return;
  const uid = auth?.currentUser?.uid;
  busy.value = 'ALL'; error.value = '';
- try { await markAllNotificationsRead(staffDatabase); items.value.forEach(item => { if(!item.readAt) item.readAt = new Date().toISOString(); }); clearNotificationUnread(undefined, uid); notifySuccess('All notifications marked as read.'); }
+ try { await markAllNotificationsRead(staffDatabase); items.value.forEach(item => { if(!item.readAt) item.readAt = new Date().toISOString(); });if(unreadOnly.value&&categoryCounts.value)categoryCounts.value={}; clearNotificationUnread(undefined, uid); notifySuccess('All notifications marked as read.'); }
  catch(cause) { notifyError(databaseRequestError(cause, 'Could not mark notifications read.')); }
  finally { busy.value = ''; }
 }

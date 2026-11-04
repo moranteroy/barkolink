@@ -150,11 +150,11 @@ export const markNoShow = (
     sailingCode,
     passengerId,
   });
-export const campaigns = (dc: DatabaseClient, page = 0) =>
+export const campaigns = (dc: DatabaseClient, page = 0, options:{search?:string;sort?:string} = {}) =>
   executeDatabase<{ campaigns: Campaign[]; totalCount: number }>(
     dc,
     "AdminNotificationCampaigns",
-    { page },
+    { page, ...options },
   );
 export type NotificationDraft = {
   title: string;

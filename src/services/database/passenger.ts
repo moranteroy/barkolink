@@ -181,7 +181,7 @@ export function myNotifications(
   return executeDatabase<Types.MyNotificationsData>(
     client,
     "MyNotifications",
-    {},
+    _options || {},
   );
 }
 

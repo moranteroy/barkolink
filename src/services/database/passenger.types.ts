@@ -175,6 +175,11 @@ export interface MyBookingsData {
 }
 
 export interface MyNotificationsData {
+  inboxCount?: number;
+  categoryCounts?: Record<string,number>;
+  unreadCount?: number;
+  totalCount?: number;
+  categories?: string[];
   notifications: ({
     id: UUIDString;
     title: string;

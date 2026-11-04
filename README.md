@@ -121,6 +121,7 @@ Supabase Auth manages accounts. The app calls the `barkolink_execute` PostgreSQL
 | `npm run lint` | Check code style/errors |
 | `npm run test:unit` | Run UI/helper unit tests |
 | `npm run test:database` | Run isolated PGlite database tests; no hosted writes |
+| `npm run test:browser` | Check built-app auth routes and paginated inboxes using intercepted backend fixtures |
 | `npm run test:e2e` | Run Cypress against its configured local server |
 | `npm run android:build` | Build and sync web assets, then compile a debug APK |
 

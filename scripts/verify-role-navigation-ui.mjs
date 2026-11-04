@@ -1,16 +1,16 @@
 import assert from 'node:assert/strict';
-import fs from 'node:fs';
+import { fixtureProject, fixtureBrowserOptions } from './browser-fixture-config.mjs';
 import { chromium } from 'playwright-core';
 import { boardingTimingFixture } from './boarding-timing-fixture.mjs';
 
 // Synthetic sessions and intercepted backend requests only; no hosted writes or email delivery.
 const base = process.env.BARKOLINK_UI_URL || 'http://127.0.0.1:8127';
-const project = fs.readFileSync('.env.local','utf8').match(/^VITE_SUPABASE_URL\s*=\s*(.+)$/m)[1].trim().replace(/^['"]|['"]$/g,'');
+const project = fixtureProject();
 const id = '11111111-1111-4111-8111-111111111111';
 const port = { id:'batangas',name:'Batangas Port',city:'Batangas',isActive:true };
 const sailing = { code:'ACCESS-TRIP',origin:port,destination:{...port,id:'calapan',name:'Calapan Port'},vessel:{id:'vessel',name:'Test vessel',passengerCapacity:100},status:'SCHEDULED',departureAt:'2099-01-01T08:00:00Z',arrivalAt:'2099-01-01T10:00:00Z',availableSeats:100,regularFare:600 };
 const destinations = { ADMIN:'/admin',PASSENGER:'/home',TICKETING:'/staff/ticketing',BOARDING:'/staff/boarding' };
-const browser = await chromium.launch({channel:'msedge',headless:true});
+const browser = await chromium.launch(fixtureBrowserOptions());
 const errors = [];
 let verified = 0;
 try {

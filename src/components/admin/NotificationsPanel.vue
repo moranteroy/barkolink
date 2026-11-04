@@ -58,7 +58,7 @@
     <RecordsGrid v-if="!error" title="Sent broadcasts" :columns="['Title', 'Message', 'Audience', 'Recipients', 'Sent (PH)']" :column-types="['text', 'text', 'text', 'number', 'date']" :rows="gridRows" :loading="loading" density="compact" :column-min-widths="[200, 280, 155, 125, 180]" :column-flex="[1.2, 2.2, 1, .75, 1.1]" :max-grid-height="360">
       <template #cell="{ index, value }"><strong v-if="index === 0">{{ value }}</strong><RecordText v-else-if="index === 1" :text="String(value)" /><Badge v-else-if="index === 2">{{ value }}</Badge><span v-else>{{ value }}</span></template>
     </RecordsGrid>
-    <WorkspacePagination :page="page" :total="table.records.value.length" item-label="broadcasts" :disabled="busy || loading" @change="page = $event" />
+    <WorkspacePagination :page="page" :total="total" item-label="broadcasts" :disabled="busy || loading" @change="page = $event" />
     </div>
   </section>
 </template>
@@ -129,33 +129,32 @@ const date = (v: string) =>
     timeStyle: "short",
   });
 watch([table.query, table.sort], () => { page.value = 0; if (router && route) void router.replace({ query: { ...route.query, broadcastSearch: table.query.value || undefined, broadcastSort: table.sort.value || undefined } }); });
-const gridRows = computed(() => table.records.value.slice(page.value * 30, (page.value + 1) * 30).map(campaign => ({
+watch([page,table.query,table.sort], () => { void load(); });
+const gridRows = computed(() => rows.value.map(campaign => ({
   key: campaign.id,
   source: campaign,
   cells: [campaign.title, campaign.message, campaign.audience === 'TRIP' ? campaign.sailingCode || 'Trip passengers' : audienceLabel(campaign.audience), campaign.recipientCount, date(campaign.createdAt)],
   sortValues: [campaign.title, campaign.message, campaign.audience === 'TRIP' ? campaign.sailingCode || '' : audienceLabel(campaign.audience), campaign.recipientCount, Date.parse(campaign.createdAt)],
 })));
+let loadVersion=0;
 async function load() {
   if (!staffDatabase) return;
+  const version=++loadVersion;
   loading.value = true;
   error.value = "";
   try {
-    const r = await campaigns(staffDatabase, 0);
-    const all = [...r.data.campaigns];
-    for (let next = 1; all.length < r.data.totalCount; next++) {
-      const batch = await campaigns(staffDatabase, next);
-      if (!batch.data.campaigns.length) throw new Error('Broadcast history changed while loading. Refresh to try again.');
-      all.push(...batch.data.campaigns);
-    }
-    rows.value = [...new Map(all.map(row => [row.id, row])).values()];
-    total.value = rows.value.length;
+    const r = await campaigns(staffDatabase, page.value, {search:table.query.value,sort:table.sort.value});
+    if(version!==loadVersion)return;
+    rows.value = r.data.campaigns;
+    total.value = r.data.totalCount;
   } catch (e) {
+    if(version!==loadVersion)return;
     error.value = databaseRequestError(
       e,
       "Could not load notification campaigns.",
     );
   } finally {
-    loading.value = false;
+    if(version===loadVersion)loading.value = false;
   }
 }
 async function moreTrips() {

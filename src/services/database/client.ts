@@ -10,6 +10,10 @@ export type QueryOptions = {
   search?: string;
   sailingCode?: string;
   paidOnly?: boolean;
+  sort?: string;
+  summary?: boolean;
+  category?: string;
+  unreadOnly?: boolean;
 };
 
 // PostgreSQL derives identity from Supabase Auth and enforces roles itself.

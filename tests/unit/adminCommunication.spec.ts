@@ -82,14 +82,18 @@ describe('admin communication compose dialogs', () => {
   it('finds a broadcast beyond the original server page and sorts the complete history', async () => {
     const first = Array.from({length:30},(_,index)=>({id:`first-${index}`,title:`Other notice ${index}`,message:'Information',audience:'ALL',recipientCount:2,createdAt:'2026-10-14T08:00:00Z'}));
     const last = {id:'last-page',title:'Last-page notice',message:'Information',audience:'ALL',recipientCount:50,createdAt:'2026-10-13T08:00:00Z'};
-    mocks.campaigns.mockImplementation(async (_client: unknown, page: number) => ({data:{campaigns:page === 0 ? first : [last],totalCount:31}}));
+    mocks.campaigns.mockImplementation(async (_client: unknown, page: number, options:{search?:string;sort?:string}) => ({data:{campaigns:options.search ? [last] : options.sort ? [last,...first.slice(0,29)] : page === 0 ? first : [last],totalCount:options.search ? 1 : 31}}));
     const wrapper=mount(NotificationsPanel); await flushPromises();
-    expect(mocks.campaigns).toHaveBeenCalledWith({},1);
+    expect(mocks.campaigns).toHaveBeenCalledTimes(1);
+    expect(mocks.campaigns).toHaveBeenCalledWith({},0,{search:'',sort:''});
     await wrapper.find('.broadcast-filters input').setValue('Last-page notice');
+    await flushPromises();
+    expect(mocks.campaigns).toHaveBeenLastCalledWith({},0,{search:'Last-page notice',sort:''});
     expect(wrapper.find('.records-grid').text()).toContain('Last-page notice');
     expect(wrapper.find('.records-grid').text()).not.toContain('Other notice');
     await wrapper.find('.broadcast-filters input').setValue('');
     await wrapper.find('.broadcast-filters select').setValue('recipientCount:desc');
+    await flushPromises();
     expect(wrapper.find('.records-grid').text().indexOf('Last-page notice')).toBeLessThan(wrapper.find('.records-grid').text().indexOf('Other notice'));
     wrapper.unmount();
   });

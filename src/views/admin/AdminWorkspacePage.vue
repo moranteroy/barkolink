@@ -1269,7 +1269,6 @@ import AdminSidebar from '../../components/admin/AdminSidebar.vue';
 import AdminWorkspaceHeader from '../../components/admin/AdminWorkspaceHeader.vue';
 import { adminNavigation } from '../../data/adminNavigation';
 import { notifyError, notifySuccess } from '@/composables/toast';
-import { orderedDirectory } from "../../data/directoryOrdering";
 import { useFieldErrors } from "../../composables/fieldErrors";
 import { defineAsyncComponent } from "vue";
 import { philippineDateTime, philippineInput, parsePhilippineInput, routeArrivalInput } from "../../data/philippineTime";
@@ -1719,28 +1718,16 @@ async function loadData(event?: unknown) {
   error.value = "";
   const dc = staffDatabase;
   const loadBookings = async () => {
-    const options = { page:recordPage.value,pageSize,status:bookingStatusFilter(),search:search.value };
-    if (!directorySort.value) return staffBookings(dc, options);
-    const ordered = await orderedDirectory(async (page,size) => { const r=await staffBookings(dc,{...options,page,pageSize:size}); return {rows:r.data.bookings,total:r.data.totalCount ?? r.data.bookings.length}; },directorySort.value,(row,key)=>key==='amount' ? row.total : key==='departure' ? Date.parse(row.sailing.departureAt) : row.reference,recordPage.value,pageSize);
-    return { data:{bookings:ordered.rows,totalCount:ordered.total} };
+    return staffBookings(dc, { page:recordPage.value,pageSize,status:bookingStatusFilter(),search:search.value,sort:directorySort.value });
   };
   const loadTrips = async () => {
-    const options = {page:recordPage.value,pageSize,...(section.value==='trips' ? {status:statusFilter.value,search:search.value} : {})};
-    if (!directorySort.value || section.value!=='trips') return adminSailings(dc,options);
-    const ordered=await orderedDirectory(async(page,size)=>{const r=await adminSailings(dc,{...options,page,pageSize:size});return {rows:r.data.sailings,total:r.data.totalCount ?? r.data.sailings.length};},directorySort.value,(row,key)=>key==='name' ? row.vessel.name : Date.parse(row.departureAt),recordPage.value,pageSize);
-    return {data:{sailings:ordered.rows,totalCount:ordered.total}};
+    return adminSailings(dc, {page:recordPage.value,pageSize,...(section.value==='trips' ? {status:statusFilter.value,search:search.value,sort:directorySort.value} : {})});
   };
   const loadUsers = async () => {
-    const options={page:recordPage.value,pageSize,status:statusFilter.value,search:search.value};
-    if(!directorySort.value)return adminUsers(dc,options);
-    const ordered=await orderedDirectory(async(page,size)=>{const r=await adminUsers(dc,{...options,page,pageSize:size});return {rows:r.data.users,total:r.data.totalCount ?? r.data.users.length};},directorySort.value,row=>row.fullName,recordPage.value,pageSize);
-    return {data:{users:ordered.rows,totalCount:ordered.total}};
+    return adminUsers(dc, {page:recordPage.value,pageSize,status:statusFilter.value,search:search.value,sort:directorySort.value});
   };
   const loadPassengers = async () => {
-    const options={page:recordPage.value,pageSize,search:search.value,status:['passengers','check-in','boarding'].includes(section.value)?statusFilter.value:'ALL',sailingCode:sailingFilter.value,paidOnly:['check-in','boarding','manifest'].includes(section.value)};
-    if(!directorySort.value)return adminPassengerRecords(dc,options);
-    const ordered=await orderedDirectory(async(page,size)=>{const r=await adminPassengerRecords(dc,{...options,page,pageSize:size});return {rows:r.data.bookingPassengers,total:r.data.totalCount ?? r.data.bookingPassengers.length};},directorySort.value,row=>row.fullName,recordPage.value,pageSize);
-    return {data:{bookingPassengers:ordered.rows,totalCount:ordered.total}};
+    return adminPassengerRecords(dc, {page:recordPage.value,pageSize,search:search.value,status:['passengers','check-in','boarding'].includes(section.value)?statusFilter.value:'ALL',sailingCode:sailingFilter.value,paidOnly:['check-in','boarding','manifest'].includes(section.value),sort:directorySort.value});
   };
   fareSettingsLoaded.value = false;
   nextTripCode.value = "";

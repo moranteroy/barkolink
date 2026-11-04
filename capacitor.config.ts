@@ -3,7 +3,14 @@ import type { CapacitorConfig } from '@capacitor/cli';
 const config: CapacitorConfig = {
   appId: 'com.barkolink.app',
   appName: 'BarkoLink',
-  webDir: 'dist'
+  webDir: 'dist',
+  plugins: {
+    SystemBars: {
+      hidden: true,
+      insetsHandling: 'css',
+      initialViewportFitValueHint: 'cover',
+    },
+  },
 };
 
 export default config;

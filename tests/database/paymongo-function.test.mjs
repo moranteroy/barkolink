@@ -4,7 +4,7 @@ import fs from 'node:fs';
 import ts from 'typescript';
 import { createHmac } from 'node:crypto';
 
-let handler, owner, payment, providerCalls, rpcCalls;
+let handler, owner, payment, providerCalls, rpcCalls, hasCheckout, secret;
 const previousDeno = globalThis.Deno, previousFetch = globalThis.fetch;
 const id = '11111111-1111-4111-8111-111111111111';
 const moduleUrl = source => {
@@ -13,11 +13,11 @@ const moduleUrl = source => {
 };
 describe('PayMongo Edge Function authorization and confirmation', () => {
   before(async () => {
-    globalThis.Deno = { env: { get: name => ({ PAYMONGO_SECRET_KEY: 'sk_test_example', PAYMONGO_RETURN_ORIGIN: 'https://barkolink.example' })[name] || 'test-only' }, serve: callback => { handler = callback; } };
+    globalThis.Deno = { env: { get: name => name === 'PAYMONGO_SECRET_KEY' ? secret : ({ PAYMONGO_RETURN_ORIGIN: 'https://barkolink.example' })[name] || 'test-only' }, serve: callback => { handler = callback; } };
     globalThis.__paymongoClient = () => ({
       auth: { getUser: async token => ({ data: { user: token === 'valid' ? { id } : null }, error: null }) },
       from: table => ({ select: () => ({ eq: () => ({ maybeSingle: async () => ({ data: table === 'booking' ? { id, owner_uid: owner, payment_status: 'UNPAID' }
-        : { id, session_id: 'cs_test', amount: 60000 }, error: null }) }) }) }),
+        : hasCheckout ? { id, session_id: 'cs_test', amount: 60000 } : null, error: null }) }) }) }),
       rpc: async (name, args) => { if(name === "consume_api_allowance") return {data:true,error:null}; rpcCalls.push({ name, args }); return { data: { status: 'PAID' }, error: null }; },
     });
     globalThis.fetch = async () => {
@@ -35,7 +35,7 @@ describe('PayMongo Edge Function authorization and confirmation', () => {
   });
   after(() => { globalThis.Deno = previousDeno; globalThis.fetch = previousFetch; delete globalThis.__paymongoClient; });
   beforeEach(() => {
-    owner = id; providerCalls = 0; rpcCalls = [];
+    owner = id; providerCalls = 0; rpcCalls = [];hasCheckout=true;secret='sk_test_example';
     payment = { status: 'paid', livemode: false, currency: 'PHP', amount: 60000, source: { type: 'gcash' } };
   });
   const request = (token = 'valid', extra = {}, body = { action: 'status', bookingId: id }) => new Request('https://example.com/paymongo', {
@@ -47,6 +47,14 @@ describe('PayMongo Edge Function authorization and confirmation', () => {
     owner = 'someone-else';
     assert.equal((await handler(request())).status, 404);
     assert.equal(providerCalls, 0); assert.equal(rpcCalls.length, 0);
+  });
+  it('acknowledges cash without a checkout or optional provider secret, while retaining owner checks', async () => {
+    hasCheckout=false;secret=undefined;
+    const close=()=>request('valid',{}, {action:'close',bookingId:id});
+    const response=await handler(close());
+    assert.equal(response.status,200);assert.deepEqual(await response.json(),{status:'CLOSED'});
+    assert.equal(providerCalls,0);assert.equal(rpcCalls.length,0);
+    owner='another-account';assert.equal((await handler(close())).status,404);
   });
   it('ignores caller-supplied paid status and amount and verifies the server total', async () => {
     payment = null;

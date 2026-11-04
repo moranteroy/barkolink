@@ -39,7 +39,7 @@ describe('Supabase authentication', () => {
     mocks.client.auth.resend.mockResolvedValue({ error: null })
     const { resendEmailCode } = await import('../../src/services/auth')
     await resendEmailCode(user.email, 'signup')
-    expect(mocks.client.auth.resend).toHaveBeenCalledWith({ type: 'signup', email: user.email })
+    expect(mocks.client.auth.resend).toHaveBeenCalledWith({ type: 'signup', email: user.email, options:{emailRedirectTo:`${location.origin}/login`} })
     expect(mocks.client.auth.signUp).not.toHaveBeenCalled()
   })
   it('restores an existing session before guarded navigation', async () => {

@@ -5152,7 +5152,6 @@ end $$;
 revoke all on function barkolink_private.execute_flexible_discounts(text,jsonb,text,text) from public,anon,authenticated;
 revoke all on function barkolink_private.execute_flexible_discounts_v47(text,jsonb,text,text) from public,anon,authenticated;
 
-commit;
 
 -- 049_starlite_accommodation_catalog.sql
 -- Align the current Starlite service catalog without changing booked fares or IDs.
@@ -5176,6 +5175,7 @@ where a.vessel_id=v.id and v.reference_metadata->>'operator'='Starlite Ferries'
   and not exists(select 1 from public.booking b where b.accommodation_id=a.id);
 
 
+-- 050_enforce_schedule_vessel_ports.sql
 -- Validate connected itineraries even without a manual terminal observation.
 create or replace function barkolink_private.check_vessel_port_chain()
 returns trigger language plpgsql set search_path='' as $$
@@ -5203,6 +5203,7 @@ end $$;
 revoke all on function barkolink_private.check_vessel_port_chain() from public,anon,authenticated;
 
 
+-- 051_automatic_daily_trips.sql
 -- A saved daily schedule assigns one vessel; a database clock creates actual trips.
 alter table barkolink_private.daily_schedule
   add column vessel_id uuid references public.vessel,
@@ -5399,6 +5400,7 @@ do $$ begin
 end $$;
 
 
+-- 052_daily_fleet_rotation.sql
 -- Rotate eligible vessels instead of assigning every route departure to one ship.
 alter table barkolink_private.daily_schedule add column assignment_mode text not null default 'FIXED'
   check(assignment_mode in ('FIXED','FLEET'));
@@ -5531,6 +5533,7 @@ end $$;
 revoke all on all functions in schema barkolink_private from public,anon,authenticated;
 
 
+-- 053_shared_trp_codes.sql
 -- Manual and recurring trips share a non-blocking sequence-backed TRP allocator.
 -- Sequence values are never reused, including after failed/cancelled operations.
 create sequence barkolink_private.trip_code_serial;
@@ -5565,6 +5568,8 @@ end $$;
 revoke all on sequence barkolink_private.trip_code_serial from public,anon,authenticated;
 revoke all on all functions in schema barkolink_private from public,anon,authenticated;
 
+
+-- 054_initial_vessel_accommodation_classes.sql
 -- Editable application allocations, not certified physical class capacities.
 -- Complete the current Starlite catalog once. Never reset a complete, edited catalog.
 do $$
@@ -5602,7 +5607,8 @@ begin
   end loop;
 end $$;
 
--- Migration 055: automatic welcome notification.
+
+-- 055_automatic_welcome_notification.sql
 -- Only the designated welcome campaign follows future account registrations.
 alter table public.notification_campaign add column is_welcome boolean not null default false;
 alter table public.notification_campaign add constraint welcome_audience check (not is_welcome or (audience='ALL' and sailing_code is null));
@@ -5650,7 +5656,8 @@ where id=(select id from public.notification_campaign
   where title='Welcome aboard BarkoLink' and audience='ALL' and sailing_code is null
   order by created_at,id limit 1);
 
--- Migration 056: claimable promos and optional trip missions.
+
+-- 056_claimable_vouchers.sql
 alter table public.voucher add column claimable boolean not null default false;
 alter table public.voucher add column title text not null default 'Travel promo' check(length(trim(title)) between 3 and 120);
 alter table public.voucher add column description text not null default '' check(length(description)<=1000);
@@ -5754,7 +5761,8 @@ begin
 end $$;
 revoke all on all functions in schema barkolink_private from public,anon,authenticated;
 
--- Migration 057: editable promo missions and limits.
+
+-- 057_edit_voucher_details.sql
 create function barkolink_private.update_voucher_details(args jsonb,actor_uid text,actor_role text) returns jsonb
 language plpgsql set search_path='' as $$
 declare offer public.voucher; reserved integer; required integer; limit_value integer; title_value text; description_value text;
@@ -5785,7 +5793,8 @@ begin
 end $$;
 revoke all on function barkolink_private.update_voucher_details(jsonb,text,text) from public,anon,authenticated;
 
--- Migration 058: correct voucher availability errors.
+
+-- 058_voucher_availability_errors.sql
 -- Report voucher availability before asking for a claim; all quote and booking
 -- eligibility rules continue through the existing validator.
 create or replace function barkolink_private.voucher_quote(args jsonb,actor text) returns jsonb
@@ -5809,7 +5818,8 @@ begin
 end $$;
 revoke all on function barkolink_private.voucher_quote(jsonb,text) from public,anon,authenticated;
 
--- Migration 059: personal loyalty voucher codes in notifications.
+
+-- 059_loyalty_voucher_code_notifications.sql
 create or replace function barkolink_private.issue_loyalty_vouchers(actor text) returns void language plpgsql set search_path='' as $$
 declare earned integer; reward integer; created_id uuid; created_code text; amount integer; config barkolink_private.loyalty_settings;
 begin
@@ -5831,7 +5841,8 @@ end $$;
 
 revoke all on function barkolink_private.issue_loyalty_vouchers(text) from public,anon,authenticated;
 
--- Migration 060: role-scoped operational notifications.
+
+-- 060_role_scoped_notifications.sql
 -- Role- and departure-port-scoped operational alerts. Existing notifications stay
 -- personal to their owner; legacy staff broadcasts are also checked on every read.
 alter table public.notification add column event_key text;
@@ -6014,3 +6025,149 @@ create trigger advisory_notification_revision before insert or update of title,m
 create trigger advisory_notification_delivery after insert or update of title,message,category,priority,sailing_code,starts_at,ends_at,published on public.travel_advisory
  for each row execute function barkolink_private.advisory_notification_delivery();
 revoke all on function barkolink_private.deliver_due_advisory_notifications(),barkolink_private.advisory_notification_revision(),barkolink_private.advisory_notification_delivery() from public,anon,authenticated;
+
+
+-- 061_bounded_workspace_reads.sql
+-- Sort/filter and page in one database snapshot instead of collecting offset pages.
+create function barkolink_private.admin_directory(operation text,args jsonb,actor text,actor_role text) returns jsonb
+language plpgsql set search_path='' as $$
+declare source text; ordering text; output_key text; result jsonb;
+  requested text:=coalesce(args->>'sort','');
+  take integer:=least(100,greatest(1,coalesce((args->>'pageSize')::integer,100)));
+  skip integer:=greatest(0,coalesce((args->>'page')::integer,0));
+begin
+  if nullif(actor,'') is null or actor_role is distinct from 'ADMIN' then raise exception 'Administrator access required.' using errcode='42501';end if;
+  if operation='AdminSailings' then
+    output_key:='sailings';
+    source:=$q$select barkolink_private.sailing_json(s) item,s.code identity,s.departure_at created,
+      s.departure_at departure,v.name name from public.sailing s join public.vessel v on v.id=s.vessel_id
+      where (coalesce($1->>'status','ALL')='ALL' or s.status=$1->>'status')
+      and (coalesce($1->>'search','')='' or barkolink_private.sailing_json(s)::text ilike '%'||($1->>'search')||'%')$q$;
+    ordering:=case requested when 'name:asc' then 'lower(name) asc' when 'name:desc' then 'lower(name) desc'
+      when 'departure:asc' then 'departure asc' when 'departure:desc' then 'departure desc' else 'created desc' end;
+  elsif operation='AdminUsers' then
+    output_key:='users';
+    source:=$q$select to_jsonb(u) item,u.uid identity,u.created_at created,u.full_name name from public.app_user u
+      where u.role<>'WALK_IN' and (coalesce($1->>'status','ALL')='ALL' or u.role=$1->>'status')
+      and (coalesce($1->>'search','')='' or concat_ws(' ',u.full_name,u.email,u.phone,u.uid) ilike '%'||($1->>'search')||'%')$q$;
+    ordering:=case requested when 'name:asc' then 'lower(name) asc' when 'name:desc' then 'lower(name) desc' else 'created desc' end;
+  elsif operation='AdminPassengerRecords' then
+    output_key:='bookingPassengers';
+    source:=$q$select barkolink_private.passenger_json(p) item,p.id::text identity,p.created_at created,p.full_name name
+      from public.booking_passenger p join public.booking b on b.id=p.booking_id
+      where (coalesce($1->>'sailingCode','ALL')='ALL' or b.sailing_code=$1->>'sailingCode')
+      and (not coalesce(($1->>'paidOnly')::boolean,false) or (b.status='CONFIRMED' and b.payment_status='PAID'))
+      and (coalesce($1->>'status','ALL')='ALL' or case when b.status in('CANCELLED','EXPIRED') then b.status when b.payment_status<>'PAID' then 'PAYMENT PENDING' else p.ticket_status end=$1->>'status')
+      and (coalesce($1->>'search','')='' or barkolink_private.passenger_json(p)::text ilike '%'||($1->>'search')||'%')$q$;
+    ordering:=case requested when 'name:asc' then 'lower(name) asc' when 'name:desc' then 'lower(name) desc' else 'created desc' end;
+  elsif operation='StaffBookings' then
+    output_key:='bookings';
+    source:=$q$select barkolink_private.booking_json(b) item,b.id::text identity,b.created_at created,
+      b.reference,b.total amount,s.departure_at departure,(b.payment_status='PAID') needs_verification from public.booking b join public.sailing s on s.code=b.sailing_code
+      where ((coalesce($1->>'status','ALL') not in('ACTION_REQUIRED','AWAITING_VERIFICATION') and
+        (coalesce($1->>'status','ALL')='ALL' or b.status=$1->>'status' or (b.payment_status=$1->>'status' and ($1->>'status'<>'UNPAID' or b.status in('PENDING','CONFIRMED')))))
+        or ($1->>'status' in('ACTION_REQUIRED','AWAITING_VERIFICATION') and b.status in('PENDING','CONFIRMED') and s.departure_at>now() and s.status in('SCHEDULED','BOARDING')
+          and ((b.payment_status='PAID' and b.payment_method='PAYMONGO_TEST' and b.payment_verified_at is null)
+            or ($1->>'status'='ACTION_REQUIRED' and b.payment_status='UNPAID' and b.payment_deadline>now()))))
+      and (coalesce($1->>'search','')='' or barkolink_private.booking_json(b)::text ilike '%'||($1->>'search')||'%')$q$;
+    ordering:=case requested when 'amount:asc' then 'amount asc' when 'amount:desc' then 'amount desc'
+      when 'departure:asc' then 'departure asc' when 'departure:desc' then 'departure desc'
+      when 'reference:asc' then 'reference asc' when 'reference:desc' then 'reference desc'
+      else case when args->>'status' in('ACTION_REQUIRED','AWAITING_VERIFICATION') then 'needs_verification desc,created asc' else 'created desc' end end;
+  elsif operation='AdminNotificationCampaigns' then
+    output_key:='campaigns';take:=30;
+    source:=$q$select to_jsonb(c) item,c.id::text identity,c.created_at created,c.title,c.recipient_count
+      from public.notification_campaign c where coalesce($1->>'search','')=''
+      or concat_ws(' ',c.title,c.message,c.audience,c.sailing_code) ilike '%'||($1->>'search')||'%'$q$;
+    ordering:=case requested when 'createdAt:asc' then 'created asc' when 'title:asc' then 'lower(title) asc'
+      when 'recipientCount:desc' then 'recipient_count desc' else 'created desc' end;
+  else raise exception 'Unsupported directory.';end if;
+  -- ordering/source contain only constants above; all user input remains bound.
+  execute format('with filtered as materialized (%s), paged as (select item,row_number() over(order by %s,identity) position from filtered order by %s,identity limit $2 offset $3)
+    select jsonb_build_object(%L,coalesce((select jsonb_agg(item order by position) from paged),''[]''::jsonb),''totalCount'',(select count(*) from filtered))',source,ordering,ordering,output_key)
+    into result using args,take,skip*take;
+  return result;
+end $$;
+
+-- Preserve the existing dispatcher depth for reservation/payment operations.
+do $$declare definition text;insertion integer;begin
+  definition:=replace(pg_get_functiondef('barkolink_private.execute_flexible_discounts(text,jsonb,text,text)'::regprocedure),E'\r\n',E'\n');
+  insertion:=position(E'\nbegin\n' in definition);
+  if insertion=0 then raise exception 'Directory dispatcher insertion point was not found.';end if;
+  execute overlay(definition placing E'  if operation in(\'AdminSailings\',\'AdminUsers\',\'AdminPassengerRecords\',\'AdminNotificationCampaigns\') or (operation=\'StaffBookings\' and actor_role=\'ADMIN\') then return barkolink_private.admin_directory(operation,args,actor_uid,actor_role);end if;\n' from insertion+length(E'\nbegin\n') for 0);
+end $$;
+revoke all on function barkolink_private.admin_directory(text,jsonb,text,text),barkolink_private.execute_flexible_discounts(text,jsonb,text,text) from public,anon,authenticated;
+
+-- A bounded summary is sufficient for the bell; full inbox reads stay explicit.
+create or replace function barkolink_private.execute_notifications(operation text,args jsonb,actor text,actor_role text) returns jsonb
+language plpgsql set search_path='' as $$
+declare result jsonb;changed integer;
+begin
+  if nullif(actor,'') is null or actor_role not in('PASSENGER','ADMIN','TICKETING','BOARDING')
+    or not exists(select 1 from public.app_user u where u.uid=actor and u.role=actor_role)
+    then raise exception 'Your account access changed. Sign in again.' using errcode='42501';end if;
+  if operation='MyNotifications' then
+    perform barkolink_private.deliver_due_advisory_notifications();
+    with visible as materialized (select n.* from public.notification n where n.owner_uid=actor and barkolink_private.notification_visible(n,actor,actor_role)),
+    filtered as (select * from visible where (coalesce((args->>'summary')::boolean,false) or (
+      (not coalesce((args->>'unreadOnly')::boolean,false) or read_at is null)
+      and (coalesce(args->>'category','ALL')='ALL' or case when category='TRIP' then 'TRIPS' else category end=args->>'category')
+      and (coalesce(args->>'search','')='' or concat_ws(' ',title,message) ilike '%'||(args->>'search')||'%')))),
+    paged as (select * from filtered order by created_at desc,id
+      limit case when coalesce((args->>'summary')::boolean,false) then 50 else least(100,greatest(1,coalesce((args->>'pageSize')::integer,100))) end
+      offset greatest(0,coalesce((args->>'page')::integer,0))*least(100,greatest(1,coalesce((args->>'pageSize')::integer,100))))
+    select jsonb_build_object('notifications',coalesce((select jsonb_agg(to_jsonb(n)||jsonb_build_object('category',case when n.category='TRIP' then 'TRIPS' else n.category end) order by n.created_at desc,n.id) from paged n),'[]'),
+      'unreadCount',(select count(*) from visible where read_at is null),'totalCount',(select count(*) from filtered),'inboxCount',(select count(*) from visible),
+      'categoryCounts',(select coalesce(jsonb_object_agg(c,n),'{}') from (select case when category='TRIP' then 'TRIPS' else category end c,count(*) n from visible
+        where not coalesce((args->>'unreadOnly')::boolean,false) or read_at is null group by 1) counts),
+      'categories',(select coalesce(jsonb_agg(c order by c),'[]') from (select distinct case when category='TRIP' then 'TRIPS' else category end c from visible) categories)) into result;
+    return result;
+  elsif operation='MarkNotificationRead' then
+    update public.notification n set read_at=coalesce(read_at,now()) where id=(args->>'id')::uuid and n.owner_uid=actor and barkolink_private.notification_visible(n,actor,actor_role);
+    if not found then raise exception 'Notification was not found.' using errcode='42501';end if;return '{}';
+  elsif operation='MyMarkAllNotificationsRead' then
+    update public.notification n set read_at=now() where read_at is null and n.owner_uid=actor and barkolink_private.notification_visible(n,actor,actor_role);
+    get diagnostics changed=row_count;return jsonb_build_object('marked',changed);
+  end if;
+  raise exception 'Unsupported notification operation.';
+end $$;
+revoke all on function barkolink_private.execute_notifications(text,jsonb,text,text) from public,anon,authenticated;
+
+-- Scheduled advisories should enter inboxes even when nobody has the app open.
+-- The existing authenticated-refresh delivery remains a fallback.
+do $$ begin
+  if exists(select 1 from pg_available_extensions where name='pg_cron') then
+    execute 'create extension if not exists pg_cron';
+    execute $schedule$select cron.schedule('barkolink-advisory-notifications','* * * * *','select barkolink_private.deliver_due_advisory_notifications();')$schedule$;
+  end if;
+end $$;
+
+
+-- 062_today_first_admin_trips.sql
+-- Operational trip browsing uses the Philippine calendar day, not the browser
+-- or database session timezone. Explicit global sort choices remain available.
+create function barkolink_private.admin_sailing_priority(departure timestamptz,state text,at_time timestamptz default now()) returns integer
+language sql immutable set search_path='' as $$
+  select case
+    when (departure at time zone 'Asia/Manila')::date=(at_time at time zone 'Asia/Manila')::date then
+      case when state in('SCHEDULED','BOARDING','DELAYED') then 0 else 1 end
+    when (departure at time zone 'Asia/Manila')::date>(at_time at time zone 'Asia/Manila')::date then 2
+    else 3 end;
+$$;
+revoke all on function barkolink_private.admin_sailing_priority(timestamptz,text,timestamptz) from public,anon,authenticated;
+
+do $$declare definition text;previous text;begin
+  definition:=pg_get_functiondef('barkolink_private.admin_directory(text,jsonb,text,text)'::regprocedure);
+  previous:=definition;
+  definition:=replace(definition,'s.departure_at departure,v.name name from public.sailing',
+    's.departure_at departure,barkolink_private.admin_sailing_priority(s.departure_at,s.status) operational_priority,v.name name from public.sailing');
+  if definition=previous then raise exception 'Admin sailing source insertion point was not found.';end if;
+  previous:=definition;
+  definition:=replace(definition,
+    'when ''departure:asc'' then ''departure asc'' when ''departure:desc'' then ''departure desc'' else ''created desc'' end;',
+    'when ''departure:asc'' then ''departure asc'' when ''departure:desc'' then ''departure desc'' else ''operational_priority asc,case when operational_priority<3 then departure end asc,case when operational_priority=3 then departure end desc'' end;');
+  if definition=previous then raise exception 'Admin sailing default-order insertion point was not found.';end if;
+  execute definition;
+end $$;
+
+commit;

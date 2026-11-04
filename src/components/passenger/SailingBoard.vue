@@ -101,4 +101,11 @@ button:focus-visible { outline:2px solid var(--ocean); outline-offset:3px; }
 .spinning { animation:board-refresh 1s linear infinite; }@keyframes board-refresh { to { transform:rotate(360deg); } }
 @container passenger (max-width:380px) { .sailing-board { padding:14px 12px; }.board-icon { display:none; }.board-tabs button { gap:4px; } }
 @media(prefers-reduced-motion:reduce) { .spinning { animation:none; } }
+@media (max-width:600px) {
+  .sailing-board { padding:14px; margin-top:18px; border-radius:14px; }
+  article { padding:12px; }
+  .board-route { margin-top:8px; }
+  dl { margin-top:10px; padding-top:8px; }
+  .row-heading strong { font-size:19px; }
+}
 </style>

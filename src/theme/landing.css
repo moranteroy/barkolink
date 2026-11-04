@@ -157,28 +157,59 @@
   .landing-page .landing-empty { flex-wrap: wrap; }
   .landing-page .landing-empty > .landing-button { margin-left: 64px; }
 }
-@media (max-width: 520px) {
-  .landing-page .landing-container { padding-inline: 20px; }
-  .landing-page h1 { font-size: clamp(39px, 10vw, 52px); }
-  .landing-page .hero-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; }
+@media (max-width: 600px) {
+  .landing-page .landing-container { padding-inline: 16px; }
+  .landing-page .nav-row { min-height: 60px; gap: 12px; }
+  .landing-page .brand-symbol { width: 36px; height: 36px; }
+  .landing-page .brand-copy small { display: none; }
+  .landing-page :is(section[id], main[id]) { scroll-margin-top: calc(72px + var(--app-safe-top)); }
+  .landing-page h1 { margin: 18px 0 14px; font-size: clamp(32px, 9vw, 40px); }
+  .landing-page .hero-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-top: 18px; padding-top: 14px; }
+  .landing-page .hero-stats strong { font-size: 18px; }
+  .landing-page .hero-stats span { margin-top: 3px; font-size: 12px; }
   .landing-page .three-columns, .landing-page .routes-grid { grid-template-columns: 1fr; }
   .landing-page .hero-pill { font-size: var(--text-caption); }
-  .landing-page .hero-copy > p { font-size: 15px; }
+  .landing-page .hero-copy > p { font-size: 14px; line-height: 1.6; }
+  .landing-page .hero-actions { margin-top: 18px; gap: 10px; }
+  .landing-page .landing-button { min-height: 44px; padding: 10px 16px; font-size: 13px; }
+  .landing-page .hero-crew { margin-top: 16px; padding: 10px; gap: 8px; }
+  .landing-page .hero-crew small { line-height: 1.45; }
+  .landing-page .hero-crew-portraits .barko-mascot { width: 28px; }
   .landing-page .search-benefits { font-size: var(--text-caption); gap: 12px; }
-  .landing-page .landing-section { padding-block: 40px; }
-  .landing-page .hero-grid { gap: 28px; padding-top: 28px; padding-bottom: 80px; }
-  .landing-page .guides-card { padding: 22px 14px 14px; gap: 24px; }
-  .landing-page .guide-portrait { height: 140px; }
-  .landing-page .guide-captain { width: 90px; }
-  .landing-page .role-description { font-size: var(--text-label); }
+  .landing-page .landing-section { padding-block: 28px; }
+  .landing-page .hero-grid { gap: 22px; padding-top: 22px; padding-bottom: 56px; }
+  .landing-page .search-frame { padding: 4px; border-radius: 18px; }
+  .landing-page .search-frame .search-card { padding: 14px; }
+  .landing-page .search-frame .detail-fields { grid-template-columns: minmax(0,1fr) 144px; gap: 10px; }
+  .landing-page .search-frame .heading-actions { flex-direction: row; }
+  .landing-page .search-frame .search-button { height: 44px; font-size: 13px; }
+  .landing-page .guides-card { padding: 18px 12px 12px; gap: 18px; }
+  .landing-page .guides-copy h2, .landing-page .landing-heading h2 { font-size: 25px; }
+  .landing-page .guides-copy > p { line-height: 1.6; margin-bottom: 16px; }
+  .landing-page .guide-pair { grid-template-columns: minmax(0,1fr); gap: 10px; }
+  .landing-page .guide-profile { display: grid; grid-template-columns: 64px minmax(0,1fr); gap: 0 10px; padding: 12px; text-align: left; }
+  .landing-page .guide-portrait { grid-column: 1; grid-row: 1 / 4; height: 100px; }
+  .landing-page .guide-captain { width: 64px; }
+  .landing-page .guide-role { margin: 0; }
+  .landing-page .role-icon { display: none; }
+  .landing-page .guide-role h3 { margin: 0 0 3px; }
+  .landing-page .role-description { grid-column: 2; margin: 6px 0; font-size: 12px; line-height: 1.5; }
+  .landing-page .role-action { grid-column: 2; justify-content: flex-start; border: 0; }
   .landing-page .guide-role h3 { font-size: 14px; }
   .landing-page .landing-empty { padding: 20px; gap: 14px; }
   .landing-page .landing-empty > .landing-button { margin-left: 0; width: 100%; }
   .landing-page .landing-empty > div { flex-basis: calc(100% - 60px); }
-  .landing-page .landing-card { padding: 22px; }
+  .landing-page .landing-card { padding: 16px; }
+  .landing-page .landing-heading { margin-bottom: 18px; }
+  .landing-page .route-card h3 { margin-top: 10px; }
+  .landing-page .route-card .route-next { margin-top: 10px; }
+  .landing-page .route-bottom { padding-top: 12px; }
+  .landing-page .route-bottom strong { font-size: 20px; }
+  .landing-page .landing-cta { padding: 28px 16px; }
   .landing-page .landing-footer { flex-direction: column; align-items: flex-start; gap: 12px; }
   .landing-page .landing-footer p { margin: 0; }
 }
+@media (max-width: 359px) { .landing-page .search-frame .detail-fields { grid-template-columns: minmax(0,1fr); } }
 @media (prefers-reduced-motion: reduce) {
   .landing-page *, .landing-page *::before, .landing-page *::after { transition: none !important; scroll-behavior: auto !important; }
 }

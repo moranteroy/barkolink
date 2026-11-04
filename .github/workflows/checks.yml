@@ -1,0 +1,44 @@
+name: Application checks
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: checks-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      CYPRESS_INSTALL_BINARY: '0'
+      VITE_SUPABASE_URL: https://barkolink-fixture.supabase.co
+      VITE_SUPABASE_PUBLISHABLE_KEY: fixture-public-key
+      BARKOLINK_BROWSER: chromium
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run test:unit -- --maxWorkers=4
+      - run: npm run test:database
+      - run: npm run build -- --configLoader native
+      - run: npx playwright-core install --with-deps chromium
+      - run: npm run test:browser
+      - uses: actions/upload-artifact@v7
+        if: failure()
+        with:
+          name: browser-fixture-failures
+          path: |
+            .audit/inbox-pagination/
+            .audit/mobile-density/

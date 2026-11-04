@@ -118,3 +118,77 @@ it('rolls back generated notifications with a failed booking transaction',async(
  await db.exec('begin');await booking();await db.exec('rollback');
  for(const key of ['admin','ticketing','boarding','passenger'])assert.equal((await inbox(key)).length,0);
 });
+it('bounds bell payloads and pages/filter history without losing the global unread count or owner isolation',async()=>{
+ await db.query(`insert into public.notification(owner_uid,title,message,category,created_at,read_at)
+ select $1,'History '||n,'Message '||n,case when n%2=0 then 'TRIPS' else 'BOOKING' end,
+ now()-n*interval '1 minute',case when n>120 then now() else null end from generate_series(1,151) n`,[ids.passenger]);
+ const summary=await call('passenger','MyNotifications',{summary:true});
+ assert.equal(summary.notifications.length,50);assert.equal(summary.unreadCount,120);assert.equal(summary.totalCount,151);
+ const first=await call('passenger','MyNotifications',{page:0,pageSize:30});
+ const next=await call('passenger','MyNotifications',{page:1,pageSize:30});
+ assert.equal(first.notifications.length,30);assert.equal(next.notifications.length,30);
+ assert.equal(new Set([...first.notifications,...next.notifications].map(n=>n.id)).size,60);
+ const filtered=await call('passenger','MyNotifications',{category:'TRIPS',unreadOnly:true,search:'History'});
+ assert.equal(filtered.totalCount,60);assert.equal(filtered.notifications.length,60);assert.equal(filtered.unreadCount,120);
+ assert.ok(filtered.notifications.every(n=>n.category==='TRIPS'&&!n.readAt));
+ assert.equal((await call('other','MyNotifications',{summary:true})).totalCount,0);
+ await call('passenger','MarkNotificationRead',{id:next.notifications[0].id});
+ assert.equal((await call('passenger','MyNotifications',{summary:true})).unreadCount,119);
+});
+it('sorts complete admin directories in one bounded response with matching counts and stable identity ties',async()=>{
+ await db.query(`insert into public.booking(reference,owner_uid,sailing_code,status,passenger_count,passenger_fare_total,total,booking_channel,payment_deadline)
+ select 'BKG-SORT-'||lpad(n::text,3,'0'),$1,'NOTICE-TRIP','PENDING',1,100+n,100+n,'ONLINE',now()+interval '1 day' from generate_series(1,121) n`,[ids.passenger]);
+ const page=await call('admin','StaffBookings',{page:2,pageSize:30,sort:'amount:asc',search:'BKG-SORT'});
+ assert.equal(page.totalCount,121);assert.equal(page.bookings.length,30);assert.equal(page.bookings[0].total,161);
+ assert.equal(new Set(page.bookings.map(b=>b.id)).size,30);
+ const reversed=await call('admin','StaffBookings',{pageSize:1,sort:'amount:desc',search:'BKG-SORT'});
+ assert.equal(reversed.bookings[0].total,221);
+ await db.exec("update public.booking set status='CONFIRMED',payment_status='PAID',payment_method='PAYMONGO_TEST' where reference in('BKG-SORT-120','BKG-SORT-121')");
+ const review=await call('admin','StaffBookings',{pageSize:1,status:'AWAITING_VERIFICATION',sort:'amount:desc'});
+ assert.equal(review.totalCount,2);assert.equal(review.bookings[0].total,221);
+ const queue=await call('admin','StaffBookings',{pageSize:3,status:'ACTION_REQUIRED'});
+ assert.deepEqual(queue.bookings.map(b=>b.paymentStatus),['PAID','PAID','UNPAID']);
+ const users=await call('admin','AdminUsers',{pageSize:2,sort:'name:asc'});
+ assert.equal(users.users.length,2);assert.equal(users.totalCount,7);
+ const sailings=await call('admin','AdminSailings',{pageSize:1,sort:'departure:asc',search:'NOTICE-TRIP'});
+ assert.equal(sailings.totalCount,1);assert.equal(sailings.sailings[0].code,'NOTICE-TRIP');
+ await db.exec(`insert into public.booking_passenger(booking_id,full_name,fare) select id,case when reference='BKG-SORT-121' then 'Alpha Traveler' else 'Zulu Traveler' end,total from public.booking where reference like 'BKG-SORT-%'`);
+ const passengers=await call('admin','AdminPassengerRecords',{pageSize:1,sort:'name:asc'});
+ assert.equal(passengers.totalCount,121);assert.equal(passengers.bookingPassengers[0].fullName,'Alpha Traveler');
+ await assert.rejects(call('passenger','AdminUsers',{sort:'name:asc'}),/Administrator/);
+ await assert.rejects(call('ticketing','AdminPassengerRecords',{sort:'name:asc'}),/Administrator/);
+ // Unknown sort input never becomes executable SQL.
+ await call('admin','AdminUsers',{sort:'name; drop table public.app_user'});
+ assert.equal((await call('admin','AdminUsers')).totalCount,7);
+});
+it('prioritizes actionable trips today in Philippine time before upcoming trips and recent history across server pages',async()=>{
+ const fixtures=[['SORT-FUTURE-LATE',7,10,'SCHEDULED'],['SORT-PAST-OLD',-2,10,'COMPLETED'],
+  ['SORT-TODAY-CANCELLED',0,2,'CANCELLED'],['SORT-TODAY-SCHEDULED',0,23,'SCHEDULED'],
+  ['SORT-FUTURE-NEXT',1,10,'SCHEDULED'],['SORT-TODAY-DELAYED',0,0,'DELAYED'],
+  ['SORT-PAST-RECENT',-1,10,'COMPLETED'],['SORT-TODAY-COMPLETED',0,1,'COMPLETED']];
+ for(const [code,days,hour,status] of fixtures){
+  const fixtureVessel=(await db.query('insert into public.vessel(code,name,passenger_capacity) values($1,$1,200) returning id',[code])).rows[0].id;
+  await db.query("insert into barkolink_private.vessel_port_observation(vessel_id,port_id,observed_at,confirmed_by_uid,note) values($1,$2,now()-interval '10 days',$3,'Sorting fixture origin confirmed.')",[fixtureVessel,origin,ids.admin]);
+  await db.query(`insert into public.sailing(code,origin_port_id,destination_port_id,vessel_id,departure_at,arrival_at,duration_minutes,regular_fare,student_fare,senior_fare,child_fare,pwd_fare,pregnant_fare,available_seats,status)
+ select $1,$2,$3,$4,departure,departure+interval '1 day',1440,600,480,480,300,480,600,200,$7 from
+ (select (((now() at time zone 'Asia/Manila')::date+$5::integer)+make_interval(hours=>$6::integer)) at time zone 'Asia/Manila' departure) t`,[code,origin,destination,fixtureVessel,days,hour,status]);
+ }
+ const first=await call('admin','AdminSailings',{search:'SORT-',page:0,pageSize:3});
+ const second=await call('admin','AdminSailings',{search:'SORT-',page:1,pageSize:3});
+ const third=await call('admin','AdminSailings',{search:'SORT-',page:2,pageSize:3});
+ assert.equal(first.totalCount,8);
+ assert.deepEqual([...first.sailings,...second.sailings,...third.sailings].map(s=>s.code),[
+  'SORT-TODAY-DELAYED','SORT-TODAY-SCHEDULED','SORT-TODAY-COMPLETED','SORT-TODAY-CANCELLED',
+  'SORT-FUTURE-NEXT','SORT-FUTURE-LATE','SORT-PAST-RECENT','SORT-PAST-OLD']);
+ const latest=await call('admin','AdminSailings',{search:'SORT-',sort:'departure:desc',pageSize:1});
+ assert.equal(latest.sailings[0].code,'SORT-FUTURE-LATE');
+ const upcomingOnly=await call('admin','AdminSailings',{search:'SORT-FUTURE',pageSize:1});
+ assert.equal(upcomingOnly.sailings[0].code,'SORT-FUTURE-NEXT');
+ const cancelled=await call('admin','AdminSailings',{search:'SORT-',status:'CANCELLED'});
+ assert.equal(cancelled.totalCount,1);assert.equal(cancelled.sailings[0].code,'SORT-TODAY-CANCELLED');
+ await db.exec("set timezone='America/Los_Angeles'");
+ for(const [departure,expected] of [['2026-11-03T16:00:00Z',0],['2026-11-04T15:59:59Z',0],['2026-11-04T16:00:00Z',2],['2026-11-03T15:59:59Z',3]]){
+  const actual=(await db.query("select barkolink_private.admin_sailing_priority($1,'DELAYED','2026-11-04T04:00:00Z') priority",[departure])).rows[0].priority;
+  assert.equal(actual,expected,departure);
+ }
+});

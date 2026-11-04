@@ -2,6 +2,7 @@ import { shallowRef } from "vue";
 import type { User } from "@supabase/supabase-js";
 import { requireSupabase, supabase } from "./supabase";
 import { validEmail, validName } from '../data/securityValidation';
+import { authRedirect } from './authLinks';
 
 export type AccountUser = {
   uid: string;
@@ -97,7 +98,7 @@ export async function registerAccount(
       password,
       options: {
         data: { fullName },
-        emailRedirectTo: `${location.origin}/login`,
+        emailRedirectTo: authRedirect('/login'),
       },
     });
     if (error) throw error;
@@ -137,14 +138,14 @@ export async function sendPasswordResetEmail(
 ) {
   if (!validEmail(email)) throw new Error('Enter a valid email address.');
   const { error } = await requireSupabase().auth.resetPasswordForEmail(email, {
-    redirectTo: `${location.origin}/reset-password`,
+    redirectTo: authRedirect('/reset-password'),
   });
   if (error) throw error;
 }
 
 export async function resendEmailCode(email: string, purpose: 'signup' | 'recovery') {
   if (purpose === 'recovery') return sendPasswordResetEmail(requireAuth(), email);
-  const { error } = await requireSupabase().auth.resend({ type: 'signup', email: email.trim() });
+  const { error } = await requireSupabase().auth.resend({ type: 'signup', email: email.trim(), options:{emailRedirectTo:authRedirect('/login')} });
   if (error) throw error;
 }
 

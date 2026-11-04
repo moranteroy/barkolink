@@ -7,6 +7,12 @@ vi.mock('../../src/services/database/passenger',()=>({myNotifications:mocks.list
 const notice=(id:string)=>({id,title:'New booking received',message:'Booking '+id,category:'BOOKING',readAt:null,createdAt:'2026-10-31T11:00:00Z'});
 beforeEach(()=>{mocks.user=undefined;syncNotificationOwner();mocks.user={uid:'staff'};vi.clearAllMocks();clearToasts();});
 describe('notification synchronization',()=>{
+ it('keeps the server unread total even when the summary contains only a bounded subset',async()=>{
+  mocks.list.mockResolvedValueOnce({data:{notifications:[notice('recent')],unreadCount:120,totalCount:300}});
+  await refreshNotificationUnread();expect(notificationUnreadCount.value).toBe(120);
+  expect(mocks.list).toHaveBeenCalledWith({},expect.objectContaining({summary:true}));
+  clearNotificationUnread('older',undefined,true);expect(notificationUnreadCount.value).toBe(119);
+ });
  it('silently loads history, updates the inbox and badge, and announces each new unread notice once',async()=>{
   mocks.list.mockResolvedValueOnce({data:{notifications:[notice('old')]}}).mockResolvedValue({data:{notifications:[notice('new'),notice('old')]}});
   await refreshNotificationUnread();expect(toastMessages.value).toHaveLength(0);expect(notificationUnreadCount.value).toBe(1);

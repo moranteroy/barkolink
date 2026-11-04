@@ -53,7 +53,8 @@ async function run(action: 'checkout' | 'status' | 'close') {
       : 'No completed payment yet. You can resume checkout or close it before paying cash.';
     if (result.status !== 'UNPAID') emit('updated');
   } catch (cause) {
-    notifyError(cause instanceof Error ? cause.message : 'Could not process payment.');
+    error.value = cause instanceof Error ? cause.message : 'Could not process payment.';
+    notifyError(error.value);
   } finally { busy.value = false; }
 }
 </script>

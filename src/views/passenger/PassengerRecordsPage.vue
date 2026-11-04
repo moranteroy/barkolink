@@ -473,7 +473,7 @@
             <button :disabled="noticeBusy || !!noticeUpdating || !unreadCount" @click="markAllRead"><AppIcon :icon="checkmarkOutline" aria-hidden="true" />{{ noticeBusy ? 'Updating...' : 'Mark all read' }}</button>
           </section>
           <div class="notification-view" role="group" aria-label="Read status">
-            <button :aria-pressed="!unreadOnly" :class="{ selected: !unreadOnly }" @click="unreadOnly = false">All updates <small>{{ notices.length }}</small></button>
+            <button :aria-pressed="!unreadOnly" :class="{ selected: !unreadOnly }" @click="unreadOnly = false">All updates <small>{{ noticeInboxCount }}</small></button>
             <button :aria-pressed="unreadOnly" :class="{ selected: unreadOnly }" @click="unreadOnly = true">Unread <small>{{ unreadCount }}</small></button>
           </div>
           <div class="notification-filters" tabindex="0" role="group" aria-label="Notification category">
@@ -503,6 +503,7 @@
             <p>{{ unreadOnly ? 'You have read all updates in this view. Check all updates to see your history.' : 'Booking confirmations, sailing changes and other travel updates will appear here.' }}</p>
             <button v-if="unreadOnly || notificationFilter !== 'ALL'" class="reset-notices" @click="unreadOnly = false; notificationFilter = 'ALL'">View all updates</button>
           </div>
+          <WorkspacePagination :page="noticePage" :total="noticeTotal" item-label="notifications" :disabled="loading || noticeBusy || !!noticeUpdating" @change="noticePage = $event" />
         </template>
         <template v-else
           ><section class="profile-card glass-panel">
@@ -567,13 +568,14 @@ import { statusLabel } from "../../data/statusPresentation";
 import { Button } from "@/components/ui/button";
 import { confirmAction } from "../../composables/confirmation";
 import PaymentDeadline from "../../components/passenger/PaymentDeadline.vue";
+import WorkspacePagination from '../../components/shared/WorkspacePagination.vue';
 import OnlinePayment from "../../components/passenger/OnlinePayment.vue";
 import { markAllNotificationsRead } from "../../services/database/experience";
-import { clearNotificationUnread, setUnreadNotifications, notificationUpdates } from "../../composables/notificationUnread";
+import { clearNotificationUnread, setUnreadNotifications, notificationUpdates, notificationUnreadCount } from "../../composables/notificationUnread";
 import { downloadTicket, shareTicket } from "../../data/ticketExport";
 import { useQueueRefresh } from "../../composables/queueRefresh";
 import { databaseRequestError } from "../../data/databaseErrors";
-import { computed, ref, watch } from "vue";
+import { computed, nextTick, ref, watch } from "vue";
 import QRCode from "qrcode";
 import { useRoute, useRouter } from "vue-router";
 import { IonButton, IonContent, IonPage, onIonViewWillEnter } from "@ionic/vue";
@@ -687,6 +689,8 @@ const notices = ref<
 >([]);
 const loadError = ref("");
 const unreadOnly = ref(false), noticeUpdating = ref(''), noticeError = ref('');
+const noticePage=ref(0),noticeTotal=ref(0),noticeCategories=ref<string[]>([]);
+const noticeInboxCount=ref(0),noticeCategoryCounts=ref<Record<string,number>|undefined>();
 const notificationFilter = ref("ALL"),
   noticeBusy = ref(false),
   ticketBusy = ref(false),
@@ -703,14 +707,17 @@ function applyNotificationItems(items:ReadonlyArray<MyNotificationsData['notific
       })).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 }
 watch(notificationUpdates,update=>{
-  if(update && kind.value==='notifications' && update.uid===auth?.currentUser?.uid && !noticeBusy.value && !noticeUpdating.value){applyNotificationItems(update.items);loadError.value='';}
+  if(update && kind.value==='notifications' && update.uid===auth?.currentUser?.uid && !noticeBusy.value && !noticeUpdating.value){
+    if(update.totalCount!==undefined){void loadData();return;}
+    applyNotificationItems(update.items);loadError.value='';
+  }
 });
-const unreadCount = computed(
-  () => notices.value.filter((n) => n.unread).length,
-);
+const unreadCount = notificationUnreadCount;
+watch([notificationFilter,unreadOnly],()=>{if(noticePage.value!==0)noticePage.value=0;else if(kind.value==='notifications')void loadData();});
+watch(noticePage,()=>{if(kind.value==='notifications')void loadData().then(async()=>{await nextTick();document.querySelector('.notifications-page .notification-toolbar')?.scrollIntoView({block:'start'});});});
 const notificationCategories = computed(() => [
   "ALL",
-  ...new Set(notices.value.map((n) => n.type)),
+  ...new Set([...noticeCategories.value,...notices.value.map((n) => n.type)]),
 ]);
 const filteredNotices = computed(() =>
   notices.value.filter(
@@ -728,6 +735,7 @@ async function markAllRead() {
     notifySuccess('All notifications marked as read.');
     clearNotificationUnread(undefined, uid);
     notices.value.forEach(notice => { notice.unread = false; });
+    if(unreadOnly.value&&noticeCategoryCounts.value)noticeCategoryCounts.value={};
 
   } catch (cause) {
     notifyError(databaseRequestError(
@@ -916,7 +924,9 @@ const formatTime = (v: string) =>
     hour: "numeric",
     minute: "2-digit",
   });
+let dataRequest=0;
 async function loadData() {
+  const request=++dataRequest;
   loading.value = true;
   loadError.value = "";
   if (!database) {
@@ -967,9 +977,15 @@ async function loadData() {
       const uid = auth?.currentUser?.uid;
       const result = await myNotifications(database, {
         fetchPolicy: "SERVER_ONLY",
+        page:noticePage.value,pageSize:30,category:notificationFilter.value,unreadOnly:unreadOnly.value,
       });
+      if(request!==dataRequest)return;
       applyNotificationItems(result.data.notifications);
-      setUnreadNotifications(result.data.notifications, uid);
+      noticeTotal.value=result.data.totalCount??result.data.notifications.length;
+      noticeCategories.value=result.data.categories??[];
+      noticeInboxCount.value=result.data.inboxCount??result.data.notifications.length;
+      noticeCategoryCounts.value=result.data.categoryCounts;
+      setUnreadNotifications(result.data.notifications, uid,result.data.unreadCount);
     }
     if (kind.value === "profile") {
       const result = await myProfile(database, { fetchPolicy: "SERVER_ONLY" });
@@ -981,12 +997,13 @@ async function loadData() {
       };
     }
   } catch (error) {
+    if(request!==dataRequest)return;
     loadError.value = databaseRequestError(
       error,
       "Could not load account data.",
     );
   } finally {
-    loading.value = false;
+    if(request===dataRequest)loading.value = false;
   }
 }
 onIonViewWillEnter(() => {
@@ -1041,6 +1058,7 @@ function notificationCategoryLabel(category: string) {
   return labels[category] || category.charAt(0) + category.slice(1).toLowerCase().replaceAll('_', ' ');
 }
 function notificationCategoryCount(category: string) {
+  if(noticeCategoryCounts.value)return category==='ALL' ? (unreadOnly.value?unreadCount.value:noticeInboxCount.value) : noticeCategoryCounts.value[category]??0;
   return notices.value.filter(n => (category === 'ALL' || n.type === category) && (!unreadOnly.value || n.unread)).length;
 }
 function noticeIcon(type: string) {
@@ -1056,8 +1074,10 @@ async function markNotice(notice: { id: string; unread: boolean }) {
   noticeError.value = '';
   try {
     await markNotificationRead(database, { id: notice.id });
+    const category=notices.value.find(item=>item.id===notice.id)?.type;
+    if(unreadOnly.value&&category&&noticeCategoryCounts.value)noticeCategoryCounts.value[category]=Math.max(0,(noticeCategoryCounts.value[category]??0)-1);
     notice.unread = false;
-    clearNotificationUnread(notice.id, uid);
+    clearNotificationUnread(notice.id, uid,true);
   } catch (error) {
     notifyError(databaseRequestError(error, 'Could not update notification. Try marking it read again.'));
   } finally {

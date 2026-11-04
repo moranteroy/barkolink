@@ -1,6 +1,10 @@
 import { createApp } from 'vue'
 import App from './App.vue'
 import router from './router';
+import { initializeNativeLayout } from './services/nativeLayout';
+import { supabase } from './services/supabase';
+import { initializeAuthLinks } from './services/authLinks';
+import { notifyError } from './composables/toast';
 
 import { IonicVue } from '@ionic/vue';
 
@@ -41,11 +45,15 @@ import './theme/selects.css';
 import './theme/actions.css';
 import './theme/experience.css';
 import './theme/workspace-density.css';
+import './theme/mobile.css';
+
+void initializeNativeLayout();
 
 const app = createApp(App)
   .use(IonicVue)
   .use(router);
 
-router.isReady().then(() => {
+router.isReady().then(async () => {
   app.mount('#app');
+  if(supabase)await initializeAuthLinks(supabase,path=>router.replace(path),notifyError).catch(()=>notifyError('Email links are unavailable. Use your email verification code.'));
 });

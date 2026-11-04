@@ -183,4 +183,21 @@ input { box-sizing:border-box; width:100%; min-width:0; height:54px; padding:0 1
   .detail-fields { grid-template-columns:1fr; }
 }
 @media(prefers-reduced-motion:reduce) { .swap-button { transition:none; } }
+@media (max-width:600px) {
+  .search-card { padding:14px; border-radius:14px; }
+  .card-heading { gap:10px; margin-bottom:12px; }
+  h2 { font-size:19px; margin:0 0 4px; }
+  .card-subtitle { font-size:12px; line-height:1.5; }
+  .heading-actions { flex-direction:row; gap:6px; }
+  .route-fields { grid-template-columns:minmax(0,1fr); gap:10px; }
+  .detail-fields { grid-template-columns:minmax(0,1fr) 144px; gap:10px; margin-top:12px; }
+  input,.counter { height:48px; }
+  input { padding-inline:8px; }
+  .counter { padding:1px; }
+  .counter strong { flex:1; }
+  .counter small { font-size:10px; overflow-wrap:anywhere; }
+  .search-button { height:44px; font-size:13px; }
+  .search-hint { margin-top:9px; font-size:12px; line-height:1.5; text-align:center; }
+}
+@media (max-width:359px) { .detail-fields { grid-template-columns:minmax(0,1fr); } }
 </style>

@@ -180,4 +180,15 @@ footer a { display: inline-flex; align-items: center; gap: 4px; min-height: 28px
 button:focus-visible, a:focus-visible, select:focus-visible, .forecast-scroll:focus-visible { outline: 2px solid var(--ocean); outline-offset: 3px; }
 @container passenger (max-width: 380px) { .port-forecast { padding: 16px 12px; } .current { gap: 8px; } .current-description { min-width: 0; } .current-description b { font-size: var(--text-caption); } .current-reading > strong { font-size: 28px; } .current-reading small { font-size: 14px; } .forecast-badge { font-size: var(--text-caption); } .location-picker { grid-template-columns: 1fr; gap: 5px; } }
 @media (prefers-reduced-motion: reduce) { .forecast-day, .day-icon, .location-trigger, .location-chevron { transition: none; } .selected-forecast, :global(.barkolink-location-menu) { animation: none; } .forecast-day:hover .day-icon, .forecast-day:active { transform: none; } }
+@media (max-width:600px) {
+  .port-forecast { margin-top:18px; padding:14px; border-radius:14px; }
+  .daily-heading { margin-top:16px; }
+  .forecast-scroll { gap:8px; padding-bottom:10px; }
+  .forecast-day { flex-basis:104px; height:auto; min-height:178px; padding:10px 8px; }
+  .day-icon { width:38px; height:38px; margin-block:7px; }
+  .condition-label { height:auto; min-height:34px; font-size:12px; }
+  .day-date { gap:2px; }
+  .day-date small { font-size:12px; }
+  .tile-rain { padding-top:6px; }
+}
 </style>

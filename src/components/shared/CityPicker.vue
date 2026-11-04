@@ -39,4 +39,11 @@ function update(value: unknown) { if (typeof value === 'string') emit('update:mo
 .city-option { display:flex; align-items:center; gap:9px; min-height:56px; padding:8px 10px; border-radius:9px; outline:none; cursor:pointer; }.city-option[data-highlighted],.city-option[data-state="checked"] { background:var(--light-blue); }
 .option-icon { display:grid; place-items:center; flex-shrink:0; width:30px; height:30px; border-radius:9px; background:var(--light-blue); color:var(--ocean); }.option-copy { display:grid; flex:1; min-width:0; gap:3px; }.option-copy strong { font-size: var(--text-label); line-height:1.4; }.option-copy small { color:var(--muted); font-size: var(--text-caption); line-height:1.5; overflow-wrap:anywhere; }.city-check { color:var(--ocean); flex-shrink:0; }
 @media(prefers-reduced-motion:reduce) { .city-trigger,.city-chevron { transition:none; } }
+@media (max-width:600px) {
+  .field-label { margin-bottom:5px; }
+  .city-trigger { min-height:54px; padding:8px; gap:8px; }
+  .city-icon { width:28px; height:28px; }
+  .city-value { gap:1px; }
+  .city-value small { font-size:12px; line-height:1.4; }
+}
 </style>

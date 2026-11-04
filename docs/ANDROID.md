@@ -28,7 +28,26 @@ npm run android:build
 
 This validates the toolchain, builds the web app, syncs Capacitor, and runs Gradle `assembleDebug`. The expected artifact is `android/app/build/outputs/apk/debug/app-debug.apk`. Alternatively, open `android/` in Android Studio and build/run from there.
 
-Keep the configured public Supabase URL/key in `.env.local` before building. Never add a service-role key to the mobile app. Production email confirmation/reset links still need the actual hosted origin and redirect configuration; local development redirects do not establish a production mobile deep-link flow.
+Keep the configured public Supabase URL/key in `.env.local` before building. Never add a service-role key to the mobile app.
+
+## Email confirmation and password recovery
+
+In the Supabase project's **Authentication > URL Configuration > Redirect URLs**, allow these exact native destinations in addition to the actual hosted web destinations:
+
+```text
+com.barkolink.app://auth/login
+com.barkolink.app://auth/reset-password
+```
+
+Native signup/resend and password reset now request those destinations. Android handles the app scheme, and the app consumes both running-app and cold-start links. Native requests use PKCE: the code must be exchanged with the verifier stored by this installation. Bearer-token fragments and unrelated hosts/routes are rejected. An active account is not replaced by a new email-link session; log out first, or use the manual email-code flow. Browser auth keeps its normal web redirects.
+
+Apply the redirect allowlist to the actual project and rebuild/sync the APK. Test real confirmation and recovery emails on a physical device, with the app open, backgrounded, and closed. Links requested on another installation may lack the matching PKCE verifier; the manual email code remains the fallback. Do not put verification URLs, codes, or tokens in logs or screenshots.
+
+## Mobile layout and system bars
+
+The APK starts in immersive mode: status/navigation bars are hidden and an edge swipe temporarily reveals them, following [Android's immersive-mode behavior](https://developer.android.com/develop/ui/views/layout/immersive). `MainActivity` reapplies this when the app resumes or regains focus. Capacitor SystemBars supplies display-cutout insets; the app reserves top clearance once. The passenger bottom navigation hides while the software keyboard is open.
+
+Phone density rules apply at or below 600 CSS pixels. Desktop/laptop layouts retain their existing styling. See [the mobile follow-up and verification](MOBILE-UI-2026-11-04.md). Build and install a new APK to receive these changes; synchronizing source assets alone does not update an installed app. Mobile browser system bars remain controlled by the browser/OS.
 
 ## Device acceptance checklist
 
@@ -42,6 +61,7 @@ Use an Android phone or emulator with Internet access. For camera testing, use a
 - Scan the same ticket again; counts must remain unchanged.
 - Observe a cancellation/expiry from another browser within the 15-second refresh interval.
 - Test screen rotation, small screens, keyboard input, Android Back navigation, app background/resume and logout.
+- Test gesture and three-button navigation: system bars hide on launch/resume, an edge swipe temporarily reveals them, and no content overlaps the display cutout. Check the last card above bottom navigation, input visibility with the keyboard open, and enlarged system text.
 - Turn off Internet: show an actionable connection error and do not report a successful payment or boarding action.
 
 Record phone model, Android version, APK build date and each test outcome. Windows cannot locally build/test iOS; a macOS/Xcode environment is required for that target.

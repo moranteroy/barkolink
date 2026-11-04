@@ -15,11 +15,11 @@ Deno.serve(async request => {
   if (request.method === 'OPTIONS') return new Response('ok', { headers: cors });
   if (request.method !== 'POST') return reply(405, { error: 'Use POST.' });
   try {
-    const key = testSecret(Deno.env.get('PAYMONGO_SECRET_KEY'));
     const admin = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!, {
       auth: { persistSession: false, autoRefreshToken: false },
     });
     const api = async (path: string, method = 'GET', body?: object, idempotency?: string) => {
+      const key = testSecret(Deno.env.get('PAYMONGO_SECRET_KEY'));
       const response = await fetch(`https://api.paymongo.com${path}`, {
         method, headers: { Authorization: `Basic ${btoa(`${key}:`)}`, 'Content-Type': 'application/json',
           ...(idempotency ? { 'Idempotency-Key': idempotency } : {}) },
@@ -97,7 +97,7 @@ Deno.serve(async request => {
     }
     const { data: row, error } = await admin.from('online_payment').select('*').eq('booking_id', bookingId).maybeSingle();
     if (error) throw new Error('Could not load payment.');
-    if (!row) return reply(200, { status: booking.payment_status });
+    if (!row) return reply(200, { status: action === 'close' && booking.payment_status === 'UNPAID' ? 'CLOSED' : booking.payment_status });
     // A lost create response can be recovered using the same idempotent checkout request.
     if (!row.session_id) throw new Error('Checkout setup is incomplete. Press Pay online again to recover it before switching to cash.');
     const result = await check(row);

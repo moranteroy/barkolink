@@ -2,7 +2,7 @@
   <label class="directory-order-control" :for="'directory-order-' + section">
     <span>Sort all records</span>
     <select :id="'directory-order-' + section" :value="modelValue" @change="$emit('update:modelValue', ($event.target as HTMLSelectElement).value)">
-      <option value="">Default order</option>
+      <option value="">{{ section === 'trips' ? 'Today first (PH)' : 'Default order' }}</option>
       <template v-if="section === 'trips'">
         <option value="departure:asc">Departure: earliest first</option><option value="departure:desc">Departure: latest first</option><option value="name:asc">Vessel: A–Z</option>
       </template>
