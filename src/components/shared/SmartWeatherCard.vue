@@ -52,6 +52,7 @@ const timestamp = computed(() => props.reading.at ? new Date(props.reading.at).t
 @media (max-width: 360px) { .smart-weather { padding: 14px; } .weather-topline { flex-wrap: wrap; } .weather-time { text-align: left; } .hero-symbol { width: 64px; height: 64px; } .weather-metrics > div { padding: 12px 9px; } .weather-metrics span { flex-wrap: wrap; } .weather-metrics strong { font-size: 20px; } }
 @media (max-width:600px) {
   .smart-weather { padding:14px; border-radius:14px; }
+  .weather-topline { gap:4px 8px; }
   .weather-hero { padding:16px 0; gap:10px; }
   .temperature { font-size:44px; }
   .hero-symbol { width:64px; height:64px; }
@@ -59,6 +60,8 @@ const timestamp = computed(() => props.reading.at ? new Date(props.reading.at).t
   .weather-metrics { gap:8px; }
   .weather-metrics > div { gap:5px; padding:10px; border-radius:10px; }
   .weather-metrics span,.weather-metrics small { font-size:12px; }
+  .weather-metrics span { display:block; }
+  .weather-metrics span svg { display:inline-block; vertical-align:middle; margin-right:5px; }
   .weather-metrics strong { font-size:20px; }
   .weather-secondary { margin-top:10px; padding:8px 10px; font-size:12px; }
 }
