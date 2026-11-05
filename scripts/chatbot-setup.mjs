@@ -1,4 +1,5 @@
 import fs from 'node:fs';
+import {edgeFunctionSource} from './edge-function-source.mjs';
 const env=path=>fs.existsSync(path)?Object.fromEntries(fs.readFileSync(path,'utf8').split(/\r?\n/).filter(line=>/^\w+\s*=/.test(line)).map(line=>{const at=line.indexOf('=');return [line.slice(0,at).trim(),line.slice(at+1).trim().replace(/^['"]|['"]$/g,'')]})):{};
 const config=env('.env.chatbot.local');
 const ready=/^[a-f0-9]{32}$/i.test(config.CLOUDFLARE_ACCOUNT_ID || '') && !!config.CLOUDFLARE_AI_TOKEN;
@@ -22,8 +23,7 @@ if(!process.argv.includes('--deploy')){
   console.log('Chat limits migration ready.');
   await request('/secrets',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(['CLOUDFLARE_ACCOUNT_ID','CLOUDFLARE_AI_TOKEN','CHATBOT_MODEL'].filter(name=>config[name]).map(name=>({name,value:config[name]})))});
   console.log('Chatbot secrets uploaded securely.');
-  const shared=fs.readFileSync('supabase/functions/chatbot/shared.ts','utf8').replace(/^export /gm,'');
-  const source=fs.readFileSync('supabase/functions/chatbot/index.ts','utf8').replace(/import \{ systemPrompt, tools, validateInput, parseTool, readTool \} from '.\/shared.ts';/,shared);
+  const source=edgeFunctionSource('chatbot');
   const form=new FormData();form.append('metadata',JSON.stringify({name:'chatbot',entrypoint_path:'index.ts',verify_jwt:false}));form.append('file',new Blob([source],{type:'application/typescript'}),'index.ts');
   const deployed=await request('/functions/deploy?slug=chatbot',{method:'POST',body:form});
   console.log(JSON.stringify({function:deployed.status,configured:true,message:'Deployed. Test live multilingual conversations before passenger launch.'}));

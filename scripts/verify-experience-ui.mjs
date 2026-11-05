@@ -476,7 +476,7 @@ try {
         assert.match(await page.locator('.confirmed-card').innerText(), /BOOKING TOTAL\s+PHP 600/)
         await page.evaluate(() => Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText: async () => { throw new Error('Denied') } } }))
         await page.getByRole('button', { name: 'Copy', exact: true }).click()
-        await page.locator('main').getByText('Could not copy the reference. Select the booking reference and copy it manually.', { exact: true }).waitFor()
+        await page.locator('.app-toast.error').getByText('Could not copy the reference. Select the booking reference and copy it manually.', { exact: true }).waitFor()
         assert.equal(await page.getByRole('button', { name: 'Copied', exact: true }).count(), 0)
         await page.evaluate(() => Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText: async () => {} } }))
       }

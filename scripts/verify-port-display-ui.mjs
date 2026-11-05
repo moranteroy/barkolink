@@ -287,7 +287,7 @@ try {
     await page.reload();
     await page.getByRole('heading', { name: 'Batangas Port', exact: true }).waitFor();
     await page.keyboard.press('Escape');
-    await page.waitForFunction(() => document.querySelector('.header-weather-status')?.textContent.includes('Unavailable'));
+    await page.waitForFunction(() => document.querySelector('.header-weather-status')?.textContent.toLowerCase().includes('unavailable'));
     assert.equal(await page.locator('.port-screen').getAttribute('data-weather'), 'neutral');
     assert.equal(await page.locator('.header-weather-target').count(), 0, 'Old or future readings must not imply live weather');
   }

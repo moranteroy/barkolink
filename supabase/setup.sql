@@ -6170,4 +6170,86 @@ do $$declare definition text;previous text;begin
   execute definition;
 end $$;
 
+
+-- 063_loyalty_milestone_usage.sql
+-- Read-only usage summaries for the three milestone cards. Platinum includes
+-- recurring rewards after the third milestone; voucher amounts are not identities.
+create function barkolink_private.loyalty_milestone_usage(actor text) returns jsonb
+language sql stable set search_path='' as $$
+  with rewards as (
+    select least(v.loyalty_reward_number,3) reward_number,
+      case
+        when exists(select 1 from public.booking b where b.voucher_id=v.id) then 'USED'
+        when v.expires_at<=now() then 'EXPIRED'
+        when not v.is_active then 'UNAVAILABLE'
+        when v.starts_at>now() then 'PENDING'
+        else 'READY'
+      end state
+    from public.voucher v where v.owner_uid=actor and v.loyalty_reward_number is not null
+  ), summaries as (
+    select n.reward_number,
+      count(*) filter(where r.state='READY') ready_count,
+      count(*) filter(where r.state='USED') used_count,
+      count(*) filter(where r.state='EXPIRED') expired_count,
+      count(*) filter(where r.state='UNAVAILABLE') unavailable_count,
+      count(*) filter(where r.state='PENDING') pending_count
+    from generate_series(1,3) n(reward_number)
+    left join rewards r using(reward_number) group by n.reward_number
+  )
+  select jsonb_agg(to_jsonb(s) order by s.reward_number) from summaries s;
+$$;
+revoke all on function barkolink_private.loyalty_milestone_usage(text) from public,anon,authenticated;
+
+-- Extend the existing MyLoyalty response without another dispatcher wrapper.
+-- That branch has already verified PASSENGER and derives actor_uid from Auth.
+do $$declare definition text; previous text;begin
+  definition:=pg_get_functiondef('barkolink_private.execute_flexible_discounts_v31(text,jsonb,text,text)'::regprocedure);
+  previous:=definition;
+  definition:=replace(definition,
+    'return result||jsonb_build_object(''trips_per_reward'',cycle',
+    'return result||jsonb_build_object(''milestones'',barkolink_private.loyalty_milestone_usage(actor_uid),''trips_per_reward'',cycle');
+  if definition=previous then raise exception 'MyLoyalty milestone insertion point was not found.';end if;
+  execute definition;
+end $$;
+
+
+-- 064_manual_loyalty_voucher_copy.sql
+-- Rewards are still earned/issued automatically, but passengers choose whether
+-- to use them by entering a code and selecting Apply at booking review.
+do $$declare definition text;previous text;begin
+  definition:=pg_get_functiondef('barkolink_private.issue_loyalty_vouchers(text)'::regprocedure);
+  previous:=definition;
+  definition:=replace(definition,
+    'Your personal voucher applies automatically to your next eligible booking and is valid for ',
+    'Enter the voucher code at booking review and select Apply. It is valid for ');
+  if definition=previous then raise exception 'Loyalty notification wording insertion point was not found.';end if;
+  execute definition;
+end $$;
+
+
+-- 065_ticket_travel_window.sql
+-- Reject expired travel windows even if the trip status worker has not run.
+-- Keep the existing booking/sailing/passenger locks and one-way attendance
+-- transitions. Operators must update departure/arrival when rescheduling.
+do $$declare definition text; previous text; needle text;begin
+  definition:=replace(pg_get_functiondef('barkolink_private.execute(text,jsonb,text,text)'::regprocedure),chr(13),'');
+  previous:=definition;
+  needle:=$needle$      if b.status <> 'CONFIRMED' or b.payment_status <> 'PAID' then raise exception 'Payment must be completed first.'; end if;
+      if operation = 'CheckInTicket' then$needle$;
+  definition:=replace(definition,needle,$replacement$      if b.status <> 'CONFIRMED' or b.payment_status <> 'PAID' then raise exception 'Payment must be completed first.'; end if;
+      if b.payment_method='PAYMONGO_TEST' and b.payment_verified_at is null then raise exception 'Staff payment verification is required before admission.'; end if;
+      if s.arrival_at<=now() then raise exception 'This ticket travel period has ended. Keep it for transaction records only.'; end if;
+      if operation = 'CheckInTicket' then$replacement$);
+  if definition=previous then raise exception 'Ticket attendance guard insertion point was not found.';end if;
+  execute definition;
+
+  definition:=replace(pg_get_functiondef('barkolink_private.execute_flexible_discounts_v30(text,jsonb,text,text)'::regprocedure),chr(13),'');
+  previous:=definition;
+  needle:=$needle$    if s.status not in ('SCHEDULED','BOARDING') or (s.status<>'BOARDING' and s.departure_at<=now()) then$needle$;
+  definition:=replace(definition,needle,$replacement$    if s.arrival_at<=now() then raise exception 'This ticket travel period has ended. Keep it for transaction records only.'; end if;
+    if s.status not in ('SCHEDULED','BOARDING') or (s.status<>'BOARDING' and s.departure_at<=now()) then$replacement$);
+  if definition=previous then raise exception 'Ticket QR guard insertion point was not found.';end if;
+  execute definition;
+end $$;
+
 commit;

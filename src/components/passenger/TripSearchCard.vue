@@ -26,9 +26,9 @@
       <div class="passenger-field">
         <span :id="countLabelId" class="field-caption"><Users :size="13" aria-hidden="true" />Passengers</span>
         <div class="counter" role="group" :aria-labelledby="countLabelId">
-          <button type="button" aria-label="Remove passenger" :disabled="count <= 1" @click="count--"><Minus :size="16" aria-hidden="true" /></button>
+          <button type="button" aria-label="Remove passenger" :disabled="count <= 1" @click="count--"><Minus :size="20" aria-hidden="true" /></button>
           <strong aria-live="polite">{{ count }}<small>{{ count === 1 ? 'passenger' : 'passengers' }}</small></strong>
-          <button type="button" aria-label="Add passenger" :disabled="count >= 8" @click="count++"><Plus :size="16" aria-hidden="true" /></button>
+          <button type="button" aria-label="Add passenger" :disabled="count >= 8" @click="count++"><Plus :size="20" aria-hidden="true" /></button>
         </div>
       </div>
       <Button class="search-button" type="submit" :disabled="loading || !!portError || cities.length < 2">
@@ -162,11 +162,11 @@ h2 { margin:5px 0; font-size:22px; letter-spacing:-.5px; line-height:1.3; }
 .field-caption { display:flex; align-items:center; gap:5px; color:var(--muted); font-size: var(--text-caption); font-weight:700; line-height:1.5; }
 input { box-sizing:border-box; width:100%; min-width:0; height:54px; padding:0 10px; border:1px solid var(--line); border-radius:12px; background:var(--surface-soft); color:var(--ink); font:inherit; font-size:16px; font-weight:650; }
 :global(:root[data-theme="dark"]) input[type="date"] { color-scheme:dark; }
-.counter { display:flex; align-items:center; justify-content:space-between; gap:2px; height:54px; padding:4px; border:1px solid var(--line); border-radius:12px; background:var(--surface-soft); color:var(--ink); }
+.counter { box-sizing:border-box; display:flex; align-items:center; justify-content:space-between; gap:2px; height:54px; padding:4px; border:1px solid var(--line); border-radius:12px; background:var(--surface-soft); color:var(--ink); }
 .counter button { display:grid; place-items:center; width:44px; height:44px; flex-shrink:0; padding:0; border:0; border-radius:8px; background:var(--light-blue); color:var(--ocean); cursor:pointer; }
 .counter button:disabled,.swap-button:disabled { opacity:.4; cursor:default; }
-.counter strong { min-width:0; display:grid; gap:1px; text-align:center; color:var(--ink); font-size:15px; line-height:1.2; }
-.counter small { font-size:8px; font-weight:500; color:var(--muted); }
+.counter strong { min-width:0; flex:1; display:grid; gap:2px; text-align:center; color:var(--ink); font-size:20px; line-height:1.15; white-space:nowrap; }
+.counter small { font-size:12px; line-height:1.2; font-weight:500; color:var(--muted); white-space:nowrap; }
 .search-button { grid-column:1/-1; width:100%; display:flex; align-items:center; justify-content:center; gap:9px; height:48px; margin:2px 0 0; border-radius:12px; background:var(--action,var(--ocean)); font-size:13px; font-weight:750; white-space:nowrap; }
 .search-button svg { flex-shrink:0; }
 .search-hint { display:flex; align-items:center; justify-content:center; gap:5px; margin:12px 0 0; color:var(--muted); font-size: var(--text-caption); line-height:1.6; }
@@ -194,8 +194,7 @@ input { box-sizing:border-box; width:100%; min-width:0; height:54px; padding:0 1
   input,.counter { height:48px; }
   input { padding-inline:8px; }
   .counter { padding:1px; }
-  .counter strong { flex:1; }
-  .counter small { font-size:10px; overflow-wrap:anywhere; }
+  .counter small { display:none; }
   .search-button { height:44px; font-size:13px; }
   .search-hint { margin-top:9px; font-size:12px; line-height:1.5; text-align:center; }
 }

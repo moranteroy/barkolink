@@ -518,6 +518,7 @@ export interface BoardingSailingsData {
     code: string;
     status: string;
     departureAt: TimestampString;
+    arrivalAt?: TimestampString;
     origin: {
       name: string;
     };

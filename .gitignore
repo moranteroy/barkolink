@@ -31,7 +31,6 @@ node_modules/
 /plugins
 /www
 .env*
-!.env.example
 .firebase-config/
 .firebase/
 .supabase/
@@ -93,3 +92,30 @@ credentials.json
 /android/app/src/main/assets/capacitor.config.json
 /android/app/src/main/assets/capacitor.plugins.json
 /android/app/src/main/res/xml/config.xml
+
+# Academic manuscripts, Word documents and presentation screenshots stay local.
+/docs/research/
+*.[dD][oO][cC]
+*.[dD][oO][cC][xXmM]
+*.[dD][oO][tT]
+*.[dD][oO][tT][xXmM]
+**/[Cc]hapter-1*
+**/[Cc]hapter-3*
+**/[Cc]hapter 1*
+**/[Cc]hapter 3*
+**/[Bb]arko[Ll]ink-[Ff]eature-[Ss]creenshots*/
+**/[Bb]arko[Ll]ink-[Ff]eature-[Ss]creenshots*.zip
+**/[Bb]arko[Ll]ink-[Ss]ystem-[Oo]verview*
+
+# One-off local capture and rehearsal helpers; reusable app checks stay in Git.
+/scripts/audit-current-*.mjs
+/scripts/audit-database-suites.mjs
+/scripts/audit-demo-browser.mjs
+/scripts/audit-extra-browser.mjs
+/scripts/audit-presentation-readiness.mjs
+/scripts/capture-demo-accounts.mjs
+/scripts/capture-system-overview.mjs
+/scripts/package-system-screenshots.mjs
+/scripts/rehearse-*.mjs
+/scripts/restore-unused-rehearsal-trip.mjs
+/scripts/summarize-readiness.mjs

@@ -42,6 +42,9 @@ export default defineConfig({
       '@': fileURLToPath(new URL('./src', import.meta.url)),
     },
   },
+  server: {
+    watch: { ignored: ['**/.cache/**', '**/.audit/**', '**/android/**/build/**'] },
+  },
   test: {
     include: ['tests/unit/**/*.spec.ts'],
     globals: true,

@@ -48,7 +48,7 @@ Release progress on 6 October 2026:
 
 1. Completed on the configured project: applied only [018_admin_directory_filters.sql](../supabase/migrations/018_admin_directory_filters.sql), after migrations 001–017, using the normal migration process or a transaction in the SQL editor. The updated admin filters and sailing-options operation depend on it.
 2. Deploy the tested frontend build together with that backend change. Do not run the full setup SQL on an existing project. `supabase/setup.sql` was regenerated from all 18 migrations for a new project only.
-3. When official contact details are available, set `VITE_OPERATOR_NAME`, `VITE_SUPPORT_EMAIL`, and `VITE_SUPPORT_PHONE` and rebuild. `.env.example` documents these settings. No operator identity/contact information was invented.
+3. When official contact details are available, set `VITE_OPERATOR_NAME`, `VITE_SUPPORT_EMAIL`, and `VITE_SUPPORT_PHONE` and rebuild. [README.md](../README.md) documents these local settings. No operator identity/contact information was invented.
 4. Verify one real operator-approved booking/payment/boarding/refund flow in staging, then the terminal printer/PDF output and the intended Android devices before operational use.
 
 ## Needs verification

@@ -1,17 +1,18 @@
 import fs from 'node:fs';
 import assert from 'node:assert/strict';
 import { chromium } from 'playwright-core';
+import {fixtureProject,fixtureBrowserOptions} from './browser-fixture-config.mjs';
 const baseUrl = process.env.BARKOLINK_UI_URL || 'http://127.0.0.1:8110';
 import { boardingTimingFixture } from './boarding-timing-fixture.mjs';
 import jsQR from 'jsqr';
-const project=fs.readFileSync('.env.local','utf8').match(/^VITE_SUPABASE_URL\s*=\s*(.+)$/m)[1].trim().replace(/^['"]|['"]$/g,'');
+const project=fixtureProject();
 const id='11111111-1111-4111-8111-111111111111',code='22222222-2222-4222-8222-222222222222';
 const sailing={code:'QR-TRIP',departureAt:'2099-10-08T04:00:00Z',arrivalAt:'2099-10-08T06:00:00Z',status:'BOARDING',origin:{name:'Batangas Port',city:'Batangas'},destination:{name:'Calapan Port',city:'Calapan'},vessel:{name:'MV Isla Verde'}};
 const payload=JSON.stringify({BarkoLink:'Ticket v2',Name:'Carlo Reyes',Date:'2099-10-08 12:00 Philippine time',Vessel:sailing.vessel.name,Route:'Batangas Port to Calapan Port',Booking:'QR-BOOKING',Ticket:code,Verification:'a'.repeat(64)});
 const person={id,fullName:'Carlo Reyes',passengerType:'REGULAR',fare:600,ticketCode:code,ticketQrPayload:payload,ticketStatus:'ISSUED'};
 const booking={id,reference:'QR-BOOKING',status:'CONFIRMED',paymentStatus:'PAID',paymentMethod:'CASH',paymentVerificationRequired:false,total:600,passengerCount:1,sailing,bookingPassengers_on_booking:[person],createdAt:'2026-10-08T00:00:00Z'};
 fs.mkdirSync('.audit/ticket-qr',{recursive:true});
-const browser=await chromium.launch({channel:'msedge',headless:true});
+const browser=await chromium.launch(fixtureBrowserOptions());
 try{
   for(const width of [390,1440]){
     let decoded;
@@ -45,7 +46,7 @@ try{
         await page.goto(`${baseUrl}/staff/boarding/check-in`,{waitUntil:'networkidle'});
         await page.locator('.heading-actions').getByRole('button',{name:'Find ticket'}).click();
         const modal=page.locator('.scanner-modal');await modal.locator('input').fill(JSON.stringify({...JSON.parse(payload),Name:'Fake Passenger'}));
-        await modal.getByRole('button',{name:'Verify ticket'}).click();await modal.getByText(/QR verification failed/).waitFor();
+        await modal.getByRole('button',{name:'Verify ticket'}).click();await page.locator('.app-toast.error').filter({hasText:/QR verification failed/}).waitFor();
         assert.equal(actions,0);
         await modal.locator('input').fill(decoded);await modal.getByRole('button',{name:'Verify ticket'}).click();
         const review=page.locator('.review-panel');await review.getByText('Carlo Reyes',{exact:true}).waitFor();

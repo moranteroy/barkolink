@@ -36,8 +36,10 @@ async function main(){
   }
   if(process.argv.includes('--complete-history')){
     await queryLive(`begin;set local lock_timeout='10s';set local statement_timeout='45s';
-      create temporary table original_carlo_bookings as select b.id,to_jsonb(b) data from public.booking b join public.app_user u on u.uid=b.owner_uid where lower(u.email)='${email}';
-      create temporary table original_sailings_guard as select md5(jsonb_agg(to_jsonb(s) order by code)::text) digest from public.sailing s;
+      create temporary table original_carlo_bookings on commit drop as select b.id,to_jsonb(b) data from public.booking b join public.app_user u on u.uid=b.owner_uid where lower(u.email)='${email}';
+      create temporary table original_sailings_guard on commit drop as select md5(jsonb_agg(to_jsonb(s)-'available_seats'-'updated_at' order by code)::text) digest from public.sailing s;
+      create temporary table original_inventory on commit drop as select code,available_seats from public.sailing;
+      create temporary table prepared_inventory(code text primary key, passengers integer not null) on commit drop;
       do $$declare actor public.app_user;trip public.sailing;current_count integer;target integer;booking_id uuid;next_at timestamptz;next_port uuid;passenger_sex text;counter integer:=0;ref text;
       begin
         select * into strict actor from public.app_user where lower(email)='${email}' and role='PASSENGER' for update;
@@ -52,13 +54,18 @@ async function main(){
           order by departure_at,code loop
           exit when current_count>=target;
           if next_at is not null and (trip.departure_at<next_at or trip.origin_port_id<>next_port) then continue;end if;
+          if trip.available_seats<1 then continue;end if;
           if barkolink_private.vessel_departure_issue(trip.vessel_id,trip.origin_port_id,trip.departure_at,trip.code) is not null then continue;end if;
+          perform 1 from public.sailing where code=trip.code and available_seats>0 for update;
+          if not found then continue;end if;
           counter:=counter+1;ref:='BKG'||to_char((trip.departure_at-interval '1 day') at time zone 'Asia/Manila','YYYY-MMDD')||lpad(((('x'||substr(replace(gen_random_uuid()::text,'-',''),1,12))::bit(48)::bigint)%1000000000000)::text,12,'0');
           insert into public.booking(reference,owner_uid,sailing_code,status,passenger_count,passenger_fare_total,service_fee,total,
             booking_channel,payment_status,payment_method,paid_at,created_at,updated_at)
           values(ref,actor.uid,trip.code,'CONFIRMED',1,trip.regular_fare,0,trip.regular_fare,
             'WALK_IN','PAID','CASH',trip.departure_at-interval '12 hours',trip.departure_at-interval '1 day',trip.arrival_at)
           returning id into booking_id;
+          update public.sailing set available_seats=available_seats-1,updated_at=now() where code=trip.code;
+          insert into prepared_inventory values(trip.code,1) on conflict(code) do update set passengers=prepared_inventory.passengers+1;
           insert into public.booking_passenger(booking_id,full_name,passenger_type,sex,phone,nationality,fare,ticket_status,
             issued_at,checked_in_at,boarded_at,created_at)
           values(booking_id,actor.full_name,'REGULAR',passenger_sex,actor.phone,'Filipino',trip.regular_fare,'BOARDED',
@@ -71,7 +78,9 @@ async function main(){
         end loop;
         if current_count<target then raise exception 'Not enough historical trips for coherent presentation history; rolled back.';end if;
         if exists(select 1 from original_carlo_bookings o left join public.booking b using(id) where o.data is distinct from to_jsonb(b))
-          or (select digest from original_sailings_guard) is distinct from (select md5(jsonb_agg(to_jsonb(s) order by code)::text) from public.sailing s)
+          or (select digest from original_sailings_guard) is distinct from (select md5(jsonb_agg(to_jsonb(s)-'available_seats'-'updated_at' order by code)::text) from public.sailing s)
+          or exists(select 1 from original_inventory o join public.sailing s using(code) left join prepared_inventory p using(code)
+            where s.available_seats<>o.available_seats-coalesce(p.passengers,0))
         then raise exception 'Existing booking or sailing changed; rolled back.';end if;
       end $$;commit;`,false);
   }

@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import { chromium } from 'playwright-core'
+import { verifyPassengerCounter } from './passenger-counter-checks.mjs'
 const baseUrl = process.env.BARKOLINK_UI_URL || 'http://127.0.0.1:8110'
 const projectUrl = fs.readFileSync('.env.local', 'utf8').match(/^VITE_SUPABASE_URL\s*=\s*(.+)$/m)?.[1]?.trim().replace(/^['"]|['"]$/g, '')
 const ports = [{ id: 'bat', code: 'BAT', name: 'Batangas Port', city: 'Batangas' }, { id: 'cal', code: 'CAL', name: 'Calapan Port', city: 'Calapan' }]
@@ -27,6 +28,9 @@ try {
     await page.goto(baseUrl)
     await page.locator('.route-card').waitFor()
     await page.waitForTimeout(700)
+    await verifyPassengerCounter(page)
+    await page.locator('.search-frame .counter').screenshot({ path: `docs/screenshots/landing/counter-${theme}-${width}.png` })
+    await page.evaluate(() => document.querySelector('ion-content').scrollToTop(0))
     assert.equal(await page.locator('.landing-page h1').count(), 1)
     assert.equal(await page.locator('.fleet-card h3').textContent(), 'Mindoro Voyager')
     const overflow = await page.locator('.landing-page').evaluate(root => [...root.querySelectorAll('section, .landing-card, .search-card, input, select')].filter(el => { const b = el.getBoundingClientRect(); return b.width > 0 && (b.left < -2 || b.right > innerWidth + 2) }).map(el => el.className))

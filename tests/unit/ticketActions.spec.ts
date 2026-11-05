@@ -3,6 +3,14 @@ import { ticketActionBlockReason, ticketRequestError } from '../../src/data/tick
 
 const ticket = () => ({ ticketStatus: 'CHECKED_IN', booking: { status: 'CONFIRMED', paymentStatus: 'PAID', sailing: { code: 'TRP2026-1002001', status: 'BOARDING', departureAt: '2026-10-02T08:00:00Z' } } })
 describe('gate eligibility', () => {
+  it('closes admission at arrival even when a stale trip still says boarding', () => {
+    const record=ticket();
+    const ended={...record,booking:{...record.booking,sailing:{...record.booking.sailing,arrivalAt:'2026-11-05T08:00:00Z'}}};
+    expect(ticketActionBlockReason(ended,'boarding',new Date('2026-11-05T08:00:00Z'))).toContain('travel period has ended');
+    ended.ticketStatus='ISSUED';
+    expect(ticketActionBlockReason(ended,'check-in',new Date('2026-11-05T09:00:00Z'))).toContain('travel period has ended');
+    expect(ticketActionBlockReason({...record,booking:{...record.booking,paymentVerificationRequired:true}},'boarding')).toContain('verification');
+  });
   it('allows a checked-in paid confirmed passenger when the trip is boarding', () => {
     expect(ticketActionBlockReason(ticket(), 'boarding')).toBe('')
   })

@@ -1,4 +1,5 @@
 export type MessagePart = { text: string; path?: string; bold?: boolean };
+import { formatAssistantTimes } from '../../supabase/functions/_shared/assistantTime';
 
 /** Older deployed chatbot responses used Home for section-specific actions. */
 export function assistantDestination(link: { label: string; path: string }) {
@@ -37,5 +38,5 @@ export function assistantMessage(content: string, links: { path: string; label?:
     cursor = match.index + match[0].length;
   }
   if (cursor < content.length) parts.push({ text: content.slice(cursor) });
-  return parts;
+  return parts.map(part => ({ ...part, text: formatAssistantTimes(part.text) }));
 }

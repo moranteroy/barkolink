@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import {chromium} from 'playwright-core';
 import {fixtureProject,fixtureBrowserOptions} from './browser-fixture-config.mjs';
+import {verifyPassengerCounter} from './passenger-counter-checks.mjs';
 
 // Fixture-only layout checks. Never sign into real accounts or call providers.
 const base=process.env.BARKOLINK_UI_URL||'http://127.0.0.1:8127',project=fixtureProject();
@@ -31,7 +32,7 @@ try {
     MyBookings:{bookings:[booking]},MyNotifications:{notifications:[],unreadCount:0,totalCount:0},
     BrowseActivePorts:{ports},BrowseSailings:{sailings:[sailing]},ActiveAdvisories:{advisories:[]},ActiveTravelAdvisories:{advisories:[]},
     PassengerSailingBoard:{date:isoDay(date),updatedAt:new Date().toISOString(),sailings:[sailing]},
-    MyLoyalty:{completedTrips:10,rewardValue:300,tripsToNextReward:5,tripsPerReward:5,currentTier:'Gold',tiers:[{name:'Silver',trips:5,value:100},{name:'Gold',trips:10,value:200},{name:'Platinum',trips:15,value:300}],vouchers:[{code:'VCH-MOBILE-FIXTURE',value:200,expiresAt:'2099-01-01T00:00:00Z'}]},
+    MyLoyalty:{completedTrips:10,rewardValue:300,tripsToNextReward:5,tripsPerReward:5,currentTier:'Gold',tiers:[{name:'Silver',trips:5,value:100},{name:'Gold',trips:10,value:200},{name:'Platinum',trips:15,value:300}],vouchers:[{code:'VCH-MOBILE-FIXTURE',value:200,expiresAt:'2099-01-01T00:00:00Z'}],milestones:[{rewardNumber:1,readyCount:0,usedCount:1,expiredCount:0,unavailableCount:0,pendingCount:0},{rewardNumber:2,readyCount:1,usedCount:0,expiredCount:0,unavailableCount:0,pendingCount:0},{rewardNumber:3,readyCount:0,usedCount:0,expiredCount:0,unavailableCount:0,pendingCount:0}]},
     MySavedTravelers:{travelers:[passenger]},PassengerVouchers:{vouchers:[]},
    }[operation];
    assert.ok(data,`Missing mobile fixture: ${operation}`);return route.fulfill({json:data});
@@ -44,7 +45,11 @@ try {
    assert.equal(await page.locator('[role=alert]:visible').count(),0,`${width} ${path}: error state`);
    if(path==='/home') {
     await page.locator('.smart-weather').waitFor();
+    assert.equal(await page.locator('.milestone[data-tier="silver"] .milestone-state').textContent(),'Claimed');
+    assert.equal(await page.locator('.milestone[data-tier="gold"] .milestone-state').textContent(),'Ready to use');
+    assert.equal(await page.locator('.milestone[data-tier="platinum"] .milestone-state').textContent(),'Up next');
     const search=page.locator('.home-search');const size=await search.boundingBox();
+    await verifyPassengerCounter(page);
     if(width>=360&&width<=430)assert.ok(size.height<460,`Search form too tall: ${size.height}`);
     if(width<=430) {
      assert.ok((await page.locator('.bottom-nav').boundingBox()).height<=68);

@@ -1,11 +1,39 @@
-import { describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import QRCode from 'qrcode'
 import jsQR from 'jsqr'
-import { ticketDocument } from '../../src/data/ticketExport'
+import { ticketDocument, printTicketDocument } from '../../src/data/ticketExport'
+const native=vi.hoisted(()=>({platform:'web',print:vi.fn().mockResolvedValue(undefined)}));
+vi.mock('@capacitor/core',()=>({Capacitor:{getPlatform:()=>native.platform},registerPlugin:()=>({print:native.print})}));
+beforeEach(()=>{native.platform='web';native.print.mockClear();});
 const code = '11111111-1111-4111-8111-111111111111'
 const payload=JSON.stringify({BarkoLink:'Ticket v2',Name:'Passenger & One',Date:'2026-10-04 08:00 Philippine time',Vessel:'Test ferry',Route:'Calapan to Batangas',Booking:'BL-TEST',Ticket:code,Verification:'a'.repeat(64)})
 const booking = { reference: 'BL-TEST', status: 'CONFIRMED', paymentStatus: 'PAID', from: '<script>alert(1)</script>', to: 'Batangas', date: 'Oct 4, 2026', departure: '8:00 AM', vessel: 'Test ferry', passengers: [{ name: 'Passenger & One', type: 'Regular', ticketCode: code, ticketQrPayload:payload, ticketStatus: 'ISSUED' }] }
 describe('Downloadable tickets', () => {
+  it('opens Android printing with only an eligible isolated ticket document',async()=>{
+    native.platform='android';
+    await printTicketDocument(booking);
+    expect(native.print).toHaveBeenCalledOnce();
+    const document=native.print.mock.calls[0][0];
+    expect(document.jobName).toContain(booking.reference);
+    expect(document.html).toContain('Passenger &amp; One');
+    expect(document.html).toContain('data:image/png');
+    expect(document.html).not.toContain('ticket-actions');
+    await expect(printTicketDocument({...booking,paymentStatus:'UNPAID'})).rejects.toThrow('paid');
+    expect(native.print).toHaveBeenCalledOnce();
+  });
+  it('exports historical and used tickets as records without a reusable QR', async () => {
+    for(const record of [
+      {...booking,arrivalAt:'2000-01-01T00:00:00Z'},
+      {...booking,sailingStatus:'COMPLETED'},
+      {...booking,passengers:[{...booking.passengers[0],ticketStatus:'BOARDED',ticketQrPayload:null}]},
+    ]) {
+      const html=await ticketDocument(record);
+      expect(html).toContain('Transaction record only');
+      expect(html).not.toContain('data:image/png');
+      expect(html).toContain(code);
+    }
+    await expect(ticketDocument({...booking,paymentVerificationRequired:true})).rejects.toThrow('paid');
+  });
   it('uses the normal payment status on exported online tickets', async () => {
     const html = await ticketDocument({ ...booking, paymentMethod: 'PAYMONGO_TEST' })
     expect(html).toContain('PAID')

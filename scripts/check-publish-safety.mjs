@@ -4,13 +4,15 @@ import { spawnSync } from 'node:child_process';
 // Local pre-publish guard. Reports locations/categories only, never secret values.
 const mode=process.argv[2] || 'index';
 if(!['working','index','history'].includes(mode))throw new Error('Use working, index, or history.');
+// --git-only inspects repository blobs without reading local environment/credential files.
+const gitOnly=process.argv.includes('--git-only');
 function git(args,input) {
   const result=spawnSync('git',args,{input,windowsHide:true,maxBuffer:128*1024*1024});
   if(result.status!==0)throw new Error('Git inventory/read failed; secret-bearing output was suppressed.');
   return result.stdout;
 }
 const knownSecrets=new Set();
-for(const file of fs.readdirSync('.').filter(file=>file.startsWith('.env') && file!=='.env.example')) {
+for(const file of gitOnly?[]:fs.readdirSync('.').filter(file=>file.startsWith('.env') && file!=='.env.example')) {
   if(!fs.statSync(file).isFile())continue;
   for(const line of fs.readFileSync(file,'utf8').split(/\r?\n/)) {
     const match=line.match(/^\s*([A-Za-z_]\w*)\s*=\s*(.*?)\s*$/);
@@ -20,7 +22,7 @@ for(const file of fs.readdirSync('.').filter(file=>file.startsWith('.env') && fi
   }
 }
 const staffReceipt='.audit/batangas-staff-credentials.json';
-if(fs.existsSync(staffReceipt))for(const account of JSON.parse(fs.readFileSync(staffReceipt,'utf8')))if(account.password)knownSecrets.add(account.password);
+if(!gitOnly && fs.existsSync(staffReceipt))for(const account of JSON.parse(fs.readFileSync(staffReceipt,'utf8')))if(account.password)knownSecrets.add(account.password);
 const rules=[
   ['GitHub token',/\b(?:gh[pousr]_[A-Za-z0-9]{30,}|github_pat_[A-Za-z0-9_]{35,})\b/g],
   ['Supabase private token/key',/\b(?:sbp_[a-f0-9]{32,}|sb_secret_[A-Za-z0-9_-]{20,})\b/g],
@@ -37,6 +39,7 @@ function scan(file,bytes,object) {
   scanned++;totalBytes+=bytes.length;
   const location=object?`${file} [${object.slice(0,12)}]`:file;
   if(forbidden.test(file))findings.push({file:location,category:'private/generated file path'});
+  if(mode!=='history' && /(?:^|\/)\.env|(?:^|\/)docs\/research\/|(?:^|\/)chapter[- _]?[13](?:\D|$)|\.(?:docx?|docm|dotx?|dotm)$|barkolink-(?:feature-screenshots|system-overview)/i.test(file))findings.push({file:location,category:'excluded local environment or presentation document'});
   if(bytes.includes(0))return;
   const content=bytes.toString('utf8');
   for(const secret of knownSecrets)if(content.includes(secret))findings.push({file:location,category:'matches a local credential value'});

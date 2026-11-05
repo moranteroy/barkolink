@@ -2269,7 +2269,7 @@ describe("Supabase PostgreSQL migrations and business rules", () => {
       call("boarding", "BoardTicket", {
         passengerId: b.bookingPassengers_on_booking[1].id,
       }),
-      /Check in first/,
+      /travel period has ended/,
     );
     assert.equal(
       operations.activity.filter((a) => a.action === "NO_SHOW_RECONCILED")

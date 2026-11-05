@@ -29,6 +29,8 @@ jobs:
           node-version: '24'
           cache: npm
       - run: npm ci
+      - run: node scripts/check-publish-safety.mjs index --git-only
+      - run: node scripts/build-sql.mjs --check
       - run: npm run lint
       - run: npm run test:unit -- --maxWorkers=4
       - run: npm run test:database
@@ -42,3 +44,7 @@ jobs:
           path: |
             .audit/inbox-pagination/
             .audit/mobile-density/
+            .audit/manual-voucher/
+            .audit/ticket-history/
+            .audit/ticket-qr/
+            .audit/mobile-ticket-actions/

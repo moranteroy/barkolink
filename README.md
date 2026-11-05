@@ -43,30 +43,23 @@ npm install -g @ionic/cli
 
 ### 4. Create your local environment file
 
-Windows PowerShell:
-
-```powershell
-Copy-Item .env.example .env.local
-```
-
-macOS/Linux:
-
-```sh
-cp .env.example .env.local
-```
-
-Open `.env.local` and fill in the owner's Supabase values:
+Create a file named `.env.local` in the project root and paste the blank settings below, then fill in the owner's Supabase values:
 
 ```dotenv
 VITE_SUPABASE_URL=https://YOUR_PROJECT_REF.supabase.co
 VITE_SUPABASE_PUBLISHABLE_KEY=YOUR_PUBLISHABLE_KEY
 VITE_SUPABASE_ANON_KEY=
 VITE_GOOGLE_MAPS_API_KEY=
+VITE_MAP_TILE_URL=
+VITE_MAP_ATTRIBUTION=
+VITE_OPERATOR_NAME=
+VITE_SUPPORT_EMAIL=
+VITE_SUPPORT_PHONE=
 ```
 
 Use the publishable key, or put a legacy anon key in `VITE_SUPABASE_ANON_KEY` instead. The Google Maps key is optional. These `VITE_*` values are included in the browser/Android build, so **never use a service-role key, secret API key, database password, or Supabase management token here**.
 
-`.env.local` stays on your laptop and is ignored by Git. `.env.example` is the blank template that belongs in the repository. Ask the project owner for the public connection settings through the team's normal private channel; do not put local environment files in a GitHub issue.
+All `.env*` files stay on your laptop and are ignored by Git, including `.env.example`. The blank setup instructions above replace a committed environment template. Ask the project owner for the public connection settings through the team's normal private channel; do not put local environment files in a GitHub issue.
 
 ### 5. Start the app
 

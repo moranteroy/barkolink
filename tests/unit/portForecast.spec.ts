@@ -13,7 +13,8 @@ describe('home port forecast', () => {
     mocks.load.mockResolvedValue(fixture);
     const wrapper = mount(PortForecast, { props: { portId: 'batangas' } }); await flushPromises();
     expect(wrapper.findAll('button.forecast-day')).toHaveLength(7);
-    expect(wrapper.text()).toContain('7-day forecast');
+    expect(wrapper.find('#forecast-heading').text()).toContain('Weather outlook');
+    expect(wrapper.find('.forecast-badge').text()).toBe('7 days');
     expect(wrapper.text()).toContain('Today');
     expect(wrapper.text()).toContain('70%');
     await wrapper.findAll('button.forecast-day')[0].trigger('click');
@@ -25,7 +26,7 @@ describe('home port forecast', () => {
     mocks.load.mockResolvedValue({ ...fixture, ports: [{ ...fixture.ports[0], days: days.slice(0, 3) }] });
     const wrapper = mount(PortForecast, { props: { portId: 'batangas' } }); await flushPromises();
     expect(wrapper.findAll('button.forecast-day')).toHaveLength(3);
-    expect(wrapper.text()).toContain('3-day forecast');
+    expect(wrapper.find('.forecast-badge').text()).toBe('3 days');
     expect(wrapper.text()).not.toContain('7-day');
     expect(wrapper.text()).not.toContain('3 forecast days are currently available');
     wrapper.unmount();

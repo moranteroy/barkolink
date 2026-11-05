@@ -1,4 +1,4 @@
-Use Node.js 24 LTS. After cloning, run `npm ci`, install the Ionic CLI with `npm install -g @ionic/cli`, and copy `.env.example` to `.env.local`. Fill in the Supabase project URL and public key supplied by the owner.
+Use Node.js 24 LTS. After cloning, run `npm ci`, install the Ionic CLI with `npm install -g @ionic/cli`, and create `.env.local` using the blank settings in [README.md](../README.md). Fill in the Supabase project URL and public key supplied by the owner. All `.env*` files remain local.
 
 Run `ionic serve --port 8100` from the project folder, or use `npm run dev -- --host localhost --port 8100`. Both run the same Vite app. Open `http://localhost:8100`.
 
