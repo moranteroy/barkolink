@@ -45,7 +45,7 @@ try{
         await page.goto(`${baseUrl}/staff/boarding/check-in`,{waitUntil:'networkidle'});
         await page.locator('.heading-actions').getByRole('button',{name:'Find ticket'}).click();
         const modal=page.locator('.scanner-modal');await modal.locator('input').fill(JSON.stringify({...JSON.parse(payload),Name:'Fake Passenger'}));
-        await modal.getByRole('button',{name:'Verify ticket'}).click();await modal.getByText(/QR verification failed/).waitFor();
+        await modal.getByRole('button',{name:'Verify ticket'}).click();await page.locator('.app-toast.error').filter({hasText:/QR verification failed/}).waitFor();
         assert.equal(actions,0);
         await modal.locator('input').fill(decoded);await modal.getByRole('button',{name:'Verify ticket'}).click();
         const review=page.locator('.review-panel');await review.getByText('Carlo Reyes',{exact:true}).waitFor();

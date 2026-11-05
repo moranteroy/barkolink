@@ -1,0 +1,11 @@
+import fs from 'node:fs';
+import {edgeFunctionSource} from './edge-function-source.mjs';
+const read=(file,key)=>fs.readFileSync(file,'utf8').match(new RegExp('^'+key+'\\s*=\\s*(.+)$','m'))?.[1]?.trim().replace(/^['"]|['"]$/g,'');
+const project=new URL(read('.env.local','VITE_SUPABASE_URL')).hostname.split('.')[0];
+const token=read('.env.supabase-management','SUPABASE_ACCESS_TOKEN');
+const form=new FormData();
+form.append('metadata',JSON.stringify({name:'chatbot',entrypoint_path:'index.ts',verify_jwt:false}));
+form.append('file',new Blob([edgeFunctionSource('chatbot')],{type:'application/typescript'}),'index.ts');
+const response=await fetch('https://api.supabase.com/v1/projects/'+project+'/functions/deploy?slug=chatbot',{method:'POST',headers:{Authorization:'Bearer '+token},body:form,signal:AbortSignal.timeout(60000)});
+if(!response.ok)throw new Error('Chatbot source deployment failed ('+response.status+'); private response omitted.');
+const result=await response.json();console.log(JSON.stringify({slug:result.slug,status:result.status,sourceOnly:true}));
