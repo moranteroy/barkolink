@@ -2,7 +2,7 @@
   <IonPage><IonContent><main class="claim-page">
     <PassengerHeader />
     <header class="claim-heading"><div><p class="eyebrow">MORE VALUE FOR YOUR JOURNEY</p><h1>Claim vouchers</h1><p>Discover travel promos and unlock rewards as you sail.</p></div><span class="heading-ticket" aria-hidden="true"><Tickets :size="34" /></span></header>
-    <details class="claim-intro"><summary><Gift :size="18" aria-hidden="true" /><span>How to use your vouchers</span><ChevronDown :size="16" aria-hidden="true" /></summary><p>Claim a voucher, copy its code and apply it at booking review. One voucher per booking, for regular passenger fares.</p></details>
+    <details class="claim-intro"><summary><Gift :size="18" aria-hidden="true" /><span>How to use your vouchers</span><ChevronDown :size="16" aria-hidden="true" /></summary><p>Copy a claimed voucher code and select Apply at booking review.</p></details>
     <div class="wallet-tools"><div class="wallet-tabs" role="group" aria-label="Voucher lists"><button :aria-pressed="tab === 'available'" @click="tab = 'available'">Available <span>{{ available.length }}</span></button><button :aria-pressed="tab === 'mine'" @click="tab = 'mine'">My vouchers <span>{{ mine.length }}</span></button></div><button class="refresh" :disabled="loading || !!claiming" @click="load"><RefreshCw :size="15" aria-hidden="true" />Refresh</button></div>
     <p v-if="loading && !data" class="wallet-state" role="status">Finding your vouchers...</p>
     <section v-else-if="error" class="wallet-state" role="alert"><strong>Vouchers are unavailable</strong><p>{{ error }}</p><Button @click="load">Try again</Button></section>

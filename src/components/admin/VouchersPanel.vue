@@ -104,7 +104,6 @@
               <label>Expires (Philippine time)<input v-model="form.expiresAt" type="datetime-local" :min="form.startsAt" required /></label>
             </div></section>
           </fieldset>
-          <p class="form-note"><AppIcon :icon="informationCircleOutline" aria-hidden="true" /> Voucher discounts apply to regular passenger fares. Each account can use a code once.</p>
         </div>
         <footer class="form-footer"><span class="offer-preview">{{ form.discountType === 'PERCENT' ? `${form.value}%` : money(form.value || 0) }} off regular fares</span><button type="button" :disabled="busy" @click="showCreate = false">Cancel</button><button data-slot="button" data-variant="default" data-size="default" class="primary" :disabled="busy" type="submit">{{ busy ? 'Saving…' : 'Create voucher' }}</button></footer>
       </form>
@@ -119,7 +118,7 @@ import '../../theme/admin-vouchers.css';
 import { computed, onBeforeUnmount, onMounted, reactive, ref } from 'vue';
 import { IonModal } from '@ionic/vue';
 import AppIcon from "@/components/ui/icon/AppIcon.vue";
-import { addOutline, searchOutline, giftOutline, ribbonOutline, pauseOutline, playOutline, closeOutline, informationCircleOutline, checkmarkCircleOutline, timeOutline } from 'ionicons/icons';
+import { addOutline, searchOutline, giftOutline, ribbonOutline, pauseOutline, playOutline, closeOutline, checkmarkCircleOutline, timeOutline } from 'ionicons/icons';
 import { requireSupabase } from '../../services/supabase';
 import { listVouchers, saveVoucher, updateVoucherDetails, adminLoyaltySettings, saveLoyaltySettings, type LoyaltySettings, type Voucher } from '../../services/vouchers';
 import { databaseRequestError } from '../../data/databaseErrors';

@@ -24,11 +24,11 @@
             class="ticket-actions"
           >
             <Button variant="outline" :disabled="ticketBusy" @click="printTicket">
-              <AppIcon :icon="printOutline" aria-hidden="true" /> Print / PDF</Button
+              <AppIcon :icon="printOutline" aria-hidden="true" /><span>Print/PDF</span></Button
             ><Button :disabled="ticketBusy" @click="exportTicket('download')">
-              <AppIcon :icon="downloadOutline" aria-hidden="true" />{{ ticketBusy ? "Preparing…" : "Download" }}</Button
+              <AppIcon :icon="downloadOutline" aria-hidden="true" /><span>{{ ticketBusy ? "Preparing…" : "Download" }}</span></Button
             ><Button variant="outline" :disabled="ticketBusy" @click="exportTicket('share')">
-              <AppIcon :icon="shareOutline" aria-hidden="true" /> Share
+              <AppIcon :icon="shareOutline" aria-hidden="true" /><span>Share</span>
             </Button>
           </div>
           <p v-if="ticketNotice" role="status">{{ ticketNotice }}</p>
@@ -55,7 +55,7 @@
               <div class="ticket-title">
                 <small
                   ><AppIcon :icon="ticketOutline" aria-hidden="true" />
-                  BARKOLINK <span>·</span> DIGITAL BOARDING PASS</small
+                  BARKOLINK <span>·</span> {{ travelWindow(currentBooking).recordOnly || currentBooking.passengers.every(person => person.ticketStatus === 'BOARDED') ? 'TICKET RECORD' : 'DIGITAL BOARDING PASS' }}</small
                 >
                 <h2>
                   <span class="route-port">{{ currentBooking.from }}</span>
@@ -66,6 +66,10 @@
                 </h2>
               </div>
               <b><AppIcon :icon="checkmarkCircleOutline" aria-hidden="true" /> PAID</b>
+            </div>
+            <div class="ticket-record-banner" :class="bookingStatus(currentBooking).tone" role="status">
+              <AppIcon :icon="bookingStatus(currentBooking).icon" aria-hidden="true" />
+              <div><strong>{{ bookingStatus(currentBooking).label }}</strong><p>{{ travelWindow(currentBooking).recordOnly ? 'Saved for your transaction records. This travel period is closed.' : 'Each passenger has a separate ticket status below.' }}</p></div>
             </div>
             <div class="ticket-meta">
               <div>
@@ -108,20 +112,17 @@
                     <strong>{{ person.name }}</strong
                     ><small>{{ person.type }} passenger</small>
                   </div>
-                  <b
+                  <b :class="{ 'past-ticket': !ticketState(currentBooking, person).showQr && person.ticketStatus !== 'BOARDED' }"
                     ><AppIcon
                       :icon="checkmarkCircleOutline"
                       aria-hidden="true"
                     />
-                    {{ statusLabel(person.ticketStatus || "ISSUED") }}</b
+                    {{ ticketState(currentBooking, person).label }}</b
                   >
                 </div>
                 <div
                   v-if="
-                    person.ticketCode &&
-                    ['ISSUED', 'CHECKED_IN', 'BOARDED'].includes(
-                      person.ticketStatus || '',
-                    )
+                    person.ticketCode && ticketState(currentBooking, person).showQr
                   "
                   class="qr-block"
                 >
@@ -143,14 +144,17 @@
                       : "Refresh this ticket to load its verified QR. Staff can verify the ticket code."
                   }}</span>
                   <div>
-                    <small>SCAN AT THE TERMINAL</small
+                    <small>{{ person.ticketStatus === 'CHECKED_IN' ? 'PRESENT FOR BOARDING' : 'PRESENT FOR CHECK-IN' }}</small
                     ><code>{{ person.ticketCode }}</code>
-                    <p>QR includes your name, date and vessel. Show your passenger ID; staff verifies the live ticket before boarding.</p>
+                    <p>{{ ticketState(currentBooking, person).message }}</p>
                   </div>
                 </div>
-                <p v-else class="qr-unavailable">
-                  Your ticket will be issued after payment is recorded.
-                </p>
+                <div v-else class="ticket-record-state">
+                  <AppIcon :icon="person.ticketStatus === 'BOARDED' ? checkmarkCircleOutline : timeOutline" aria-hidden="true" />
+                  <strong>Transaction record</strong>
+                  <p>{{ ticketState(currentBooking, person).message }}</p>
+                  <code v-if="person.ticketCode">{{ person.ticketCode }}</code>
+                </div>
               </div>
             </div>
           </article>
@@ -174,8 +178,9 @@
             <div class="empty-icon">
               <AppIcon :icon="ticketOutline" aria-hidden="true" />
             </div>
-            <h2>{{ awaitingPaymentVerification(currentBooking) ? 'Awaiting staff verification' : 'Payment pending' }}</h2>
-            <p v-if="awaitingPaymentVerification(currentBooking)">Your payment was received. Staff must verify the transaction before your e-ticket is issued. Do not pay again.</p>
+            <h2>{{ bookingStatus(currentBooking).label }}</h2>
+            <p v-if="travelWindow(currentBooking).recordOnly">This reservation is retained for your transaction history. It is no longer available for travel. {{ currentBooking.paymentStatus === 'PAID' ? bookingPaymentRecord(currentBooking) : 'No payment was confirmed. Contact ticketing if you need assistance.' }}</p>
+            <p v-else-if="awaitingPaymentVerification(currentBooking)">Your payment was received. Staff must verify the transaction before your e-ticket is issued. Do not pay again.</p>
             <p v-else>
               Show booking {{ currentBooking.reference }} at the ticketing desk.
               Pay PHP {{ currentBooking.total.toLocaleString() }} to receive
@@ -289,13 +294,13 @@
                   >
                 </div>
                 <OnlinePayment
-                  v-if="booking.paymentStatus === 'UNPAID' && ['PENDING','CONFIRMED'].includes(booking.status) && !(returnedBooking?.id === booking.id && returnVerificationPending)"
+                  v-if="!travelWindow(booking).recordOnly && booking.paymentStatus === 'UNPAID' && ['PENDING','CONFIRMED'].includes(booking.status) && !(returnedBooking?.id === booking.id && returnVerificationPending)"
                   :booking-id="booking.id" :reference="booking.reference" @updated="loadData"
                 />
-                <p v-if="booking.paymentStatus === 'PAID'" class="payment-hint">{{ awaitingPaymentVerification(booking) ? 'Payment received. Staff verification is pending; your e-ticket will appear once verified.' : 'Payment confirmed' }} · {{ paymentMethodLabel(booking) }}</p>
+                <p v-if="booking.paymentStatus === 'PAID'" class="payment-hint">{{ bookingPaymentRecord(booking) }} · {{ paymentMethodLabel(booking) }}</p>
                 <PaymentDeadline
                   v-if="
-                    booking.paymentDeadline &&
+                    booking.paymentDeadline && !travelWindow(booking).recordOnly &&
                     booking.paymentStatus === 'UNPAID' &&
                     ['PENDING', 'CONFIRMED'].includes(booking.status)
                   "
@@ -376,17 +381,7 @@
                 /></span>
                 {{ currentBooking.to }}
               </h2>
-              <b class="detail-status" :class="[currentBooking.status.toLowerCase(), currentBooking.paymentStatus.toLowerCase()]">{{
-                currentBooking.paymentStatus === "REFUND_PENDING"
-                  ? "Refund pending"
-                  : currentBooking.paymentStatus === "REFUNDED"
-                    ? "Refunded"
-                    : ["CANCELLED", "EXPIRED"].includes(currentBooking.status)
-                      ? statusLabel(currentBooking.status)
-                      : currentBooking.paymentStatus === "PAID"
-                        ? awaitingPaymentVerification(currentBooking) ? "Awaiting verification" : "Paid"
-                        : "Awaiting payment"
-              }}</b>
+              <b class="detail-status" :class="bookingStatus(currentBooking).tone">{{ bookingStatus(currentBooking).label }}</b>
             </div>
             <p class="detail-reference">
               <span>Booking reference</span><strong>{{ currentBooking.reference }}</strong>
@@ -418,7 +413,7 @@
             </div>
             <div
               v-if="
-                currentBooking.paymentStatus === 'UNPAID' &&
+                !travelWindow(currentBooking).recordOnly && currentBooking.paymentStatus === 'UNPAID' &&
                 ['PENDING', 'CONFIRMED'].includes(currentBooking.status)
               "
               class="detail-payment"
@@ -435,7 +430,7 @@
               <h3 v-else>Pay before departure</h3>
               <p>Pay before the deadline to receive your QR ticket. Booking fee: PHP 0.</p>
             </div>
-            <p v-if="currentBooking.paymentStatus === 'PAID'" class="payment-hint">{{ awaitingPaymentVerification(currentBooking) ? 'Payment received — Awaiting staff verification' : 'Payment confirmed' }} · {{ paymentMethodLabel(currentBooking) }}</p>
+            <p v-if="currentBooking.paymentStatus === 'PAID'" class="payment-hint">{{ bookingPaymentRecord(currentBooking) }} &middot; {{ paymentMethodLabel(currentBooking) }}</p>
             <p v-if="currentBooking.cancellationReason" class="payment-hint">
               {{ currentBooking.cancellationReason }}
             </p>
@@ -564,7 +559,7 @@
 </template>
 <script setup lang="ts">
 import { notifyError, notifySuccess } from '@/composables/toast';
-import { statusLabel } from "../../data/statusPresentation";
+import { bookingTravelStatus, bookingPaymentRecord, passengerTicketState, travelWindow } from "../../data/bookingLifecycle";
 import { Button } from "@/components/ui/button";
 import { confirmAction } from "../../composables/confirmation";
 import PaymentDeadline from "../../components/passenger/PaymentDeadline.vue";
@@ -572,7 +567,7 @@ import WorkspacePagination from '../../components/shared/WorkspacePagination.vue
 import OnlinePayment from "../../components/passenger/OnlinePayment.vue";
 import { markAllNotificationsRead } from "../../services/database/experience";
 import { clearNotificationUnread, setUnreadNotifications, notificationUpdates, notificationUnreadCount } from "../../composables/notificationUnread";
-import { downloadTicket, shareTicket } from "../../data/ticketExport";
+import { downloadTicket, shareTicket, printTicketDocument } from "../../data/ticketExport";
 import { useQueueRefresh } from "../../composables/queueRefresh";
 import { databaseRequestError } from "../../data/databaseErrors";
 import { computed, nextTick, ref, watch } from "vue";
@@ -644,6 +639,8 @@ type Booking = {
   total: number;
   id: string;
   departureAt: string;
+  arrivalAt: string;
+  sailingStatus?: string;
   sailingCode: string;
   passengerCount: number;
   reference: string;
@@ -767,8 +764,12 @@ async function exportTicket(mode: "download" | "share") {
     ticketBusy.value = false;
   }
 }
-function printTicket() {
-  window.print();
+async function printTicket() {
+  if (!currentBooking.value || ticketBusy.value) return;
+  ticketBusy.value = true;
+  try { await printTicketDocument(currentBooking.value); }
+  catch (cause) { notifyError(databaseRequestError(cause, 'Could not open ticket printing. Try again.')); }
+  finally { ticketBusy.value = false; }
 }
 const loading = ref(true);
 const qrFailedCodes = ref<string[]>([]);
@@ -870,14 +871,13 @@ const bookingEmptyDescription = computed(() => ({
   Expired: 'Reservations whose payment window has expired will appear here. Browse sailings to reserve again.',
 })[selectedTab.value] || 'Your reservations will appear here.');
 function bookingStatus(booking: Booking) {
-  if (booking.paymentStatus === 'REFUND_PENDING') return { label: 'Refund pending', tone: 'warning', icon: walletOutline };
-  if (booking.paymentStatus === 'REFUNDED') return { label: 'Refunded', tone: 'neutral', icon: walletOutline };
-  if (booking.status === 'CANCELLED') return { label: 'Cancelled', tone: 'cancelled', icon: closeCircleOutline };
-  if (booking.status === 'EXPIRED') return { label: 'Expired', tone: 'warning', icon: hourglassOutline };
-  if (awaitingPaymentVerification(booking)) return { label: 'Awaiting staff verification', tone: 'warning', icon: timeOutline };
-  if (booking.paymentStatus === 'PAID') return { label: 'Paid', tone: 'success', icon: checkmarkCircleOutline };
-  return { label: 'Awaiting payment', tone: 'warning', icon: walletOutline };
+  const state = bookingTravelStatus(booking);
+  return { ...state, icon: state.tone === 'success' ? checkmarkCircleOutline : state.tone === 'warning' ? timeOutline : boatOutline };
 }
+function ticketState(booking: Booking, person: Passenger) {
+  return passengerTicketState(booking, person);
+}
+
 const title = computed(
   () =>
     ({
@@ -941,6 +941,8 @@ async function loadData() {
       bookings.value = result.data.bookings.map((item) => ({
         id: item.id,
         departureAt: item.sailing.departureAt,
+        arrivalAt: item.sailing.arrivalAt,
+        sailingStatus: item.sailing.status,
         sailingCode: item.sailing.code,
         passengerCount: item.passengerCount,
         reference: item.reference,
@@ -2371,8 +2373,10 @@ button:disabled {
 .booking-detail-card .row-heading h2 { font-size: 22px; line-height: 1.5; }
 .booking-detail-card .row-heading h2 span { margin-inline: 5px; }
 .booking-detail-card .row-heading > .detail-status { padding: 5px 9px; border-radius: 6px; font-size: var(--text-caption); line-height: 1.5; letter-spacing: .025em; }
-.booking-detail-card .detail-status.unpaid.pending { color: #8a5100; background: #fff0d5; }
-.booking-detail-card .detail-status.paid { color: var(--ocean); background: var(--light-blue); }
+.booking-detail-card .detail-status.warning { color: #8a5100; background: #fff0d5; }
+.booking-detail-card .detail-status.success { color: var(--ocean); background: var(--light-blue); }
+.booking-detail-card .detail-status.neutral { color: var(--muted); background: var(--surface-soft); border:1px solid var(--line); }
+.booking-detail-card .detail-status.cancelled { color:var(--danger); background:var(--surface-soft); }
 .booking-detail-card .detail-reference { display: grid; gap: 5px; margin: 18px 0 0; padding: 0; border-radius: 0; background: none; font-weight: 400; }
 .booking-detail-card .detail-reference span { color: var(--muted); font-size: var(--text-caption); }
 .booking-detail-card .detail-reference strong { color: var(--ink); font-size: 13px; line-height: 1.6; overflow-wrap: anywhere; }
@@ -2408,7 +2412,7 @@ button:disabled {
 .booking-detail-card .payment-hint { margin: 16px 0 0; font-size: 13px; line-height: 1.7; }
 .booking-detail-card .detail-actions { margin: 24px 0 0; padding-top: 18px; gap: 10px; }
 .booking-detail-card .detail-actions ion-button { margin: 0; min-height: 46px; font-size: 13px; }
-:global(:root[data-theme="dark"]) .booking-detail-card .detail-status.unpaid.pending { color: #ffda8a; background: #33260f; }
+:global(:root[data-theme="dark"]) .booking-detail-card .detail-status.warning { color: #ffda8a; background: #33260f; }
 @container passenger (max-width:380px) {
   .booking-detail-card { padding: 16px; }
   .booking-detail-card .row-heading h2 { font-size: 19px; }
@@ -2585,8 +2589,9 @@ button:disabled {
 .ticket-page { font-family: var(--ion-font-family); padding-bottom: calc(120px + env(safe-area-inset-bottom)); }
 .ticket-page .page-title { margin: 28px 0 20px; }
 .ticket-page .page-title h1 { font-size: 28px; letter-spacing: -.7px; }
-.ticket-page .ticket-actions { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin: 0 0 18px; }
-.ticket-page .ticket-actions button { width: 100%; min-width: 0; min-height: 44px; padding: 9px 8px; gap: 6px; font-family: inherit; font-size: var(--text-caption); line-height: 1.4; white-space: normal; }
+.ticket-page .ticket-actions { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); align-items: stretch; gap: 8px; margin: 0 0 18px; }
+.ticket-page .ticket-actions button { display: flex; flex-direction: column; align-items: center; justify-content: center; align-self: stretch; width: 100%; min-width: 0; min-height: 64px; height: 100%; padding: 10px 4px; gap: 6px; font-family: inherit; font-size: var(--text-caption); line-height: 1.4; white-space: normal; }
+.ticket-page .ticket-actions button > span { max-width: 100%; overflow-wrap: anywhere; text-align: center; }
 .ticket-page .ticket-actions .app-icon { flex: none; font-size: 16px; }
 .ticket-page .ticket-picker { display: grid; gap: 9px; margin: 0 0 20px; overflow: visible; padding: 14px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); }
 .ticket-picker > span { display: flex; justify-content: space-between; gap: 10px; font-size: var(--text-label); font-weight: 600; }
@@ -2628,6 +2633,16 @@ button:disabled {
   .ticket-page .ticket-person { flex-wrap: wrap; }
   .ticket-page .ticket-person > b { margin-left: 45px; }
 }
+
+.ticket-record-banner { display:flex; align-items:flex-start; gap:12px; margin:20px 0; padding:16px; border:1px solid var(--line); border-radius:12px; background:var(--surface-soft); color:var(--ink); }
+.ticket-record-banner .app-icon { flex:none; font-size:22px; color:var(--ocean); }
+.ticket-record-banner p { margin:6px 0 0; color:var(--muted); font-size:13px; line-height:1.6; }
+.ticket-record-state { display:flex; flex-direction:column; align-items:center; gap:12px; padding:24px 16px; border:1px dashed var(--line); border-radius:12px; background:var(--surface-soft); text-align:center; }
+.ticket-record-state .app-icon { font-size:32px; color:var(--ocean); }
+.ticket-record-state p { margin:0; color:var(--muted); line-height:1.7; font-size:13px; }
+.ticket-record-state code { max-width:100%; overflow-wrap:anywhere; font-size:12px; color:var(--muted); }
+.ticket-page .ticket-person b.past-ticket { color:var(--muted); background:var(--surface-soft); }
+
 </style>
 
 <style scoped src="@/theme/notification-inbox.css"></style>

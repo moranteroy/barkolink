@@ -2,6 +2,12 @@ import { describe, expect, it } from 'vitest';
 import { assistantMessage, assistantPath, assistantDestination } from '../../src/data/assistantMessage';
 
 describe('assistant answer formatting', () => {
+  it('shows clock times in AM/PM while preserving links, identifiers and timezone offsets', () => {
+    const text='Calapan (21:00, 23:00), 00:15, 12:30, 09:00 AM. Philippine Time (UTC+08:00).';
+    expect(assistantMessage(text).map(p=>p.text).join('')).toBe('Calapan (9:00 PM, 11:00 PM), 12:15 AM, 12:30 PM, 09:00 AM. Philippine Time (UTC+08:00).');
+    expect(assistantMessage('At **21:00**. 2026-11-05T21:00:00+08:00 `21:00` BKG-21:00').map(p=>p.text).join('')).toBe('At 9:00 PM. 2026-11-05T21:00:00+08:00 `21:00` BKG-21:00');
+    expect(assistantMessage('[Booking](/booking-details?reference=21:00)',[{path:'/booking-details?reference=21:00'}])).toEqual([{text:'Booking',path:'/booking-details?reference=21:00'}]);
+  });
   it.each([
     ['My loyalty rewards', '/home', '/home#loyalty-rewards'],
     ['Travel advisories', '/home', '/home#travel-advisories'],

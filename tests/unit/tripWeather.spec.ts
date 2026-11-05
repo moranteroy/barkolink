@@ -14,8 +14,10 @@ describe('trip weather display',()=>{
     expect(wrapper.text()).toContain('Forecast at departure');
     expect(wrapper.text()).toContain('75%');
     expect(wrapper.text()).not.toContain('Last updated');
-    expect(wrapper.text()).toContain('Powered by Open-Meteo');
-    expect(wrapper.text()).toContain('They do not confirm sailing safety');
+    expect(wrapper.text()).not.toContain('Powered by Open-Meteo');
+    expect(wrapper.text()).not.toContain('Weather info');
+    expect(wrapper.find('a[aria-label*="Open-Meteo"]').attributes('href')).toBe('https://open-meteo.com/en/licence');
+    expect(wrapper.text()).not.toContain('They do not confirm sailing safety');
     wrapper.unmount();
   });
   it('does not invent a departure forecast for a sailing outside the forecast window',async()=>{

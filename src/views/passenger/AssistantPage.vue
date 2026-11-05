@@ -77,7 +77,7 @@ async function send(text?:string) {
 }
 onIonViewDidLeave(()=>{generation++;busy.value=false;turns.value=[];question.value='';error.value='';});
 const sourceTitle=(topic:string)=>({get_sailings:'Verified sailing details',get_my_bookings:'Your booking details',get_my_rewards:'Your loyalty rewards',get_advisories:'Published advisories',get_help:'Travel guide'}[topic] || 'Verified details');
-const checkedTime=(value:string)=>new Date(value).toLocaleString('en-PH',{timeZone:'Asia/Manila',year:'numeric',month:'short',day:'numeric',hour:'numeric',minute:'2-digit'});
+const checkedTime=(value:string)=>new Date(value).toLocaleString('en-PH',{timeZone:'Asia/Manila',year:'numeric',month:'short',day:'numeric',hour:'numeric',minute:'2-digit',hour12:true});
 const labels:Record<string,string>={code:'Trip',reference:'Booking',from:'From',to:'To',origin:'Departure port',destination:'Arrival port',vessel:'Vessel',departureAt:'Departure',arrivalAt:'Arrival',status:'Status',sailingStatus:'Trip status',availableSeats:'Available seats',regularFare:'Regular fare',studentFare:'Student fare',seniorFare:'Senior fare',childFare:'Child fare',pwdFare:'PWD fare',paymentStatus:'Payment',paymentMethod:'Payment method',paymentVerificationRequired:'Payment verification pending',paymentDeadline:'Payment deadline',total:'Total',passengerCount:'Passengers',value:'Voucher amount',expiresAt:'Expiry',title:'Notice',message:'Details',priority:'Priority',category:'Category'};
 const fieldLabel=(key:string)=>labels[key] || key;
 function fieldValue(key:string,value:string|number|boolean) {

@@ -143,6 +143,7 @@ export interface MyBookingsData {
     createdAt: TimestampString;
     sailing: {
       code: string;
+      status?: string;
       departureAt: TimestampString;
       arrivalAt: TimestampString;
       origin: {

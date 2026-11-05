@@ -367,6 +367,7 @@
                     :disabled="
                       busy ||
                       loading ||
+                      travelPeriodEnded ||
                       (selectedPassenger.status === 'CHECKED_IN' &&
                         selectedSailing?.status !== 'BOARDING')
                     "
@@ -618,6 +619,8 @@ let requestNumber = 0;
 const selectedSailing = computed(() =>
   sailings.value.find((item) => item.code === selectedSailingCode.value),
 );
+const travelPeriodEnded = computed(() => !!selectedSailing.value?.arrivalAt &&
+  Date.parse(selectedSailing.value.arrivalAt) <= Date.now());
 const selectedPassenger = computed(() =>
   passengers.value.find((item) => item.id === selectedPassengerId.value),
 );
@@ -645,6 +648,7 @@ const filteredPassengers = computed(() =>
 );
 const actionHint = computed(() => {
   if (!selectedPassenger.value) return "";
+  if (travelPeriodEnded.value) return 'The travel period has ended. This ticket is for transaction records only.';
   if (selectedPassenger.value.status === "ISSUED")
     return pageMode.value === 'boarding' ? 'This passenger has not checked in. Record their arrival on the Check-in page before boarding.' : "Confirm the passenger and ticket before checking in. This records their arrival at the gate.";
   if (selectedPassenger.value.status === "CHECKED_IN")
@@ -818,6 +822,10 @@ onBeforeUnmount(() => {
 
 async function updateSelectedTicket() {
   if (loading.value || error.value) return;
+  if (selectedSailing.value?.arrivalAt && Date.parse(selectedSailing.value.arrivalAt) <= Date.now()) {
+    error.value = 'The travel period has ended. Check-in and boarding are closed.';
+    return;
+  }
   const person = selectedPassenger.value;
   if (!person || !staffDatabase || busy.value) return;
   if (person.status !== "ISSUED" && person.status !== "CHECKED_IN") return;

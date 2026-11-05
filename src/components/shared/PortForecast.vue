@@ -2,7 +2,8 @@
   <section class="port-forecast" aria-labelledby="forecast-heading" :aria-busy="loading">
     <header>
       <h2 id="forecast-heading"><CloudSun :size="20" aria-hidden="true" /> Weather outlook</h2>
-      <span v-if="!loading && !error && port?.available && days.length" class="forecast-badge">{{ days.length }}-day forecast</span>
+      <span v-if="!loading && !error && port?.available && days.length" class="forecast-badge">{{ days.length }} days</span>
+      <WeatherSource />
     </header>
     <div class="location-picker">
       <span id="weather-location-label" class="location-label">Weather location</span>
@@ -41,19 +42,18 @@
           <dl><div><dt>High / Low</dt><dd>{{ format(selectedDay.highC) }}° / {{ format(selectedDay.lowC) }}°C</dd></div><div><dt>Chance of rain</dt><dd><Droplets :size="13" aria-hidden="true" />{{ measurement(selectedDay.rainChance, '%') }}</dd></div><div><dt>Max wind</dt><dd><Wind :size="13" aria-hidden="true" />{{ measurement(selectedDay.windKph, 'km/h') }}</dd></div></dl>
         </div>
       </div>
-      <p class="forecast-note">High / low temperatures · Rain % = chance of rain</p>
       <p v-if="port.stale" class="message">Saved weather · update delayed.</p>
     </template>
-    <footer><a href="https://open-meteo.com/" target="_blank" rel="noopener noreferrer">Open-Meteo <ExternalLink :size="11" aria-hidden="true" /></a><span>Check official sailing advisories before travel.</span></footer>
   </section>
 </template>
 <script setup lang="ts">
 import { computed, ref, watch, onMounted } from 'vue';
 import { onIonViewWillEnter } from '@ionic/vue';
-import { CloudSun, Wind, Droplets, MoveRight, ExternalLink, X, MapPin, ChevronDown, Anchor, Check } from '@lucide/vue';
+import { CloudSun, Wind, Droplets, MoveRight, X, MapPin, ChevronDown, Anchor, Check } from '@lucide/vue';
 import { SelectRoot, SelectTrigger, SelectPortal, SelectContent, SelectViewport, SelectItem, SelectItemText, SelectItemIndicator } from 'reka-ui';
 import WeatherSymbol from './WeatherSymbol.vue';
 import SmartWeatherCard from './SmartWeatherCard.vue';
+import WeatherSource from './WeatherSource.vue';
 import { portForecast, type PortForecastData } from '../../services/weather';
 import { philippineDateKey } from '../../data/travelDate';
 import { weatherPresentation } from '../../data/weatherPresentation';
@@ -172,11 +172,8 @@ h3 { margin: 0; font-size: var(--text-label); }
 .selected-forecast dd { display: flex; align-items: center; flex-wrap: wrap; gap: 4px; margin: 4px 0 0; font-size: var(--text-caption); font-weight: 600; }
 .selected-forecast dd svg { color: var(--ocean); }
 @keyframes detail-arrive { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
-.forecast-note { margin: 2px 0 0; color: var(--muted); font-size: 12px; line-height: 1.6; }
 .message { margin: 14px 0; color: var(--muted); font-size: var(--text-label); line-height: 1.6; }
 button { margin-left: 8px; min-height: 44px; border: 0; background: transparent; color: var(--ocean); cursor: pointer; }
-footer { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 6px 12px; margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--line); font-size: var(--text-caption); line-height: 1.6; color: var(--muted); }
-footer a { display: inline-flex; align-items: center; gap: 4px; min-height: 28px; color: var(--ocean); text-decoration: none; }
 button:focus-visible, a:focus-visible, select:focus-visible, .forecast-scroll:focus-visible { outline: 2px solid var(--ocean); outline-offset: 3px; }
 @container passenger (max-width: 380px) { .port-forecast { padding: 16px 12px; } .current { gap: 8px; } .current-description { min-width: 0; } .current-description b { font-size: var(--text-caption); } .current-reading > strong { font-size: 28px; } .current-reading small { font-size: 14px; } .forecast-badge { font-size: var(--text-caption); } .location-picker { grid-template-columns: 1fr; gap: 5px; } }
 @media (prefers-reduced-motion: reduce) { .forecast-day, .day-icon, .location-trigger, .location-chevron { transition: none; } .selected-forecast, :global(.barkolink-location-menu) { animation: none; } .forecast-day:hover .day-icon, .forecast-day:active { transform: none; } }

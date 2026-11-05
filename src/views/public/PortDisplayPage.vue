@@ -14,7 +14,7 @@
           <label for="display-port">Port</label><select id="display-port" :value="data?.portId || ''" :disabled="loading || !data?.ports.length" @change="changePort"><option v-if="!data?.ports.length" value="">No ports available</option><option v-for="port in data?.ports" :key="port.id" :value="port.id">{{ port.name }}</option></select>
           <button type="button" @click="copyLink">Copy TV link</button><button type="button" @click="fullscreen">Fullscreen</button><button type="button" :disabled="loading" @click="refresh">Refresh</button><button type="button" @click="enterKiosk">TV mode</button>
           <span role="status">{{ controlNotice || 'Open the TV link in the terminal screen browser.' }}</span>
-          <p class="header-weather-status" role="status">Header weather · {{ weatherDateLabel }}: {{ headerWeather ? headerCondition : weatherLoading ? 'Updating…' : 'Unavailable · Retrying automatically' }} · <a class="weather-credit" href="https://open-meteo.com/" target="_blank" rel="noopener noreferrer">Weather: Open-Meteo</a></p>
+          <p class="header-weather-status" role="status">{{ weatherDateLabel }} · {{ headerWeather ? headerCondition : weatherLoading ? 'Updating…' : 'Weather unavailable' }} <WeatherSource /></p>
           <div class="display-responsibility"><strong>Who updates this board?</strong><p>Administrator: update trip schedules, statuses, and published advisories. Boarding desk: confirm actual boarding conditions and report corrections to the administrator. Connection or screen problems: contact the system administrator.</p><p v-if="reviewSailings.length" class="review-note">Schedule review needed: {{ reviewSailings.map(sailing => sailing.code).join(', ') }}. The scheduled departure has passed; confirm operations before the administrator updates the trip.</p></div>
         </section>
         <p v-if="error" class="display-error" role="alert">{{ error }} {{ data ? 'Showing the last received schedule. Confirm your sailing at the boarding desk.' : '' }}</p>
@@ -57,6 +57,7 @@ import { useRoute, useRouter } from 'vue-router';
 import { Ship, Megaphone } from '@lucide/vue';
 import { currentPortWeather, portAtmosphere, harborPhaseLabel } from '../../data/portAtmosphere';
 import MaritimeHeaderArt from '@/components/shared/MaritimeHeaderArt.vue';
+import WeatherSource from '@/components/shared/WeatherSource.vue';
 import { displaySailings, loadPortDisplay, manilaDate, portDisplayKey, type PortDisplayData } from '../../services/portDisplay';
 import { loadDisplayWeather, type DisplayWeather } from '../../services/portDisplayWeather';
 
@@ -242,7 +243,7 @@ onUnmounted(stop);
 .header-weather-target:focus-visible { outline: 2px solid #80d4ff; outline-offset: 2px; }
 .header-weather-tooltip { position: absolute; top: 8px; right: 8px; max-width: min(300px, 75vw); width: max-content; padding: 6px 10px; border: 1px solid #3b566c; border-radius: 8px; background: #061b32f2; color: #d7edfc; font-size: 12px; line-height: 1.4; pointer-events: none; visibility: hidden; opacity: 0; }
 .header-weather-target:hover .header-weather-tooltip, .header-weather-target:focus .header-weather-tooltip { visibility: visible; opacity: 1; }
-.header-weather-status { flex-basis: 100%; margin: 0; color: #b8cbd9; font-size: 12px; }.weather-credit { color: inherit; }
+.header-weather-status { flex-basis: 100%; margin: 0; color: #b8cbd9; font-size: 12px; }
 .display-header :deep(.maritime-header-art) { inset: -16px 0 0; }
 .display-header :deep(.maritime-header-art.immersive) { inset: -16px 0 0; }
 .display-header :deep(.maritime-header-art img) { right: clamp(160px, 13vw, 250px); width: 930px; bottom: -48px; }

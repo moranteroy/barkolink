@@ -339,13 +339,13 @@
               <b>PHP {{ serviceFee.toLocaleString() }}</b>
             </div>
             <section class="voucher-entry" aria-label="Booking voucher">
-              <label for="booking-voucher">{{ loyaltyApplied ? 'Your loyalty reward' : 'Have a voucher?' }}</label>
-              <div><input id="booking-voucher" v-model="voucherCode" maxlength="30" placeholder="Enter voucher code" :disabled="saving || voucherBusy" @input="editVoucher" /><button type="button" :disabled="saving || voucherBusy || !voucherCode.trim()" @click="applyVoucher">{{ voucherBusy ? 'Checking...' : 'Apply' }}</button></div>
-              <p v-if="voucherBusy && !voucherCode" role="status">Checking your automatic loyalty reward…</p>
-              <p v-if="voucherError" role="alert">{{voucherError}}</p>
-              <button v-if="voucherError && !voucherCode && !automaticVoucherRemoved" type="button" :disabled="saving || voucherBusy" @click="applyAutomaticVoucher">Check loyalty reward again</button>
-              <p v-if="voucherQuote" role="status">{{ loyaltyApplied ? 'Loyalty voucher automatically applied' : voucherQuote.code + ' applied' }}: PHP {{voucherQuote.discount.toLocaleString()}} off regular fares <button type="button" :disabled="saving" @click="removeVoucher">Remove</button></p>
-              <small>One voucher per booking. Applies to regular passenger fares. <router-link to="/vouchers">Claim vouchers &amp; view codes</router-link></small>
+              <label for="booking-voucher">Have a voucher?</label>
+              <div class="voucher-input-row"><input id="booking-voucher" v-model="voucherCode" maxlength="30" placeholder="Enter voucher code" :disabled="saving || voucherBusy" :aria-invalid="!!voucherError" :aria-describedby="voucherError ? 'voucher-error' : undefined" @input="editVoucher" /><button type="button" :disabled="saving || voucherBusy || !voucherCode.trim()" @click="applyVoucher">{{ voucherBusy ? 'Checking...' : 'Apply' }}</button></div>
+              <p v-if="voucherError" id="voucher-error" role="alert">{{voucherError}}</p>
+              <div v-if="voucherQuote" class="voucher-applied" role="status">
+                <div class="voucher-applied-details"><strong>Voucher applied</strong><code>{{ voucherQuote.code }}</code><span>You save <b>PHP {{ voucherQuote.discount.toLocaleString() }}</b></span></div>
+                <button type="button" :disabled="saving" @click="removeVoucher">Remove</button>
+              </div>
             </section>
             <div v-if="voucherQuote" class="fare-row voucher-discount"><span>Voucher discount</span><b>- PHP {{voucherQuote.discount.toLocaleString()}}</b></div>
             <div class="total">
@@ -489,7 +489,7 @@ import BackIcon from "@/components/ui/icon/BackIcon.vue";
 import { bookingReference } from '@/data/recordCodes';
 import OnlinePayment from "../../components/passenger/OnlinePayment.vue";
 import TripWeather from "../../components/shared/TripWeather.vue";
-import { quoteVoucher, quoteLoyaltyVoucher, type VoucherQuote } from "../../services/vouchers";
+import { quoteVoucher, type VoucherQuote } from "../../services/vouchers";
 import { canResumeReservation } from "../../data/bookingReservation";
 import { paymentMethodLabel } from "../../data/paymentMethod";
 import { philippineDateKey, validBirthDate } from "../../data/travelDate";
@@ -741,45 +741,28 @@ const serviceFee = computed(
     passengers.value.length,
 );
 const voucherCode=ref(''),voucherQuote=ref<VoucherQuote|null>(null),voucherBusy=ref(false),voucherError=ref('');
-const loyaltyApplied=ref(false),automaticVoucherRemoved=ref(false);
 let voucherRequest=0;
 const payableTotal=computed(()=>total.value+serviceFee.value-(voucherQuote.value?.discount || 0));
 function clearVoucher(){++voucherRequest;voucherQuote.value=null;voucherError.value='';voucherBusy.value=false;}
-function editVoucher(){automaticVoucherRemoved.value=true;loyaltyApplied.value=false;clearVoucher();}
+function editVoucher(){clearVoucher();}
 function removeVoucher(){voucherCode.value='';editVoucher();}
 const voucherContext=computed(()=>JSON.stringify([total.value,serviceFee.value,trip.value.id,accommodationId.value,passengers.value.map(p=>passengerTypeCode(p.type))]));
-watch(voucherContext,()=>{
-  if(loyaltyApplied.value){voucherCode.value='';loyaltyApplied.value=false;}
-  clearVoucher();
-  if(flow.value==='summary')void applyAutomaticVoucher();
-});
+watch(voucherContext,clearVoucher);
 function voucherArgs(){
   const args:Record<string,unknown>={sailingCode:trip.value.id,passengerCount:passengers.value.length,accommodationId:accommodationId.value || undefined};
   passengers.value.forEach((p,i)=>{args[`passenger${i+1}Type`]=passengerTypeCode(p.type);});
   return args;
 }
-async function applyAutomaticVoucher(){
-  if(!database || saving.value || voucherCode.value.trim() || automaticVoucherRemoved.value)return;
-  const id=++voucherRequest,context=voucherContext.value;
-  voucherBusy.value=true;voucherError.value='';
-  try{
-    const response=(await quoteLoyaltyVoucher(database,voucherArgs())).data;
-    if(id===voucherRequest && context===voucherContext.value && response.quote){
-      voucherQuote.value=response.quote;voucherCode.value=response.quote.code;loyaltyApplied.value=true;
-    }
-  }catch{if(id===voucherRequest)voucherError.value = 'Could not check loyalty rewards. You can continue without a voucher or try again.';}
-  finally{if(id===voucherRequest)voucherBusy.value=false;}
-}
 async function applyVoucher(){
-  if(!database || voucherBusy.value)return;
-  clearVoucher();voucherBusy.value=true;loyaltyApplied.value=false;
+  if(!database || saving.value || voucherBusy.value || !voucherCode.value.trim())return;
+  clearVoucher();voucherBusy.value=true;
   const id=++voucherRequest;
   const context=voucherContext.value;
   try {
     const args={...voucherArgs(),voucherCode:voucherCode.value};
     const response=(await quoteVoucher(database,args)).data;
-    if(id===voucherRequest && context===voucherContext.value)voucherQuote.value=response;
-  }catch(e){if(id===voucherRequest)notify(databaseRequestError(e,'Could not apply voucher.'),'error','Voucher unavailable');}finally{if(id===voucherRequest)voucherBusy.value=false;}
+    if(id===voucherRequest && context===voucherContext.value){voucherQuote.value=response;voucherCode.value=response.code;}
+  }catch(e){if(id===voucherRequest){voucherError.value=databaseRequestError(e,'Could not apply voucher.');notify(voucherError.value,'error','Voucher unavailable');}}finally{if(id===voucherRequest)voucherBusy.value=false;}
 }
 const booking = ref<Booking>({
   reference: "",
@@ -798,11 +781,8 @@ const booking = ref<Booking>({
 });
 const copied = ref(false);
 const saving = ref(false);
-watch(()=>selectedTrip.value?.selectionId,()=>{automaticVoucherRemoved.value=false;loyaltyApplied.value=false;voucherCode.value='';clearVoucher();});
-watch(flow,value=>{
-  if(value==='summary')void applyAutomaticVoucher();
-  else{if(loyaltyApplied.value){voucherCode.value='';loyaltyApplied.value=false;}clearVoucher();}
-},{immediate:true});
+watch(()=>selectedTrip.value?.selectionId,()=>{voucherCode.value='';clearVoucher();});
+watch(flow,clearVoucher);
 const errorMessage = ref("");
 const duplicateReference = ref('');
 function clearDuplicateNotice() {
@@ -2374,7 +2354,14 @@ watch(
 </style>
 
 <style scoped>
-.voucher-entry{padding:16px 0;border-bottom:1px solid var(--line)}.voucher-entry label{display:block;font-size:13px;font-weight:600;margin-bottom:10px}.voucher-entry>div{display:flex;gap:8px}.voucher-entry input{min-width:0;flex:1;background:var(--surface);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:10px;font:inherit}.voucher-entry button{min-height:44px;border:1px solid var(--line);border-radius:8px;padding:8px 14px;color:var(--ocean);background:var(--surface);font:inherit;cursor:pointer}.voucher-entry button:disabled{opacity:.5}.voucher-entry p{font-size: var(--text-label);line-height:1.6}.voucher-entry small{display:block;margin-top:10px;color:var(--muted);font-size: var(--text-caption)}.voucher-discount{color:var(--ocean)}
+.voucher-entry{padding:16px 0;border-bottom:1px solid var(--line)}.voucher-entry label{display:block;font-size:13px;font-weight:600;margin-bottom:10px}.voucher-input-row{display:flex;gap:8px}.voucher-entry input{min-width:0;flex:1;background:var(--surface);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:10px;font:inherit}.voucher-entry button{min-height:44px;border:1px solid var(--line);border-radius:8px;padding:8px 14px;color:var(--ocean);background:var(--surface);font:inherit;cursor:pointer}.voucher-entry button:disabled{opacity:.5}.voucher-entry p{font-size: var(--text-label);line-height:1.6}.voucher-entry small{display:block;margin-top:10px;color:var(--muted);font-size: var(--text-caption)}.voucher-discount{color:var(--ocean)}
+.voucher-applied { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:12px; margin-top:14px; padding:14px; border:1px solid var(--line); border-left:3px solid var(--ocean); border-radius:10px; background:var(--light-blue); }
+.voucher-applied-details { display:grid; gap:6px; min-width:0; flex:1 1 160px; font-size:13px; line-height:1.5; }
+.voucher-applied-details strong { color:var(--ocean); }
+.voucher-applied-details code { font-size:12px; overflow-wrap:anywhere; }
+.voucher-applied-details span { color:var(--muted); }
+.voucher-applied-details b { color:var(--ink); }
+.voucher-applied button { flex:none; }
 </style>
 
 <style scoped>

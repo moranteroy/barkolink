@@ -14,9 +14,7 @@
         </template>
       </article>
     </div>
-    <div v-if="!compact" class="weather-footer"><a href="https://open-meteo.com/" target="_blank" rel="noopener noreferrer">Powered by Open-Meteo</a><p>Weather estimates are for travel planning and may change. They do not confirm sailing safety. Follow official advisories and your operator’s trip status.</p></div>
-    <p v-if="compact && data?.configured" class="compact-weather-hint">Swipe to view both ports</p>
-    <details v-if="compact" class="compact-weather-details"><summary>Forecast info &amp; source</summary><p>Weather estimates are for travel planning and may change. They do not confirm sailing safety. Follow official advisories and your operator's trip status.</p><a href="https://open-meteo.com/" target="_blank" rel="noopener noreferrer">Powered by Open-Meteo</a></details>
+    <WeatherSource />
   </section>
 </template>
 <script setup lang="ts">
@@ -25,6 +23,7 @@ import AppIcon from "@/components/ui/icon/AppIcon.vue";
 import { partlySunnyOutline } from 'ionicons/icons';
 import { tripWeather,type TripWeatherData } from '../../services/weather';
 import SmartWeatherCard from './SmartWeatherCard.vue';
+import WeatherSource from './WeatherSource.vue';
 
 const props=withDefaults(defineProps<{sailingCode:string;compact?:boolean}>(), {compact:false});
 const data=ref<TripWeatherData|null>(null),loading=ref(false),error=ref(false);
@@ -57,11 +56,8 @@ watch(()=>props.sailingCode,load,{immediate:true});
 .weather-conditions small { display: block; color: var(--muted); font-size: var(--text-caption); margin-top: 4px; }
 dl { display: flex; flex-wrap: wrap; gap: 16px; border-top: 1px solid var(--line); padding-top: 14px; margin: 16px 0 0; }
 dt { font-size: var(--text-caption); color: var(--muted); } dd { margin: 5px 0 0; font-size: var(--text-label); font-weight: 600; }
-.forecast-notice,.weather-delayed,.weather-message,.weather-footer p { color: var(--muted); font-size: var(--text-caption); line-height: 1.7; margin: 12px 0 0; }
+.forecast-notice,.weather-delayed,.weather-message { color: var(--muted); font-size: var(--text-caption); line-height: 1.7; margin: 12px 0 0; }
 .forecast-notice { padding: 9px; border-radius: 7px; background: var(--surface); }
-.weather-footer { margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--line); }
-.weather-footer a { font-size: var(--text-caption); color: var(--ocean); text-decoration: none; }
-.weather-footer p { margin-top: 6px; }
 @media(max-width:600px){.weather-ports{grid-template-columns:minmax(0,1fr)}.trip-weather{padding:16px}}
 .trip-weather { font-family: var(--ion-font-family); }
 .weather-heading h2 { font-size: 18px; }
@@ -78,7 +74,6 @@ dl { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 8px; }
 </style>
 
 <style scoped>
-.compact-weather-hint { display: none; margin: 5px 0 0; color: var(--muted); font-size: var(--text-caption); }
 .compact-weather .weather-ports { gap: 8px; }
 .compact-weather .weather-port { padding: 10px; border-radius: 9px; background: var(--surface-soft); }
 .compact-weather .weather-port > small { padding: 0; background: transparent; border-radius: 0; font-size: var(--text-caption); }
@@ -87,5 +82,4 @@ dl { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 8px; }
 .compact-weather .weather-conditions strong { font-size: 22px; }.compact-weather .weather-conditions strong span { font-size: var(--text-label); }.compact-weather .weather-conditions b { font-size: var(--text-caption); line-height: 1.4; }.compact-weather .weather-conditions small { font-size: var(--text-caption); margin-top: 2px; }
 .compact-weather dl { gap: 6px; padding-top: 7px; margin-top: 7px; }.compact-weather dt { font-size: var(--text-caption); }.compact-weather dd { font-size: var(--text-caption); margin-top: 3px; }
 .compact-weather .weather-delayed { font-size: var(--text-caption); margin: 5px 0 0; line-height: 1.4; }.compact-weather .forecast-notice { padding: 6px; font-size: var(--text-caption); margin-top: 6px; }
-.compact-weather-details { margin-top: 7px; color: var(--muted); font-size: var(--text-caption); }.compact-weather-details summary { display: flex; align-items: center; min-height: 28px; gap: 5px; cursor: pointer; color: var(--ocean); }.compact-weather-details summary::before { content: '+'; font-size: 13px; }.compact-weather-details[open] summary::before { content: '-'; }.compact-weather-details summary:focus-visible { outline: 2px solid var(--ocean); outline-offset: 2px; }.compact-weather-details p { font-size: var(--text-caption); line-height: 1.6; margin: 4px 0; }.compact-weather-details a { color: var(--ocean); }
 </style>

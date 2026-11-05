@@ -6,7 +6,8 @@ type GateTicket = {
   booking: {
     status: string;
     paymentStatus: string;
-    sailing: { code: string; status: string; departureAt: string };
+    paymentVerificationRequired?: boolean | null;
+    sailing: { code: string; status: string; departureAt: string; arrivalAt?: string };
   };
 };
 
@@ -19,6 +20,10 @@ export function ticketActionBlockReason(
     return "The reservation must be confirmed.";
   if (ticket.booking.paymentStatus !== "PAID")
     return "Payment must be completed first.";
+  if (ticket.booking.paymentVerificationRequired)
+    return "Staff payment verification is required before admission.";
+  if (ticket.booking.sailing.arrivalAt && Date.parse(ticket.booking.sailing.arrivalAt) <= now.getTime())
+    return "This ticket travel period has ended. Keep it for transaction records only.";
   if (action === "boarding") {
     if (ticket.ticketStatus === "BOARDED")
       return "This passenger has already boarded.";
