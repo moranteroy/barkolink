@@ -10,6 +10,7 @@ export const staffPortAccess = reactive({
   uid: '',
   status: 'unknown' as 'unknown' | 'ready' | 'blocked',
   portName: '',
+  portId: '',
   checkedAt: 0,
   notice: 0,
 });
@@ -33,11 +34,18 @@ export function markStaffPortBlocked() {
   if (staffPortAccess.status !== 'blocked') staffPortAccess.notice++;
   staffPortAccess.status = 'blocked';
   staffPortAccess.portName = '';
+  staffPortAccess.portId = '';
   staffPortAccess.checkedAt = Date.now();
 }
 export function resetStaffPortAccess(uid = '') {
   if (staffPortAccess.uid === uid) return;
-  Object.assign(staffPortAccess, { uid, status: 'unknown', portName: '', checkedAt: 0 });
+  Object.assign(staffPortAccess, {
+    uid,
+    status: 'unknown',
+    portName: '',
+    portId: '',
+    checkedAt: 0,
+  });
 }
 // Read the allowed MyProfile operation first. Blocked staff never request terminal records.
 // Short-lived caching deduplicates concurrent queues and detects later admin assignments.
@@ -73,6 +81,7 @@ export async function checkStaffPortAccess(
       Object.assign(staffPortAccess, {
         status: 'ready',
         portName: profile!.assignedPort!.name,
+        portId: profile!.assignedPortId!,
         checkedAt: Date.now(),
       });
     return ready;

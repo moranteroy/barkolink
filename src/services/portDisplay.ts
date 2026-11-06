@@ -7,6 +7,7 @@ export type PortDisplayData = {
   date: string;
   updatedAt: string;
   portId: string | null;
+  portLocked?: boolean;
   ports: DisplayPort[];
   sailings: DisplaySailing[];
   advisories: { id: string; title: string; message: string; priority: string; endsAt: string }[];
@@ -47,6 +48,8 @@ export async function loadPortDisplay(
   if (!port || uuidPattern.test(port)) return fetchPortDisplay(port, signal);
   // The public feed provides the directory; private port tables remain inaccessible.
   const initial = knownPorts ? undefined : await fetchPortDisplay(null, signal);
+  // Staff feeds choose the current assignment on the server, even for a changed URL.
+  if (initial?.portLocked) return initial;
   const ports = knownPorts ?? initial!.ports;
   const selected = ports.find((candidate) => portDisplayKey(candidate, ports) === port);
   if (!selected) throw new Error('Port is unavailable.');

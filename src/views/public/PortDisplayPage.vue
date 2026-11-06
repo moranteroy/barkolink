@@ -63,7 +63,7 @@
           ><select
             id="display-port"
             :value="data?.portId || ''"
-            :disabled="loading || !data?.ports.length"
+            :disabled="loading || data?.portLocked || !data?.ports.length"
             @change="changePort"
           >
             <option v-if="!data?.ports.length" value="">No ports available</option>
@@ -71,6 +71,7 @@
               {{ port.name }}
             </option>
           </select>
+          <span v-if="data?.portLocked">Assigned port only</span>
           <button type="button" @click="copyLink">Copy TV link</button
           ><button type="button" @click="fullscreen">Fullscreen</button
           ><button type="button" :disabled="loading" @click="refresh">Refresh</button
@@ -91,6 +92,10 @@
               Administrator: update trip schedules, statuses, and published advisories. Boarding
               desk: confirm actual boarding conditions and report corrections to the administrator.
               Connection or screen problems: contact the system administrator.
+            </p>
+            <p>
+              Ticketing desk: open the board for your assigned port and display it on the terminal
+              TV.
             </p>
             <p v-if="reviewSailings.length" class="review-note">
               Schedule review needed:
@@ -492,6 +497,7 @@ async function refresh() {
   }
 }
 function changePort(event: Event) {
+  if (data.value?.portLocked) return;
   const port = data.value?.ports.find(
     (candidate) => candidate.id === (event.target as HTMLSelectElement).value,
   );

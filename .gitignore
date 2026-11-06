@@ -99,12 +99,14 @@ credentials.json
 *.[dD][oO][cC][xXmM]
 *.[dD][oO][tT]
 *.[dD][oO][tT][xXmM]
-**/[Cc]hapter-1*
-**/[Cc]hapter-3*
-**/[Cc]hapter 1*
-**/[Cc]hapter 3*
+**/[Cc]hapter[- _][123]*
+**/[Cc]hapter[123]*
+**/[Cc]haptee[- _][123]*
+**/[Cc]haptee[123]*
 **/[Bb]arko[Ll]ink-[Ff]eature-[Ss]creenshots*/
 **/[Bb]arko[Ll]ink-[Ff]eature-[Ss]creenshots*.zip
+**/[Bb]arko[Ll]ink [Ff]eature [Ss]creenshots*/
+**/[Bb]arko[Ll]ink [Ff]eature [Ss]creenshots*.zip
 **/[Bb]arko[Ll]ink-[Ss]ystem-[Oo]verview*
 
 # One-off local capture and rehearsal helpers; reusable app checks stay in Git.

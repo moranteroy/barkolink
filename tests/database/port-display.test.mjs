@@ -116,3 +116,61 @@ it('rejects unavailable ports and supplies an active default', async () => {
     await db.query('update public.port set is_active=true where id=$1', [cal]);
   }
 });
+
+it('locks ticketing to the current active assignment even with another port in the request', async () => {
+  const uid = '44444444-4444-4444-8444-444444444444';
+  await db.query(
+    `insert into auth.users(id,email,raw_app_meta_data)
+    values($1,'display-ticketing@example.invalid','{"role":"TICKETING"}')`,
+    [uid],
+  );
+  await db.query('update public.app_user set assigned_port_id=$1 where uid=$2', [cal, uid]);
+  await db.query("select set_config('request.jwt.claim.sub',$1,false)", [uid]);
+  try {
+    for (const requested of [null, cal, btg]) {
+      const result = await call(requested);
+      assert.equal(result.portId, cal);
+      assert.equal(result.portLocked, true);
+      assert.deepEqual(
+        result.ports.map((p) => p.id),
+        [cal],
+      );
+    }
+    await db.query('update public.app_user set assigned_port_id=$1 where uid=$2', [btg, uid]);
+    assert.equal((await call(cal)).portId, btg, 'assignment changes apply on the next refresh');
+    await db.query('update public.port set is_active=false where id=$1', [btg]);
+    await assert.rejects(call(cal), /no active port assignment/);
+    await db.query('update public.port set is_active=true where id=$1', [btg]);
+    await db.query('update public.app_user set assigned_port_id=null where uid=$1', [uid]);
+    await assert.rejects(call(cal), /no active port assignment/);
+    await db.exec('set role authenticated');
+    await assert.rejects(
+      db.exec('select barkolink_private.port_display_unscoped(null)'),
+      /permission denied/,
+    );
+  } finally {
+    await db.exec('reset role');
+    await db.query("select set_config('request.jwt.claim.sub','',false)");
+    await db.query('update public.port set is_active=true where id=$1', [btg]);
+  }
+});
+
+it('preserves administrator access to every active port', async () => {
+  const uid = '33333333-3333-4333-8333-333333333333';
+  await db.query(
+    `insert into auth.users(id,email,raw_app_meta_data)
+    values($1,'display-admin@example.invalid','{"role":"ADMIN"}')`,
+    [uid],
+  );
+  await db.query("select set_config('request.jwt.claim.sub',$1,false)", [uid]);
+  try {
+    for (const port of [cal, btg]) {
+      const result = await call(port);
+      assert.equal(result.portId, port);
+      assert.equal(result.portLocked, undefined);
+      assert.ok(result.ports.length > 1);
+    }
+  } finally {
+    await db.query("select set_config('request.jwt.claim.sub','',false)");
+  }
+});

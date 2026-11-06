@@ -60,7 +60,8 @@ async function main() {
       weatherFail = false,
       weatherCode = 3,
       weatherIsDay = 1,
-      weatherAgeMinutes = 0;
+      weatherAgeMinutes = 0,
+      lockedPort = false;
     const weatherRequests = [];
     await context.route('https://api.open-meteo.com/**', async (route) => {
       const url = new URL(route.request().url());
@@ -101,7 +102,9 @@ async function main() {
       );
       calls++;
       if (fail) return route.fulfill({ status: 503, json: { message: 'Fixture offline' } });
-      const portId = route.request().postDataJSON().p_port || ports[0].id;
+      const portId = lockedPort
+        ? ports[0].id
+        : route.request().postDataJSON().p_port || ports[0].id;
       const today = new Intl.DateTimeFormat('en-CA', {
         timeZone: 'Asia/Manila',
         year: 'numeric',
@@ -138,7 +141,8 @@ async function main() {
           date: today,
           updatedAt: new Date().toISOString(),
           portId,
-          ports,
+          ports: lockedPort ? [ports[0]] : ports,
+          ...(lockedPort ? { portLocked: true } : {}),
           sailings,
           advisories: terminalSample
             ? []
@@ -689,6 +693,43 @@ async function main() {
       await page.locator('.port-screen').evaluate((el) => el.scrollWidth <= innerWidth),
       true,
     );
+    lockedPort = true;
+    emptySample = false;
+    terminalSample = false;
+    smallSample = true;
+    await page.clock.setSystemTime(new Date());
+    for (const width of [390, 1440]) {
+      await page.setViewportSize({ width, height: 1000 });
+      for (const theme of ['light', 'dark']) {
+        await page.evaluate((value) => localStorage.setItem('barkolink-theme', value), theme);
+        for (const requested of [ports[1].id, 'batangas-port']) {
+          await page.goto(`${baseUrl}/port-display?port=${requested}`);
+          await page.getByRole('heading', { name: 'Calapan Port', exact: true }).waitFor();
+          await page.waitForURL((url) => url.searchParams.get('port') === 'calapan-port');
+          await page.getByRole('button', { name: 'Display controls', exact: true }).click();
+          assert.equal(await page.locator('#display-port').isDisabled(), true);
+          assert.equal(await page.locator('#display-port option').count(), 1);
+          assert.equal(await page.locator('#display-port').inputValue(), ports[0].id);
+          await page.getByText('Assigned port only', { exact: true }).waitFor();
+          if (requested === 'batangas-port')
+            await page.screenshot({
+              path: `.audit/port-display/ticketing-controls-${width}-${theme}.png`,
+              fullPage: true,
+            });
+          assert.equal(
+            await page.locator('.port-screen').evaluate((el) => el.scrollWidth <= innerWidth),
+            true,
+          );
+          await page.getByRole('button', { name: 'TV mode', exact: true }).click();
+          await page.waitForURL((url) => url.searchParams.get('screen') === '1');
+          assert.equal(await page.locator('#display-port').count(), 0);
+        }
+        await page.screenshot({
+          path: `.audit/port-display/ticketing-${width}-${theme}.png`,
+          fullPage: true,
+        });
+      }
+    }
     assert.deepEqual(await page.evaluate(() => window.portCspErrors), []);
     assert.deepEqual(errors, []);
     console.log(

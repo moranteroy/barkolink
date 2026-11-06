@@ -10,12 +10,23 @@
       @click="$emit('navigate')"
       ><AppIcon :icon="item.icon" aria-hidden="true" />{{ item.label }}</router-link
     >
+    <router-link
+      v-if="displayLink"
+      :to="displayLink"
+      target="_blank"
+      rel="noopener"
+      :title="`Open Port TV Display for ${staffPortAccess.portName}`"
+      @click="$emit('navigate')"
+      ><AppIcon :icon="tvOutline" aria-hidden="true" />Port TV Display</router-link
+    >
   </nav>
 </template>
 <script setup lang="ts">
 import { computed } from 'vue';
 import { useRoute } from 'vue-router';
 import AppIcon from '@/components/ui/icon/AppIcon.vue';
+import { auth } from '../../services/session';
+import { staffPortAccess } from '../../services/staffPortAccess';
 import {
   enterOutline,
   personAddOutline,
@@ -27,10 +38,19 @@ import {
   listOutline,
   personRemoveOutline,
   pricetagOutline,
+  tvOutline,
 } from 'ionicons/icons';
 const props = defineProps<{ role: 'ticketing' | 'boarding' }>();
 defineEmits<{ navigate: [] }>();
 const route = useRoute();
+const displayLink = computed(() =>
+  props.role === 'ticketing' &&
+  staffPortAccess.uid === auth?.currentUser?.uid &&
+  staffPortAccess.status === 'ready' &&
+  staffPortAccess.portId
+    ? { path: '/port-display', query: { port: staffPortAccess.portId } }
+    : null,
+);
 const items = computed(() =>
   props.role === 'ticketing'
     ? [

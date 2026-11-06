@@ -103,6 +103,7 @@ describe('staff port request gate', () => {
       data: { records: [] },
     });
     expect(staffPortAccess.portName).toBe('Calapan Port');
+    expect(staffPortAccess.portId).toBe('calapan');
     expect(f.rpc.mock.calls.map((call) => call[1].operation)).toEqual([
       'MyProfile',
       'MyProfile',

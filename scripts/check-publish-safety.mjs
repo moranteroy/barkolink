@@ -57,7 +57,7 @@ function scan(file, bytes, object) {
     findings.push({ file: location, category: 'private/generated file path' });
   if (
     mode !== 'history' &&
-    /(?:^|\/)\.env|(?:^|\/)docs\/research\/|(?:^|\/)chapter[- _]?[13](?:\D|$)|\.(?:docx?|docm|dotx?|dotm)$|barkolink-(?:feature-screenshots|system-overview)/i.test(
+    /(?:^|\/)\.env|(?:^|\/)docs\/research\/|(?:^|\/)chapt(?:er|ee)[- _]?[123](?:\D|$)|\.(?:docx?|docm|dotx?|dotm)$|barkolink[- ](?:feature[- ]screenshots|system[- ]overview)/i.test(
       file,
     )
   )

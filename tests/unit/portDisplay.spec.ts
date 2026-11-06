@@ -94,6 +94,12 @@ describe('terminal display links', () => {
       ['port_display', { p_port: ports[1].id }],
     ]);
   });
+  it('uses the server-assigned terminal when ticketing edits a readable link', async () => {
+    const assigned = { ...data, portId: ports[1].id, ports: [ports[1]], portLocked: true };
+    rpc.mockResolvedValue({ data: assigned, error: null });
+    expect(await loadPortDisplay('batangas-port')).toEqual(assigned);
+    expect(rpc).toHaveBeenCalledExactlyOnceWith('port_display', { p_port: null });
+  });
   it('reuses the public directory during refresh', async () => {
     rpc.mockResolvedValue({ data, error: null });
     await loadPortDisplay('batangas-port', undefined, ports);

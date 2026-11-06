@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
 import { fixtureProject, fixtureBrowserOptions } from './browser-fixture-config.mjs';
 import { chromium } from 'playwright-core';
 import { boardingTimingFixture } from './boarding-timing-fixture.mjs';
@@ -27,6 +28,18 @@ const destinations = {
 };
 const browser = await chromium.launch(fixtureBrowserOptions());
 const errors = [];
+fs.mkdirSync('.audit/staff-trips', { recursive: true });
+const today = new Intl.DateTimeFormat('en-CA', {
+  timeZone: 'Asia/Manila',
+  year: 'numeric',
+  month: '2-digit',
+  day: '2-digit',
+}).format(new Date());
+const orderedTrips = [
+  { ...sailing, code: 'TODAY-FIRST', departureAt: `${today}T13:00:00+08:00` },
+  { ...sailing, code: 'UPCOMING-NEXT', departureAt: '2099-01-01T13:00:00+08:00' },
+  { ...sailing, code: 'PAST-LAST', departureAt: '2025-01-01T13:00:00+08:00', status: 'COMPLETED' },
+];
 let verified = 0;
 try {
   for (const role of ['ANONYMOUS', ...Object.keys(destinations)]) {
@@ -115,6 +128,7 @@ try {
         StaffDashboard: { bookings: 0, paid: 0, unpaid: 0, trips: 0 },
         StaffBookings: { bookings: [], totalCount: 0 },
         BoardingSailings: { sailings: [sailing] },
+        StaffSailings: { sailings: orderedTrips, totalCount: orderedTrips.length },
         BoardingSailingTiming: boardingTimingFixture(sailing),
         BoardingManifest: { bookings: [] },
         BoardingActivity: { boardingEvents: [] },
@@ -152,6 +166,49 @@ try {
         verified++;
       }
       await page.locator('input[autocomplete="new-password"]').first().waitFor();
+    }
+    if (['TICKETING', 'BOARDING'].includes(role)) {
+      for (const width of [390, 1440])
+        for (const theme of ['light', 'dark']) {
+          await page.setViewportSize({ width, height: 1000 });
+          await page.evaluate((value) => localStorage.setItem('barkolink-theme', value), theme);
+          await page.goto(`${base}/staff/${role.toLowerCase()}/trips`);
+          await page.getByText('TODAY-FIRST', { exact: true }).first().waitFor();
+          assert.equal(await page.locator('.weather-trip-picker, .trip-weather').count(), 0);
+          assert.equal(
+            await page.getByRole('heading', { name: 'Port weather', exact: true }).count(),
+            0,
+          );
+          if (role === 'BOARDING') {
+            assert.match(
+              await page.locator('.sailing-table tbody tr').first().innerText(),
+              /TODAY-FIRST/,
+            );
+          } else if (width > 800) {
+            assert.match(
+              await page.locator('.ag-row[row-index="0"]').first().innerText(),
+              /TODAY-FIRST/,
+            );
+          }
+          assert.equal(
+            await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
+            true,
+          );
+          const shortcut = page.getByRole('link', { name: 'Port TV Display', exact: true });
+          if (role === 'TICKETING') {
+            if (width <= 800)
+              await page.getByRole('button', { name: 'Toggle navigation', exact: true }).click();
+            assert.equal(await shortcut.getAttribute('href'), '/port-display?port=batangas');
+            if (width <= 800)
+              await page
+                .getByRole('button', { name: 'Close navigation', exact: true })
+                .click({ position: { x: width - 8, y: 10 } });
+          } else assert.equal(await shortcut.count(), 0);
+          await page.screenshot({
+            path: `.audit/staff-trips/${role.toLowerCase()}-${width}-${theme}.png`,
+            fullPage: true,
+          });
+        }
     }
     assert.ok(
       !calls.some((operation) =>

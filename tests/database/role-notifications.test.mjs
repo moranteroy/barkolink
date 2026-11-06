@@ -447,6 +447,18 @@ it('prioritizes actionable trips today in Philippine time before upcoming trips 
     pageSize: 1,
   });
   assert.equal(latest.sailings[0].code, 'SORT-FUTURE-LATE');
+  for (const role of ['ticketing', 'boarding']) {
+    const staff = await call(role, 'StaffSailings', { search: 'SORT-' });
+    assert.deepEqual(
+      staff.sailings.map((s) => s.code),
+      [...first.sailings, ...second.sailings, ...third.sailings].map((s) => s.code),
+    );
+    const filtered = await call(role, 'StaffSailings', { search: 'SORT-', status: 'CANCELLED' });
+    assert.deepEqual(
+      filtered.sailings.map((s) => s.code),
+      ['SORT-TODAY-CANCELLED'],
+    );
+  }
   const upcomingOnly = await call('admin', 'AdminSailings', { search: 'SORT-FUTURE', pageSize: 1 });
   assert.equal(upcomingOnly.sailings[0].code, 'SORT-FUTURE-NEXT');
   const cancelled = await call('admin', 'AdminSailings', { search: 'SORT-', status: 'CANCELLED' });

@@ -56,7 +56,6 @@
             <StaffPortRequired v-if="portBlocked && section !== 'notifications'" />
             <template v-else>
               <p v-if="error" role="alert" class="catalog-error">{{ error }}</p>
-              <WeatherTripPicker v-if="section === 'trips'" :trips="trips" />
               <InboxPanel
                 v-if="section === 'notifications'"
                 :key="refresh"
@@ -121,7 +120,8 @@
                     >{{ section === 'trips' ? 'Reset filters' : 'Clear search' }}</Button
                   >
                   <p v-if="section === 'trips'" class="directory-search-help">
-                    Departure times are in Philippine time. Seats reflect the latest loaded records.
+                    Today's trips first, then upcoming departures and recent past trips. Times are
+                    in Philippine time.
                   </p>
                   <p v-if="section === 'passengers'" class="directory-search-help">
                     Search all passenger records. Column filters apply to the current page.
@@ -416,7 +416,6 @@ import { useStaffPortGate } from '../../composables/staffPortGate';
 import { StaffPortRequiredError } from '../../services/staffPortAccess';
 const { portBlocked } = useStaffPortGate(load);
 import InboxPanel from '../../components/admin/InboxPanel.vue';
-import WeatherTripPicker from '../../components/shared/WeatherTripPicker.vue';
 import WorkspacePagination from '../../components/shared/WorkspacePagination.vue';
 import {
   setUnreadNotifications,
@@ -655,19 +654,6 @@ onIonViewWillEnter(load);
 }
 .boarding-trips-directory .reference-heading > button {
   min-height: 44px;
-}
-.boarding-trips-directory :deep(.weather-trip-picker) {
-  width: 100%;
-  max-width: none;
-  margin: 0 0 16px;
-  padding: 12px 16px;
-  border-radius: 12px;
-}
-.boarding-trips-directory :deep(.weather-trigger strong) {
-  font-size: var(--text-label);
-}
-.boarding-trips-directory :deep(.weather-trigger small) {
-  font-size: var(--text-caption);
 }
 .boarding-trips-directory .reference-filters {
   display: grid;
@@ -1799,71 +1785,13 @@ button {
 .schedule-directory .reference-filters select {
   font-size: var(--text-label);
 }
-@media (min-width: 1180px) {
-  .schedule-directory .reference-content:has(> .weather-trip-picker) {
-    display: grid;
-    grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr);
-    gap: 16px;
-    align-items: start;
-  }
-  .schedule-directory .reference-content > .reference-heading,
-  .schedule-directory .reference-content > .catalog-error,
-  .schedule-directory .reference-content > .catalog-table,
-  .schedule-directory .reference-content > :deep(.workspace-pagination) {
-    grid-column: 1 / -1;
-  }
-  .schedule-directory .reference-content > .reference-heading {
-    margin-bottom: 0;
-  }
-  .schedule-directory .reference-content > :deep(.weather-trip-picker) {
-    grid-column: 1;
-    width: 100%;
-    max-width: 660px;
-    margin: 0;
-  }
-  .schedule-directory .reference-content:has(> .weather-trip-picker) > .reference-filters {
-    grid-column: 2;
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
-    padding: 12px;
-    margin: 0;
-  }
-  .schedule-directory .reference-filters input {
-    grid-column: 1 / -1;
-  }
-  .schedule-directory .reference-filters select {
-    width: 100%;
-  }
-  .schedule-directory .reference-filters button {
-    padding: 8px 11px;
-  }
-  .schedule-directory .reference-filters .directory-search-help {
-    font-size: var(--text-caption);
-  }
-  .schedule-directory .reference-content > :deep(.workspace-pagination) {
-    margin-top: -16px;
-  }
-}
 </style>
 
 <style scoped>
-/* Match the weather and search panel widths throughout the schedule page. */
-.schedule-directory .reference-content:has(> .weather-trip-picker) {
-  display: block;
-}
-.schedule-directory .reference-content > :deep(.weather-trip-picker) {
-  width: 100%;
-  max-width: none;
-  margin: 12px 0 16px;
-}
-.schedule-directory .reference-content > :deep(.weather-trip-picker .trip-weather) {
-  max-width: 660px;
-  justify-self: center;
-}
 .schedule-directory .reference-content > .reference-heading {
   margin-bottom: 16px;
 }
-.schedule-directory .reference-content:has(> .weather-trip-picker) > .reference-filters {
+.schedule-directory .reference-content > .reference-filters {
   width: 100%;
   box-sizing: border-box;
   display: grid;
@@ -1878,7 +1806,7 @@ button {
   margin-top: 0;
 }
 @media (max-width: 1000px) {
-  .schedule-directory .reference-content:has(> .weather-trip-picker) > .reference-filters {
+  .schedule-directory .reference-content > .reference-filters {
     grid-template-columns: minmax(0, 1fr) auto;
   }
   .schedule-directory .reference-content > .reference-filters input {
