@@ -14,6 +14,7 @@ it('converts hour:minute inputs to exact database minutes', () => {
   expect(parseDurationMinutes('2')).toBe(120);
   expect(parseDurationMinutes('0:01')).toBe(1);
   expect(parseDurationMinutes('168:00')).toBe(10080);
-  for (const value of ['1.3','1.5','1:60','0:00','168:01','bad','']) expect(parseDurationMinutes(value)).toBeNull();
+  for (const value of ['1.3', '1.5', '1:60', '0:00', '168:01', 'bad', ''])
+    expect(parseDurationMinutes(value)).toBeNull();
   expect(parseDurationMinutes(durationInput(90))).toBe(90);
 });

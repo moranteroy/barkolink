@@ -11,23 +11,23 @@ Reviewed the application source, routes, role and port access, shared components
 
 ## Verification
 
-| Check | Result |
-| --- | --- |
-| Full unit suite | **393 passed**, 74 files |
-| Isolated PostgreSQL/Edge Function suite | **191 passed**, 20 files |
-| ESLint | Passed after the input validation fix |
-| Vue/TypeScript and production build | Passed, including the post-build CSP hash check |
-| Production dependency audit | Zero reported vulnerabilities |
-| Admin/staff page layouts | **188 passed**, desktop/mobile, Light/Dark; zero missing fixtures, page errors or layout problems |
-| Workflow interactions by role | **12 role/viewport combinations passed**: Admin, Passenger, Ticketing and Boarding at 1440, 768 and 390 px |
-| Route/auth access matrix | **21 passed** across anonymous, Passenger, Admin, Ticketing and Boarding |
-| Staff port setup/recovery | Both staff roles, desktop/mobile: no forbidden requests, dismissible notice, no duplicate error, reassignment resumes the workspace |
-| Browser sessions | Account persistence, stale/concurrent second-login blocking, cross-tab local logout, later passenger login passed |
-| Reservation/payment browser checks | Duplicate reservation recovery, unpaid retry, new reservation, online/cash choices, pending verification, payment-return states passed |
-| Actual grid controls | Numeric/date filtering, Philippine dates, column state, mobile sorting/actions, responsive boundaries and reset passed in both themes |
-| QR tickets | Passenger export/decoding and Boarding verification/review passed at mobile/desktop widths |
-| Public port display | Port isolation, page rotation, date rollover, weather failure/recovery, weather scenes and reduced motion passed |
-| Production MFA/CSP browser checks | Admin, Ticketing and Boarding; setup/verification, Light/Dark, desktop/mobile passed |
+| Check                                   | Result                                                                                                                                 |
+| --------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| Full unit suite                         | **393 passed**, 74 files                                                                                                               |
+| Isolated PostgreSQL/Edge Function suite | **191 passed**, 20 files                                                                                                               |
+| ESLint                                  | Passed after the input validation fix                                                                                                  |
+| Vue/TypeScript and production build     | Passed, including the post-build CSP hash check                                                                                        |
+| Production dependency audit             | Zero reported vulnerabilities                                                                                                          |
+| Admin/staff page layouts                | **188 passed**, desktop/mobile, Light/Dark; zero missing fixtures, page errors or layout problems                                      |
+| Workflow interactions by role           | **12 role/viewport combinations passed**: Admin, Passenger, Ticketing and Boarding at 1440, 768 and 390 px                             |
+| Route/auth access matrix                | **21 passed** across anonymous, Passenger, Admin, Ticketing and Boarding                                                               |
+| Staff port setup/recovery               | Both staff roles, desktop/mobile: no forbidden requests, dismissible notice, no duplicate error, reassignment resumes the workspace    |
+| Browser sessions                        | Account persistence, stale/concurrent second-login blocking, cross-tab local logout, later passenger login passed                      |
+| Reservation/payment browser checks      | Duplicate reservation recovery, unpaid retry, new reservation, online/cash choices, pending verification, payment-return states passed |
+| Actual grid controls                    | Numeric/date filtering, Philippine dates, column state, mobile sorting/actions, responsive boundaries and reset passed in both themes  |
+| QR tickets                              | Passenger export/decoding and Boarding verification/review passed at mobile/desktop widths                                             |
+| Public port display                     | Port isolation, page rotation, date rollover, weather failure/recovery, weather scenes and reduced motion passed                       |
+| Production MFA/CSP browser checks       | Admin, Ticketing and Boarding; setup/verification, Light/Dark, desktop/mobile passed                                                   |
 
 The database tests apply the migrations to isolated PGlite databases and exercise role/owner/port restrictions, reservation inventory, fare/discount rules, payment verification, ticket issuance, check-in, boarding, refunds, no-shows, rolling daily schedules, fleet rotation, automation, vessel tracking and accommodation capacity. Edge Function tests exercise account management, payment/webhook, weather and chatbot behavior using test providers.
 

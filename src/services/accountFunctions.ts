@@ -1,11 +1,8 @@
-import type { SupabaseClient } from "@supabase/supabase-js";
+import type { SupabaseClient } from '@supabase/supabase-js';
 
-export function accountFunction<Input, Output>(
-  client: SupabaseClient,
-  action: string,
-) {
+export function accountFunction<Input, Output>(client: SupabaseClient, action: string) {
   return async (input: Input): Promise<{ data: Output }> => {
-    const { data, error } = await client.functions.invoke("manage-account", {
+    const { data, error } = await client.functions.invoke('manage-account', {
       body: { action, input },
     });
     if (error) {

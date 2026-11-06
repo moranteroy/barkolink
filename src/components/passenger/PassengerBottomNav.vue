@@ -9,7 +9,8 @@
           item.to === '/profile'
             ? currentPath === '/profile' ||
               currentPath.startsWith('/settings') ||
-              currentPath === '/travelers' || currentPath === '/vouchers'
+              currentPath === '/travelers' ||
+              currentPath === '/vouchers'
             : currentPath === item.to.split('?')[0],
       }"
       :aria-current="
@@ -17,7 +18,8 @@
           item.to === '/profile'
             ? currentPath === '/profile' ||
               currentPath.startsWith('/settings') ||
-              currentPath === '/travelers' || currentPath === '/vouchers'
+              currentPath === '/travelers' ||
+              currentPath === '/vouchers'
             : currentPath === item.to.split('?')[0]
         )
           ? 'page'
@@ -29,38 +31,27 @@
   </nav>
 </template>
 <script setup lang="ts">
-import { useIonRouter } from "@ionic/vue";
-import AppIcon from "@/components/ui/icon/AppIcon.vue";
-import { computed } from "vue";
-import { useRoute } from "vue-router";
-import { auth } from "../../services/session";
-import {
-  home,
-  ticketOutline,
-  boatOutline,
-  personOutline,
-} from "ionicons/icons";
+import { useIonRouter } from '@ionic/vue';
+import AppIcon from '@/components/ui/icon/AppIcon.vue';
+import { computed } from 'vue';
+import { useRoute } from 'vue-router';
+import { auth } from '../../services/session';
+import { home, ticketOutline, boatOutline, personOutline } from 'ionicons/icons';
 const route = useRoute();
 const ionRouter = useIonRouter();
 const currentPath = computed(() => route.path);
 const items = [
-  { label: "Home", to: "/home", icon: home },
-  { label: "Trips", to: "/trips?all=1", icon: boatOutline },
-  { label: "Bookings", to: "/bookings", icon: ticketOutline },
-  { label: "Profile", to: "/profile", icon: personOutline },
+  { label: 'Home', to: '/home', icon: home },
+  { label: 'Trips', to: '/trips?all=1', icon: boatOutline },
+  { label: 'Bookings', to: '/bookings', icon: ticketOutline },
+  { label: 'Profile', to: '/profile', icon: personOutline },
 ];
 function navigateTab(event: MouseEvent, path: string) {
-  if (
-    event.button !== 0 ||
-    event.metaKey ||
-    event.ctrlKey ||
-    event.shiftKey ||
-    event.altKey
-  )
+  if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey)
     return;
   event.preventDefault();
   if (route.fullPath === path) return;
-  ionRouter.navigate(path, "root", "push");
+  ionRouter.navigate(path, 'root', 'push');
 }
 </script>
 <style scoped>

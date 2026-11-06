@@ -1,5 +1,11 @@
 <template>
-  <ToggleGroup class="theme-switcher" type="single" :model-value="mode" aria-label="Color theme" @update:model-value="selectMode">
+  <ToggleGroup
+    class="theme-switcher"
+    type="single"
+    :model-value="mode"
+    aria-label="Color theme"
+    @update:model-value="selectMode"
+  >
     <ToggleGroupItem
       v-for="option in options"
       :key="option.value"
@@ -13,21 +19,21 @@
   </ToggleGroup>
 </template>
 <script setup lang="ts">
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
-import { Monitor, Moon, Sun } from "@lucide/vue";
-import { useTheme, type ThemeMode } from "../../composables/useTheme";
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
+import { Monitor, Moon, Sun } from '@lucide/vue';
+import { useTheme, type ThemeMode } from '../../composables/useTheme';
 const { mode, setMode } = useTheme();
 const options: {
   value: ThemeMode;
   label: string;
   icon: typeof Sun;
 }[] = [
-  { value: "light", label: "Light", icon: Sun },
-  { value: "dark", label: "Dark", icon: Moon },
-  { value: "system", label: "System", icon: Monitor },
+  { value: 'light', label: 'Light', icon: Sun },
+  { value: 'dark', label: 'Dark', icon: Moon },
+  { value: 'system', label: 'System', icon: Monitor },
 ];
 function selectMode(value: unknown) {
-  if (value === "light" || value === "dark" || value === "system") setMode(value);
+  if (value === 'light' || value === 'dark' || value === 'system') setMode(value);
 }
 </script>
 <style scoped>

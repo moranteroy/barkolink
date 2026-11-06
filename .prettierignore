@@ -1,0 +1,16 @@
+.env*
+.audit/
+.backups/
+.cache/
+node_modules/
+dist/
+coverage/
+docs/research/
+docs/screenshots/
+legacy/
+android/**/build/
+android/app/src/main/assets/
+android/capacitor-cordova-android-plugins/
+package-lock.json
+supabase/deno.lock
+supabase/functions/deno.lock

@@ -10,19 +10,19 @@ Authentication uses Supabase's verified user identity. Authorization continues t
 
 **New enforced limits**
 
-| Boundary | Rule |
-| --- | --- |
-| Unpaid online holds | At most 8 seats per passenger account per sailing, 16 across all sailings; serialized with a transaction lock |
-| Reservation churn | At most 10 recent non-paid reservations per account in 10 minutes, including cancelled attempts that previously created a booking |
-| Default hold period | 30 minutes; migration changes an existing 1,440-minute setting to 30, preserves other custom settings and existing booking deadlines |
-| API calls | Per-account, per-minute durable budgets: weather 60, PayMongo 30, account management 20 |
-| Edge request bodies | 16 KiB for normal requests; PayMongo signed webhook envelopes up to 256 KiB |
-| Database arguments | JSON object, at most 32 KiB; individual text values bounded |
-| New online passenger details | Required name, type, birth date, sex, phone, nationality; valid dates from 1900 through today's Philippine date |
-| Passenger text | Names up to 120 characters, nationalities up to 80; control characters rejected |
-| Phone | 7–15 digits with optional leading `+`; ordinary spacing/parenthesis/hyphen formatting accepted |
-| Walk-in details | Required name, type, birth date, sex, nationality; phone remains optional and is validated when supplied |
-| Reservation cleanup | At most 100 records per cleanup invocation; signed-out schedule reads perform no cleanup writes |
+| Boundary                     | Rule                                                                                                                                 |
+| ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| Unpaid online holds          | At most 8 seats per passenger account per sailing, 16 across all sailings; serialized with a transaction lock                        |
+| Reservation churn            | At most 10 recent non-paid reservations per account in 10 minutes, including cancelled attempts that previously created a booking    |
+| Default hold period          | 30 minutes; migration changes an existing 1,440-minute setting to 30, preserves other custom settings and existing booking deadlines |
+| API calls                    | Per-account, per-minute durable budgets: weather 60, PayMongo 30, account management 20                                              |
+| Edge request bodies          | 16 KiB for normal requests; PayMongo signed webhook envelopes up to 256 KiB                                                          |
+| Database arguments           | JSON object, at most 32 KiB; individual text values bounded                                                                          |
+| New online passenger details | Required name, type, birth date, sex, phone, nationality; valid dates from 1900 through today's Philippine date                      |
+| Passenger text               | Names up to 120 characters, nationalities up to 80; control characters rejected                                                      |
+| Phone                        | 7–15 digits with optional leading `+`; ordinary spacing/parenthesis/hyphen formatting accepted                                       |
+| Walk-in details              | Required name, type, birth date, sex, nationality; phone remains optional and is validated when supplied                             |
+| Reservation cleanup          | At most 100 records per cleanup invocation; signed-out schedule reads perform no cleanup writes                                      |
 
 Existing ownership, fare, discount verification, refund, voucher, QR, and staff-port checks remain in the underlying operations. Old booking records are preserved. Duplicate retries retain their idempotency. Per-account limits reduce abuse but do not prevent coordinated abuse through multiple accounts; use hosting/WAF IP limits and Supabase signup bot controls as additional measures.
 

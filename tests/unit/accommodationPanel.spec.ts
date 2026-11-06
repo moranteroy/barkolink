@@ -3,27 +3,66 @@ import { flushPromises, mount } from '@vue/test-utils';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import AccommodationPanel from '../../src/components/admin/AccommodationPanel.vue';
 
-const mocks = vi.hoisted(() => ({ list: vi.fn(), vessels: vi.fn(), save: vi.fn(), confirm: vi.fn() }));
+const mocks = vi.hoisted(() => ({
+  list: vi.fn(),
+  vessels: vi.fn(),
+  save: vi.fn(),
+  confirm: vi.fn(),
+}));
 vi.mock('../../src/services/session', () => ({ staffDatabase: {} }));
-vi.mock('../../src/services/database/workspaces', () => ({ accommodations: mocks.list, saveAccommodation: mocks.save }));
+vi.mock('../../src/services/database/workspaces', () => ({
+  accommodations: mocks.list,
+  saveAccommodation: mocks.save,
+}));
 vi.mock('../../src/services/database/staff', () => ({ adminVessels: mocks.vessels }));
 vi.mock('../../src/composables/unsavedChanges', () => ({ useUnsavedChanges: vi.fn() }));
 vi.mock('../../src/composables/confirmation', () => ({ confirmAction: mocks.confirm }));
-vi.mock('../../src/components/shared/RecordsGrid.vue', () => ({ default: {
-  props: ['rows', 'columns', 'density', 'maxGridHeight', 'actionWidth'],
-  template: '<div class="records-grid"><div v-for="row in rows" :key="row.key" class="test-grid-row"><slot name="cell" v-for="(value, index) in row.cells" :row="row" :value="value" :index="index" /><slot name="actions" :row="row" /></div></div>',
-} }));
+vi.mock('../../src/components/shared/RecordsGrid.vue', () => ({
+  default: {
+    props: ['rows', 'columns', 'density', 'maxGridHeight', 'actionWidth'],
+    template:
+      '<div class="records-grid"><div v-for="row in rows" :key="row.key" class="test-grid-row"><slot name="cell" v-for="(value, index) in row.cells" :row="row" :value="value" :index="index" /><slot name="actions" :row="row" /></div></div>',
+  },
+}));
 vi.mock('@ionic/vue', () => ({
   IonIcon: { template: '<span />' },
-  IonModal: { props: ['isOpen', 'canDismiss'], template: '<div v-if="isOpen" role="dialog"><slot /></div>' },
+  IonModal: {
+    props: ['isOpen', 'canDismiss'],
+    template: '<div v-if="isOpen" role="dialog"><slot /></div>',
+  },
 }));
 beforeEach(() => {
-  clearToasts(); vi.clearAllMocks();
-  mocks.list.mockResolvedValue({ data: { accommodations: [
-    { id: 'a1', vesselId: 'v1', vesselName: 'Ferry One', name: 'Economy', description: '', capacity: 60, surcharge: 0, isActive: true },
-    { id: 'a2', vesselId: 'v1', vesselName: 'Ferry One', name: 'Business', description: '', capacity: 20, surcharge: 200, isActive: false },
-  ] } });
-  mocks.vessels.mockResolvedValue({ data: { vessels: [{ id: 'v1', name: 'Ferry One', passengerCapacity: 100, isActive: true }] } });
+  clearToasts();
+  vi.clearAllMocks();
+  mocks.list.mockResolvedValue({
+    data: {
+      accommodations: [
+        {
+          id: 'a1',
+          vesselId: 'v1',
+          vesselName: 'Ferry One',
+          name: 'Economy',
+          description: '',
+          capacity: 60,
+          surcharge: 0,
+          isActive: true,
+        },
+        {
+          id: 'a2',
+          vesselId: 'v1',
+          vesselName: 'Ferry One',
+          name: 'Business',
+          description: '',
+          capacity: 20,
+          surcharge: 200,
+          isActive: false,
+        },
+      ],
+    },
+  });
+  mocks.vessels.mockResolvedValue({
+    data: { vessels: [{ id: 'v1', name: 'Ferry One', passengerCapacity: 100, isActive: true }] },
+  });
   mocks.save.mockResolvedValue({});
   mocks.confirm.mockResolvedValue(true);
 });
@@ -37,29 +76,103 @@ async function openForm() {
 }
 describe('accommodation modal and capacity', () => {
   it('groups same-named classes under their own vessel and edits the selected vessel record', async () => {
-    mocks.list.mockResolvedValue({ data: { accommodations: [
-      { id: 'economy-1', vesselId: 'v1', vesselName: 'Ferry One', name: 'Economy', description: '', capacity: 70, surcharge: 0, isActive: true },
-      { id: 'tourist-1', vesselId: 'v1', vesselName: 'Ferry One', name: 'Tourist Class', description: '', capacity: 20, surcharge: 0, isActive: true },
-      { id: 'business-1', vesselId: 'v1', vesselName: 'Ferry One', name: 'Business Class', description: '', capacity: 10, surcharge: 0, isActive: true },
-      { id: 'economy-2', vesselId: 'v2', vesselName: 'Ferry Two', name: 'Economy', description: 'Second vessel seats', capacity: 140, surcharge: 0, isActive: true },
-    ] } });
-    mocks.vessels.mockResolvedValue({ data: { vessels: [{ id: 'v1', name: 'Ferry One', passengerCapacity: 100, isActive: true }, { id: 'v2', name: 'Ferry Two', passengerCapacity: 200, isActive: true }] } });
+    mocks.list.mockResolvedValue({
+      data: {
+        accommodations: [
+          {
+            id: 'economy-1',
+            vesselId: 'v1',
+            vesselName: 'Ferry One',
+            name: 'Economy',
+            description: '',
+            capacity: 70,
+            surcharge: 0,
+            isActive: true,
+          },
+          {
+            id: 'tourist-1',
+            vesselId: 'v1',
+            vesselName: 'Ferry One',
+            name: 'Tourist Class',
+            description: '',
+            capacity: 20,
+            surcharge: 0,
+            isActive: true,
+          },
+          {
+            id: 'business-1',
+            vesselId: 'v1',
+            vesselName: 'Ferry One',
+            name: 'Business Class',
+            description: '',
+            capacity: 10,
+            surcharge: 0,
+            isActive: true,
+          },
+          {
+            id: 'economy-2',
+            vesselId: 'v2',
+            vesselName: 'Ferry Two',
+            name: 'Economy',
+            description: 'Second vessel seats',
+            capacity: 140,
+            surcharge: 0,
+            isActive: true,
+          },
+        ],
+      },
+    });
+    mocks.vessels.mockResolvedValue({
+      data: {
+        vessels: [
+          { id: 'v1', name: 'Ferry One', passengerCapacity: 100, isActive: true },
+          { id: 'v2', name: 'Ferry Two', passengerCapacity: 200, isActive: true },
+        ],
+      },
+    });
     const wrapper = mount(AccommodationPanel, { global: { stubs: { RouterLink: true } } });
     await flushPromises();
     expect(wrapper.findAll('.vessel-class-card')).toHaveLength(2);
     expect(wrapper.find('.vessel-class-card header').text()).toContain('100 / 100');
     await wrapper.find('[aria-label="Edit Economy for Ferry Two"]').trigger('click');
-    expect((wrapper.find('#accommodation-form-vessel').element as HTMLSelectElement).value).toBe('v2');
+    expect((wrapper.find('#accommodation-form-vessel').element as HTMLSelectElement).value).toBe(
+      'v2',
+    );
     await wrapper.find('.accommodation-form').trigger('submit');
     await flushPromises();
-    expect(mocks.save).toHaveBeenCalledWith({}, expect.objectContaining({ id: 'economy-2', vesselId: 'v2', capacity: 140 }));
+    expect(mocks.save).toHaveBeenCalledWith(
+      {},
+      expect.objectContaining({ id: 'economy-2', vesselId: 'v2', capacity: 140 }),
+    );
     wrapper.unmount();
   });
   it('rejects 50 + 30 + 30 seats on a 100-seat vessel and accepts a 20-seat final class', async () => {
-    mocks.list.mockResolvedValue({ data: { accommodations: [
-      { id: 'economy', vesselId: 'v1', vesselName: 'Ferry One', name: 'Economy', description: '', capacity: 50, surcharge: 0, isActive: true },
-      { id: 'tourist', vesselId: 'v1', vesselName: 'Ferry One', name: 'Tourist Class', description: '', capacity: 30, surcharge: 0, isActive: true },
-    ] } });
+    mocks.list.mockResolvedValue({
+      data: {
+        accommodations: [
+          {
+            id: 'economy',
+            vesselId: 'v1',
+            vesselName: 'Ferry One',
+            name: 'Economy',
+            description: '',
+            capacity: 50,
+            surcharge: 0,
+            isActive: true,
+          },
+          {
+            id: 'tourist',
+            vesselId: 'v1',
+            vesselName: 'Ferry One',
+            name: 'Tourist Class',
+            description: '',
+            capacity: 30,
+            surcharge: 0,
+            isActive: true,
+          },
+        ],
+      },
+    });
     const wrapper = await openForm();
     await wrapper.find('#accommodation-class-name').setValue('Business Class');
     expect(wrapper.find('.capacity-note').text()).toContain('20 seats available');
@@ -72,7 +185,10 @@ describe('accommodation modal and capacity', () => {
     await capacity.setValue('20');
     await wrapper.find('.accommodation-form').trigger('submit');
     await flushPromises();
-    expect(mocks.save).toHaveBeenCalledWith({}, expect.objectContaining({ name: 'Business Class', capacity: 20 }));
+    expect(mocks.save).toHaveBeenCalledWith(
+      {},
+      expect.objectContaining({ name: 'Business Class', capacity: 20 }),
+    );
     wrapper.unmount();
   });
   it('opens in a dialog and saves capacity and surcharge', async () => {
@@ -83,7 +199,16 @@ describe('accommodation modal and capacity', () => {
     await wrapper.findAll('.accommodation-field-grid input[type="number"]')[1].setValue('100');
     await wrapper.find('.accommodation-form').trigger('submit');
     await flushPromises();
-    expect(mocks.save).toHaveBeenCalledWith({}, expect.objectContaining({ vesselId: 'v1', name: 'Tourist Class', capacity: 40, surcharge: 100, isActive: true }));
+    expect(mocks.save).toHaveBeenCalledWith(
+      {},
+      expect.objectContaining({
+        vesselId: 'v1',
+        name: 'Tourist Class',
+        capacity: 40,
+        surcharge: 100,
+        isActive: true,
+      }),
+    );
     expect(wrapper.find('[role="dialog"]').exists()).toBe(false);
     wrapper.unmount();
   });
@@ -106,8 +231,12 @@ describe('accommodation modal and capacity', () => {
     await wrapper.find('.accommodation-form').trigger('submit');
     await flushPromises();
     expect(wrapper.find('[role="dialog"] [role="alert"]').exists()).toBe(false);
-    expect(toastMessages.value.some(toast => toast.message.includes('Request failed'))).toBe(true);
-    expect((wrapper.find('#accommodation-class-name').element as HTMLSelectElement).value).toBe('Tourist Class');
+    expect(toastMessages.value.some((toast) => toast.message.includes('Request failed'))).toBe(
+      true,
+    );
+    expect((wrapper.find('#accommodation-class-name').element as HTMLSelectElement).value).toBe(
+      'Tourist Class',
+    );
     wrapper.unmount();
   });
   it('filters inactive classes and resets the directory', async () => {
@@ -116,37 +245,76 @@ describe('accommodation modal and capacity', () => {
     await wrapper.find('#accommodation-status').setValue('INACTIVE');
     expect(wrapper.findAll('.test-grid-row')).toHaveLength(1);
     expect(wrapper.find('.records-grid').text()).toContain('Business');
-    await wrapper.findAll('button').find(button => button.text() === 'Reset filters')!.trigger('click');
+    await wrapper
+      .findAll('button')
+      .find((button) => button.text() === 'Reset filters')!
+      .trigger('click');
     expect(wrapper.findAll('.test-grid-row')).toHaveLength(2);
     wrapper.unmount();
   });
   it('keeps only Starlite classes and preserves the saved vessel description when editing', async () => {
-    mocks.list.mockResolvedValue({ data: { accommodations: [
-      { id: 'a3', vesselId: 'v1', vesselName: 'Ferry One', name: 'Economy', description: 'Vessel-specific seating description.', capacity: 10, surcharge: 300, isActive: true },
-    ] } });
+    mocks.list.mockResolvedValue({
+      data: {
+        accommodations: [
+          {
+            id: 'a3',
+            vesselId: 'v1',
+            vesselName: 'Ferry One',
+            name: 'Economy',
+            description: 'Vessel-specific seating description.',
+            capacity: 10,
+            surcharge: 300,
+            isActive: true,
+          },
+        ],
+      },
+    });
     const wrapper = mount(AccommodationPanel, { global: { stubs: { RouterLink: true } } });
     await flushPromises();
     await wrapper.find('.class-edit').trigger('click');
     const select = wrapper.find('#accommodation-class-name');
-    expect(select.findAll('option').map(option => option.text())).toEqual(['Select class', 'Economy', 'Tourist Class', 'Business Class']);
+    expect(select.findAll('option').map((option) => option.text())).toEqual([
+      'Select class',
+      'Economy',
+      'Tourist Class',
+      'Business Class',
+    ]);
     expect((select.element as HTMLSelectElement).value).toBe('Economy');
-    expect((wrapper.find('textarea').element as HTMLTextAreaElement).value).toBe('Vessel-specific seating description.');
+    expect((wrapper.find('textarea').element as HTMLTextAreaElement).value).toBe(
+      'Vessel-specific seating description.',
+    );
     await wrapper.find('.accommodation-form').trigger('submit');
     await flushPromises();
-    expect(mocks.save).toHaveBeenCalledWith({}, expect.objectContaining({ id: 'a3', name: 'Economy', description: 'Vessel-specific seating description.' }));
+    expect(mocks.save).toHaveBeenCalledWith(
+      {},
+      expect.objectContaining({
+        id: 'a3',
+        name: 'Economy',
+        description: 'Vessel-specific seating description.',
+      }),
+    );
     wrapper.unmount();
   });
   it('fills the selected class description and saves edits without resetting them on other field changes', async () => {
     const wrapper = await openForm();
-    expect((wrapper.find('textarea').element as HTMLTextAreaElement).value).toContain('Tourist Class');
+    expect((wrapper.find('textarea').element as HTMLTextAreaElement).value).toContain(
+      'Tourist Class',
+    );
     await wrapper.find('#accommodation-class-name').setValue('Business Class');
-    expect((wrapper.find('textarea').element as HTMLTextAreaElement).value).toContain('Business Class');
+    expect((wrapper.find('textarea').element as HTMLTextAreaElement).value).toContain(
+      'Business Class',
+    );
     await wrapper.find('textarea').setValue('Confirmed seating on this vessel.');
     await wrapper.findAll('.accommodation-field-grid input[type="number"]')[0].setValue('30');
-    expect((wrapper.find('textarea').element as HTMLTextAreaElement).value).toBe('Confirmed seating on this vessel.');
+    expect((wrapper.find('textarea').element as HTMLTextAreaElement).value).toBe(
+      'Confirmed seating on this vessel.',
+    );
     await wrapper.find('.accommodation-form').trigger('submit');
     await flushPromises();
-    expect(mocks.save).toHaveBeenCalledWith({}, expect.objectContaining({ description: 'Confirmed seating on this vessel.' }));
+    expect(mocks.save).toHaveBeenCalledWith(
+      {},
+      expect.objectContaining({ description: 'Confirmed seating on this vessel.' }),
+    );
     wrapper.unmount();
   });
 });

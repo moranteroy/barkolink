@@ -2,373 +2,400 @@
   <ion-page>
     <ion-content :fullscreen="true">
       <div class="staff-shell design-workspace walk-in-workspace">
-        <button v-if="menuOpen" class="staff-scrim" aria-label="Close navigation" @click="menuOpen = false"></button>
-        <aside id="staff-sidebar" class="staff-sidebar" :class="{ 'mobile-open': menuOpen }" @keydown.esc="menuOpen = false">
+        <button
+          v-if="menuOpen"
+          class="staff-scrim"
+          aria-label="Close navigation"
+          @click="menuOpen = false"
+        ></button>
+        <aside
+          id="staff-sidebar"
+          class="staff-sidebar"
+          :class="{ 'mobile-open': menuOpen }"
+          @keydown.esc="menuOpen = false"
+        >
           <BrandMark />
           <StaffNavigation role="ticketing" @navigate="menuOpen = false" />
-
         </aside>
         <section class="staff-main">
-          <StaffWorkspaceHeader navigation :menu-open="menuOpen" @toggle-menu="menuOpen = !menuOpen" />
+          <StaffWorkspaceHeader
+            navigation
+            :menu-open="menuOpen"
+            @toggle-menu="menuOpen = !menuOpen"
+          />
           <main class="walk-in-page">
-        <router-link class="back-to-ticketing" to="/staff/ticketing">
-          <BackIcon />
-          Back to ticketing
-        </router-link>
+            <router-link class="back-to-ticketing" to="/staff/ticketing">
+              <BackIcon />
+              Back to ticketing
+            </router-link>
 
-        <section class="page-intro">
-          <div>
-            <p class="eyebrow">STAFF TICKETING / COUNTER SALE</p>
-            <h1>{{ issued ? "Ticket issued" : "Walk-in ticket" }}</h1>
-            <p>
-              {{
-                issued
-                  ? "The booking is paid and the passenger ticket is ready to print."
-                  : "Issue a ticket for a passenger without a BarkoLink account."
-              }}
-            </p>
-          </div>
-          <router-link class="return-to-queue" to="/staff/ticketing/bookings"><AppIcon :icon="ticketOutline" aria-hidden="true" /> Booking queue</router-link>
-        </section>
-
-        <StaffPortRequired v-if="portBlocked" />
-        <template v-else>
-        <div v-if="issued" class="receipt" aria-live="polite">
-          <div class="receipt-top">
-            <span class="success-icon"
-              ><AppIcon :icon="checkmarkCircleOutline"
-            /></span>
-            <div>
-              <p class="eyebrow">COUNTER SALE COMPLETE</p>
-              <h2>Payment recorded. Ticket ready.</h2>
-              <span>Give this receipt to the passenger for boarding.</span>
-            </div>
-          </div>
-          <div class="receipt-body">
-            <div class="receipt-route">
-              <span class="route-icon"><AppIcon :icon="boatOutline" /></span>
+            <section class="page-intro">
               <div>
-                <small>SAILING</small
-                ><strong
-                  >{{ issued.from }} <AppIcon :icon="arrowForwardOutline" />
-                  {{ issued.to }}</strong
-                ><span>{{ issued.departure }}</span>
-              </div>
-            </div>
-            <dl class="receipt-grid">
-              <div>
-                <dt>Passenger</dt>
-                <dd>{{ issued.name }}</dd>
-              </div>
-              <div>
-                <dt>Cash paid</dt>
-                <dd>PHP {{ issued.fare.toLocaleString() }}</dd>
-              </div>
-              <div>
-                <dt>Booking reference</dt>
-                <dd class="code">{{ issued.reference }}</dd>
-              </div>
-              <div>
-                <dt>Ticket code</dt>
-                <dd class="code">{{ issued.ticketCode }}</dd>
-              </div>
-            </dl>
-            <p class="receipt-note">
-              <AppIcon :icon="informationCircleOutline" /> Show this receipt
-              and a valid ID to boarding staff.
-            </p>
-          </div>
-          <div class="receipt-actions">
-            <button data-slot="button" data-variant="outline" data-size="default" type="button" class="print-button" @click="printReceipt">
-              <AppIcon :icon="printOutline" /> Print receipt</button
-            ><button type="button" class="secondary-button" @click="newTicket">
-              Issue another ticket</button
-            ><router-link to="/staff/ticketing#queue"
-              ><BackIcon /> Back to booking queue</router-link
-            >
-          </div>
-        </div>
-
-        <template v-else>
-          <div class="flow-strip" aria-label="Walk-in ticket steps">
-            <span :class="selectedSailing ? 'complete' : 'active'"><b>1</b> Select sailing</span><i></i
-            ><span :class="{ active: selectedSailing, complete: selectedSailing && form.passengerName.trim() && form.birthDate && form.sex }"><b>2</b> Passenger details</span><i></i
-            ><span><b>3</b> Review &amp; collect cash</span>
-          </div>
-          <div class="mobile-fare" aria-live="polite"><span>Cash to collect<small>{{ selectedSailing ? fareLabel : 'Select a sailing to calculate fare' }}</small></span><strong>PHP {{ payable.toLocaleString() }}</strong></div>
-          <div class="walk-in-layout">
-            <div v-if="pendingSale" role="status" class="summary-card" style="grid-column: 1 / -1">
-              <strong>Unresolved sale: {{ pendingSale.args.reference }}</strong>
-              <p>{{ pendingSale.receipt.name }} · {{ pendingSale.receipt.from }} to {{ pendingSale.receipt.to }} · PHP {{ pendingSale.receipt.fare.toLocaleString() }}</p>
-              <p>Check or retry this same sale before starting another. Do not collect cash again.</p>
-              <button type="button" :disabled="busy" @click="retrySale">{{ busy ? 'Checking sale...' : 'Check / retry sale' }}</button>
-              <p v-if="errorMessage" role="alert">{{ errorMessage }}</p>
-            </div>
-            <form
-              id="walk-in-form"
-              class="form-card"
-              @submit.prevent="prepareTicket"
-            >
-              <fieldset :disabled="busy || !!pendingSale" style="display: contents">
-              <div class="form-section">
-                <div class="card-heading">
-                  <span class="step-number"
-                    ><AppIcon :icon="boatOutline"
-                  /></span>
-                  <div>
-                    <small>STEP 01</small>
-                    <h2>Choose a sailing</h2>
-                    <p>Select an upcoming trip with available seats.</p>
-                  </div>
-                </div>
-                <label class="field"
-                  >Sailing<select v-model="form.sailingCode" required>
-                    <option value="" disabled>
-                      {{
-                        loadingSailings
-                          ? "Loading sailings…"
-                          : "Select a sailing"
-                      }}
-                    </option>
-                    <option
-                      v-for="sailing in sailings"
-                      :key="sailing.code"
-                      :value="sailing.code"
-                    >
-                      {{ sailing.origin.name }} →
-                      {{ sailing.destination.name }} ·
-                      {{ formatDeparture(sailing.departureAt) }} ·
-                      {{ sailing.availableSeats }} seats
-                    </option>
-                  </select></label
-                >
-                <p
-                  v-if="!loadingSailings && !sailings.length && !errorMessage"
-                  class="empty-sailings"
-                >
-                  No upcoming sailings with available seats.
+                <p class="eyebrow">STAFF TICKETING / COUNTER SALE</p>
+                <h1>{{ issued ? 'Ticket issued' : 'Walk-in ticket' }}</h1>
+                <p>
+                  {{
+                    issued
+                      ? 'The booking is paid and the passenger ticket is ready to print.'
+                      : 'Issue a ticket for a passenger without a BarkoLink account.'
+                  }}
                 </p>
-                <AccommodationPicker
-                  v-model="form.accommodationId"
-                  :options="selectedSailing?.accommodations || []"
-                  :passenger-count="1"
-                />
-                <div v-if="selectedSailing" class="selected-sailing">
-                  <AppIcon :icon="checkmarkCircleOutline" />
+              </div>
+              <router-link class="return-to-queue" to="/staff/ticketing/bookings"
+                ><AppIcon :icon="ticketOutline" aria-hidden="true" /> Booking queue</router-link
+              >
+            </section>
+
+            <StaffPortRequired v-if="portBlocked" />
+            <template v-else>
+              <div v-if="issued" class="receipt" aria-live="polite">
+                <div class="receipt-top">
+                  <span class="success-icon"><AppIcon :icon="checkmarkCircleOutline" /></span>
                   <div>
-                    <strong
-                      >{{ selectedSailing.origin.name }} to
-                      {{ selectedSailing.destination.name }}</strong
-                    ><span
-                      >{{ formatDeparture(selectedSailing.departureAt) }} ·
-                      {{ selectedSailing.availableSeats }} seats available</span
-                    >
+                    <p class="eyebrow">COUNTER SALE COMPLETE</p>
+                    <h2>Payment recorded. Ticket ready.</h2>
+                    <span>Give the passenger the QR e-ticket below for boarding.</span>
                   </div>
+                </div>
+                <div class="receipt-body">
+                  <div class="receipt-route">
+                    <span class="route-icon"><AppIcon :icon="boatOutline" /></span>
+                    <div>
+                      <small>SAILING</small
+                      ><strong
+                        >{{ issued.from }} <AppIcon :icon="arrowForwardOutline" />
+                        {{ issued.to }}</strong
+                      ><span>{{ issued.departure }}</span>
+                    </div>
+                  </div>
+                  <dl class="receipt-grid">
+                    <div>
+                      <dt>Passenger</dt>
+                      <dd>{{ issued.name }}</dd>
+                    </div>
+                    <div>
+                      <dt>Cash paid</dt>
+                      <dd>PHP {{ issued.fare.toLocaleString() }}</dd>
+                    </div>
+                    <div>
+                      <dt>Booking reference</dt>
+                      <dd class="code">{{ issued.reference }}</dd>
+                    </div>
+                    <div>
+                      <dt>Ticket code</dt>
+                      <dd class="code">{{ issued.ticketCode }}</dd>
+                    </div>
+                  </dl>
+                  <p class="receipt-note">
+                    <AppIcon :icon="informationCircleOutline" /> Show this receipt and a valid ID to
+                    boarding staff.
+                  </p>
+                </div>
+                <StaffBookingTickets v-if="issuedBooking" :booking="issuedBooking" />
+                <div v-else class="ticket-reload" role="status">
+                  <p>
+                    Payment is recorded. Reload the e-ticket to retrieve its verified QR; do not
+                    collect cash again.
+                  </p>
+                  <button type="button" :disabled="reloadingTicket" @click="reloadIssuedTicket">
+                    {{ reloadingTicket ? 'Loading e-ticket…' : 'Reload e-ticket' }}
+                  </button>
+                </div>
+                <p v-if="ticketReloadError" role="alert">{{ ticketReloadError }}</p>
+                <div class="receipt-actions">
+                  <button type="button" class="secondary-button" @click="newTicket">
+                    Issue another ticket</button
+                  ><router-link to="/staff/ticketing#queue"
+                    ><BackIcon /> Back to booking queue</router-link
+                  >
                 </div>
               </div>
 
-              <div class="form-section passenger-section">
-                <div class="card-heading">
-                  <span class="step-number"
-                    ><AppIcon :icon="personOutline"
-                  /></span>
-                  <div>
-                    <small>STEP 02</small>
-                    <h2>Passenger details</h2>
+              <template v-else>
+                <div class="flow-strip" aria-label="Walk-in ticket steps">
+                  <span :class="selectedSailing ? 'complete' : 'active'"
+                    ><b>1</b> Select sailing</span
+                  ><i></i
+                  ><span
+                    :class="{
+                      active: selectedSailing,
+                      complete:
+                        selectedSailing && form.passengerName.trim() && form.birthDate && form.sex,
+                    }"
+                    ><b>2</b> Passenger details</span
+                  ><i></i><span><b>3</b> Review &amp; collect cash</span>
+                </div>
+                <div class="mobile-fare" aria-live="polite">
+                  <span
+                    >Cash to collect<small>{{
+                      selectedSailing ? fareLabel : 'Select a sailing to calculate fare'
+                    }}</small></span
+                  ><strong>PHP {{ payable.toLocaleString() }}</strong>
+                </div>
+                <div class="walk-in-layout">
+                  <div
+                    v-if="pendingSale"
+                    role="status"
+                    class="summary-card"
+                    style="grid-column: 1 / -1"
+                  >
+                    <strong>Unresolved sale: {{ pendingSale.args.reference }}</strong>
                     <p>
-                      Copy the details from the passenger's ID. No account is
-                      required.
+                      {{ pendingSale.receipt.name }} · {{ pendingSale.receipt.from }} to
+                      {{ pendingSale.receipt.to }} · PHP
+                      {{ pendingSale.receipt.fare.toLocaleString() }}
                     </p>
+                    <p>
+                      Check or retry this same sale before starting another. Do not collect cash
+                      again.
+                    </p>
+                    <button type="button" :disabled="busy" @click="retrySale">
+                      {{ busy ? 'Checking sale...' : 'Check / retry sale' }}
+                    </button>
+                    <p v-if="errorMessage" role="alert">{{ errorMessage }}</p>
                   </div>
+                  <form id="walk-in-form" class="form-card" @submit.prevent="prepareTicket">
+                    <fieldset :disabled="busy || !!pendingSale" style="display: contents">
+                      <div class="form-section">
+                        <div class="card-heading">
+                          <span class="step-number"><AppIcon :icon="boatOutline" /></span>
+                          <div>
+                            <small>STEP 01</small>
+                            <h2>Choose a sailing</h2>
+                            <p>Select an upcoming trip with available seats.</p>
+                          </div>
+                        </div>
+                        <label class="field"
+                          >Sailing<select v-model="form.sailingCode" required>
+                            <option value="" disabled>
+                              {{ loadingSailings ? 'Loading sailings…' : 'Select a sailing' }}
+                            </option>
+                            <option
+                              v-for="sailing in sailings"
+                              :key="sailing.code"
+                              :value="sailing.code"
+                            >
+                              {{ sailing.origin.name }} → {{ sailing.destination.name }} ·
+                              {{ formatDeparture(sailing.departureAt) }} ·
+                              {{ sailing.availableSeats }} seats
+                            </option>
+                          </select></label
+                        >
+                        <p
+                          v-if="!loadingSailings && !sailings.length && !errorMessage"
+                          class="empty-sailings"
+                        >
+                          No upcoming sailings with available seats.
+                        </p>
+                        <AccommodationPicker
+                          v-model="form.accommodationId"
+                          :options="selectedSailing?.accommodations || []"
+                          :passenger-count="1"
+                        />
+                        <div v-if="selectedSailing" class="selected-sailing">
+                          <AppIcon :icon="checkmarkCircleOutline" />
+                          <div>
+                            <strong
+                              >{{ selectedSailing.origin.name }} to
+                              {{ selectedSailing.destination.name }}</strong
+                            ><span
+                              >{{ formatDeparture(selectedSailing.departureAt) }} ·
+                              {{ selectedSailing.availableSeats }} seats available</span
+                            >
+                          </div>
+                        </div>
+                      </div>
+
+                      <div class="form-section passenger-section">
+                        <div class="card-heading">
+                          <span class="step-number"><AppIcon :icon="personOutline" /></span>
+                          <div>
+                            <small>STEP 02</small>
+                            <h2>Passenger details</h2>
+                            <p>Copy the details from the passenger's ID. No account is required.</p>
+                          </div>
+                        </div>
+                        <div class="form-grid">
+                          <label class="field full"
+                            >Full name<input
+                              v-model.trim="form.passengerName"
+                              maxlength="120"
+                              autocomplete="off"
+                              placeholder="Name as shown on ID"
+                              required
+                          /></label>
+                          <label class="field"
+                            >Date of birth<input
+                              v-model="form.birthDate"
+                              type="date"
+                              :max="today"
+                              required
+                          /></label>
+                          <label class="field"
+                            >Sex<select v-model="form.sex" required>
+                              <option value="" disabled>Select sex</option>
+                              <option>Female</option>
+                              <option>Male</option>
+                              <option>Prefer not to say</option>
+                            </select></label
+                          >
+                          <label class="field"
+                            >Mobile number <span class="optional">optional</span
+                            ><input
+                              v-model.trim="form.passengerPhone"
+                              maxlength="30"
+                              type="tel"
+                              autocomplete="off"
+                              placeholder="09XX XXX XXXX"
+                          /></label>
+                          <label class="field"
+                            >Nationality<input
+                              v-model.trim="form.nationality"
+                              maxlength="80"
+                              autocomplete="off"
+                              placeholder="Filipino"
+                              required
+                          /></label>
+                          <label class="field full"
+                            >Fare type<select v-model="form.passengerType">
+                              <option value="REGULAR">Regular</option>
+                              <option
+                                v-for="discount in selectedSailing
+                                  ? passengerDiscountChoices(selectedSailing)
+                                  : []"
+                                :key="discount.id"
+                                :value="discount.name"
+                              >
+                                {{ discount.name }} ({{ discount.percentage }}% off)
+                              </option>
+                            </select></label
+                          >
+                        </div>
+                      </div>
+
+                      <div v-if="needsDiscountVerification" class="form-section">
+                        <label
+                          ><input v-model="form.discountVerified" type="checkbox" /> I checked this
+                          passenger's discount eligibility.</label
+                        ><label class="field"
+                          >Verification note<input
+                            v-model.trim="form.verificationNote"
+                            minlength="3"
+                            maxlength="160"
+                            placeholder="Supporting ID checked; do not copy ID numbers"
+                            required
+                        /></label>
+                      </div>
+                      <div class="form-footer">
+                        <p v-if="errorMessage" class="error" role="alert">
+                          {{ errorMessage }}
+                        </p>
+                        <button
+                          data-slot="button"
+                          data-variant="default"
+                          data-size="default"
+                          class="issue-button"
+                          type="submit"
+                          :disabled="busy || !selectedSailing || !form.passengerName.trim()"
+                        >
+                          <AppIcon :icon="cashOutline" />
+                          {{ busy ? 'Issuing ticket…' : 'Review cash payment' }}</button
+                        ><span>Ticket is issued only after you confirm payment.</span>
+                      </div>
+                    </fieldset>
+                  </form>
+
+                  <aside class="summary-card fare-summary">
+                    <div class="summary-heading">
+                      <span class="summary-icon"><AppIcon :icon="receiptOutline" /></span>
+                      <div>
+                        <p class="eyebrow">COUNTER SUMMARY</p>
+                        <h2>Fare summary</h2>
+                      </div>
+                    </div>
+                    <div class="summary-route">
+                      <small>SAILING</small
+                      ><strong>{{
+                        selectedSailing
+                          ? `${selectedSailing.origin.name} → ${selectedSailing.destination.name}`
+                          : 'No sailing selected'
+                      }}</strong
+                      ><span>{{
+                        selectedSailing
+                          ? formatDeparture(selectedSailing.departureAt)
+                          : 'Choose a trip to see the fare.'
+                      }}</span>
+                    </div>
+                    <div class="summary-row">
+                      <span>Passenger</span><strong>{{ form.passengerName || '—' }}</strong>
+                    </div>
+                    <div class="summary-row">
+                      <span>Fare type</span><strong>{{ fareLabel }}</strong>
+                    </div>
+                    <div class="summary-row">
+                      <span>Passenger fare</span><strong>PHP {{ fare.toLocaleString() }}</strong>
+                    </div>
+                    <div class="summary-row">
+                      <span>Accommodation: {{ selectedAccommodation?.name || 'Standard' }}</span
+                      ><strong>PHP {{ accommodationFee.toLocaleString() }}</strong>
+                    </div>
+                    <div class="summary-total">
+                      <span>Cash to collect</span
+                      ><strong>PHP {{ payable.toLocaleString() }}</strong>
+                    </div>
+                    <p class="summary-note">
+                      <AppIcon :icon="informationCircleOutline" /> Confirm the cash amount before
+                      issuing the ticket.
+                    </p>
+                  </aside>
                 </div>
-                <div class="form-grid">
-                  <label class="field full"
-                    >Full name<input
-                      v-model.trim="form.passengerName"
-                      maxlength="120"
-                      autocomplete="off"
-                      placeholder="Name as shown on ID"
-                      required
-                  /></label>
-                  <label class="field"
-                    >Date of birth<input
-                      v-model="form.birthDate"
-                      type="date"
-                      :max="today"
-                      required
-                  /></label>
-                  <label class="field"
-                    >Sex<select v-model="form.sex" required>
-                      <option value="" disabled>Select sex</option>
-                      <option>Female</option>
-                      <option>Male</option>
-                      <option>Prefer not to say</option>
-                    </select></label
+              </template>
+
+              <DialogRoot v-model:open="confirming">
+                <DialogOverlay class="confirmation-overlay">
+                  <DialogContent
+                    class="confirmation-card"
+                    @close-auto-focus="restoreConfirmationFocus"
                   >
-                  <label class="field"
-                    >Mobile number <span class="optional">optional</span
-                    ><input
-                      v-model.trim="form.passengerPhone"
-                      maxlength="30"
-                      type="tel"
-                      autocomplete="off"
-                      placeholder="09XX XXX XXXX"
-                  /></label>
-                  <label class="field"
-                    >Nationality<input
-                      v-model.trim="form.nationality"
-                      maxlength="80"
-                      autocomplete="off"
-                      placeholder="Filipino"
-                      required
-                  /></label>
-                  <label class="field full"
-                    >Fare type<select v-model="form.passengerType">
-                      <option value="REGULAR">Regular</option>
-                      <option
-                        v-for="discount in selectedSailing
-                          ? passengerDiscountChoices(selectedSailing)
-                          : []"
-                        :key="discount.id"
-                        :value="discount.name"
+                    <span class="confirm-icon"><AppIcon :icon="cashOutline" /></span>
+                    <p class="eyebrow">FINAL CHECK</p>
+                    <DialogTitle as-child><h2>Confirm cash payment</h2></DialogTitle>
+                    <DialogDescription as-child
+                      ><p>
+                        Have you received
+                        <strong>PHP {{ payable.toLocaleString() }}</strong> from
+                        <strong>{{ form.passengerName }}</strong
+                        >?
+                      </p></DialogDescription
+                    >
+                    <div class="confirm-details">
+                      <span
+                        >{{ selectedSailing?.origin.name }} to
+                        {{ selectedSailing?.destination.name }}</span
+                      ><strong>{{
+                        selectedSailing ? formatDeparture(selectedSailing.departureAt) : ''
+                      }}</strong>
+                    </div>
+                    <div class="confirm-actions">
+                      <button type="button" class="secondary-button" @click="confirming = false">
+                        <BackIcon /> Go back</button
+                      ><button
+                        data-slot="button"
+                        data-variant="default"
+                        data-size="default"
+                        type="button"
+                        class="issue-button"
+                        :disabled="busy"
+                        @click="issueTicket"
                       >
-                        {{ discount.name }} ({{ discount.percentage }}% off)
-                      </option>
-                    </select></label
-                  >
-                </div>
-              </div>
-
-              <div v-if="needsDiscountVerification" class="form-section">
-                <label
-                  ><input v-model="form.discountVerified" type="checkbox" /> I
-                  checked this passenger's discount eligibility.</label
-                ><label class="field"
-                  >Verification note<input
-                    v-model.trim="form.verificationNote"
-                    minlength="3"
-                    maxlength="160"
-                    placeholder="Supporting ID checked; do not copy ID numbers"
-                    required
-                /></label>
-              </div>
-              <div class="form-footer">
-                <p v-if="errorMessage" class="error" role="alert">
-                  {{ errorMessage }}
-                </p>
-                <button data-slot="button" data-variant="default" data-size="default"
-                  class="issue-button"
-                  type="submit"
-                  :disabled="
-                    busy || !selectedSailing || !form.passengerName.trim()
-                  "
-                >
-                  <AppIcon :icon="cashOutline" />
-                  {{ busy ? "Issuing ticket…" : "Review cash payment" }}
-                  </button
-                ><span>Ticket is issued only after you confirm payment.</span>
-              </div>
-              </fieldset>
-            </form>
-
-            <aside class="summary-card fare-summary">
-              <div class="summary-heading">
-                <span class="summary-icon"
-                  ><AppIcon :icon="receiptOutline"
-                /></span>
-                <div>
-                  <p class="eyebrow">COUNTER SUMMARY</p>
-                  <h2>Fare summary</h2>
-                </div>
-              </div>
-              <div class="summary-route">
-                <small>SAILING</small
-                ><strong>{{
-                  selectedSailing
-                    ? `${selectedSailing.origin.name} → ${selectedSailing.destination.name}`
-                    : "No sailing selected"
-                }}</strong
-                ><span>{{
-                  selectedSailing
-                    ? formatDeparture(selectedSailing.departureAt)
-                    : "Choose a trip to see the fare."
-                }}</span>
-              </div>
-              <div class="summary-row">
-                <span>Passenger</span
-                ><strong>{{ form.passengerName || "—" }}</strong>
-              </div>
-              <div class="summary-row">
-                <span>Fare type</span><strong>{{ fareLabel }}</strong>
-              </div>
-              <div class="summary-row">
-                <span>Passenger fare</span
-                ><strong>PHP {{ fare.toLocaleString() }}</strong>
-              </div>
-              <div class="summary-row">
-                <span
-                  >Accommodation:
-                  {{ selectedAccommodation?.name || "Standard" }}</span
-                ><strong>PHP {{ accommodationFee.toLocaleString() }}</strong>
-              </div>
-              <div class="summary-total">
-                <span>Cash to collect</span
-                ><strong>PHP {{ payable.toLocaleString() }}</strong>
-              </div>
-              <p class="summary-note">
-                <AppIcon :icon="informationCircleOutline" /> Confirm the cash
-                amount before issuing the ticket.
-              </p>
-            </aside>
-          </div>
-        </template>
-
-        <DialogRoot v-model:open="confirming">
-          <DialogOverlay class="confirmation-overlay">
-          <DialogContent
-            class="confirmation-card"
-            @close-auto-focus="restoreConfirmationFocus"
-          >
-            <span class="confirm-icon"><AppIcon :icon="cashOutline" /></span>
-            <p class="eyebrow">FINAL CHECK</p>
-            <DialogTitle as-child><h2>Confirm cash payment</h2></DialogTitle>
-            <DialogDescription as-child><p>
-              Have you received
-              <strong>PHP {{ payable.toLocaleString() }}</strong> from
-              <strong>{{ form.passengerName }}</strong
-              >?
-            </p></DialogDescription>
-            <div class="confirm-details">
-              <span
-                >{{ selectedSailing?.origin.name }} to
-                {{ selectedSailing?.destination.name }}</span
-              ><strong>{{
-                selectedSailing
-                  ? formatDeparture(selectedSailing.departureAt)
-                  : ""
-              }}</strong>
-            </div>
-            <div class="confirm-actions">
-              <button
-                type="button"
-                class="secondary-button"
-                @click="confirming = false"
-              >
-                <BackIcon /> Go back</button
-              ><button data-slot="button" data-variant="default" data-size="default"
-                type="button"
-                class="issue-button"
-                :disabled="busy"
-                @click="issueTicket"
-              >
-                {{ busy ? "Issuing ticket…" : "Cash received — issue ticket" }}
-              </button>
-            </div>
-          </DialogContent>
-          </DialogOverlay>
-        </DialogRoot>
-        </template>
-      </main>
+                        {{ busy ? 'Issuing ticket…' : 'Cash received — issue ticket' }}
+                      </button>
+                    </div>
+                  </DialogContent>
+                </DialogOverlay>
+              </DialogRoot>
+            </template>
+          </main>
         </section>
       </div>
     </ion-content>
@@ -378,37 +405,48 @@
 <script setup lang="ts">
 import { validName, validPhone, validNationality } from '../../../data/securityValidation';
 import { notifyError, notifySuccess } from '@/composables/toast';
-import BackIcon from "@/components/ui/icon/BackIcon.vue";
+import BackIcon from '@/components/ui/icon/BackIcon.vue';
 import { bookingReference } from '@/data/recordCodes';
 import StaffPortRequired from '../../../components/staff/StaffPortRequired.vue';
 import { useStaffPortGate } from '../../../composables/staffPortGate';
 import { StaffPortRequiredError } from '../../../services/staffPortAccess';
 const { portBlocked } = useStaffPortGate(loadSailings);
-import BrandMark from "../../../components/shared/BrandMark.vue";
-import StaffNavigation from "../../../components/staff/StaffNavigation.vue";
-import StaffWorkspaceHeader from "../../../components/staff/StaffWorkspaceHeader.vue";
+import BrandMark from '../../../components/shared/BrandMark.vue';
+import StaffNavigation from '../../../components/staff/StaffNavigation.vue';
+import StaffWorkspaceHeader from '../../../components/staff/StaffWorkspaceHeader.vue';
+import StaffBookingTickets from '../../../components/staff/StaffBookingTickets.vue';
+import type { StaffTicketBooking } from '../../../data/staffTicket';
 import {
   passengerFare,
   passengerTypeCode,
   passengerDiscountChoices,
   type CustomDiscountFare,
-} from "../../../data/fareSettings";
-import AccommodationPicker from "../../../components/shared/AccommodationPicker.vue";
-import type { Accommodation } from "../../../services/database/workspaces";
-import { databaseRequestError } from "../../../data/databaseErrors";
-import { computed, reactive, ref, watch } from "vue";
-import { philippineDateKey, validBirthDate } from "../../../data/travelDate";
-import { DialogRoot, DialogOverlay, DialogContent, DialogTitle, DialogDescription } from "reka-ui";
-import { IonContent, IonPage, onIonViewWillEnter } from "@ionic/vue";
-import AppIcon from "@/components/ui/icon/AppIcon.vue";
-import { arrowForwardOutline, boatOutline, cashOutline, checkmarkCircleOutline, informationCircleOutline, personOutline, printOutline, receiptOutline, ticketOutline } from "ionicons/icons";
+} from '../../../data/fareSettings';
+import AccommodationPicker from '../../../components/shared/AccommodationPicker.vue';
+import type { Accommodation } from '../../../services/database/workspaces';
+import { databaseRequestError } from '../../../data/databaseErrors';
+import { computed, reactive, ref, watch } from 'vue';
+import { philippineDateKey, validBirthDate } from '../../../data/travelDate';
+import { DialogRoot, DialogOverlay, DialogContent, DialogTitle, DialogDescription } from 'reka-ui';
+import { IonContent, IonPage, onIonViewWillEnter } from '@ionic/vue';
+import AppIcon from '@/components/ui/icon/AppIcon.vue';
+import {
+  arrowForwardOutline,
+  boatOutline,
+  cashOutline,
+  checkmarkCircleOutline,
+  informationCircleOutline,
+  personOutline,
+  receiptOutline,
+  ticketOutline,
+} from 'ionicons/icons';
 import {
   ticketingCreateGuestWalkIn,
   ticketingSailings,
   staffBookings,
   type TicketingCreateGuestWalkInVariables,
-} from "../../../services/database/staff";
-import { auth, staffDatabase } from "../../../services/session";
+} from '../../../services/database/staff';
+import { auth, staffDatabase } from '../../../services/session';
 
 type Sailing = {
   passengerDiscounts?: CustomDiscountFare[] | null;
@@ -437,16 +475,16 @@ type Receipt = {
 };
 const sailings = ref<Sailing[]>([]);
 const form = reactive({
-  accommodationId: "",
-  sailingCode: "",
-  passengerName: "",
-  birthDate: "",
-  sex: "",
-  passengerPhone: "",
-  nationality: "Filipino",
-  passengerType: "REGULAR",
+  accommodationId: '',
+  sailingCode: '',
+  passengerName: '',
+  birthDate: '',
+  sex: '',
+  passengerPhone: '',
+  nationality: 'Filipino',
+  passengerType: 'REGULAR',
   discountVerified: false,
-  verificationNote: "",
+  verificationNote: '',
 });
 const today = computed(() => philippineDateKey());
 const busy = ref(false);
@@ -457,25 +495,59 @@ function restoreConfirmationFocus(event: Event) {
   confirmationReturnFocus?.focus();
 }
 const loadingSailings = ref(false);
-const errorMessage = ref("");
+const errorMessage = ref('');
 const issued = ref<Receipt | null>(null);
+const issuedBooking = ref<StaffTicketBooking | null>(null);
+const reloadingTicket = ref(false),
+  ticketReloadError = ref('');
+async function reloadIssuedTicket() {
+  if (!staffDatabase || !issued.value || reloadingTicket.value) return;
+  reloadingTicket.value = true;
+  ticketReloadError.value = '';
+  try {
+    const reference = issued.value.reference;
+    const result = await staffBookings(staffDatabase, { search: reference, pageSize: 100 });
+    const booking = result.data.bookings.find((item) => item.reference === reference);
+    if (!booking)
+      throw new Error('The ticket is unavailable at your assigned port. Check the booking queue.');
+    if (issued.value?.reference === reference) issuedBooking.value = booking;
+  } catch (error) {
+    ticketReloadError.value = databaseRequestError(
+      error,
+      'Could not load the e-ticket. Retry without collecting cash again.',
+    );
+  } finally {
+    reloadingTicket.value = false;
+  }
+}
 type SaleIntent = { ownerUid: string; args: TicketingCreateGuestWalkInVariables; receipt: Receipt };
 const menuOpen = ref(false);
-const saleKey = "barkolink-pending-walk-in";
+const saleKey = 'barkolink-pending-walk-in';
 const pendingSale = ref<SaleIntent | null>(null);
 try {
-  const saved = JSON.parse(sessionStorage.getItem(saleKey) || "null");
-  if (saved?.ownerUid === auth?.currentUser?.uid && saved.args?.reference && saved.receipt) pendingSale.value = saved;
-} catch { sessionStorage.removeItem(saleKey); }
+  const saved = JSON.parse(sessionStorage.getItem(saleKey) || 'null');
+  if (saved?.ownerUid === auth?.currentUser?.uid && saved.args?.reference && saved.receipt)
+    pendingSale.value = saved;
+} catch {
+  sessionStorage.removeItem(saleKey);
+}
 async function retrySale() {
   if (!staffDatabase || busy.value || !pendingSale.value) return;
   const intent = pendingSale.value;
   busy.value = true;
-  errorMessage.value = "";
+  errorMessage.value = '';
   const recover = async () => {
-    const saved = (await staffBookings(staffDatabase!, { search: intent.args.reference, pageSize: 100 })).data.bookings.find(b => b.reference === intent.args.reference && b.status === "CONFIRMED" && b.paymentStatus === "PAID");
+    const saved = (
+      await staffBookings(staffDatabase!, { search: intent.args.reference, pageSize: 100 })
+    ).data.bookings.find(
+      (b) =>
+        b.reference === intent.args.reference &&
+        b.status === 'CONFIRMED' &&
+        b.paymentStatus === 'PAID',
+    );
     if (!saved) return false;
     issued.value = { ...intent.receipt, fare: saved.total };
+    issuedBooking.value = saved;
     notifySuccess('Walk-in ticket issued. Cash payment recorded.');
     return true;
   };
@@ -484,66 +556,68 @@ async function retrySale() {
       await ticketingCreateGuestWalkIn(staffDatabase, intent.args);
       issued.value = intent.receipt;
       notifySuccess('Walk-in ticket issued. Cash payment recorded.');
-      try { await recover(); } catch { /* The successful mutation already confirmed issuance. */ }
+      try {
+        await recover();
+      } catch {
+        /* The successful mutation already confirmed issuance. */
+      }
     }
     pendingSale.value = null;
     sessionStorage.removeItem(saleKey);
   } catch (error) {
     try {
-      if (await recover()) { pendingSale.value = null; sessionStorage.removeItem(saleKey); return; }
-    } catch { /* Keep the original intent while the result is uncertain. */ }
-    notifyError(`${databaseRequestError(error, "Could not confirm this sale.")} Retry this same sale when the connection is restored. Do not collect cash again.`);
-  } finally { busy.value = false; }
+      if (await recover()) {
+        pendingSale.value = null;
+        sessionStorage.removeItem(saleKey);
+        return;
+      }
+    } catch {
+      /* Keep the original intent while the result is uncertain. */
+    }
+    notifyError(
+      `${databaseRequestError(error, 'Could not confirm this sale.')} Retry this same sale when the connection is restored. Do not collect cash again.`,
+    );
+  } finally {
+    busy.value = false;
+  }
 }
 const selectedSailing = computed(() =>
   sailings.value.find((item) => item.code === form.sailingCode),
 );
 const selectedAccommodation = computed(() =>
-  selectedSailing.value?.accommodations?.find(
-    (a) => a.id === form.accommodationId,
-  ),
+  selectedSailing.value?.accommodations?.find((a) => a.id === form.accommodationId),
 );
-const accommodationFee = computed(
-  () => selectedAccommodation.value?.surcharge || 0,
-);
+const accommodationFee = computed(() => selectedAccommodation.value?.surcharge || 0);
 const payable = computed(() => fare.value + accommodationFee.value);
 watch(
   () => form.sailingCode,
   () => {
-    form.accommodationId = "";
+    form.accommodationId = '';
     form.discountVerified = false;
-    form.verificationNote = "";
+    form.verificationNote = '';
   },
 );
 watch(
   () => form.passengerType,
   () => {
     form.discountVerified = false;
-    form.verificationNote = "";
+    form.verificationNote = '';
   },
 );
 watch(selectedSailing, (sailing) => {
-  if (sailing && passengerFare(sailing, form.passengerType) <= 0)
-    form.passengerType = "REGULAR";
+  if (sailing && passengerFare(sailing, form.passengerType) <= 0) form.passengerType = 'REGULAR';
 });
 const fareLabel = computed(
   () =>
     ({
-      REGULAR: "Regular",
-      STUDENT: "Student",
-      SENIOR: "Senior citizen",
-      CHILD: "Child",
-      PWD: "PWD",
-      PREGNANT: "Pregnant",
-    })[
-      form.passengerType as
-        | "REGULAR"
-        | "STUDENT"
-        | "SENIOR"
-        | "CHILD"
-        | "PWD"
-        | "PREGNANT"
-    ] || form.passengerType,
+      REGULAR: 'Regular',
+      STUDENT: 'Student',
+      SENIOR: 'Senior citizen',
+      CHILD: 'Child',
+      PWD: 'PWD',
+      PREGNANT: 'Pregnant',
+    })[form.passengerType as 'REGULAR' | 'STUDENT' | 'SENIOR' | 'CHILD' | 'PWD' | 'PREGNANT'] ||
+    form.passengerType,
 );
 const fare = computed(() => {
   const sailing = selectedSailing.value;
@@ -551,34 +625,33 @@ const fare = computed(() => {
   return passengerFare(sailing, form.passengerType);
 });
 const needsDiscountVerification = computed(
-  () =>
-    !!selectedSailing.value && fare.value < selectedSailing.value.regularFare,
+  () => !!selectedSailing.value && fare.value < selectedSailing.value.regularFare,
 );
 const formatDeparture = (value: string) =>
-  new Date(value).toLocaleString("en-PH", {
-    timeZone: "Asia/Manila",
-    dateStyle: "medium",
-    timeStyle: "short",
+  new Date(value).toLocaleString('en-PH', {
+    timeZone: 'Asia/Manila',
+    dateStyle: 'medium',
+    timeStyle: 'short',
   });
 
 async function loadSailings() {
   if (!staffDatabase) {
-    errorMessage.value = "Ticketing service is unavailable.";
+    errorMessage.value = 'Ticketing service is unavailable.';
     return;
   }
   loadingSailings.value = true;
-  errorMessage.value = "";
+  errorMessage.value = '';
   try {
     const result = await ticketingSailings(staffDatabase, {
-      fetchPolicy: "SERVER_ONLY",
+      fetchPolicy: 'SERVER_ONLY',
     });
     sailings.value = result.data.sailings;
   } catch (error) {
-    if (error instanceof StaffPortRequiredError) { errorMessage.value = ''; return; }
-    errorMessage.value = databaseRequestError(
-      error,
-      "Could not load sailings.",
-    );
+    if (error instanceof StaffPortRequiredError) {
+      errorMessage.value = '';
+      return;
+    }
+    errorMessage.value = databaseRequestError(error, 'Could not load sailings.');
   } finally {
     loadingSailings.value = false;
   }
@@ -588,7 +661,11 @@ onIonViewWillEnter(() => {
 });
 
 function prepareTicket() {
-  if (!validName(form.passengerName) || !validNationality(form.nationality) || (form.passengerPhone.trim() && !validPhone(form.passengerPhone))) {
+  if (
+    !validName(form.passengerName) ||
+    !validNationality(form.nationality) ||
+    (form.passengerPhone.trim() && !validPhone(form.passengerPhone))
+  ) {
     errorMessage.value = 'Enter a valid passenger name, nationality, and contact number.';
     return;
   }
@@ -602,32 +679,40 @@ function prepareTicket() {
   )
     return;
   if (fare.value <= 0) {
-    errorMessage.value = "Choose an available passenger type.";
+    errorMessage.value = 'Choose an available passenger type.';
     return;
   }
   if (!validBirthDate(form.birthDate)) {
-    errorMessage.value = "Enter a valid date of birth that is not in the future.";
+    errorMessage.value = 'Enter a valid date of birth that is not in the future.';
     return;
   }
   if (
     needsDiscountVerification.value &&
     (!form.discountVerified || form.verificationNote.trim().length < 3)
   ) {
-    errorMessage.value =
-      "Verify the discount eligibility and add a note before collecting cash.";
+    errorMessage.value = 'Verify the discount eligibility and add a note before collecting cash.';
     return;
   }
-  errorMessage.value = "";
-  confirmationReturnFocus = document.activeElement instanceof HTMLElement
-    ? document.activeElement : null;
+  errorMessage.value = '';
+  confirmationReturnFocus =
+    document.activeElement instanceof HTMLElement ? document.activeElement : null;
   confirming.value = true;
 }
 async function issueTicket() {
-  if (!pendingSale.value && (!validName(form.passengerName) || !validNationality(form.nationality) || !validBirthDate(form.birthDate) || (form.passengerPhone.trim() && !validPhone(form.passengerPhone)))) {
+  if (
+    !pendingSale.value &&
+    (!validName(form.passengerName) ||
+      !validNationality(form.nationality) ||
+      !validBirthDate(form.birthDate) ||
+      (form.passengerPhone.trim() && !validPhone(form.passengerPhone)))
+  ) {
     errorMessage.value = 'Enter valid passenger details before issuing a ticket.';
     return;
   }
-  if (pendingSale.value) { await retrySale(); return; }
+  if (pendingSale.value) {
+    await retrySale();
+    return;
+  }
   const sailing = selectedSailing.value;
   if (
     !staffDatabase ||
@@ -641,7 +726,7 @@ async function issueTicket() {
     return;
   confirming.value = false;
   busy.value = true;
-  errorMessage.value = "";
+  errorMessage.value = '';
   const reference = bookingReference();
   const guestUid = `walkin:${crypto.randomUUID()}`;
   const ticketCode = crypto.randomUUID();
@@ -659,7 +744,7 @@ async function issueTicket() {
       sex: form.sex,
       nationality: form.nationality.trim(),
       passengerType: passengerTypeCode(form.passengerType),
-      method: "CASH",
+      method: 'CASH',
       discountVerified: form.discountVerified,
       verificationNote: form.verificationNote.trim(),
     };
@@ -672,34 +757,30 @@ async function issueTicket() {
       fare: payable.value,
       ticketCode,
     };
-    pendingSale.value = { ownerUid: auth?.currentUser?.uid || "", args, receipt };
+    pendingSale.value = { ownerUid: auth?.currentUser?.uid || '', args, receipt };
     sessionStorage.setItem(saleKey, JSON.stringify(pendingSale.value));
     busy.value = false;
     await retrySale();
   } catch (error) {
-    notifyError(databaseRequestError(
-      error,
-      "Could not issue the ticket.",
-    ));
+    notifyError(databaseRequestError(error, 'Could not issue the ticket.'));
   } finally {
     busy.value = false;
   }
 }
 function newTicket() {
   issued.value = null;
-  form.passengerName = "";
-  form.birthDate = "";
-  form.sex = "";
-  form.passengerPhone = "";
-  form.nationality = "Filipino";
-  form.passengerType = "REGULAR";
+  issuedBooking.value = null;
+  ticketReloadError.value = '';
+  form.passengerName = '';
+  form.birthDate = '';
+  form.sex = '';
+  form.passengerPhone = '';
+  form.nationality = 'Filipino';
+  form.passengerType = 'REGULAR';
   form.discountVerified = false;
-  form.verificationNote = "";
-  errorMessage.value = "";
+  form.verificationNote = '';
+  errorMessage.value = '';
   void loadSailings();
-}
-function printReceipt() {
-  window.print();
 }
 </script>
 
@@ -1445,107 +1526,416 @@ function printReceipt() {
 }
 
 /* Compact counter workspace with a persistent desktop fare summary. */
-.walk-in-page { max-width: 1240px; padding: 18px 28px 48px; }
-.walk-in-page > :deep(.staff-workspace-header) { border: 1px solid var(--line); border-radius: 12px; min-height: 64px; }
-.page-intro { margin: 24px 0 16px; gap: 12px; }
-.page-intro h1 { font-size: 28px; margin: 5px 0; line-height: 1.3; }
-.return-to-queue { display: inline-flex; align-items: center; justify-content: center; gap: 7px; flex: none; min-height: 42px; padding: 8px 12px; border: 1px solid var(--line); border-radius: 9px; background: var(--surface); color: var(--ocean); font-size: var(--text-label); text-decoration: none; }
-.return-to-queue .app-icon { font-size: 17px; }
-.flow-strip { margin-bottom: 16px; padding: 10px 16px; gap: 16px; border-radius: 10px; font-size: var(--text-caption); font-weight: 500; }
-.flow-strip span.active { color: var(--ocean); font-weight: 650; }
-.flow-strip span.active b { color: white; background: var(--ocean); }
-.flow-strip span.complete { color: var(--ocean); }
-.walk-in-layout { grid-template-columns: minmax(0, 1fr) 320px; gap: 18px; }
-.form-card, .summary-card { border-radius: 12px; box-shadow: none; }
-.form-section { padding: 18px 20px; }
-.card-heading { gap: 10px; margin-bottom: 14px; }
-.step-number { width: 32px; height: 32px; border-radius: 9px; font-size: 18px; }
-.card-heading h2 { font-size: 17px; margin: 2px 0 3px; }
-.card-heading p { font-size: var(--text-label); font-weight: 400; }
-.field { font-size: var(--text-label); font-weight: 500; }
-.field input, .field select { box-sizing: border-box; height: 42px; margin-top: 6px; font-weight: 400; font-size: 13px; }
-.form-grid { gap: 12px 14px; }
-.selected-sailing { padding: 9px 12px; margin-top: 10px; }
-.form-footer { padding: 16px 20px; gap: 10px; }
-.form-footer .issue-button { justify-content: center; min-height: 44px; font-size: 13px; }
-.form-footer .issue-button .app-icon { margin: 0; }
-.fare-summary { top: 18px; }
-.summary-heading { padding: 16px; gap: 10px; }
-.summary-heading h2 { font-size: 17px; }
-.summary-icon { width: 32px; height: 32px; border-radius: 9px; font-size: 18px; }
-.summary-route { margin: 16px; padding: 12px; gap: 6px; }
-.summary-route strong { line-height: 1.5; overflow-wrap: anywhere; }
-.summary-route span { line-height: 1.6; }
-.summary-row { margin: 0 16px; padding: 10px 0; font-size: var(--text-label); }
-.summary-total { margin: 16px; padding: 14px 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--light-blue); font-size: var(--text-label); }
-.summary-total strong { font-size: 23px; white-space: nowrap; }
-.summary-note { margin: 0 16px 16px; background: transparent; padding: 0; font-size: var(--text-caption); line-height: 1.6; }
-.mobile-fare { display: none; }
-.back-to-ticketing { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; margin-top: 12px; padding: 8px 12px; border: 1px solid var(--line); border-radius: 9px; background: var(--surface); color: var(--ocean); font-size: var(--text-label); font-weight: 500; text-decoration: none; }
-.back-to-ticketing .app-icon { font-size: 17px; }
-.back-to-ticketing:hover { background: var(--surface-soft); }
-.back-to-ticketing + .page-intro { margin-top: 14px; }
-.confirmation-overlay { overflow-y: auto; }
-.confirmation-card { max-height: calc(100dvh - 36px); overflow-y: auto; }
+.walk-in-page {
+  max-width: 1240px;
+  padding: 18px 28px 48px;
+}
+.walk-in-page > :deep(.staff-workspace-header) {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  min-height: 64px;
+}
+.page-intro {
+  margin: 24px 0 16px;
+  gap: 12px;
+}
+.page-intro h1 {
+  font-size: 28px;
+  margin: 5px 0;
+  line-height: 1.3;
+}
+.return-to-queue {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  flex: none;
+  min-height: 42px;
+  padding: 8px 12px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: var(--surface);
+  color: var(--ocean);
+  font-size: var(--text-label);
+  text-decoration: none;
+}
+.return-to-queue .app-icon {
+  font-size: 17px;
+}
+.flow-strip {
+  margin-bottom: 16px;
+  padding: 10px 16px;
+  gap: 16px;
+  border-radius: 10px;
+  font-size: var(--text-caption);
+  font-weight: 500;
+}
+.flow-strip span.active {
+  color: var(--ocean);
+  font-weight: 650;
+}
+.flow-strip span.active b {
+  color: white;
+  background: var(--ocean);
+}
+.flow-strip span.complete {
+  color: var(--ocean);
+}
+.walk-in-layout {
+  grid-template-columns: minmax(0, 1fr) 320px;
+  gap: 18px;
+}
+.form-card,
+.summary-card {
+  border-radius: 12px;
+  box-shadow: none;
+}
+.form-section {
+  padding: 18px 20px;
+}
+.card-heading {
+  gap: 10px;
+  margin-bottom: 14px;
+}
+.step-number {
+  width: 32px;
+  height: 32px;
+  border-radius: 9px;
+  font-size: 18px;
+}
+.card-heading h2 {
+  font-size: 17px;
+  margin: 2px 0 3px;
+}
+.card-heading p {
+  font-size: var(--text-label);
+  font-weight: 400;
+}
+.field {
+  font-size: var(--text-label);
+  font-weight: 500;
+}
+.field input,
+.field select {
+  box-sizing: border-box;
+  height: 42px;
+  margin-top: 6px;
+  font-weight: 400;
+  font-size: 13px;
+}
+.form-grid {
+  gap: 12px 14px;
+}
+.selected-sailing {
+  padding: 9px 12px;
+  margin-top: 10px;
+}
+.form-footer {
+  padding: 16px 20px;
+  gap: 10px;
+}
+.form-footer .issue-button {
+  justify-content: center;
+  min-height: 44px;
+  font-size: 13px;
+}
+.form-footer .issue-button .app-icon {
+  margin: 0;
+}
+.fare-summary {
+  top: 18px;
+}
+.summary-heading {
+  padding: 16px;
+  gap: 10px;
+}
+.summary-heading h2 {
+  font-size: 17px;
+}
+.summary-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 9px;
+  font-size: 18px;
+}
+.summary-route {
+  margin: 16px;
+  padding: 12px;
+  gap: 6px;
+}
+.summary-route strong {
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+.summary-route span {
+  line-height: 1.6;
+}
+.summary-row {
+  margin: 0 16px;
+  padding: 10px 0;
+  font-size: var(--text-label);
+}
+.summary-total {
+  margin: 16px;
+  padding: 14px 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--light-blue);
+  font-size: var(--text-label);
+}
+.summary-total strong {
+  font-size: 23px;
+  white-space: nowrap;
+}
+.summary-note {
+  margin: 0 16px 16px;
+  background: transparent;
+  padding: 0;
+  font-size: var(--text-caption);
+  line-height: 1.6;
+}
+.mobile-fare {
+  display: none;
+}
+.back-to-ticketing {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  margin-top: 12px;
+  padding: 8px 12px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: var(--surface);
+  color: var(--ocean);
+  font-size: var(--text-label);
+  font-weight: 500;
+  text-decoration: none;
+}
+.back-to-ticketing .app-icon {
+  font-size: 17px;
+}
+.back-to-ticketing:hover {
+  background: var(--surface-soft);
+}
+.back-to-ticketing + .page-intro {
+  margin-top: 14px;
+}
+.confirmation-overlay {
+  overflow-y: auto;
+}
+.confirmation-card {
+  max-height: calc(100dvh - 36px);
+  overflow-y: auto;
+}
 @media (max-width: 900px) {
- .walk-in-layout { grid-template-columns: minmax(0, 1fr) 280px; gap: 14px; }
- .walk-in-page { padding: 16px 20px 40px; }
+  .walk-in-layout {
+    grid-template-columns: minmax(0, 1fr) 280px;
+    gap: 14px;
+  }
+  .walk-in-page {
+    padding: 16px 20px 40px;
+  }
 }
 @media (max-width: 780px) {
- .walk-in-layout { grid-template-columns: minmax(0, 1fr); }
- .walk-in-page { padding: 12px 16px 32px; }
- .page-intro { margin-top: 20px; flex-wrap: wrap; }
- .mobile-fare { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 14px; padding: 12px 14px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); font-size: var(--text-label); }
- .mobile-fare small { display: block; margin-top: 4px; color: var(--muted); font-size: var(--text-caption); }
- .mobile-fare strong { color: var(--ocean); font-size: 20px; white-space: nowrap; }
- .fare-summary { position: static; }
- .flow-strip { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); align-items: start; gap: 8px; padding: 12px; font-size: var(--text-caption); }
- .flow-strip i { display: none; }
- .flow-strip span { align-items: flex-start; white-space: normal; line-height: 1.5; }
- .flow-strip b { flex: none; }
- .form-section { padding: 16px; }
- .form-footer { padding: 16px; }
+  .walk-in-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .walk-in-page {
+    padding: 12px 16px 32px;
+  }
+  .page-intro {
+    margin-top: 20px;
+    flex-wrap: wrap;
+  }
+  .mobile-fare {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 14px;
+    padding: 12px 14px;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    background: var(--surface);
+    font-size: var(--text-label);
+  }
+  .mobile-fare small {
+    display: block;
+    margin-top: 4px;
+    color: var(--muted);
+    font-size: var(--text-caption);
+  }
+  .mobile-fare strong {
+    color: var(--ocean);
+    font-size: 20px;
+    white-space: nowrap;
+  }
+  .fare-summary {
+    position: static;
+  }
+  .flow-strip {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    align-items: start;
+    gap: 8px;
+    padding: 12px;
+    font-size: var(--text-caption);
+  }
+  .flow-strip i {
+    display: none;
+  }
+  .flow-strip span {
+    align-items: flex-start;
+    white-space: normal;
+    line-height: 1.5;
+  }
+  .flow-strip b {
+    flex: none;
+  }
+  .form-section {
+    padding: 16px;
+  }
+  .form-footer {
+    padding: 16px;
+  }
 }
-@media print { .walk-in-page > :deep(.staff-workspace-header), .back-to-ticketing, .mobile-fare { display: none; } }
-
+@media print {
+  .walk-in-page > :deep(.staff-workspace-header),
+  .back-to-ticketing,
+  .mobile-fare {
+    display: none;
+  }
+}
 </style>
 
 <style scoped>
-.staff-shell { min-height: 100dvh; background: var(--cloud); color: var(--ink); }
-.staff-sidebar { position: fixed; inset: 0 auto 0 0; width: 235px; box-sizing: border-box; display: flex; flex-direction: column; padding: 26px 16px; z-index: 20; }
-.staff-sidebar :deep(.brand-copy strong) { color: white; }
-.staff-sidebar :deep(.brand-copy small) { color: #8eb8cc; }
-.staff-sidebar :deep(.staff-navigation) { flex: 1; min-height: 0; overflow-y: auto; margin-top: 22px; }
-.staff-main { margin-left: 235px; min-width: 0; }
-.staff-scrim { display: none; }
-.walk-in-page { max-width: 1240px; padding: 20px 28px 40px; }
-.back-to-ticketing { display: none; }
-.page-intro { margin-top: 0; }
-.walk-in-layout { grid-template-columns: minmax(0, 1fr) 280px; gap: 16px; }
-.form-section { padding: 16px 18px; }
-.form-grid { gap: 12px; }
-.field input, .field select { height: auto; min-height: 44px; }
-.fare-summary { top: 16px; }
-@supports (appearance: base-select) { .field select { display: flex; align-items: center; } }
+.staff-shell {
+  min-height: 100dvh;
+  background: var(--cloud);
+  color: var(--ink);
+}
+.staff-sidebar {
+  position: fixed;
+  inset: 0 auto 0 0;
+  width: 235px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  padding: 26px 16px;
+  z-index: 20;
+}
+.staff-sidebar :deep(.brand-copy strong) {
+  color: white;
+}
+.staff-sidebar :deep(.brand-copy small) {
+  color: #8eb8cc;
+}
+.staff-sidebar :deep(.staff-navigation) {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  margin-top: 22px;
+}
+.staff-main {
+  margin-left: 235px;
+  min-width: 0;
+}
+.staff-scrim {
+  display: none;
+}
+.walk-in-page {
+  max-width: 1240px;
+  padding: 20px 28px 40px;
+}
+.back-to-ticketing {
+  display: none;
+}
+.page-intro {
+  margin-top: 0;
+}
+.walk-in-layout {
+  grid-template-columns: minmax(0, 1fr) 280px;
+  gap: 16px;
+}
+.form-section {
+  padding: 16px 18px;
+}
+.form-grid {
+  gap: 12px;
+}
+.field input,
+.field select {
+  height: auto;
+  min-height: 44px;
+}
+.fare-summary {
+  top: 16px;
+}
+@supports (appearance: base-select) {
+  .field select {
+    display: flex;
+    align-items: center;
+  }
+}
 @media (max-width: 1100px) {
- .walk-in-layout { grid-template-columns: minmax(0, 1fr); }
- .fare-summary { position: static; }
+  .walk-in-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .fare-summary {
+    position: static;
+  }
 }
 @media (max-width: 800px) {
- .staff-main { margin-left: 0; }
- .staff-sidebar { display: none; }
- .staff-sidebar.mobile-open { display: flex; width: min(84vw, 300px); z-index: 31; box-shadow: 12px 0 36px #020b1880; }
- .staff-scrim { display: block; position: fixed; inset: 0; width: 100%; height: 100%; z-index: 30; border: 0; background: #061222a8; }
- .walk-in-page { padding: 18px 16px 32px; }
+  .staff-main {
+    margin-left: 0;
+  }
+  .staff-sidebar {
+    display: none;
+  }
+  .staff-sidebar.mobile-open {
+    display: flex;
+    width: min(84vw, 300px);
+    z-index: 31;
+    box-shadow: 12px 0 36px #020b1880;
+  }
+  .staff-scrim {
+    display: block;
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 30;
+    border: 0;
+    background: #061222a8;
+  }
+  .walk-in-page {
+    padding: 18px 16px 32px;
+  }
 }
 @media (max-width: 480px) {
- .form-grid { grid-template-columns: minmax(0, 1fr); }
- .page-intro h1 { font-size: 25px; }
- .form-section { padding: 16px; }
+  .form-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .page-intro h1 {
+    font-size: 25px;
+  }
+  .form-section {
+    padding: 16px;
+  }
 }
 @media print {
- .staff-sidebar, .staff-scrim, .staff-main > :deep(.staff-workspace-header) { display: none !important; }
- .staff-main { margin-left: 0; }
- .walk-in-page { max-width: none; padding: 0; }
+  .staff-sidebar,
+  .staff-scrim,
+  .staff-main > :deep(.staff-workspace-header) {
+    display: none !important;
+  }
+  .staff-main {
+    margin-left: 0;
+  }
+  .walk-in-page {
+    max-width: none;
+    padding: 0;
+  }
 }
 </style>

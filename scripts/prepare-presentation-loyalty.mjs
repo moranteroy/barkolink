@@ -1,16 +1,25 @@
 ﻿import fs from 'node:fs';
-import {queryLive} from './test-data-database.mjs';
-const email='carlobiado@barkolink.com';
-const goldOnly=process.argv.includes('--gold-only');
-const lastReward=goldOnly?2:3;
-async function main(){
-  const accounts=await queryLive(`select uid,email,role from public.app_user where lower(email)='${email}'`);
-  if(accounts.length!==1 || accounts[0].role!=='PASSENGER')throw new Error('The presentation passenger account could not be verified.');
-  if(process.argv.includes('--apply')){
-    fs.mkdirSync('.audit/presentation-loyalty',{recursive:true});
-    const before=await queryLive(`select to_jsonb(v) record from public.voucher v where owner_uid=(select uid from public.app_user where lower(email)='${email}') order by loyalty_reward_number`);
-    fs.writeFileSync(`.audit/presentation-loyalty/before-${Date.now()}.json`,JSON.stringify(before,null,2));
-    await queryLive(`begin;set local lock_timeout='10s';set local statement_timeout='30s';
+import { queryLive } from './test-data-database.mjs';
+const email = 'carlobiado@barkolink.com';
+const goldOnly = process.argv.includes('--gold-only');
+const lastReward = goldOnly ? 2 : 3;
+async function main() {
+  const accounts = await queryLive(
+    `select uid,email,role from public.app_user where lower(email)='${email}'`,
+  );
+  if (accounts.length !== 1 || accounts[0].role !== 'PASSENGER')
+    throw new Error('The presentation passenger account could not be verified.');
+  if (process.argv.includes('--apply')) {
+    fs.mkdirSync('.audit/presentation-loyalty', { recursive: true });
+    const before = await queryLive(
+      `select to_jsonb(v) record from public.voucher v where owner_uid=(select uid from public.app_user where lower(email)='${email}') order by loyalty_reward_number`,
+    );
+    fs.writeFileSync(
+      `.audit/presentation-loyalty/before-${Date.now()}.json`,
+      JSON.stringify(before, null, 2),
+    );
+    await queryLive(
+      `begin;set local lock_timeout='10s';set local statement_timeout='30s';
       do $$declare actor text;config barkolink_private.loyalty_settings;reward integer;created uuid;
       begin
         select uid into strict actor from public.app_user where lower(email)='${email}' and role='PASSENGER' for update;
@@ -30,12 +39,15 @@ async function main(){
           end if;
         end loop;
         if (select count(*) from public.voucher v where owner_uid=actor and loyalty_reward_number between 2 and ${lastReward} and is_active and starts_at<=now()
-            and expires_at>now()+interval '1 day' and not exists(select 1 from public.booking b where b.voucher_id=v.id))<>${lastReward-1}
+            and expires_at>now()+interval '1 day' and not exists(select 1 from public.booking b where b.voucher_id=v.id))<>${lastReward - 1}
           then raise exception 'Presentation rewards are not both available through tomorrow.';end if;
-      end $$;commit;`,false);
+      end $$;commit;`,
+      false,
+    );
   }
-  if(process.argv.includes('--complete-history')){
-    await queryLive(`begin;set local lock_timeout='10s';set local statement_timeout='45s';
+  if (process.argv.includes('--complete-history')) {
+    await queryLive(
+      `begin;set local lock_timeout='10s';set local statement_timeout='45s';
       create temporary table original_carlo_bookings on commit drop as select b.id,to_jsonb(b) data from public.booking b join public.app_user u on u.uid=b.owner_uid where lower(u.email)='${email}';
       create temporary table original_sailings_guard on commit drop as select md5(jsonb_agg(to_jsonb(s)-'available_seats'-'updated_at' order by code)::text) digest from public.sailing s;
       create temporary table original_inventory on commit drop as select code,available_seats from public.sailing;
@@ -82,12 +94,20 @@ async function main(){
           or exists(select 1 from original_inventory o join public.sailing s using(code) left join prepared_inventory p using(code)
             where s.available_seats<>o.available_seats-coalesce(p.passengers,0))
         then raise exception 'Existing booking or sailing changed; rolled back.';end if;
-      end $$;commit;`,false);
+      end $$;commit;`,
+      false,
+    );
   }
-  const visible=await queryLive(`with actor as(select uid from public.app_user where lower(email)='${email}'),
+  const visible = await queryLive(
+    `with actor as(select uid from public.app_user where lower(email)='${email}'),
     wallet as materialized(select barkolink_private.camel(barkolink_private.execute_flexible_discounts('MyLoyalty','{}',uid,'PASSENGER')) data from actor)
     select data->>'completedTrips' completed_trips,data->>'currentTier' current_tier,data->>'tripsToNextReward' trips_to_next_reward,data->'tiers' milestones,
-      (select jsonb_agg(v-'code') from jsonb_array_elements(data->'vouchers') v) available_rewards from wallet`,false);
-  console.log(JSON.stringify({email,...visible[0]}));
+      (select jsonb_agg(v-'code') from jsonb_array_elements(data->'vouchers') v) available_rewards from wallet`,
+    false,
+  );
+  console.log(JSON.stringify({ email, ...visible[0] }));
 }
-main().catch(error=>{console.error(error.message);process.exitCode=1;});
+main().catch((error) => {
+  console.error(error.message);
+  process.exitCode = 1;
+});

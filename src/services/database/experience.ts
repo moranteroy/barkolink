@@ -1,4 +1,4 @@
-import { executeDatabase, type DatabaseClient } from "./client";
+import { executeDatabase, type DatabaseClient } from './client';
 
 export type Advisory = {
   id: string;
@@ -51,36 +51,29 @@ export type TripOperations = {
   passengers: TripPassenger[];
   activity: Array<{ id: string; action: string; createdAt: string }>;
 };
-export const activeAdvisories = (
-  client: DatabaseClient,
-  sailingCode?: string,
-) =>
-  executeDatabase<{ advisories: Advisory[] }>(client, "ActiveAdvisories", {
+export const activeAdvisories = (client: DatabaseClient, sailingCode?: string) =>
+  executeDatabase<{ advisories: Advisory[] }>(client, 'ActiveAdvisories', {
     sailingCode,
   });
 export const adminAdvisories = (client: DatabaseClient) =>
-  executeDatabase<{ advisories: Advisory[] }>(client, "AdminAdvisories", {});
+  executeDatabase<{ advisories: Advisory[] }>(client, 'AdminAdvisories', {});
 export const saveAdvisory = (
   client: DatabaseClient,
-  advisory: Omit<Advisory, "id"> & { id?: string },
-) => executeDatabase(client, "AdminSaveAdvisory", advisory);
+  advisory: Omit<Advisory, 'id'> & { id?: string },
+) => executeDatabase(client, 'AdminSaveAdvisory', advisory);
 export const markAllNotificationsRead = (client: DatabaseClient) =>
-  executeDatabase(client, "MyMarkAllNotificationsRead", {});
+  executeDatabase(client, 'MyMarkAllNotificationsRead', {});
 export const savedTravelers = (client: DatabaseClient) =>
-  executeDatabase<{ travelers: SavedTraveler[] }>(
-    client,
-    "MySavedTravelers",
-    {},
-  );
+  executeDatabase<{ travelers: SavedTraveler[] }>(client, 'MySavedTravelers', {});
 export const saveTraveler = (
   client: DatabaseClient,
-  traveler: Omit<SavedTraveler, "id"> & { id?: string },
-) => executeDatabase(client, "MySaveTraveler", traveler);
+  traveler: Omit<SavedTraveler, 'id'> & { id?: string },
+) => executeDatabase(client, 'MySaveTraveler', traveler);
 export const deleteTraveler = (client: DatabaseClient, id: string) =>
-  executeDatabase(client, "MyDeleteTraveler", { id });
+  executeDatabase(client, 'MyDeleteTraveler', { id });
 export const tripOperations = (client: DatabaseClient, code: string) =>
-  executeDatabase<TripOperations>(client, "AdminTripOperations", { code });
+  executeDatabase<TripOperations>(client, 'AdminTripOperations', { code });
 export const reconcileNoShows = (client: DatabaseClient, code: string) =>
-  executeDatabase<{ marked: number }>(client, "AdminReconcileNoShows", {
+  executeDatabase<{ marked: number }>(client, 'AdminReconcileNoShows', {
     code,
   });

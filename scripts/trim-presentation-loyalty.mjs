@@ -1,15 +1,21 @@
 ﻿import fs from 'node:fs';
-import {queryLive} from './test-data-database.mjs';
-const actor="(select uid from public.app_user where lower(email)='carlobiado@barkolink.com' and role='PASSENGER')";
-async function main(){
-  if(process.argv.includes('--apply')){
-    const before=await queryLive(`select jsonb_build_object(
+import { queryLive } from './test-data-database.mjs';
+const actor =
+  "(select uid from public.app_user where lower(email)='carlobiado@barkolink.com' and role='PASSENGER')";
+async function main() {
+  if (process.argv.includes('--apply')) {
+    const before = await queryLive(`select jsonb_build_object(
       'bookings',(select jsonb_agg(to_jsonb(b)) from public.booking b where owner_uid=${actor} and exists(select 1 from public.activity_log a where a.entity_id=b.id::text and a.action='PRESENTATION_LOYALTY_HISTORY_PREPARED')),
       'passengers',(select jsonb_agg(to_jsonb(p)) from public.booking_passenger p join public.booking b on b.id=p.booking_id where owner_uid=${actor} and exists(select 1 from public.activity_log a where a.entity_id=b.id::text and a.action='PRESENTATION_LOYALTY_HISTORY_PREPARED')),
       'rewards',(select jsonb_agg(to_jsonb(v)) from public.voucher v where owner_uid=${actor})) snapshot`);
-    fs.mkdirSync('.audit/presentation-loyalty',{recursive:true});
-    fs.writeFileSync(`.audit/presentation-loyalty/before-silver-only-${Date.now()}.json`,JSON.stringify(before,null,2),{flag:'wx'});
-    await queryLive(`begin;set local lock_timeout='10s';set local statement_timeout='30s';
+    fs.mkdirSync('.audit/presentation-loyalty', { recursive: true });
+    fs.writeFileSync(
+      `.audit/presentation-loyalty/before-silver-only-${Date.now()}.json`,
+      JSON.stringify(before, null, 2),
+      { flag: 'wx' },
+    );
+    await queryLive(
+      `begin;set local lock_timeout='10s';set local statement_timeout='30s';
       select pg_advisory_xact_lock(hashtextextended('loyalty:'||${actor},0));
       create temporary table original_carlo_history as select b.id,to_jsonb(b) data from public.booking b where owner_uid=${actor} and not exists(select 1 from public.activity_log a where a.entity_id=b.id::text and a.action='PRESENTATION_LOYALTY_HISTORY_PREPARED');
       create temporary table trim_demo_bookings as select id from (
@@ -35,11 +41,23 @@ async function main(){
           then raise exception 'Original booking history changed; rolled back.';end if;
         insert into public.activity_log(actor_uid,action,entity_type,entity_id,details)
           values(null,'PRESENTATION_LOYALTY_SIMPLIFIED','app_user',${actor},jsonb_build_object('completedDemoTrips',5,'tier','Silver','reason','User requested only the five-trip loyalty presentation'));
-      end $$;commit;`,false);
+      end $$;commit;`,
+      false,
+    );
   }
-  console.log(JSON.stringify(await queryLive(`with wallet as materialized(select barkolink_private.camel(barkolink_private.execute_flexible_discounts('MyLoyalty','{}',${actor},'PASSENGER')) data)
+  console.log(
+    JSON.stringify(
+      await queryLive(
+        `with wallet as materialized(select barkolink_private.camel(barkolink_private.execute_flexible_discounts('MyLoyalty','{}',${actor},'PASSENGER')) data)
     select data->>'completedTrips' completed_trips,data->>'currentTier' tier,data->>'tripsToNextReward' trips_to_next_reward,
       jsonb_array_length(data->'vouchers') available_rewards,
-      (select jsonb_agg(jsonb_build_object('reward',v.loyalty_reward_number,'value',v.value,'used',exists(select 1 from public.booking b where b.voucher_id=v.id))) from public.voucher v where owner_uid=${actor}) rewards from wallet`,false)));
+      (select jsonb_agg(jsonb_build_object('reward',v.loyalty_reward_number,'value',v.value,'used',exists(select 1 from public.booking b where b.voucher_id=v.id))) from public.voucher v where owner_uid=${actor}) rewards from wallet`,
+        false,
+      ),
+    ),
+  );
 }
-main().catch(error=>{console.error(error.message);process.exitCode=1;});
+main().catch((error) => {
+  console.error(error.message);
+  process.exitCode = 1;
+});

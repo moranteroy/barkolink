@@ -1,5 +1,5 @@
-import { createApp } from 'vue'
-import App from './App.vue'
+import { createApp } from 'vue';
+import App from './App.vue';
 import router from './router';
 import { initializeNativeLayout } from './services/nativeLayout';
 import { supabase } from './services/supabase';
@@ -49,11 +49,12 @@ import './theme/mobile.css';
 
 void initializeNativeLayout();
 
-const app = createApp(App)
-  .use(IonicVue)
-  .use(router);
+const app = createApp(App).use(IonicVue).use(router);
 
 router.isReady().then(async () => {
   app.mount('#app');
-  if(supabase)await initializeAuthLinks(supabase,path=>router.replace(path),notifyError).catch(()=>notifyError('Email links are unavailable. Use your email verification code.'));
+  if (supabase)
+    await initializeAuthLinks(supabase, (path) => router.replace(path), notifyError).catch(() =>
+      notifyError('Email links are unavailable. Use your email verification code.'),
+    );
 });

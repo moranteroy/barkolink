@@ -17,15 +17,15 @@ The credential check covers configured private values and recognized patterns; i
 
 ## Keep local
 
-| Files or folders | Reason |
-| --- | --- |
-| `.env.local`, `.env.supabase-management`, other `.env*` except `.env.example` | Local configuration and credentials |
-| `.audit/`, `.backups/` | Browser fixtures, local reports, exported copies and backups |
-| `node_modules/` at any depth | Installed dependencies |
-| `dist/`, coverage and test reports | Generated build/test output |
-| `docs/screenshots/`, Cypress/Playwright screenshots, videos and downloads | Generated verification artifacts |
-| Android build/cache folders, copied web assets and `local.properties` | Generated files and machine-specific SDK configuration |
-| APK/AAB output, keystores and private keys | Packages and signing credentials |
+| Files or folders                                                              | Reason                                                       |
+| ----------------------------------------------------------------------------- | ------------------------------------------------------------ |
+| `.env.local`, `.env.supabase-management`, other `.env*` except `.env.example` | Local configuration and credentials                          |
+| `.audit/`, `.backups/`                                                        | Browser fixtures, local reports, exported copies and backups |
+| `node_modules/` at any depth                                                  | Installed dependencies                                       |
+| `dist/`, coverage and test reports                                            | Generated build/test output                                  |
+| `docs/screenshots/`, Cypress/Playwright screenshots, videos and downloads     | Generated verification artifacts                             |
+| Android build/cache folders, copied web assets and `local.properties`         | Generated files and machine-specific SDK configuration       |
+| APK/AAB output, keystores and private keys                                    | Packages and signing credentials                             |
 
 Keep application source, reusable verification scripts, unit/database tests, SQL migrations, documentation, `package-lock.json`, the blank `.env.example`, Android native source and the Gradle wrapper in Git. Verification scripts read local configuration; the configuration itself is excluded.
 

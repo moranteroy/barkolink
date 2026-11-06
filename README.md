@@ -105,18 +105,18 @@ Supabase Auth manages accounts. The app calls the `barkolink_execute` PostgreSQL
 
 ## Useful commands
 
-| Command | Purpose |
-| --- | --- |
-| `ionic serve --port 8100` | Run the web app with Ionic CLI |
-| `npm run dev -- --port 8100` | Run Vite directly |
-| `npm run build` | Type-check and build production assets into `dist/` |
-| `npm run preview -- --port 8100` | Preview a completed production build |
-| `npm run lint` | Check code style/errors |
-| `npm run test:unit` | Run UI/helper unit tests |
-| `npm run test:database` | Run isolated PGlite database tests; no hosted writes |
-| `npm run test:browser` | Check built-app auth routes and paginated inboxes using intercepted backend fixtures |
-| `npm run test:e2e` | Run Cypress against its configured local server |
-| `npm run android:build` | Build and sync web assets, then compile a debug APK |
+| Command                          | Purpose                                                                              |
+| -------------------------------- | ------------------------------------------------------------------------------------ |
+| `ionic serve --port 8100`        | Run the web app with Ionic CLI                                                       |
+| `npm run dev -- --port 8100`     | Run Vite directly                                                                    |
+| `npm run build`                  | Type-check and build production assets into `dist/`                                  |
+| `npm run preview -- --port 8100` | Preview a completed production build                                                 |
+| `npm run lint`                   | Check code style/errors                                                              |
+| `npm run test:unit`              | Run UI/helper unit tests                                                             |
+| `npm run test:database`          | Run isolated PGlite database tests; no hosted writes                                 |
+| `npm run test:browser`           | Check built-app auth routes and paginated inboxes using intercepted backend fixtures |
+| `npm run test:e2e`               | Run Cypress against its configured local server                                      |
+| `npm run android:build`          | Build and sync web assets, then compile a debug APK                                  |
 
 Browser fixture checks in `scripts/verify-*-ui.mjs` have their own server/browser requirements. See their `BARKOLINK_UI_URL` setting. They intercept backend traffic; scripts with `live` or `management` in their name are owner tools and should not be run as part of a normal laptop setup.
 
@@ -181,6 +181,7 @@ Commit source, tests, SQL migrations, config templates, native source, and the n
 Further guides: [shared UI and appearance](docs/UI-COMPONENTS.md), [AG Grid integration](docs/AG-GRID-INTEGRATION.md), [operations](docs/OPERATIONS-UPGRADE.md), and [development commands](scripts/LOCAL-DEVELOPMENT.md).
 
 Current updates: [release readiness](docs/RELEASE-READINESS.md), [demonstration accounts and workflows](docs/DEMO-WORKFLOWS.md), [Vercel deployment](docs/VERCEL-DEPLOYMENT.md), and [GitHub review](docs/GITHUB-REVIEW-20261006.md).
+
 # PayMongo sandbox payments
 
 Cash and PayMongo test checkout (GCash, Maya and cards) are supported. See [the sandbox setup guide](docs/paymongo-sandbox-setup.md) to configure test secrets, apply migration 019 and deploy the payment Edge Function. Online payments remain unavailable until setup is complete; no live payment keys are accepted.

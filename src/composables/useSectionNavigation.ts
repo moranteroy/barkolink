@@ -3,7 +3,11 @@ import { useRoute } from 'vue-router';
 import { onIonViewDidEnter, onIonViewDidLeave } from '@ionic/vue';
 
 /** Ionic pages scroll inside ion-content and may stay mounted after navigation. */
-export function useSectionNavigation(root: Ref<HTMLElement | undefined>, path: string, hashes: string[]) {
+export function useSectionNavigation(
+  root: Ref<HTMLElement | undefined>,
+  path: string,
+  hashes: string[],
+) {
   const route = useRoute();
   let visible = false;
   let observer: ResizeObserver | undefined;
@@ -11,11 +15,13 @@ export function useSectionNavigation(root: Ref<HTMLElement | undefined>, path: s
   const events = ['wheel', 'touchstart', 'pointerdown', 'keydown'] as const;
   function stop() {
     request++;
-    observer?.disconnect(); observer = undefined;
-    events.forEach(event => root.value?.removeEventListener(event, stop));
+    observer?.disconnect();
+    observer = undefined;
+    events.forEach((event) => root.value?.removeEventListener(event, stop));
   }
   async function reveal() {
-    stop(); const id = request;
+    stop();
+    const id = request;
     const hash = route.hash;
     if (!visible || route.path !== path || !hashes.includes(hash)) return;
     await nextTick();
@@ -30,10 +36,21 @@ export function useSectionNavigation(root: Ref<HTMLElement | undefined>, path: s
     scroll();
     observer = new ResizeObserver(scroll);
     observer.observe(root.value);
-    events.forEach(event => root.value?.addEventListener(event, stop, { passive: true }));
+    events.forEach((event) => root.value?.addEventListener(event, stop, { passive: true }));
   }
-  onIonViewDidEnter(() => { visible = true; void reveal(); });
-  onIonViewDidLeave(() => { visible = false; stop(); });
+  onIonViewDidEnter(() => {
+    visible = true;
+    void reveal();
+  });
+  onIonViewDidLeave(() => {
+    visible = false;
+    stop();
+  });
   onUnmounted(stop);
-  watch(() => route.hash, () => { void reveal(); });
+  watch(
+    () => route.hash,
+    () => {
+      void reveal();
+    },
+  );
 }

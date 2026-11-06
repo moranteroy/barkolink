@@ -12,132 +12,198 @@
     </header>
     <p v-if="error" class="error" role="alert">{{ error }}</p>
     <p v-if="notice" role="status">{{ notice }}</p>
-    <div class="communication-heading"><div><p class="eyebrow">PASSENGER UPDATES</p><h3>Advisory directory</h3><p>Manage drafts and updates for upcoming travel.</p></div><Button :disabled="busy || loading" @click="start">Create advisory</Button></div>
-    <div class="communication-filters"><label>Search advisories<input v-model="query" type="search" placeholder="Title, message, or sailing" /></label><label>Status<select v-model="statusFilter"><option value="ALL">All statuses</option><option value="ACTIVE">Active</option><option value="SCHEDULED">Scheduled</option><option value="DRAFT">Draft</option><option value="ENDED">Ended</option></select></label><Button variant="ghost" @click="query = ''; statusFilter = 'ALL'" :disabled="!query && statusFilter === 'ALL'">Reset filters</Button></div>
-    <IonModal :is-open="editing" :can-dismiss="canDismiss" class="communication-modal advisory-modal" @didDismiss="editing = false"><section class="communication-dialog advisory-dialog"><header class="communication-dialog-heading"><div><p class="eyebrow">TRAVEL ADVISORY</p><h2>{{ form.id ? 'Edit advisory' : 'Create advisory' }}</h2><p>Set the audience and publishing period.</p></div><button type="button" aria-label="Close advisory" :disabled="busy" @click="close"><AppIcon :icon="closeOutline" /></button></header>    <form class="communication-form" @submit.prevent="save"><div class="communication-scroll"><fieldset :disabled="busy">
-<p v-if="formError" class="error" role="alert">{{ formError }}</p>
-      <label
-        >Title<input
-          v-model.trim="form.title"
-          required
-          minlength="3"
-          maxlength="120" /></label
-      ><label
-        >Message<textarea
-          v-model.trim="form.message"
-          required
-          minlength="3"
-          maxlength="2000"
-          rows="3"
-        />
-      </label>
-      <div class="fields advisory-settings">
-        <label
-          >Type<select v-model="form.category">
-            <option
-              v-for="type in [
-                'WEATHER',
-                'PORT',
-                'SCHEDULE',
-                'SAFETY',
-                'GENERAL',
-              ]"
-              :key="type" :value="type"
-            >
-              {{ label(type) }}
-            </option>
-          </select></label
-        ><label
-          >Priority<select v-model="form.priority">
-            <option
-              v-for="priority in ['HIGH', 'MEDIUM', 'LOW']"
-              :key="priority" :value="priority"
-            >
-              {{ label(priority) }}
-            </option>
-          </select></label
-        >
-      <label
-        >Audience<select v-model="form.sailingCode">
-          <option value="">All passengers</option>
-          <option v-for="s in sailings" :key="s.code" :value="s.code">
-            {{ s.code }} · {{ s.origin.name }} → {{ s.destination.name }}
-          </option>
-        </select></label>
-      </div><button
-        v-if="sailings.length < sailingTotal"
-        type="button"
-        :disabled="moreLoading || busy"
-        @click="loadMoreSailings"
-      >
-        {{ moreLoading ? "Loading…" : "Load older sailings" }}
-      </button>
-      <div class="fields">
-        <label
-          >Starts (Philippine time)<input
-            v-model="form.startsAt"
-            type="datetime-local"
-            required /></label
-        ><label
-          >Ends (Philippine time)<input
-            v-model="form.endsAt"
-            type="datetime-local"
-            required
-        /></label>
+    <div class="communication-heading">
+      <div>
+        <p class="eyebrow">PASSENGER UPDATES</p>
+        <h3>Advisory directory</h3>
+        <p>Manage drafts and updates for upcoming travel.</p>
       </div>
-      <label class="check"
-        ><input v-model="form.published" type="checkbox" role="switch" class="ui-switch" /> Publish during this
-        period</label
+      <Button :disabled="busy || loading" @click="start">Create advisory</Button>
+    </div>
+    <div class="communication-filters">
+      <label
+        >Search advisories<input
+          v-model="query"
+          type="search"
+          placeholder="Title, message, or sailing" /></label
+      ><label
+        >Status<select v-model="statusFilter">
+          <option value="ALL">All statuses</option>
+          <option value="ACTIVE">Active</option>
+          <option value="SCHEDULED">Scheduled</option>
+          <option value="DRAFT">Draft</option>
+          <option value="ENDED">Ended</option>
+        </select></label
+      ><Button
+        variant="ghost"
+        @click="
+          query = '';
+          statusFilter = 'ALL';
+        "
+        :disabled="!query && statusFilter === 'ALL'"
+        >Reset filters</Button
       >
-</fieldset></div><footer class="communication-footer"><Button variant="outline" type="button" :disabled="busy" @click="close">Cancel</Button><Button type="submit" :disabled="busy || loading">{{ busy ? 'Saving...' : 'Save advisory' }}</Button></footer></form></section></IonModal>
+    </div>
+    <IonModal
+      :is-open="editing"
+      :can-dismiss="canDismiss"
+      class="communication-modal advisory-modal"
+      @didDismiss="editing = false"
+      ><section class="communication-dialog advisory-dialog">
+        <header class="communication-dialog-heading">
+          <div>
+            <p class="eyebrow">TRAVEL ADVISORY</p>
+            <h2>{{ form.id ? 'Edit advisory' : 'Create advisory' }}</h2>
+            <p>Set the audience and publishing period.</p>
+          </div>
+          <button type="button" aria-label="Close advisory" :disabled="busy" @click="close">
+            <AppIcon :icon="closeOutline" />
+          </button>
+        </header>
+        <form class="communication-form" @submit.prevent="save">
+          <div class="communication-scroll">
+            <fieldset :disabled="busy">
+              <p v-if="formError" class="error" role="alert">{{ formError }}</p>
+              <label
+                >Title<input
+                  v-model.trim="form.title"
+                  required
+                  minlength="3"
+                  maxlength="120" /></label
+              ><label
+                >Message<textarea
+                  v-model.trim="form.message"
+                  required
+                  minlength="3"
+                  maxlength="2000"
+                  rows="3"
+                />
+              </label>
+              <div class="fields advisory-settings">
+                <label
+                  >Type<select v-model="form.category">
+                    <option
+                      v-for="type in ['WEATHER', 'PORT', 'SCHEDULE', 'SAFETY', 'GENERAL']"
+                      :key="type"
+                      :value="type"
+                    >
+                      {{ label(type) }}
+                    </option>
+                  </select></label
+                ><label
+                  >Priority<select v-model="form.priority">
+                    <option
+                      v-for="priority in ['HIGH', 'MEDIUM', 'LOW']"
+                      :key="priority"
+                      :value="priority"
+                    >
+                      {{ label(priority) }}
+                    </option>
+                  </select></label
+                >
+                <label
+                  >Audience<select v-model="form.sailingCode">
+                    <option value="">All passengers</option>
+                    <option v-for="s in sailings" :key="s.code" :value="s.code">
+                      {{ s.code }} · {{ s.origin.name }} → {{ s.destination.name }}
+                    </option>
+                  </select></label
+                >
+              </div>
+              <button
+                v-if="sailings.length < sailingTotal"
+                type="button"
+                :disabled="moreLoading || busy"
+                @click="loadMoreSailings"
+              >
+                {{ moreLoading ? 'Loading…' : 'Load older sailings' }}
+              </button>
+              <div class="fields">
+                <label
+                  >Starts (Philippine time)<input
+                    v-model="form.startsAt"
+                    type="datetime-local"
+                    required /></label
+                ><label
+                  >Ends (Philippine time)<input
+                    v-model="form.endsAt"
+                    type="datetime-local"
+                    required
+                /></label>
+              </div>
+              <label class="check"
+                ><input v-model="form.published" type="checkbox" role="switch" class="ui-switch" />
+                Publish during this period</label
+              >
+            </fieldset>
+          </div>
+          <footer class="communication-footer">
+            <Button variant="outline" type="button" :disabled="busy" @click="close">Cancel</Button
+            ><Button type="submit" :disabled="busy || loading">{{
+              busy ? 'Saving...' : 'Save advisory'
+            }}</Button>
+          </footer>
+        </form>
+      </section></IonModal
+    >
     <p v-if="loading">Loading advisories…</p>
     <p v-else-if="!items.length">No advisories created yet.</p>
-    <p v-if="!loading && items.length" class="communication-count">{{ filteredItems.length }} of {{ items.length }} advisories</p><p v-if="!loading && items.length && !filteredItems.length" class="communication-empty">No advisories match these filters.</p>
+    <p v-if="!loading && items.length" class="communication-count">
+      {{ filteredItems.length }} of {{ items.length }} advisories
+    </p>
+    <p v-if="!loading && items.length && !filteredItems.length" class="communication-empty">
+      No advisories match these filters.
+    </p>
     <div v-if="filteredItems.length" class="advisory-list">
       <article v-for="item in filteredItems" :key="item.id">
-        <AppIcon
-          :icon="item.priority === 'HIGH' ? warningOutline : megaphoneOutline"
-        />
+        <AppIcon :icon="item.priority === 'HIGH' ? warningOutline : megaphoneOutline" />
         <div>
-          <div class="advisory-badges"><Badge :variant="status(item) === 'ACTIVE' ? 'success' : status(item) === 'SCHEDULED' ? 'warning' : 'default'">{{ label(status(item)) }}</Badge><small>{{ label(item.category) }} / {{ label(item.priority) }} priority</small></div>
+          <div class="advisory-badges">
+            <Badge
+              :variant="
+                status(item) === 'ACTIVE'
+                  ? 'success'
+                  : status(item) === 'SCHEDULED'
+                    ? 'warning'
+                    : 'default'
+              "
+              >{{ label(status(item)) }}</Badge
+            ><small>{{ label(item.category) }} / {{ label(item.priority) }} priority</small>
+          </div>
           <h3>{{ item.title }}</h3>
           <p>{{ item.message }}</p>
           <small
-            >{{ item.sailingCode || "All passengers" }} ·
-            {{ date(item.startsAt) }} – {{ date(item.endsAt) }} (PH)</small
+            >{{ item.sailingCode || 'All passengers' }} · {{ date(item.startsAt) }} –
+            {{ date(item.endsAt) }} (PH)</small
           >
         </div>
-        <button :disabled="busy" :aria-label="`Edit advisory ${item.title}`" @click="edit(item)">Edit</button>
+        <button :disabled="busy" :aria-label="`Edit advisory ${item.title}`" @click="edit(item)">
+          Edit
+        </button>
       </article>
     </div>
   </section>
 </template>
 <script setup lang="ts">
 import { notifyError, notifySuccess } from '@/composables/toast';
-import { computed, onMounted, reactive, ref } from "vue";
-import { IonModal } from "@ionic/vue";
-import AppIcon from "@/components/ui/icon/AppIcon.vue";
-import {
-  closeOutline,
-  megaphoneOutline,
-  refreshOutline,
-  warningOutline,
-} from "ionicons/icons";
-import {
-  adminAdvisories,
-  saveAdvisory,
-  type Advisory,
-} from "../../services/database/experience";
-import { adminSailings } from "../../services/database/staff";
-import { staffDatabase } from "../../services/session";
-import { databaseRequestError } from "../../data/databaseErrors";
-import { useUnsavedChanges } from "../../composables/unsavedChanges";
+import { computed, onMounted, reactive, ref } from 'vue';
+import { IonModal } from '@ionic/vue';
+import AppIcon from '@/components/ui/icon/AppIcon.vue';
+import { closeOutline, megaphoneOutline, refreshOutline, warningOutline } from 'ionicons/icons';
+import { adminAdvisories, saveAdvisory, type Advisory } from '../../services/database/experience';
+import { adminSailings } from '../../services/database/staff';
+import { staffDatabase } from '../../services/session';
+import { databaseRequestError } from '../../data/databaseErrors';
+import { useUnsavedChanges } from '../../composables/unsavedChanges';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { confirmAction } from '../../composables/confirmation';
 import '../../theme/communication.css';
 defineProps<{ embedded?: boolean }>();
-const editing = ref(false), formError = ref(''), query = ref(''), statusFilter = ref('ALL');
+const editing = ref(false),
+  formError = ref(''),
+  query = ref(''),
+  statusFilter = ref('ALL');
 const label = (value: string) => value.charAt(0) + value.slice(1).toLowerCase();
 const items = ref<Advisory[]>([]),
   sailings = ref<
@@ -159,30 +225,28 @@ async function loadMoreSailings() {
       pageSize: 100,
     });
     const seen = new Set(sailings.value.map((s) => s.code));
-    sailings.value.push(
-      ...result.data.sailings.filter((s) => !seen.has(s.code)),
-    );
+    sailings.value.push(...result.data.sailings.filter((s) => !seen.has(s.code)));
     sailingPage.value++;
     sailingTotal.value = result.data.totalCount || sailings.value.length;
   } catch (cause) {
-    formError.value = databaseRequestError(cause, "Could not load more sailings.");
+    formError.value = databaseRequestError(cause, 'Could not load more sailings.');
   } finally {
     moreLoading.value = false;
   }
 }
-const error = ref(""),
-  notice = ref(""),
+const error = ref(''),
+  notice = ref(''),
   busy = ref(false),
   loading = ref(false);
 const local = (value: string) =>
   new Date(Date.parse(value) + 8 * 3600000).toISOString().slice(0, 16);
 const empty = () => ({
-  id: "",
-  title: "",
-  message: "",
-  category: "GENERAL",
-  priority: "MEDIUM",
-  sailingCode: "",
+  id: '',
+  title: '',
+  message: '',
+  category: 'GENERAL',
+  priority: 'MEDIUM',
+  sailingCode: '',
   startsAt: local(new Date().toISOString()),
   endsAt: local(new Date(Date.now() + 86400000).toISOString()),
   published: false,
@@ -193,52 +257,82 @@ const hasUnsavedChanges = () => editing.value && JSON.stringify(form) !== savedF
 useUnsavedChanges(hasUnsavedChanges);
 defineExpose({ hasUnsavedChanges });
 const date = (value: string) =>
-  new Date(value).toLocaleString("en-PH", { timeZone: "Asia/Manila", dateStyle: 'medium', timeStyle: 'short' });
+  new Date(value).toLocaleString('en-PH', {
+    timeZone: 'Asia/Manila',
+    dateStyle: 'medium',
+    timeStyle: 'short',
+  });
 const status = (item: Advisory) =>
   !item.published
-    ? "DRAFT"
+    ? 'DRAFT'
     : Date.parse(item.endsAt) <= Date.now()
-      ? "ENDED"
+      ? 'ENDED'
       : Date.parse(item.startsAt) > Date.now()
-        ? "SCHEDULED"
-        : "ACTIVE";
+        ? 'SCHEDULED'
+        : 'ACTIVE';
 const statusOrder = { ACTIVE: 0, SCHEDULED: 1, DRAFT: 2, ENDED: 3 };
-const filteredItems = computed(() => items.value
-  .filter(item => (statusFilter.value === 'ALL' || status(item) === statusFilter.value) && [item.title, item.message, item.sailingCode || 'All passengers'].join(' ').toLowerCase().includes(query.value.trim().toLowerCase()))
-  .sort((a, b) => statusOrder[status(a)] - statusOrder[status(b)]
-    || Date.parse(b.startsAt) - Date.parse(a.startsAt)
-    || a.title.localeCompare(b.title)
-    || a.id.localeCompare(b.id)));
-async function canDismiss() { return !busy.value && (!hasUnsavedChanges() || await confirmAction({ title: 'Discard advisory changes?', message: 'Your unsaved changes will be lost.', confirmText: 'Discard changes' })); }
-async function close() { if (await canDismiss()) editing.value = false; }
-function start() { reset(); formError.value = ''; editing.value = true; }
+const filteredItems = computed(() =>
+  items.value
+    .filter(
+      (item) =>
+        (statusFilter.value === 'ALL' || status(item) === statusFilter.value) &&
+        [item.title, item.message, item.sailingCode || 'All passengers']
+          .join(' ')
+          .toLowerCase()
+          .includes(query.value.trim().toLowerCase()),
+    )
+    .sort(
+      (a, b) =>
+        statusOrder[status(a)] - statusOrder[status(b)] ||
+        Date.parse(b.startsAt) - Date.parse(a.startsAt) ||
+        a.title.localeCompare(b.title) ||
+        a.id.localeCompare(b.id),
+    ),
+);
+async function canDismiss() {
+  return (
+    !busy.value &&
+    (!hasUnsavedChanges() ||
+      (await confirmAction({
+        title: 'Discard advisory changes?',
+        message: 'Your unsaved changes will be lost.',
+        confirmText: 'Discard changes',
+      })))
+  );
+}
+async function close() {
+  if (await canDismiss()) editing.value = false;
+}
+function start() {
+  reset();
+  formError.value = '';
+  editing.value = true;
+}
 function reset() {
   Object.assign(form, empty());
   savedForm = JSON.stringify(form);
 }
 function edit(item: Advisory) {
-  editing.value = true; formError.value = "";
+  editing.value = true;
+  formError.value = '';
   Object.assign(form, item, {
-    sailingCode: item.sailingCode || "",
+    sailingCode: item.sailingCode || '',
     startsAt: local(item.startsAt),
     endsAt: local(item.endsAt),
   });
   savedForm = JSON.stringify(form);
-  if (
-    item.sailingCode &&
-    !sailings.value.some((s) => s.code === item.sailingCode)
-  )
+  if (item.sailingCode && !sailings.value.some((s) => s.code === item.sailingCode))
     sailings.value.push({
       code: item.sailingCode,
-      origin: { name: "Existing" },
-      destination: { name: "sailing" },
+      origin: { name: 'Existing' },
+      destination: { name: 'sailing' },
     });
-  notice.value = "";
+  notice.value = '';
 }
 async function load() {
   if (!staffDatabase || loading.value) return;
   loading.value = true;
-  error.value = "";
+  error.value = '';
   try {
     const [advisories, trips] = await Promise.all([
       adminAdvisories(staffDatabase),
@@ -249,22 +343,28 @@ async function load() {
     sailingPage.value = 0;
     sailingTotal.value = trips.data.totalCount || sailings.value.length;
   } catch (cause) {
-    error.value = databaseRequestError(cause, "Could not load advisories.");
+    error.value = databaseRequestError(cause, 'Could not load advisories.');
   } finally {
     loading.value = false;
   }
 }
 async function save() {
   if (!staffDatabase || busy.value) return;
-  error.value = "";
-  notice.value = "";
+  error.value = '';
+  notice.value = '';
   formError.value = '';
-  const startDate = new Date(`${form.startsAt}:00+08:00`), endDate = new Date(`${form.endsAt}:00+08:00`);
-  if (!Number.isFinite(startDate.getTime()) || !Number.isFinite(endDate.getTime()) || endDate <= startDate) {
-    formError.value = "End time must be later than start time.";
+  const startDate = new Date(`${form.startsAt}:00+08:00`),
+    endDate = new Date(`${form.endsAt}:00+08:00`);
+  if (
+    !Number.isFinite(startDate.getTime()) ||
+    !Number.isFinite(endDate.getTime()) ||
+    endDate <= startDate
+  ) {
+    formError.value = 'End time must be later than start time.';
     return;
   }
-  const startsAt = startDate.toISOString(), endsAt = endDate.toISOString();
+  const startsAt = startDate.toISOString(),
+    endsAt = endDate.toISOString();
   busy.value = true;
   try {
     await saveAdvisory(staffDatabase, {
@@ -275,11 +375,12 @@ async function save() {
       endsAt,
     });
     reset();
-    busy.value = false; editing.value = false;
+    busy.value = false;
+    editing.value = false;
     await load();
-    notifySuccess("Advisory saved. Published advisories appear during their effective period.");
+    notifySuccess('Advisory saved. Published advisories appear during their effective period.');
   } catch (cause) {
-    notifyError(databaseRequestError(cause, "Could not save advisory."));
+    notifyError(databaseRequestError(cause, 'Could not save advisory.'));
   } finally {
     busy.value = false;
   }
@@ -287,57 +388,269 @@ async function save() {
 onMounted(load);
 </script>
 <style scoped>
-.advisory-panel { display: grid; gap: 14px; min-width: 0; color: var(--ink); font-family: var(--ion-font-family); }
-.advisory-panel > header { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
-.communication-heading { padding: 14px 16px; border: 1px solid var(--line); border-radius: 14px; background: var(--surface); gap: 14px; }
-.communication-heading h3 { font-size: 17px; }
-.communication-heading p { margin-top: 5px; font-size: var(--text-label); }
-.eyebrow { color: var(--ocean); font-size: var(--text-caption); font-weight: 800; letter-spacing: .1em; }
-.communication-filters { display: grid; grid-template-columns: minmax(0, 1fr) 160px auto; gap: 12px; padding: 12px 16px; border-radius: 14px; }
-.communication-filters select { min-width: 0; }
-.communication-count { font-size: var(--text-caption); }
-.communication-empty { padding: 24px 16px; font-size: var(--text-label); }
-.advisory-panel > p { margin: 0; color: var(--muted); font-size: var(--text-label); }
-.advisory-panel > p.error, .error { color: var(--danger, #d85563); }
-.advisory-list { display: grid; border: 1px solid var(--line); border-radius: 14px; background: var(--surface); overflow: hidden; }
-.advisory-list article { display: grid; grid-template-columns: 32px minmax(0, 1fr) auto; align-items: start; gap: 12px; padding: 14px 16px; }
-.advisory-list article + article { border-top: 1px solid var(--line); }
-.advisory-list article > .app-icon { color: var(--ocean); font-size: 21px; margin-top: 3px; }
-.advisory-list article > div { min-width: 0; }
-.advisory-badges { gap: 8px; }
-.advisory-list h3 { font-size: 14px; line-height: 1.5; margin: 7px 0 4px; overflow-wrap: anywhere; }
-.advisory-list p { white-space: pre-wrap; overflow-wrap: anywhere; font-size: var(--text-label); line-height: 1.6; margin: 0 0 7px; }
-.advisory-list small { color: var(--muted); font-size: var(--text-caption); line-height: 1.6; overflow-wrap: anywhere; }
-.advisory-panel button, .advisory-dialog button { min-height: 40px; font-family: inherit; font-size: var(--text-label); }
-button:not([data-slot="button"]) { display: inline-flex; align-items: center; justify-content: center; gap: 7px; padding: 8px 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface-soft); color: var(--ocean); font-weight: 600; cursor: pointer; }
-.advisory-list button { min-height: 32px; padding: 5px 10px; font-size: var(--text-caption); }
-button:disabled { opacity: .6; }
-label { display: grid; gap: 7px; min-width: 0; color: var(--muted); font-size: var(--text-label); font-weight: 600; }
-input:not([type="checkbox"]), select, textarea { width: 100%; min-width: 0; min-height: 40px; padding: 8px 12px; border: 1px solid var(--line); border-radius: 9px; background: var(--surface-soft); color: var(--ink); font: inherit; font-size: var(--text-label); }
-textarea { resize: vertical; line-height: 1.5; }
-.fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
-.advisory-settings { grid-template-columns: .8fr .8fr 1.4fr; }
-.advisory-modal { --width: min(640px, calc(100vw - 32px)); --border-radius: 16px; }
-.advisory-dialog { min-height: 0; font-family: var(--ion-font-family); }
-.advisory-dialog .communication-dialog-heading { padding: 12px 20px; gap: 12px; }
-.advisory-dialog .communication-dialog-heading h2 { font-size: 17px; }
-.advisory-dialog .communication-dialog-heading > button { width: 44px; height: 44px; padding: 0; flex: none; font-size: 20px; }
-.advisory-dialog .communication-scroll { padding: 12px 20px; scrollbar-width: thin; }
-.advisory-dialog fieldset { gap: 10px; }
-.advisory-dialog .check { display: flex; align-items: center; gap: 10px; padding: 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface-soft); color: var(--ink); }
-.check input { width: 17px; height: 17px; flex: none; margin: 0; accent-color: var(--ocean); }
-.advisory-dialog .communication-footer { padding: 12px 20px; background: var(--surface-soft); }
-input:focus-visible, select:focus-visible, textarea:focus-visible, button:focus-visible { outline: 2px solid var(--ocean); outline-offset: 2px; }
+.advisory-panel {
+  display: grid;
+  gap: 14px;
+  min-width: 0;
+  color: var(--ink);
+  font-family: var(--ion-font-family);
+}
+.advisory-panel > header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+.communication-heading {
+  padding: 14px 16px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--surface);
+  gap: 14px;
+}
+.communication-heading h3 {
+  font-size: 17px;
+}
+.communication-heading p {
+  margin-top: 5px;
+  font-size: var(--text-label);
+}
+.eyebrow {
+  color: var(--ocean);
+  font-size: var(--text-caption);
+  font-weight: 800;
+  letter-spacing: 0.1em;
+}
+.communication-filters {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 160px auto;
+  gap: 12px;
+  padding: 12px 16px;
+  border-radius: 14px;
+}
+.communication-filters select {
+  min-width: 0;
+}
+.communication-count {
+  font-size: var(--text-caption);
+}
+.communication-empty {
+  padding: 24px 16px;
+  font-size: var(--text-label);
+}
+.advisory-panel > p {
+  margin: 0;
+  color: var(--muted);
+  font-size: var(--text-label);
+}
+.advisory-panel > p.error,
+.error {
+  color: var(--danger, #d85563);
+}
+.advisory-list {
+  display: grid;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--surface);
+  overflow: hidden;
+}
+.advisory-list article {
+  display: grid;
+  grid-template-columns: 32px minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 12px;
+  padding: 14px 16px;
+}
+.advisory-list article + article {
+  border-top: 1px solid var(--line);
+}
+.advisory-list article > .app-icon {
+  color: var(--ocean);
+  font-size: 21px;
+  margin-top: 3px;
+}
+.advisory-list article > div {
+  min-width: 0;
+}
+.advisory-badges {
+  gap: 8px;
+}
+.advisory-list h3 {
+  font-size: 14px;
+  line-height: 1.5;
+  margin: 7px 0 4px;
+  overflow-wrap: anywhere;
+}
+.advisory-list p {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-size: var(--text-label);
+  line-height: 1.6;
+  margin: 0 0 7px;
+}
+.advisory-list small {
+  color: var(--muted);
+  font-size: var(--text-caption);
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+.advisory-panel button,
+.advisory-dialog button {
+  min-height: 40px;
+  font-family: inherit;
+  font-size: var(--text-label);
+}
+button:not([data-slot='button']) {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 8px 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface-soft);
+  color: var(--ocean);
+  font-weight: 600;
+  cursor: pointer;
+}
+.advisory-list button {
+  min-height: 32px;
+  padding: 5px 10px;
+  font-size: var(--text-caption);
+}
+button:disabled {
+  opacity: 0.6;
+}
+label {
+  display: grid;
+  gap: 7px;
+  min-width: 0;
+  color: var(--muted);
+  font-size: var(--text-label);
+  font-weight: 600;
+}
+input:not([type='checkbox']),
+select,
+textarea {
+  width: 100%;
+  min-width: 0;
+  min-height: 40px;
+  padding: 8px 12px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: var(--surface-soft);
+  color: var(--ink);
+  font: inherit;
+  font-size: var(--text-label);
+}
+textarea {
+  resize: vertical;
+  line-height: 1.5;
+}
+.fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+.advisory-settings {
+  grid-template-columns: 0.8fr 0.8fr 1.4fr;
+}
+.advisory-modal {
+  --width: min(640px, calc(100vw - 32px));
+  --border-radius: 16px;
+}
+.advisory-dialog {
+  min-height: 0;
+  font-family: var(--ion-font-family);
+}
+.advisory-dialog .communication-dialog-heading {
+  padding: 12px 20px;
+  gap: 12px;
+}
+.advisory-dialog .communication-dialog-heading h2 {
+  font-size: 17px;
+}
+.advisory-dialog .communication-dialog-heading > button {
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  flex: none;
+  font-size: 20px;
+}
+.advisory-dialog .communication-scroll {
+  padding: 12px 20px;
+  scrollbar-width: thin;
+}
+.advisory-dialog fieldset {
+  gap: 10px;
+}
+.advisory-dialog .check {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface-soft);
+  color: var(--ink);
+}
+.check input {
+  width: 17px;
+  height: 17px;
+  flex: none;
+  margin: 0;
+  accent-color: var(--ocean);
+}
+.advisory-dialog .communication-footer {
+  padding: 12px 20px;
+  background: var(--surface-soft);
+}
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+button:focus-visible {
+  outline: 2px solid var(--ocean);
+  outline-offset: 2px;
+}
 @media (max-width: 600px) {
-  .communication-heading { align-items: flex-start; }
-  .communication-filters { grid-template-columns: minmax(0, 1fr); padding: 16px; }
-  .advisory-list article { grid-template-columns: 24px minmax(0, 1fr); gap: 10px; }
-  .advisory-list article > button { grid-column: 2; justify-self: start; min-height: 44px; }
-  .advisory-modal { --width: calc(100vw - 24px); }
-  .advisory-dialog .communication-dialog-heading, .advisory-dialog .communication-scroll { padding: 16px; }
-  .fields { grid-template-columns: minmax(0, 1fr); }
-  input:not([type="checkbox"]), select, textarea { min-height: 44px; font-size: 16px; }
-  .advisory-dialog .communication-footer { padding: 12px 16px; }
-  .advisory-dialog .communication-footer button { min-height: 44px; flex: 1; }
+  .communication-heading {
+    align-items: flex-start;
+  }
+  .communication-filters {
+    grid-template-columns: minmax(0, 1fr);
+    padding: 16px;
+  }
+  .advisory-list article {
+    grid-template-columns: 24px minmax(0, 1fr);
+    gap: 10px;
+  }
+  .advisory-list article > button {
+    grid-column: 2;
+    justify-self: start;
+    min-height: 44px;
+  }
+  .advisory-modal {
+    --width: calc(100vw - 24px);
+  }
+  .advisory-dialog .communication-dialog-heading,
+  .advisory-dialog .communication-scroll {
+    padding: 16px;
+  }
+  .fields {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  input:not([type='checkbox']),
+  select,
+  textarea {
+    min-height: 44px;
+    font-size: 16px;
+  }
+  .advisory-dialog .communication-footer {
+    padding: 12px 16px;
+  }
+  .advisory-dialog .communication-footer button {
+    min-height: 44px;
+    flex: 1;
+  }
 }
 </style>

@@ -2,12 +2,26 @@ import { mount } from '@vue/test-utils';
 import { nextTick } from 'vue';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import ToastHost from '../../src/components/shared/ToastHost.vue';
-import { clearToasts, dismissToast, notifyError, notifySuccess, notifyValidationError, toastMessages } from '../../src/composables/toast';
+import {
+  clearToasts,
+  dismissToast,
+  notifyError,
+  notifySuccess,
+  notifyValidationError,
+  toastMessages,
+} from '../../src/composables/toast';
 
 describe('shared action feedback', () => {
-  beforeEach(() => { clearToasts(); vi.useFakeTimers(); });
-  afterEach(() => { clearToasts(); vi.useRealTimers(); });
-  const mountHost = () => mount(ToastHost, { global: { stubs: { AppIcon: true, Transition: true, Teleport: true } } });
+  beforeEach(() => {
+    clearToasts();
+    vi.useFakeTimers();
+  });
+  afterEach(() => {
+    clearToasts();
+    vi.useRealTimers();
+  });
+  const mountHost = () =>
+    mount(ToastHost, { global: { stubs: { AppIcon: true, Transition: true, Teleport: true } } });
   it('queues errors after success and suppresses duplicate pending messages', async () => {
     const wrapper = mountHost();
     expect(notifySuccess('Traveler saved.')).toBe('Traveler saved.');
@@ -27,7 +41,9 @@ describe('shared action feedback', () => {
   });
   it('uses an input-validation title without presenting a system failure', async () => {
     const wrapper = mountHost();
-    notifyValidationError('Use 11 digits for Philippine mobile numbers, or include + and the country code.');
+    notifyValidationError(
+      'Use 11 digits for Philippine mobile numbers, or include + and the country code.',
+    );
     await nextTick();
     expect(wrapper.get('strong').text()).toBe('Check your details');
     expect(wrapper.text()).not.toContain('Something went wrong');

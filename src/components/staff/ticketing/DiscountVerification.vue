@@ -3,8 +3,8 @@
     <small v-if="verified">Discount eligibility verified.</small>
     <template v-else>
       <label
-        ><input v-model="checked" type="checkbox" :disabled="busy" /> I checked
-        this passenger's discount eligibility.</label
+        ><input v-model="checked" type="checkbox" :disabled="busy" /> I checked this passenger's
+        discount eligibility.</label
       >
       <label
         >Verification note
@@ -14,12 +14,8 @@
           placeholder="Student ID checked; do not enter ID numbers"
           :disabled="busy"
       /></label>
-      <button
-        type="button"
-        :disabled="busy || !checked || note.length < 3"
-        @click="verify"
-      >
-        {{ busy ? "Saving..." : "Verify discount" }}
+      <button type="button" :disabled="busy || !checked || note.length < 3" @click="verify">
+        {{ busy ? 'Saving...' : 'Verify discount' }}
       </button>
     </template>
     <p v-if="error" role="alert">{{ error }}</p>
@@ -27,27 +23,26 @@
 </template>
 <script setup lang="ts">
 import { notifyError, notifySuccess } from '@/composables/toast';
-import { ref } from "vue";
-import { staffDatabase } from "../../../services/session";
-import { verifyPassengerDiscount } from "../../../services/database/operations";
-import { databaseRequestError } from "../../../data/databaseErrors";
+import { ref } from 'vue';
+import { staffDatabase } from '../../../services/session';
+import { verifyPassengerDiscount } from '../../../services/database/operations';
+import { databaseRequestError } from '../../../data/databaseErrors';
 const props = defineProps<{ passengerId: string; verified: boolean }>();
 const emit = defineEmits<{ verified: [] }>();
 const checked = ref(false),
-  note = ref(""),
+  note = ref(''),
   busy = ref(false),
-  error = ref("");
+  error = ref('');
 async function verify() {
-  if (!staffDatabase || busy.value || !checked.value || note.value.length < 3)
-    return;
+  if (!staffDatabase || busy.value || !checked.value || note.value.length < 3) return;
   busy.value = true;
-  error.value = "";
+  error.value = '';
   try {
     await verifyPassengerDiscount(staffDatabase, props.passengerId, note.value);
     notifySuccess('Discount eligibility verified.');
-    emit("verified");
+    emit('verified');
   } catch (cause) {
-    notifyError(databaseRequestError(cause, "Could not verify discount."));
+    notifyError(databaseRequestError(cause, 'Could not verify discount.'));
   } finally {
     busy.value = false;
   }
@@ -67,7 +62,7 @@ label {
   gap: 8px;
   flex-wrap: wrap;
 }
-input:not([type="checkbox"]) {
+input:not([type='checkbox']) {
   width: 100%;
   padding: 9px;
   border: 1px solid var(--line);

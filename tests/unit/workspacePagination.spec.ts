@@ -15,16 +15,24 @@ describe('shared workspace pagination', () => {
     expect(wrapper.emitted('change')).toEqual([[1], [1]]);
   });
   it('locks both buttons during a request and respects custom page sizes', async () => {
-    const wrapper = mount(WorkspacePagination, { props: { page: 1, total: 21, pageSize: 10, disabled: true } });
+    const wrapper = mount(WorkspacePagination, {
+      props: { page: 1, total: 21, pageSize: 10, disabled: true },
+    });
     expect(wrapper.text()).toContain('Page 2 of 3');
-    for (const button of wrapper.findAll('button')) { expect(button.attributes('disabled')).toBeDefined(); await button.trigger('click'); }
+    for (const button of wrapper.findAll('button')) {
+      expect(button.attributes('disabled')).toBeDefined();
+      await button.trigger('click');
+    }
     expect(wrapper.emitted('change')).toBeUndefined();
   });
   it('handles empty and single-page results without navigating past them', async () => {
     const wrapper = mount(WorkspacePagination, { props: { page: 0, total: 0 } });
     expect(wrapper.text()).toContain('Page 1 of 1');
     await wrapper.setProps({ total: 30 });
-    for (const button of wrapper.findAll('button')) { expect(button.attributes('disabled')).toBeDefined(); await button.trigger('click'); }
+    for (const button of wrapper.findAll('button')) {
+      expect(button.attributes('disabled')).toBeDefined();
+      await button.trigger('click');
+    }
     expect(wrapper.emitted('change')).toBeUndefined();
   });
 });

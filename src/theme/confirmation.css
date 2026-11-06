@@ -1,6 +1,6 @@
 /* Shared confirmation and reason prompts across passenger, staff, and admin actions. */
 ion-alert.barkolink-confirmation {
-  --backdrop-opacity: .52;
+  --backdrop-opacity: 0.52;
   --width: 460px;
   --max-width: calc(100vw - 32px);
   --max-height: calc(100dvh - 32px);
@@ -14,9 +14,12 @@ ion-alert.barkolink-confirmation .alert-wrapper {
   overflow: hidden;
   text-align: left;
 }
-ion-alert.barkolink-confirmation .alert-head { padding: 24px 24px 10px; text-align: left; }
+ion-alert.barkolink-confirmation .alert-head {
+  padding: 24px 24px 10px;
+  text-align: left;
+}
 ion-alert.barkolink-confirmation .alert-head::before {
-  content: "";
+  content: '';
   display: block;
   width: 42px;
   height: 42px;
@@ -38,7 +41,7 @@ ion-alert.barkolink-confirmation .alert-title {
   font-size: 21px;
   font-weight: 700;
   line-height: 1.35;
-  letter-spacing: -.02em;
+  letter-spacing: -0.02em;
   overflow-wrap: anywhere;
 }
 ion-alert.barkolink-confirmation .alert-message {
@@ -84,8 +87,13 @@ ion-alert.barkolink-confirmation .alert-button-group .confirmation-back {
   border-color: var(--line, #e0e7ef);
   color: var(--ink, #14253e);
 }
-ion-alert.barkolink-confirmation .confirmation-proceed { background: var(--action, #147bd1); color: #fff; }
-ion-alert.barkolink-confirmation.destructive-confirmation .confirmation-proceed { background: #d63f50; }
+ion-alert.barkolink-confirmation .confirmation-proceed {
+  background: var(--action, #147bd1);
+  color: #fff;
+}
+ion-alert.barkolink-confirmation.destructive-confirmation .confirmation-proceed {
+  background: #d63f50;
+}
 /* Include the group and button to override Ionic's scoped MD end-alignment.
    Reset the inherited min-height so the inner span does not add another 44px. */
 ion-alert.barkolink-confirmation .alert-button-group .alert-button .alert-button-inner {
@@ -101,10 +109,20 @@ ion-alert.barkolink-confirmation .alert-button-group .alert-button .alert-button
   overflow-wrap: anywhere;
   line-height: 1.5;
 }
-ion-alert.barkolink-confirmation .alert-button:focus-visible { outline: 2px solid var(--ocean, #147bd1); outline-offset: 2px; }
-ion-alert.barkolink-confirmation .alert-button:hover { filter: brightness(.96); }
-ion-alert.barkolink-confirmation .alert-input-group { padding: 0 24px 22px; }
-ion-alert.barkolink-confirmation .alert-input-wrapper { border: 0; background: transparent; }
+ion-alert.barkolink-confirmation .alert-button:focus-visible {
+  outline: 2px solid var(--ocean, #147bd1);
+  outline-offset: 2px;
+}
+ion-alert.barkolink-confirmation .alert-button:hover {
+  filter: brightness(0.96);
+}
+ion-alert.barkolink-confirmation .alert-input-group {
+  padding: 0 24px 22px;
+}
+ion-alert.barkolink-confirmation .alert-input-wrapper {
+  border: 0;
+  background: transparent;
+}
 ion-alert.barkolink-confirmation .alert-input {
   width: 100%;
   border: 1px solid var(--line, #e0e7ef);
@@ -120,11 +138,25 @@ ion-alert.barkolink-confirmation .alert-input {
   line-height: 1.6;
   resize: vertical;
 }
-ion-alert.barkolink-confirmation .alert-input:focus { outline: 2px solid var(--ocean, #147bd1); outline-offset: 2px; }
+ion-alert.barkolink-confirmation .alert-input:focus {
+  outline: 2px solid var(--ocean, #147bd1);
+  outline-offset: 2px;
+}
 @media (max-width: 380px) {
-  ion-alert.barkolink-confirmation .alert-head { padding: 20px 20px 10px; }
-  ion-alert.barkolink-confirmation .alert-message { padding: 0 20px 20px; }
-  ion-alert.barkolink-confirmation .alert-input-group { padding: 0 20px 20px; }
-  ion-alert.barkolink-confirmation .alert-button-group { grid-template-columns: 1fr; padding: 14px 20px; }
-  ion-alert.barkolink-confirmation .alert-title { font-size: 19px; }
+  ion-alert.barkolink-confirmation .alert-head {
+    padding: 20px 20px 10px;
+  }
+  ion-alert.barkolink-confirmation .alert-message {
+    padding: 0 20px 20px;
+  }
+  ion-alert.barkolink-confirmation .alert-input-group {
+    padding: 0 20px 20px;
+  }
+  ion-alert.barkolink-confirmation .alert-button-group {
+    grid-template-columns: 1fr;
+    padding: 14px 20px;
+  }
+  ion-alert.barkolink-confirmation .alert-title {
+    font-size: 19px;
+  }
 }

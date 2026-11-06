@@ -4,11 +4,26 @@
     <h2>Ticketing steps</h2>
     <p class="guide-intro">A quick guide for every passenger transaction.</p>
     <ol>
-      <li><strong>Check the reservation</strong><span>Confirm the sailing, passengers and discount eligibility.</span></li>
-      <li><strong>Record cash payment</strong><span>Receive cash, then confirm payment to issue the tickets.</span></li>
-      <li><strong>Verify online payments</strong><span>Review received online payments before issuing the e-ticket. Do not collect cash again.</span></li>
       <li>
-        <strong>Assist walk-in passengers</strong><span>Create a walk-in ticket and print the receipt for passengers without an account.</span>
+        <strong>Check the reservation</strong
+        ><span>Confirm the sailing, passengers and discount eligibility.</span>
+      </li>
+      <li>
+        <strong>Record cash payment</strong
+        ><span>Receive cash, then confirm payment to issue the tickets.</span>
+      </li>
+      <li>
+        <strong>Verify online payments</strong
+        ><span
+          >Review received online payments before issuing the e-ticket. Do not collect cash
+          again.</span
+        >
+      </li>
+      <li>
+        <strong>Assist walk-in passengers</strong
+        ><span
+          >Create a walk-in ticket and print the receipt for passengers without an account.</span
+        >
       </li>
     </ol>
     <RouterLink to="/staff/ticketing/walk-in" class="walk-in-link"
@@ -17,9 +32,9 @@
   </aside>
 </template>
 <script setup lang="ts">
-import { RouterLink } from "vue-router";
-import AppIcon from "@/components/ui/icon/AppIcon.vue";
-import { ticketOutline } from "ionicons/icons";
+import { RouterLink } from 'vue-router';
+import AppIcon from '@/components/ui/icon/AppIcon.vue';
+import { ticketOutline } from 'ionicons/icons';
 </script>
 <style scoped>
 .ticketing-guide {
@@ -38,11 +53,31 @@ import { ticketOutline } from "ionicons/icons";
 h2 {
   margin-bottom: 12px;
 }
-.ticketing-guide { border-radius: 18px; padding: 22px; }
-h2 { margin: 8px 0; font-size: 21px; line-height: 1.5; }
-.guide-intro { margin: 0 0 20px; font-size: var(--text-label); color: var(--muted); line-height: 1.7; }
-.walk-in-link { min-height: 46px; font-size: var(--text-label); font-weight: 600; background: var(--action); }
-.walk-in-link:focus-visible { outline: 2px solid var(--ocean); outline-offset: 3px; }
+.ticketing-guide {
+  border-radius: 18px;
+  padding: 22px;
+}
+h2 {
+  margin: 8px 0;
+  font-size: 21px;
+  line-height: 1.5;
+}
+.guide-intro {
+  margin: 0 0 20px;
+  font-size: var(--text-label);
+  color: var(--muted);
+  line-height: 1.7;
+}
+.walk-in-link {
+  min-height: 46px;
+  font-size: var(--text-label);
+  font-weight: 600;
+  background: var(--action);
+}
+.walk-in-link:focus-visible {
+  outline: 2px solid var(--ocean);
+  outline-offset: 3px;
+}
 ol {
   display: grid;
   gap: 14px;
@@ -54,10 +89,39 @@ ol {
   font-size: var(--text-caption);
   line-height: 1.55;
 }
-li { position: relative; padding-left: 36px; counter-increment: step; }
-li::before { content: counter(step); position: absolute; left: 0; top: 0; display: grid; place-items: center; width: 25px; height: 25px; border-radius: 8px; background: var(--light-blue); color: var(--ocean); font-size: var(--text-caption); font-weight: 650; }
-li strong { display: block; color: var(--ink); font-size: var(--text-label); font-weight: 600; line-height: 1.6; }
-li span { display: block; margin-top: 5px; font-size: var(--text-caption); line-height: 1.8; }
+li {
+  position: relative;
+  padding-left: 36px;
+  counter-increment: step;
+}
+li::before {
+  content: counter(step);
+  position: absolute;
+  left: 0;
+  top: 0;
+  display: grid;
+  place-items: center;
+  width: 25px;
+  height: 25px;
+  border-radius: 8px;
+  background: var(--light-blue);
+  color: var(--ocean);
+  font-size: var(--text-caption);
+  font-weight: 650;
+}
+li strong {
+  display: block;
+  color: var(--ink);
+  font-size: var(--text-label);
+  font-weight: 600;
+  line-height: 1.6;
+}
+li span {
+  display: block;
+  margin-top: 5px;
+  font-size: var(--text-caption);
+  line-height: 1.8;
+}
 li::marker {
   color: var(--ocean);
   font-weight: 800;

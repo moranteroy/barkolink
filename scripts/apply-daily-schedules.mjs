@@ -1,10 +1,19 @@
 import fs from 'node:fs';
 import { queryLive } from './test-data-database.mjs';
-const installed = (await queryLive("select to_regclass('barkolink_private.daily_schedule') is not null as installed"))[0].installed;
-if (installed) { console.log('Daily schedule management is already installed.'); process.exit(0); }
-if (!process.argv.includes('--apply')) { console.log('Daily schedule management is ready to install.'); process.exit(0); }
+const installed = (
+  await queryLive("select to_regclass('barkolink_private.daily_schedule') is not null as installed")
+)[0].installed;
+if (installed) {
+  console.log('Daily schedule management is already installed.');
+  process.exit(0);
+}
+if (!process.argv.includes('--apply')) {
+  console.log('Daily schedule management is ready to install.');
+  process.exit(0);
+}
 const migration = fs.readFileSync('supabase/migrations/038_daily_schedule_management.sql', 'utf8');
-await queryLive(`begin;
+await queryLive(
+  `begin;
 set local lock_timeout='10s';
 set local statement_timeout='30s';
 lock table public.booking,public.booking_passenger,public.voucher,public.sailing in share row exclusive mode;
@@ -25,8 +34,14 @@ if after_value is distinct from (select fingerprint from code_history_guard) the
 end if;
 end $$;
 drop table code_history_guard;
-commit;`, false);
-console.log('Installed daily schedule management. Existing bookings, vouchers and QR tokens are unchanged.');
+commit;`,
+  false,
+);
+console.log(
+  'Installed daily schedule management. Existing bookings, vouchers and QR tokens are unchanged.',
+);
 
-const counts=await queryLive("select count(*)::int as schedules,count(*) filter(where is_active)::int as active from barkolink_private.daily_schedule");
+const counts = await queryLive(
+  'select count(*)::int as schedules,count(*) filter(where is_active)::int as active from barkolink_private.daily_schedule',
+);
 console.log(JSON.stringify(counts[0]));

@@ -3,7 +3,13 @@
     ><ion-content
       ><main class="reset-form glass-panel">
         <h1>Set a new password</h1>
-        <p>{{ recoveryReady ? 'Your email is verified. Choose your new password.' : 'Verify the code from your email before setting a new password.' }}</p>
+        <p>
+          {{
+            recoveryReady
+              ? 'Your email is verified. Choose your new password.'
+              : 'Verify the code from your email before setting a new password.'
+          }}
+        </p>
         <form @submit.prevent="save">
           <label
             >New password<input
@@ -31,35 +37,51 @@
   >
 </template>
 <script setup lang="ts">
-import BackIcon from "@/components/ui/icon/BackIcon.vue";
-import { ref } from "vue";
-import { RouterLink } from "vue-router";
-import { IonPage, IonContent, IonButton, onIonViewWillEnter } from "@ionic/vue";
-import { requireSupabase } from "../../services/supabase";
-const password = ref(""),
-  confirm = ref(""),
-  message = ref(""),
+import BackIcon from '@/components/ui/icon/BackIcon.vue';
+import { ref } from 'vue';
+import { RouterLink } from 'vue-router';
+import { IonPage, IonContent, IonButton, onIonViewWillEnter } from '@ionic/vue';
+import { requireSupabase } from '../../services/supabase';
+const password = ref(''),
+  confirm = ref(''),
+  message = ref(''),
   busy = ref(false);
-const failed = ref(false), showPassword = ref(false);
+const failed = ref(false),
+  showPassword = ref(false);
 const recoveryReady = ref(false);
 async function checkRecovery() {
   const marker = JSON.parse(sessionStorage.getItem('barkolink-password-recovery') || '{}');
   const { data, error } = await requireSupabase().auth.getUser();
-  if (error || !data.user || marker.uid !== data.user.id || !Number.isFinite(marker.verifiedAt) || Date.now() - marker.verifiedAt > 15 * 60 * 1000) {
+  if (
+    error ||
+    !data.user ||
+    marker.uid !== data.user.id ||
+    !Number.isFinite(marker.verifiedAt) ||
+    Date.now() - marker.verifiedAt > 15 * 60 * 1000
+  ) {
     throw new Error('Verify a new reset code from the sign-in page to continue.');
   }
 }
 onIonViewWillEnter(async () => {
   recoveryReady.value = false;
-  try { await checkRecovery(); recoveryReady.value = true; }
-  catch (error) { failed.value = true; message.value = (error as Error).message; }
+  try {
+    await checkRecovery();
+    recoveryReady.value = true;
+  } catch (error) {
+    failed.value = true;
+    message.value = (error as Error).message;
+  }
 });
 async function save() {
   if (busy.value || !recoveryReady.value) return;
   failed.value = false;
-  if (password.value.length < 8 || password.value.length > 128) { message.value = 'Use 8 to 128 characters.'; failed.value = true; return; }
+  if (password.value.length < 8 || password.value.length > 128) {
+    message.value = 'Use 8 to 128 characters.';
+    failed.value = true;
+    return;
+  }
   if (password.value !== confirm.value) {
-    message.value = "Passwords do not match.";
+    message.value = 'Passwords do not match.';
     failed.value = true;
     return;
   }
@@ -70,7 +92,7 @@ async function save() {
     const { data } = await client.auth.getSession();
     if (!data.session)
       throw new Error(
-        "Your reset session has expired. Request another code from the sign-in page.",
+        'Your reset session has expired. Request another code from the sign-in page.',
       );
     const { error } = await client.auth.updateUser({
       password: password.value,
@@ -80,12 +102,12 @@ async function save() {
     sessionStorage.removeItem('barkolink-pending-email');
     recoveryReady.value = false;
     await client.auth.signOut();
-    password.value = "";
-    confirm.value = "";
-    message.value = "Password saved. Sign in with your new password.";
+    password.value = '';
+    confirm.value = '';
+    message.value = 'Password saved. Sign in with your new password.';
   } catch (error) {
     failed.value = true;
-    message.value = error instanceof Error ? error.message : "Could not save password.";
+    message.value = error instanceof Error ? error.message : 'Could not save password.';
   } finally {
     busy.value = false;
   }
@@ -134,6 +156,14 @@ input {
   background: var(--surface);
   color: var(--ink);
 }
-.sign-in-return { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; }
-.sign-in-return .app-icon { font-size: 19px; flex: none; }
+.sign-in-return {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+}
+.sign-in-return .app-icon {
+  font-size: 19px;
+  flex: none;
+}
 </style>

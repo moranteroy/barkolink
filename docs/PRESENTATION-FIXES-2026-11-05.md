@@ -14,16 +14,16 @@ November 5, 2026. This supersedes the open findings in `PRESENTATION-READINESS-2
 
 ## Final verification
 
-| Check | Result |
-| --- | --- |
-| ESLint | PASS |
-| Production build | PASS in preceding audit; application source unchanged by these repairs |
-| Original unit suite | **464/464 passed**, 81 files |
-| Original full database/Edge Function suite after regression addition | **233/233 passed**, 26 files |
-| Corrected original QR browser suite | PASS, Passenger/Boarding, 390px and 1440px |
-| Corrected original four-role experience suite | PASS, Admin/Passenger/Ticketing/Boarding, 390px and 1440px, both themes |
-| Actual-account production login/page/dry-run checks | 32 passed in preceding audit |
-| Live integrity recheck after all rehearsal transactions | **Zero issues** for inventory, reservation seats, class allocation, passenger counts, staff ports, role synchronization and trip times |
+| Check                                                                | Result                                                                                                                                 |
+| -------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| ESLint                                                               | PASS                                                                                                                                   |
+| Production build                                                     | PASS in preceding audit; application source unchanged by these repairs                                                                 |
+| Original unit suite                                                  | **464/464 passed**, 81 files                                                                                                           |
+| Original full database/Edge Function suite after regression addition | **233/233 passed**, 26 files                                                                                                           |
+| Corrected original QR browser suite                                  | PASS, Passenger/Boarding, 390px and 1440px                                                                                             |
+| Corrected original four-role experience suite                        | PASS, Admin/Passenger/Ticketing/Boarding, 390px and 1440px, both themes                                                                |
+| Actual-account production login/page/dry-run checks                  | 32 passed in preceding audit                                                                                                           |
+| Live integrity recheck after all rehearsal transactions              | **Zero issues** for inventory, reservation seats, class allocation, passenger counts, staff ports, role synchronization and trip times |
 
 Other previously passing browser suites—payments, reservation retries, role access, staff-port restrictions, sessions, real grid controls, public terminal display, production MFA/CSP, manual voucher entry, ticket history and inbox pagination—remain recorded in the original audit artifacts. They were not unnecessarily rerun after test-only changes.
 

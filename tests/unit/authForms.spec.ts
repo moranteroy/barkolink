@@ -1,121 +1,157 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { flushPromises, mount } from '@vue/test-utils'
-import AuthPage from '../../src/views/auth/AuthPage.vue'
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { flushPromises, mount } from '@vue/test-utils';
+import AuthPage from '../../src/views/auth/AuthPage.vue';
 
 const mocks = vi.hoisted(() => ({
   route: { path: '/login', fullPath: '/login', query: {} },
-  replace: vi.fn(), signIn: vi.fn(), register: vi.fn(), reset: vi.fn(), resend: vi.fn(), profile: vi.fn(), createProfile: vi.fn(),
-}))
+  replace: vi.fn(),
+  signIn: vi.fn(),
+  register: vi.fn(),
+  reset: vi.fn(),
+  resend: vi.fn(),
+  profile: vi.fn(),
+  createProfile: vi.fn(),
+}));
 vi.mock('vue-router', () => ({
-  useRoute: () => mocks.route, useRouter: () => ({ replace: mocks.replace }),
+  useRoute: () => mocks.route,
+  useRouter: () => ({ replace: mocks.replace }),
   RouterLink: { template: '<a><slot /></a>' },
-}))
+}));
 vi.mock('@ionic/vue', () => ({
-  IonPage: { template: '<div><slot /></div>' }, IonContent: { template: '<div><slot /></div>' },
-  IonButton: { template: '<button><slot /></button>' }, IonIcon: { template: '<span />' },
-}))
-vi.mock('../../src/services/session', () => ({ database: {}, requireAuth: () => ({}) }))
+  IonPage: { template: '<div><slot /></div>' },
+  IonContent: { template: '<div><slot /></div>' },
+  IonButton: { template: '<button><slot /></button>' },
+  IonIcon: { template: '<span />' },
+}));
+vi.mock('../../src/services/session', () => ({ database: {}, requireAuth: () => ({}) }));
 vi.mock('../../src/services/auth', () => ({
-  registerAccount: mocks.register, signInWithPassword: mocks.signIn, sendPasswordResetEmail: mocks.reset,
+  registerAccount: mocks.register,
+  signInWithPassword: mocks.signIn,
+  sendPasswordResetEmail: mocks.reset,
   updateAccountProfile: vi.fn(),
   resendEmailCode: mocks.resend,
-}))
-vi.mock('../../src/services/database/passenger', () => ({ myProfile: mocks.profile, createMyProfile: mocks.createProfile }))
+}));
+vi.mock('../../src/services/database/passenger', () => ({
+  myProfile: mocks.profile,
+  createMyProfile: mocks.createProfile,
+}));
 
 describe('Account forms', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
-    sessionStorage.clear()
-    mocks.route.path = '/login'; mocks.route.fullPath = '/login'; mocks.route.query = {}
-    mocks.replace.mockResolvedValue(undefined)
-  })
+    vi.clearAllMocks();
+    sessionStorage.clear();
+    mocks.route.path = '/login';
+    mocks.route.fullPath = '/login';
+    mocks.route.query = {};
+    mocks.replace.mockResolvedValue(undefined);
+  });
   it('prevents repeated sign-in submissions and preserves staff destinations', async () => {
-    let finish!: (value: unknown) => void
-    mocks.signIn.mockReturnValue(new Promise(resolve => { finish = resolve }))
-    const wrapper = mount(AuthPage)
-    await wrapper.get('#email').setValue('staff@example.invalid')
-    await wrapper.get('#password').setValue('Password123!')
-    await wrapper.get('form').trigger('submit')
-    await wrapper.get('form').trigger('submit')
-    expect(mocks.signIn).toHaveBeenCalledTimes(1)
-    expect(wrapper.get('.submit-button').attributes('disabled')).toBeDefined()
-    finish({ user: { getRoleSession: async () => ({ claims: { role: 'TICKETING' } }) } })
-    await flushPromises()
-    expect(mocks.replace).toHaveBeenCalledWith('/staff/ticketing')
-    expect(mocks.profile).not.toHaveBeenCalled()
-    expect(wrapper.get('.submit-button').attributes('disabled')).toBeUndefined()
-    wrapper.unmount()
-  })
+    let finish!: (value: unknown) => void;
+    mocks.signIn.mockReturnValue(
+      new Promise((resolve) => {
+        finish = resolve;
+      }),
+    );
+    const wrapper = mount(AuthPage);
+    await wrapper.get('#email').setValue('staff@example.invalid');
+    await wrapper.get('#password').setValue('Password123!');
+    await wrapper.get('form').trigger('submit');
+    await wrapper.get('form').trigger('submit');
+    expect(mocks.signIn).toHaveBeenCalledTimes(1);
+    expect(wrapper.get('.submit-button').attributes('disabled')).toBeDefined();
+    finish({ user: { getRoleSession: async () => ({ claims: { role: 'TICKETING' } }) } });
+    await flushPromises();
+    expect(mocks.replace).toHaveBeenCalledWith('/staff/ticketing');
+    expect(mocks.profile).not.toHaveBeenCalled();
+    expect(wrapper.get('.submit-button').attributes('disabled')).toBeUndefined();
+    wrapper.unmount();
+  });
   it('requests a signup code and opens verification for an unconfirmed sign-in', async () => {
-    mocks.signIn.mockRejectedValue({ code: 'email_not_confirmed' })
-    mocks.resend.mockResolvedValue(undefined)
-    const wrapper = mount(AuthPage)
-    await wrapper.get('#email').setValue('test@example.invalid')
-    await wrapper.get('#password').setValue('Password123!')
-    await wrapper.get('form').trigger('submit'); await flushPromises()
-    expect(mocks.resend).toHaveBeenCalledWith('test@example.invalid', 'signup')
-    expect(mocks.replace).toHaveBeenCalledWith({ path: '/verify-email', query: { purpose: 'signup' } })
-    wrapper.unmount()
-  })
+    mocks.signIn.mockRejectedValue({ code: 'email_not_confirmed' });
+    mocks.resend.mockResolvedValue(undefined);
+    const wrapper = mount(AuthPage);
+    await wrapper.get('#email').setValue('test@example.invalid');
+    await wrapper.get('#password').setValue('Password123!');
+    await wrapper.get('form').trigger('submit');
+    await flushPromises();
+    expect(mocks.resend).toHaveBeenCalledWith('test@example.invalid', 'signup');
+    expect(mocks.replace).toHaveBeenCalledWith({
+      path: '/verify-email',
+      query: { purpose: 'signup' },
+    });
+    wrapper.unmount();
+  });
   it('ignores a stale OTP redirect after successful sign-in', async () => {
-    mocks.route.query = { redirect: '/verify-email?purpose=signup' }
-    mocks.signIn.mockResolvedValue({ user: { getRoleSession: async () => ({ claims: { role: 'PASSENGER' } }) } })
-    mocks.profile.mockResolvedValue({ data: { user: { role: 'PASSENGER' } } })
-    const wrapper = mount(AuthPage)
-    await wrapper.get('#email').setValue('test@example.invalid')
-    await wrapper.get('#password').setValue('Password123!')
-    await wrapper.get('form').trigger('submit'); await flushPromises()
-    expect(mocks.replace).toHaveBeenCalledWith('/home')
-    wrapper.unmount()
-  })
+    mocks.route.query = { redirect: '/verify-email?purpose=signup' };
+    mocks.signIn.mockResolvedValue({
+      user: { getRoleSession: async () => ({ claims: { role: 'PASSENGER' } }) },
+    });
+    mocks.profile.mockResolvedValue({ data: { user: { role: 'PASSENGER' } } });
+    const wrapper = mount(AuthPage);
+    await wrapper.get('#email').setValue('test@example.invalid');
+    await wrapper.get('#password').setValue('Password123!');
+    await wrapper.get('form').trigger('submit');
+    await flushPromises();
+    expect(mocks.replace).toHaveBeenCalledWith('/home');
+    wrapper.unmount();
+  });
   it('restores the submit button after invalid credentials', async () => {
-    mocks.signIn.mockRejectedValue({ code: 'invalid_credentials' })
-    const wrapper = mount(AuthPage)
-    await wrapper.get('#email').setValue('test@example.invalid')
-    await wrapper.get('#password').setValue('Password123!')
-    await wrapper.get('form').trigger('submit')
-    await flushPromises()
-    expect(wrapper.get('[role="alert"]').text()).toContain('do not match')
-    expect(wrapper.get('.submit-button').attributes('disabled')).toBeUndefined()
-    wrapper.unmount()
-  })
+    mocks.signIn.mockRejectedValue({ code: 'invalid_credentials' });
+    const wrapper = mount(AuthPage);
+    await wrapper.get('#email').setValue('test@example.invalid');
+    await wrapper.get('#password').setValue('Password123!');
+    await wrapper.get('form').trigger('submit');
+    await flushPromises();
+    expect(wrapper.get('[role="alert"]').text()).toContain('do not match');
+    expect(wrapper.get('.submit-button').attributes('disabled')).toBeUndefined();
+    wrapper.unmount();
+  });
   it('requires privacy acknowledgement before registration', async () => {
-    mocks.route.path = '/register'
-    const wrapper = mount(AuthPage)
-    await wrapper.get('#full-name').setValue('Test Passenger')
-    await wrapper.get('#email').setValue('test@example.invalid')
-    await wrapper.get('#password').setValue('Password123!')
-    await wrapper.get('#confirm-password').setValue('Password123!')
-    await wrapper.get('form').trigger('submit')
-    expect(mocks.register).not.toHaveBeenCalled()
-    expect(wrapper.get('[role="alert"]').text()).toContain('privacy notice')
-    wrapper.unmount()
-  })
+    mocks.route.path = '/register';
+    const wrapper = mount(AuthPage);
+    await wrapper.get('#full-name').setValue('Test Passenger');
+    await wrapper.get('#email').setValue('test@example.invalid');
+    await wrapper.get('#password').setValue('Password123!');
+    await wrapper.get('#confirm-password').setValue('Password123!');
+    await wrapper.get('form').trigger('submit');
+    expect(mocks.register).not.toHaveBeenCalled();
+    expect(wrapper.get('[role="alert"]').text()).toContain('privacy notice');
+    wrapper.unmount();
+  });
   it('opens OTP verification without creating a profile before email verification', async () => {
-    mocks.route.path = '/register'
-    mocks.register.mockResolvedValue({ user: { email: 'test@example.invalid' }, session: null })
-    const wrapper = mount(AuthPage)
-    await wrapper.get('#full-name').setValue('Test Passenger')
-    await wrapper.get('#email').setValue('test@example.invalid')
-    await wrapper.get('#password').setValue('Password123!')
-    await wrapper.get('#confirm-password').setValue('Password123!')
-    await wrapper.get('#terms').setValue(true)
-    await wrapper.get('form').trigger('submit')
-    await flushPromises()
-    expect(mocks.replace).toHaveBeenCalledWith({ path: '/verify-email', query: { purpose: 'signup' } })
-    expect(JSON.parse(sessionStorage.getItem('barkolink-pending-email')!)).toEqual({ email: 'test@example.invalid', purpose: 'signup' })
-    expect(wrapper.get('.submit-button').attributes('disabled')).toBeUndefined()
-    expect(mocks.createProfile).not.toHaveBeenCalled()
-    wrapper.unmount()
-  })
+    mocks.route.path = '/register';
+    mocks.register.mockResolvedValue({ user: { email: 'test@example.invalid' }, session: null });
+    const wrapper = mount(AuthPage);
+    await wrapper.get('#full-name').setValue('Test Passenger');
+    await wrapper.get('#email').setValue('test@example.invalid');
+    await wrapper.get('#password').setValue('Password123!');
+    await wrapper.get('#confirm-password').setValue('Password123!');
+    await wrapper.get('#terms').setValue(true);
+    await wrapper.get('form').trigger('submit');
+    await flushPromises();
+    expect(mocks.replace).toHaveBeenCalledWith({
+      path: '/verify-email',
+      query: { purpose: 'signup' },
+    });
+    expect(JSON.parse(sessionStorage.getItem('barkolink-pending-email')!)).toEqual({
+      email: 'test@example.invalid',
+      purpose: 'signup',
+    });
+    expect(wrapper.get('.submit-button').attributes('disabled')).toBeUndefined();
+    expect(mocks.createProfile).not.toHaveBeenCalled();
+    wrapper.unmount();
+  });
   it('opens recovery OTP verification after requesting password reset', async () => {
-    mocks.reset.mockResolvedValue(undefined)
-    const wrapper = mount(AuthPage)
-    await wrapper.get('#email').setValue('test@example.invalid')
-    await wrapper.get('.text-button').trigger('click')
-    await flushPromises()
-    expect(mocks.reset).toHaveBeenCalledOnce()
-    expect(mocks.replace).toHaveBeenCalledWith({ path: '/verify-email', query: { purpose: 'recovery' } })
-    wrapper.unmount()
-  })
-})
+    mocks.reset.mockResolvedValue(undefined);
+    const wrapper = mount(AuthPage);
+    await wrapper.get('#email').setValue('test@example.invalid');
+    await wrapper.get('.text-button').trigger('click');
+    await flushPromises();
+    expect(mocks.reset).toHaveBeenCalledOnce();
+    expect(mocks.replace).toHaveBeenCalledWith({
+      path: '/verify-email',
+      query: { purpose: 'recovery' },
+    });
+    wrapper.unmount();
+  });
+});

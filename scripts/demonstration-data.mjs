@@ -1,7 +1,9 @@
 import fs from 'node:fs';
-export const batchId='batangas-calapan-2026-v1';
-export function demonstrationSql(){return fs.readFileSync('supabase/demonstration-data.sql','utf8');}
-export const demonstrationChecks=`do $$ begin
+export const batchId = 'batangas-calapan-2026-v1';
+export function demonstrationSql() {
+  return fs.readFileSync('supabase/demonstration-data.sql', 'utf8');
+}
+export const demonstrationChecks = `do $$ begin
  if exists(select 1 from public.booking b join demo_sailings ds on ds.code=b.sailing_code
    where b.passenger_count<>(select count(*) from public.booking_passenger p where p.booking_id=b.id)
    or b.passenger_fare_total<>(select sum(p.fare) from public.booking_passenger p where p.booking_id=b.id)+b.accommodation_surcharge*b.passenger_count

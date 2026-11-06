@@ -27,10 +27,12 @@ where u.role is distinct from coalesce(a.raw_app_meta_data->>'role','PASSENGER')
 union all
 select 'invalid_trip_times',count(*)::int from public.sailing where arrival_at<=departure_at
 `);
-const inventory = await queryLive(`select role,count(*)::int as accounts from public.app_user where role<>'WALK_IN' group by role order by role`);
+const inventory = await queryLive(
+  `select role,count(*)::int as accounts from public.app_user where role<>'WALK_IN' group by role order by role`,
+);
 const result = { checkedAt: new Date().toISOString(), checks, roles: inventory, readOnly: true };
 fs.mkdirSync('.audit', { recursive: true });
 fs.writeFileSync('.audit/system-live-integrity.json', JSON.stringify(result, null, 2));
 for (const check of checks) console.log(`${check.check_name}: ${check.issues} issues`);
-console.log('Account roles:', inventory.map(item => `${item.role}=${item.accounts}`).join(', '));
-if (checks.some(check => check.issues > 0)) process.exitCode = 1;
+console.log('Account roles:', inventory.map((item) => `${item.role}=${item.accounts}`).join(', '));
+if (checks.some((check) => check.issues > 0)) process.exitCode = 1;

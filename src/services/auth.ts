@@ -1,6 +1,6 @@
-import { shallowRef } from "vue";
-import type { User } from "@supabase/supabase-js";
-import { requireSupabase, supabase } from "./supabase";
+import { shallowRef } from 'vue';
+import type { User } from '@supabase/supabase-js';
+import { requireSupabase, supabase } from './supabase';
 import { validEmail, validName } from '../data/securityValidation';
 import { authRedirect } from './authLinks';
 
@@ -18,10 +18,9 @@ function accountUser(user: User): AccountUser {
     displayName: user.user_metadata?.fullName || null,
     async getRoleSession() {
       const { data, error } = await requireSupabase().auth.getUser();
-      if (error || !data.user)
-        throw error || new Error("Your session has expired. Sign in again.");
+      if (error || !data.user) throw error || new Error('Your session has expired. Sign in again.');
       current.value = accountUser(data.user);
-      return { claims: { role: data.user.app_metadata?.role || "PASSENGER" } };
+      return { claims: { role: data.user.app_metadata?.role || 'PASSENGER' } };
     },
   };
 }
@@ -37,10 +36,20 @@ const initialized = supabase
 supabase?.auth.onAuthStateChange((_event, session) => {
   current.value = session ? accountUser(session.user) : null;
   if (_event === 'SIGNED_OUT') {
-    for (const key of ['barkolink-booking-draft','barkolink-booking-intent','barkolink-pending-walk-in','barkolink-password-recovery','barkolink-pending-email']) sessionStorage.removeItem(key);
+    for (const key of [
+      'barkolink-booking-draft',
+      'barkolink-booking-intent',
+      'barkolink-pending-walk-in',
+      'barkolink-password-recovery',
+      'barkolink-pending-email',
+    ])
+      sessionStorage.removeItem(key);
   }
   if (_event === 'PASSWORD_RECOVERY' && session) {
-    sessionStorage.setItem('barkolink-password-recovery', JSON.stringify({ uid: session.user.id, verifiedAt: Date.now() }));
+    sessionStorage.setItem(
+      'barkolink-password-recovery',
+      JSON.stringify({ uid: session.user.id, verifiedAt: Date.now() }),
+    );
   }
 });
 export const auth = supabase
@@ -54,13 +63,12 @@ export const auth = supabase
     }
   : null;
 export function syncAccountProfileName(uid: string, displayName: string) {
-  if (current.value?.uid === uid)
-    current.value = { ...current.value, displayName };
+  if (current.value?.uid === uid) current.value = { ...current.value, displayName };
 }
 export function requireAuth() {
   if (!auth)
     throw new Error(
-      "Supabase is not configured. Add the project URL and publishable key to .env.local.",
+      'Supabase is not configured. Add the project URL and publishable key to .env.local.',
     );
   return auth;
 }
@@ -71,7 +79,10 @@ let accountAccess = Promise.resolve();
 async function withAccountAccess<T>(action: () => Promise<T>): Promise<T> {
   if (navigator.locks) return await navigator.locks.request('barkolink-account-access', action);
   const next = accountAccess.then(action, action);
-  accountAccess = next.then(() => undefined, () => undefined);
+  accountAccess = next.then(
+    () => undefined,
+    () => undefined,
+  );
   return next;
 }
 async function requireSignedOut() {
@@ -79,7 +90,12 @@ async function requireSignedOut() {
   if (error) throw error;
   if (data.session) {
     current.value = accountUser(data.session.user);
-    throw Object.assign(new Error('This browser is already signed in. Log out of the current account before signing in or registering another account.'), { code: 'browser_already_signed_in' });
+    throw Object.assign(
+      new Error(
+        'This browser is already signed in. Log out of the current account before signing in or registering another account.',
+      ),
+      { code: 'browser_already_signed_in' },
+    );
   }
 }
 
@@ -102,9 +118,12 @@ export async function registerAccount(
       },
     });
     if (error) throw error;
-    if (!data.user) throw new Error("Could not register the account.");
+    if (!data.user) throw new Error('Could not register the account.');
     if (!data.session && data.user.identities?.length === 0) {
-      throw Object.assign(new Error('An account already uses this email. Sign in or use Forgot password.'), { code: 'user_already_exists' });
+      throw Object.assign(
+        new Error('An account already uses this email. Sign in or use Forgot password.'),
+        { code: 'user_already_exists' },
+      );
     }
     current.value = data.session ? accountUser(data.user) : null;
     return { user: accountUser(data.user), session: data.session };
@@ -115,7 +134,8 @@ export async function signInWithPassword(
   email: string,
   password: string,
 ) {
-  if (!validEmail(email) || !password || password.length > 128) throw new Error('Enter a valid email and password.');
+  if (!validEmail(email) || !password || password.length > 128)
+    throw new Error('Enter a valid email and password.');
   return withAccountAccess(async () => {
     await requireSignedOut();
     const { data, error } = await requireSupabase().auth.signInWithPassword({
@@ -132,10 +152,7 @@ export async function signOut(_auth: NonNullable<typeof auth>) {
   if (error) throw error;
   current.value = null;
 }
-export async function sendPasswordResetEmail(
-  _auth: NonNullable<typeof auth>,
-  email: string,
-) {
+export async function sendPasswordResetEmail(_auth: NonNullable<typeof auth>, email: string) {
   if (!validEmail(email)) throw new Error('Enter a valid email address.');
   const { error } = await requireSupabase().auth.resetPasswordForEmail(email, {
     redirectTo: authRedirect('/reset-password'),
@@ -145,26 +162,37 @@ export async function sendPasswordResetEmail(
 
 export async function resendEmailCode(email: string, purpose: 'signup' | 'recovery') {
   if (purpose === 'recovery') return sendPasswordResetEmail(requireAuth(), email);
-  const { error } = await requireSupabase().auth.resend({ type: 'signup', email: email.trim(), options:{emailRedirectTo:authRedirect('/login')} });
+  const { error } = await requireSupabase().auth.resend({
+    type: 'signup',
+    email: email.trim(),
+    options: { emailRedirectTo: authRedirect('/login') },
+  });
   if (error) throw error;
 }
 
-export async function verifyEmailCode(email: string, token: string, purpose: 'signup' | 'recovery') {
+export async function verifyEmailCode(
+  email: string,
+  token: string,
+  purpose: 'signup' | 'recovery',
+) {
   const { data, error } = await requireSupabase().auth.verifyOtp({
-    email: email.trim(), token: token.trim(), type: purpose === 'signup' ? 'email' : 'recovery',
+    email: email.trim(),
+    token: token.trim(),
+    type: purpose === 'signup' ? 'email' : 'recovery',
   });
   if (error) throw error;
-  if (!data.user || !data.session) throw new Error('Could not verify the code. Please request a new one.');
+  if (!data.user || !data.session)
+    throw new Error('Could not verify the code. Please request a new one.');
   current.value = accountUser(data.user);
   if (purpose === 'recovery') {
-    sessionStorage.setItem('barkolink-password-recovery', JSON.stringify({ uid: data.user.id, verifiedAt: Date.now() }));
+    sessionStorage.setItem(
+      'barkolink-password-recovery',
+      JSON.stringify({ uid: data.user.id, verifiedAt: Date.now() }),
+    );
   }
   return { user: accountUser(data.user), session: data.session };
 }
-export async function updateAccountProfile(
-  _user: AccountUser,
-  profile: { displayName: string },
-) {
+export async function updateAccountProfile(_user: AccountUser, profile: { displayName: string }) {
   const { data, error } = await requireSupabase().auth.updateUser({
     data: { fullName: profile.displayName },
   });
@@ -178,24 +206,22 @@ export async function reauthenticateWithCredential(
   user: AccountUser,
   credential: { email: string; password: string },
 ) {
-  const isolated = (await import("@supabase/supabase-js")).createClient(
+  const isolated = (await import('@supabase/supabase-js')).createClient(
     import.meta.env.VITE_SUPABASE_URL,
-    import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY ||
-      import.meta.env.VITE_SUPABASE_ANON_KEY ||
-      "",
+    import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || import.meta.env.VITE_SUPABASE_ANON_KEY || '',
     {
       auth: {
         persistSession: false,
         autoRefreshToken: false,
         detectSessionInUrl: false,
-        storageKey: "barkolink-password-check",
+        storageKey: 'barkolink-password-check',
       },
     },
   );
   try {
     const { data, error } = await isolated.auth.signInWithPassword(credential);
     if (error || data.user?.id !== user.uid)
-      throw error || new Error("Current password is incorrect.");
+      throw error || new Error('Current password is incorrect.');
   } finally {
     // End only the password-check session; the default global scope also
     // revokes the user's active sessions on this and other devices.
@@ -203,7 +229,8 @@ export async function reauthenticateWithCredential(
   }
 }
 export async function updatePassword(_user: AccountUser, password: string) {
-  if (password.length < 8 || password.length > 128) throw new Error('Use a password with 8 to 128 characters.');
+  if (password.length < 8 || password.length > 128)
+    throw new Error('Use a password with 8 to 128 characters.');
   const { error } = await requireSupabase().auth.updateUser({ password });
   if (error) throw error;
 }

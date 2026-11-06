@@ -69,9 +69,7 @@
       "name": "Batangas Port",
       "city": "Batangas City",
       "region": "Batangas",
-      "sourceIds": [
-        "marina"
-      ],
+      "sourceIds": ["marina"],
       "terminalOperator": null,
       "isActive": true
     },
@@ -80,9 +78,7 @@
       "name": "Calapan Port",
       "city": "Calapan City",
       "region": "Oriental Mindoro",
-      "sourceIds": [
-        "marina"
-      ],
+      "sourceIds": ["marina"],
       "terminalOperator": "PCBSI Port Terminal Management Corp.",
       "isActive": true
     },
@@ -91,9 +87,7 @@
       "name": "Balatero Port",
       "city": "Puerto Galera",
       "region": "Oriental Mindoro",
-      "sourceIds": [
-        "marina"
-      ],
+      "sourceIds": ["marina"],
       "terminalOperator": null,
       "isActive": false
     },
@@ -102,9 +96,7 @@
       "name": "Abra de Ilog Port",
       "city": "Abra de Ilog",
       "region": "Occidental Mindoro",
-      "sourceIds": [
-        "marina"
-      ],
+      "sourceIds": ["marina"],
       "terminalOperator": null,
       "isActive": false
     },
@@ -113,9 +105,7 @@
       "name": "Dangay Port",
       "city": "Roxas",
       "region": "Oriental Mindoro",
-      "sourceIds": [
-        "marina"
-      ],
+      "sourceIds": ["marina"],
       "terminalOperator": null,
       "isActive": false
     },
@@ -124,9 +114,7 @@
       "name": "Caticlan Jetty Port",
       "city": "Malay",
       "region": "Aklan",
-      "sourceIds": [
-        "marina"
-      ],
+      "sourceIds": ["marina"],
       "terminalOperator": null,
       "isActive": false
     },
@@ -135,9 +123,7 @@
       "name": "Poctoy Port",
       "city": "Odiongan",
       "region": "Romblon",
-      "sourceIds": [
-        "marina"
-      ],
+      "sourceIds": ["marina"],
       "terminalOperator": null,
       "isActive": false
     },
@@ -146,9 +132,7 @@
       "name": "Romblon Port",
       "city": "Romblon",
       "region": "Romblon",
-      "sourceIds": [
-        "marina"
-      ],
+      "sourceIds": ["marina"],
       "terminalOperator": null,
       "isActive": false
     },
@@ -157,9 +141,7 @@
       "name": "Magdiwang Port",
       "city": "Magdiwang",
       "region": "Romblon",
-      "sourceIds": [
-        "marina"
-      ],
+      "sourceIds": ["marina"],
       "terminalOperator": null,
       "isActive": false
     },
@@ -168,9 +150,7 @@
       "name": "San Agustin Port",
       "city": "San Agustin",
       "region": "Romblon",
-      "sourceIds": [
-        "marina"
-      ],
+      "sourceIds": ["marina"],
       "terminalOperator": null,
       "isActive": false
     },
@@ -179,9 +159,7 @@
       "name": "Culasi Port",
       "city": "Roxas City",
       "region": "Capiz",
-      "sourceIds": [
-        "marina"
-      ],
+      "sourceIds": ["marina"],
       "terminalOperator": null,
       "isActive": false
     },
@@ -190,9 +168,7 @@
       "name": "Cebu Port",
       "city": "Cebu City",
       "region": "Cebu",
-      "sourceIds": [
-        "marina"
-      ],
+      "sourceIds": ["marina"],
       "terminalOperator": null,
       "isActive": false
     },
@@ -201,9 +177,7 @@
       "name": "Surigao Port",
       "city": "Surigao City",
       "region": "Surigao del Norte",
-      "sourceIds": [
-        "marina"
-      ],
+      "sourceIds": ["marina"],
       "terminalOperator": null,
       "isActive": false
     },
@@ -212,9 +186,7 @@
       "name": "Nasipit Port",
       "city": "Nasipit",
       "region": "Agusan del Norte",
-      "sourceIds": [
-        "marina"
-      ],
+      "sourceIds": ["marina"],
       "terminalOperator": null,
       "isActive": false
     },
@@ -223,9 +195,7 @@
       "name": "Dapitan (Pulauan) Port",
       "city": "Dapitan City",
       "region": "Zamboanga del Norte",
-      "sourceIds": [
-        "marina"
-      ],
+      "sourceIds": ["marina"],
       "terminalOperator": null,
       "isActive": false
     },
@@ -234,9 +204,7 @@
       "name": "Dumaguete Port",
       "city": "Dumaguete City",
       "region": "Negros Oriental",
-      "sourceIds": [
-        "marina"
-      ],
+      "sourceIds": ["marina"],
       "terminalOperator": null,
       "isActive": false
     },
@@ -245,9 +213,7 @@
       "name": "Siquijor Port",
       "city": "Siquijor",
       "region": "Siquijor",
-      "sourceIds": [
-        "marina"
-      ],
+      "sourceIds": ["marina"],
       "terminalOperator": null,
       "isActive": false
     },
@@ -256,9 +222,7 @@
       "name": "Larena Port",
       "city": "Larena",
       "region": "Siquijor",
-      "sourceIds": [
-        "marina"
-      ],
+      "sourceIds": ["marina"],
       "terminalOperator": null,
       "isActive": false
     },
@@ -267,9 +231,7 @@
       "name": "Iloilo Port",
       "city": "Iloilo City",
       "region": "Iloilo",
-      "sourceIds": [
-        "marina"
-      ],
+      "sourceIds": ["marina"],
       "terminalOperator": null,
       "isActive": false
     },
@@ -278,9 +240,7 @@
       "name": "BREDCO Port",
       "city": "Bacolod City",
       "region": "Negros Occidental",
-      "sourceIds": [
-        "marina"
-      ],
+      "sourceIds": ["marina"],
       "terminalOperator": null,
       "isActive": false
     },
@@ -289,9 +249,7 @@
       "name": "Dumangas Port",
       "city": "Dumangas",
       "region": "Iloilo",
-      "sourceIds": [
-        "marina"
-      ],
+      "sourceIds": ["marina"],
       "terminalOperator": null,
       "isActive": false
     },
@@ -300,9 +258,7 @@
       "name": "Jordan Port",
       "city": "Jordan",
       "region": "Guimaras",
-      "sourceIds": [
-        "marina"
-      ],
+      "sourceIds": ["marina"],
       "terminalOperator": null,
       "isActive": false
     },
@@ -311,9 +267,7 @@
       "name": "Cuyo Port",
       "city": "Cuyo",
       "region": "Palawan",
-      "sourceIds": [
-        "marina"
-      ],
+      "sourceIds": ["marina"],
       "terminalOperator": null,
       "isActive": false
     },
@@ -322,9 +276,7 @@
       "name": "Puerto Princesa Port",
       "city": "Puerto Princesa City",
       "region": "Palawan",
-      "sourceIds": [
-        "marina"
-      ],
+      "sourceIds": ["marina"],
       "terminalOperator": null,
       "isActive": false
     },
@@ -333,9 +285,7 @@
       "name": "Coron Port",
       "city": "Coron",
       "region": "Palawan",
-      "sourceIds": [
-        "marina"
-      ],
+      "sourceIds": ["marina"],
       "terminalOperator": null,
       "isActive": false
     },
@@ -344,9 +294,7 @@
       "name": "Culion Port",
       "city": "Culion",
       "region": "Palawan",
-      "sourceIds": [
-        "marina"
-      ],
+      "sourceIds": ["marina"],
       "terminalOperator": null,
       "isActive": false
     },
@@ -355,9 +303,7 @@
       "name": "El Nido Port",
       "city": "El Nido",
       "region": "Palawan",
-      "sourceIds": [
-        "marina"
-      ],
+      "sourceIds": ["marina"],
       "terminalOperator": null,
       "isActive": false
     },
@@ -366,9 +312,7 @@
       "name": "Lucena (Talao-Talao) Port",
       "city": "Lucena City",
       "region": "Quezon",
-      "sourceIds": [
-        "marina"
-      ],
+      "sourceIds": ["marina"],
       "terminalOperator": null,
       "isActive": false
     },
@@ -377,9 +321,7 @@
       "name": "Balanacan Port",
       "city": "Mogpog",
       "region": "Marinduque",
-      "sourceIds": [
-        "marina"
-      ],
+      "sourceIds": ["marina"],
       "terminalOperator": null,
       "isActive": false
     },
@@ -388,9 +330,7 @@
       "name": "Masbate Port",
       "city": "Masbate City",
       "region": "Masbate",
-      "sourceIds": [
-        "marina"
-      ],
+      "sourceIds": ["marina"],
       "terminalOperator": null,
       "isActive": false
     },
@@ -399,9 +339,7 @@
       "name": "Pilar Port",
       "city": "Pilar",
       "region": "Sorsogon",
-      "sourceIds": [
-        "marina"
-      ],
+      "sourceIds": ["marina"],
       "terminalOperator": null,
       "isActive": false
     },
@@ -410,9 +348,7 @@
       "name": "Lagundi Port",
       "city": "Batuan",
       "region": "Masbate",
-      "sourceIds": [
-        "marina"
-      ],
+      "sourceIds": ["marina"],
       "terminalOperator": null,
       "isActive": false
     },
@@ -421,9 +357,7 @@
       "name": "Matnog Port",
       "city": "Matnog",
       "region": "Sorsogon",
-      "sourceIds": [
-        "marina"
-      ],
+      "sourceIds": ["marina"],
       "terminalOperator": null,
       "isActive": false
     },
@@ -432,9 +366,7 @@
       "name": "Balwharteco Port (Looc)",
       "city": "Allen",
       "region": "Northern Samar",
-      "sourceIds": [
-        "marina"
-      ],
+      "sourceIds": ["marina"],
       "terminalOperator": null,
       "isActive": false
     },
@@ -443,9 +375,7 @@
       "name": "Dapdap Port",
       "city": "Allen",
       "region": "Northern Samar",
-      "sourceIds": [
-        "marina"
-      ],
+      "sourceIds": ["marina"],
       "terminalOperator": null,
       "isActive": false
     },
@@ -454,9 +384,7 @@
       "name": "San Isidro Port",
       "city": "San Isidro",
       "region": "Northern Samar",
-      "sourceIds": [
-        "marina"
-      ],
+      "sourceIds": ["marina"],
       "terminalOperator": null,
       "isActive": false
     },
@@ -465,9 +393,7 @@
       "name": "Lavezares Port",
       "city": "Lavezares",
       "region": "Northern Samar",
-      "sourceIds": [
-        "marina"
-      ],
+      "sourceIds": ["marina"],
       "terminalOperator": null,
       "isActive": false
     },
@@ -476,9 +402,7 @@
       "name": "Biri Port",
       "city": "Biri",
       "region": "Northern Samar",
-      "sourceIds": [
-        "marina"
-      ],
+      "sourceIds": ["marina"],
       "terminalOperator": null,
       "isActive": false
     },
@@ -487,9 +411,7 @@
       "name": "Lipata Ferry Terminal",
       "city": "Surigao City",
       "region": "Surigao del Norte",
-      "sourceIds": [
-        "marina"
-      ],
+      "sourceIds": ["marina"],
       "terminalOperator": null,
       "isActive": false
     },
@@ -498,9 +420,7 @@
       "name": "Benit Port",
       "city": "San Ricardo",
       "region": "Southern Leyte",
-      "sourceIds": [
-        "marina"
-      ],
+      "sourceIds": ["marina"],
       "terminalOperator": null,
       "isActive": false
     },
@@ -509,9 +429,7 @@
       "name": "Liloan Port",
       "city": "Liloan",
       "region": "Southern Leyte",
-      "sourceIds": [
-        "marina"
-      ],
+      "sourceIds": ["marina"],
       "terminalOperator": null,
       "isActive": false
     },
@@ -520,9 +438,7 @@
       "name": "San Juan Port",
       "city": "San Juan",
       "region": "Southern Leyte",
-      "sourceIds": [
-        "marina"
-      ],
+      "sourceIds": ["marina"],
       "terminalOperator": null,
       "isActive": false
     },
@@ -531,9 +447,7 @@
       "name": "Dapa Port",
       "city": "Dapa",
       "region": "Surigao del Norte",
-      "sourceIds": [
-        "marina"
-      ],
+      "sourceIds": ["marina"],
       "terminalOperator": null,
       "isActive": false
     },
@@ -542,9 +456,7 @@
       "name": "San Jose Port",
       "city": "San Jose",
       "region": "Dinagat Islands",
-      "sourceIds": [
-        "marina"
-      ],
+      "sourceIds": ["marina"],
       "terminalOperator": null,
       "isActive": false
     },
@@ -553,9 +465,7 @@
       "name": "Zamboanga Port",
       "city": "Zamboanga City",
       "region": "Zamboanga del Sur",
-      "sourceIds": [
-        "marina"
-      ],
+      "sourceIds": ["marina"],
       "terminalOperator": null,
       "isActive": false
     },
@@ -564,9 +474,7 @@
       "name": "Isabela Port",
       "city": "Isabela City",
       "region": "Basilan",
-      "sourceIds": [
-        "marina"
-      ],
+      "sourceIds": ["marina"],
       "terminalOperator": null,
       "isActive": false
     },
@@ -575,9 +483,7 @@
       "name": "Lamitan Port",
       "city": "Lamitan City",
       "region": "Basilan",
-      "sourceIds": [
-        "marina"
-      ],
+      "sourceIds": ["marina"],
       "terminalOperator": null,
       "isActive": false
     },
@@ -586,9 +492,7 @@
       "name": "Jolo Port",
       "city": "Jolo",
       "region": "Sulu",
-      "sourceIds": [
-        "marina"
-      ],
+      "sourceIds": ["marina"],
       "terminalOperator": null,
       "isActive": false
     },
@@ -597,9 +501,7 @@
       "name": "Mabini Port",
       "city": "Mabini",
       "region": "Batangas",
-      "sourceIds": [
-        "marina"
-      ],
+      "sourceIds": ["marina"],
       "terminalOperator": null,
       "isActive": false
     },
@@ -608,9 +510,7 @@
       "name": "Tingloy Port",
       "city": "Tingloy",
       "region": "Batangas",
-      "sourceIds": [
-        "marina"
-      ],
+      "sourceIds": ["marina"],
       "terminalOperator": null,
       "isActive": false
     },
@@ -619,9 +519,7 @@
       "name": "Santa Teresa Port",
       "city": "Magsaysay",
       "region": "Occidental Mindoro",
-      "sourceIds": [
-        "marina"
-      ],
+      "sourceIds": ["marina"],
       "terminalOperator": null,
       "isActive": false
     },
@@ -630,9 +528,7 @@
       "name": "San Jose Port",
       "city": "San Jose",
       "region": "Occidental Mindoro",
-      "sourceIds": [
-        "marina"
-      ],
+      "sourceIds": ["marina"],
       "terminalOperator": null,
       "isActive": false
     },
@@ -641,9 +537,7 @@
       "name": "Bulalacao Port",
       "city": "Bulalacao",
       "region": "Oriental Mindoro",
-      "sourceIds": [
-        "marina"
-      ],
+      "sourceIds": ["marina"],
       "terminalOperator": null,
       "isActive": false
     },
@@ -652,9 +546,7 @@
       "name": "Semirara Port",
       "city": "Caluya",
       "region": "Antique",
-      "sourceIds": [
-        "marina"
-      ],
+      "sourceIds": ["marina"],
       "terminalOperator": null,
       "isActive": false
     },
@@ -663,9 +555,7 @@
       "name": "Buruanga Port",
       "city": "Buruanga",
       "region": "Aklan",
-      "sourceIds": [
-        "marina"
-      ],
+      "sourceIds": ["marina"],
       "terminalOperator": null,
       "isActive": false
     },
@@ -674,9 +564,7 @@
       "name": "Unidos Port",
       "city": "Nabas",
       "region": "Aklan",
-      "sourceIds": [
-        "marina"
-      ],
+      "sourceIds": ["marina"],
       "terminalOperator": null,
       "isActive": false
     },
@@ -685,9 +573,7 @@
       "name": "Lipata Port",
       "city": "Culasi",
       "region": "Antique",
-      "sourceIds": [
-        "marina"
-      ],
+      "sourceIds": ["marina"],
       "terminalOperator": null,
       "isActive": false
     },
@@ -696,9 +582,7 @@
       "name": "Estancia Port",
       "city": "Estancia",
       "region": "Iloilo",
-      "sourceIds": [
-        "marina"
-      ],
+      "sourceIds": ["marina"],
       "terminalOperator": null,
       "isActive": false
     },
@@ -707,9 +591,7 @@
       "name": "Polambato Port",
       "city": "Bogo City",
       "region": "Cebu",
-      "sourceIds": [
-        "marina"
-      ],
+      "sourceIds": ["marina"],
       "terminalOperator": null,
       "isActive": false
     },
@@ -718,9 +600,7 @@
       "name": "Pio Duran Port",
       "city": "Pio Duran",
       "region": "Albay",
-      "sourceIds": [
-        "marina"
-      ],
+      "sourceIds": ["marina"],
       "terminalOperator": null,
       "isActive": false
     },
@@ -729,9 +609,7 @@
       "name": "Aroroy Port",
       "city": "Aroroy",
       "region": "Masbate",
-      "sourceIds": [
-        "marina"
-      ],
+      "sourceIds": ["marina"],
       "terminalOperator": null,
       "isActive": false
     },
@@ -740,9 +618,7 @@
       "name": "Cataingan Port",
       "city": "Cataingan",
       "region": "Masbate",
-      "sourceIds": [
-        "marina"
-      ],
+      "sourceIds": ["marina"],
       "terminalOperator": null,
       "isActive": false
     },
@@ -751,9 +627,7 @@
       "name": "Naval Port",
       "city": "Naval",
       "region": "Biliran",
-      "sourceIds": [
-        "marina"
-      ],
+      "sourceIds": ["marina"],
       "terminalOperator": null,
       "isActive": false
     },
@@ -762,9 +636,7 @@
       "name": "Tabaco Port",
       "city": "Tabaco City",
       "region": "Albay",
-      "sourceIds": [
-        "marina"
-      ],
+      "sourceIds": ["marina"],
       "terminalOperator": null,
       "isActive": false
     },
@@ -773,9 +645,7 @@
       "name": "Virac Port",
       "city": "Virac",
       "region": "Catanduanes",
-      "sourceIds": [
-        "marina"
-      ],
+      "sourceIds": ["marina"],
       "terminalOperator": null,
       "isActive": false
     },
@@ -784,9 +654,7 @@
       "name": "Taytay Port",
       "city": "Taytay",
       "region": "Palawan",
-      "sourceIds": [
-        "marina"
-      ],
+      "sourceIds": ["marina"],
       "terminalOperator": null,
       "isActive": false
     },
@@ -795,9 +663,7 @@
       "name": "Calatrava Port",
       "city": "Calatrava",
       "region": "Romblon",
-      "sourceIds": [
-        "marina"
-      ],
+      "sourceIds": ["marina"],
       "terminalOperator": null,
       "isActive": false
     },
@@ -806,9 +672,7 @@
       "name": "Pinamalayan Port",
       "city": "Pinamalayan",
       "region": "Oriental Mindoro",
-      "sourceIds": [
-        "marina"
-      ],
+      "sourceIds": ["marina"],
       "terminalOperator": null,
       "isActive": false
     },
@@ -817,9 +681,7 @@
       "name": "Concepcion Port (Sibale)",
       "city": "Concepcion",
       "region": "Romblon",
-      "sourceIds": [
-        "marina"
-      ],
+      "sourceIds": ["marina"],
       "terminalOperator": null,
       "isActive": false
     },
@@ -828,9 +690,7 @@
       "name": "Banton Port",
       "city": "Banton",
       "region": "Romblon",
-      "sourceIds": [
-        "marina"
-      ],
+      "sourceIds": ["marina"],
       "terminalOperator": null,
       "isActive": false
     },
@@ -839,9 +699,7 @@
       "name": "Cagban Port",
       "city": "Malay",
       "region": "Aklan",
-      "sourceIds": [
-        "marina"
-      ],
+      "sourceIds": ["marina"],
       "terminalOperator": null,
       "isActive": false
     },
@@ -850,9 +708,7 @@
       "name": "Tabuelan Port",
       "city": "Tabuelan",
       "region": "Cebu",
-      "sourceIds": [
-        "marina"
-      ],
+      "sourceIds": ["marina"],
       "terminalOperator": null,
       "isActive": false
     },
@@ -861,9 +717,7 @@
       "name": "Escalante Port",
       "city": "Escalante City",
       "region": "Negros Occidental",
-      "sourceIds": [
-        "marina"
-      ],
+      "sourceIds": ["marina"],
       "terminalOperator": null,
       "isActive": false
     },
@@ -872,9 +726,7 @@
       "name": "Oslob Port",
       "city": "Oslob",
       "region": "Cebu",
-      "sourceIds": [
-        "marina"
-      ],
+      "sourceIds": ["marina"],
       "terminalOperator": null,
       "isActive": false
     },
@@ -883,9 +735,7 @@
       "name": "Banago Port",
       "city": "Bacolod City",
       "region": "Negros Occidental",
-      "sourceIds": [
-        "fastcatSchedules"
-      ],
+      "sourceIds": ["fastcatSchedules"],
       "terminalOperator": null,
       "isActive": false
     },
@@ -894,9 +744,7 @@
       "name": "San Carlos Port",
       "city": "San Carlos City",
       "region": "Negros Occidental",
-      "sourceIds": [
-        "fastcatSchedules"
-      ],
+      "sourceIds": ["fastcatSchedules"],
       "terminalOperator": null,
       "isActive": false
     },
@@ -905,9 +753,7 @@
       "name": "Toledo Port",
       "city": "Toledo",
       "region": "Cebu",
-      "sourceIds": [
-        "fastcatSchedules"
-      ],
+      "sourceIds": ["fastcatSchedules"],
       "terminalOperator": null,
       "isActive": false
     },
@@ -916,9 +762,7 @@
       "name": "Tubigon Port",
       "city": "Tubigon",
       "region": "Bohol",
-      "sourceIds": [
-        "fastcatSchedules"
-      ],
+      "sourceIds": ["fastcatSchedules"],
       "terminalOperator": null,
       "isActive": false
     },
@@ -927,9 +771,7 @@
       "name": "Maasin Port",
       "city": "Maasin",
       "region": "Southern Leyte",
-      "sourceIds": [
-        "fastcatSchedules"
-      ],
+      "sourceIds": ["fastcatSchedules"],
       "terminalOperator": null,
       "isActive": false
     }
@@ -940,10 +782,7 @@
       "origin": "ADD",
       "destination": "MTN",
       "durationMinutes": null,
-      "operators": [
-        "Montenegro Shipping Lines",
-        "FastCat"
-      ],
+      "operators": ["Montenegro Shipping Lines", "FastCat"],
       "sources": [
         {
           "sourceId": "marina",
@@ -963,11 +802,7 @@
       "origin": "ADI",
       "destination": "BTG",
       "durationMinutes": null,
-      "operators": [
-        "Montenegro Shipping Lines",
-        "Besta Shipping Lines",
-        "Orange Navigation"
-      ],
+      "operators": ["Montenegro Shipping Lines", "Besta Shipping Lines", "Orange Navigation"],
       "sources": [
         {
           "sourceId": "montenegro",
@@ -988,10 +823,7 @@
       "origin": "ALN",
       "destination": "MTN",
       "durationMinutes": null,
-      "operators": [
-        "Montenegro Shipping Lines",
-        "Starlite Ferries"
-      ],
+      "operators": ["Montenegro Shipping Lines", "Starlite Ferries"],
       "sources": [
         {
           "sourceId": "montenegro",
@@ -1012,9 +844,7 @@
       "origin": "ANT",
       "destination": "BTG",
       "durationMinutes": null,
-      "operators": [
-        "Starlite Ferries"
-      ],
+      "operators": ["Starlite Ferries"],
       "sources": [
         {
           "sourceId": "marina",
@@ -1031,9 +861,7 @@
       "origin": "ANT",
       "destination": "ILO",
       "durationMinutes": null,
-      "operators": [
-        "Starlite Ferries"
-      ],
+      "operators": ["Starlite Ferries"],
       "sources": [
         {
           "sourceId": "marina",
@@ -1050,9 +878,7 @@
       "origin": "ARO",
       "destination": "PIO",
       "durationMinutes": null,
-      "operators": [
-        "Montenegro Shipping Lines"
-      ],
+      "operators": ["Montenegro Shipping Lines"],
       "sources": [
         {
           "sourceId": "marina",
@@ -1069,9 +895,7 @@
       "origin": "BAC",
       "destination": "BTG",
       "durationMinutes": null,
-      "operators": [
-        "Starlite Ferries"
-      ],
+      "operators": ["Starlite Ferries"],
       "sources": [
         {
           "sourceId": "marina",
@@ -1088,9 +912,7 @@
       "origin": "BAC",
       "destination": "DMG",
       "durationMinutes": null,
-      "operators": [
-        "Montenegro Shipping Lines"
-      ],
+      "operators": ["Montenegro Shipping Lines"],
       "sources": [
         {
           "sourceId": "montenegro",
@@ -1111,9 +933,7 @@
       "origin": "BAC",
       "destination": "EST",
       "durationMinutes": null,
-      "operators": [
-        "Starlite Ferries"
-      ],
+      "operators": ["Starlite Ferries"],
       "sources": [
         {
           "sourceId": "marina",
@@ -1130,10 +950,7 @@
       "origin": "BAC",
       "destination": "ILO",
       "durationMinutes": null,
-      "operators": [
-        "Montenegro Shipping Lines",
-        "Starlite Ferries"
-      ],
+      "operators": ["Montenegro Shipping Lines", "Starlite Ferries"],
       "sources": [
         {
           "sourceId": "montenegro",
@@ -1154,9 +971,7 @@
       "origin": "BAL",
       "destination": "LUC",
       "durationMinutes": null,
-      "operators": [
-        "Montenegro Shipping Lines"
-      ],
+      "operators": ["Montenegro Shipping Lines"],
       "sources": [
         {
           "sourceId": "montenegro",
@@ -1177,9 +992,7 @@
       "origin": "BAN",
       "destination": "CON",
       "durationMinutes": null,
-      "operators": [
-        "Montenegro Shipping Lines"
-      ],
+      "operators": ["Montenegro Shipping Lines"],
       "sources": [
         {
           "sourceId": "marina",
@@ -1196,9 +1009,7 @@
       "origin": "BEN",
       "destination": "LIP",
       "durationMinutes": null,
-      "operators": [
-        "Montenegro Shipping Lines"
-      ],
+      "operators": ["Montenegro Shipping Lines"],
       "sources": [
         {
           "sourceId": "montenegro",
@@ -1219,9 +1030,7 @@
       "origin": "BIR",
       "destination": "LAV",
       "durationMinutes": null,
-      "operators": [
-        "Montenegro Shipping Lines"
-      ],
+      "operators": ["Montenegro Shipping Lines"],
       "sources": [
         {
           "sourceId": "montenegro",
@@ -1238,9 +1047,7 @@
       "origin": "BOG",
       "destination": "CTA",
       "durationMinutes": null,
-      "operators": [
-        "Montenegro Shipping Lines"
-      ],
+      "operators": ["Montenegro Shipping Lines"],
       "sources": [
         {
           "sourceId": "marina",
@@ -1261,9 +1068,7 @@
       "origin": "BOG",
       "destination": "EST",
       "durationMinutes": null,
-      "operators": [
-        "Starlite Ferries"
-      ],
+      "operators": ["Starlite Ferries"],
       "sources": [
         {
           "sourceId": "marina",
@@ -1280,9 +1085,7 @@
       "origin": "BOG",
       "destination": "RXS",
       "durationMinutes": null,
-      "operators": [
-        "Starlite Ferries"
-      ],
+      "operators": ["Starlite Ferries"],
       "sources": [
         {
           "sourceId": "marina",
@@ -1299,11 +1102,7 @@
       "origin": "BTG",
       "destination": "ADI",
       "durationMinutes": null,
-      "operators": [
-        "Montenegro Shipping Lines",
-        "Besta Shipping Lines",
-        "Orange Navigation"
-      ],
+      "operators": ["Montenegro Shipping Lines", "Besta Shipping Lines", "Orange Navigation"],
       "sources": [
         {
           "sourceId": "montenegro",
@@ -1324,9 +1123,7 @@
       "origin": "BTG",
       "destination": "ANT",
       "durationMinutes": null,
-      "operators": [
-        "Starlite Ferries"
-      ],
+      "operators": ["Starlite Ferries"],
       "sources": [
         {
           "sourceId": "marina",
@@ -1343,9 +1140,7 @@
       "origin": "BTG",
       "destination": "BAC",
       "durationMinutes": null,
-      "operators": [
-        "Starlite Ferries"
-      ],
+      "operators": ["Starlite Ferries"],
       "sources": [
         {
           "sourceId": "marina",
@@ -1397,23 +1192,8 @@
         {
           "operator": "FastCat",
           "routeCode": "BTG-CAL",
-          "days": [
-            0,
-            1,
-            2,
-            3,
-            4,
-            5,
-            6
-          ],
-          "departureTimes": [
-            "01:00",
-            "06:00",
-            "09:00",
-            "13:00",
-            "15:00",
-            "21:00"
-          ],
+          "days": [0, 1, 2, 3, 4, 5, 6],
+          "departureTimes": ["01:00", "06:00", "09:00", "13:00", "15:00", "21:00"],
           "durationMinutes": 120,
           "timezone": "Asia/Manila",
           "sourceId": "fastcatSchedules",
@@ -1423,15 +1203,7 @@
         {
           "operator": "Starlite Ferries",
           "routeCode": "BTG-CAL",
-          "days": [
-            0,
-            1,
-            2,
-            3,
-            4,
-            5,
-            6
-          ],
+          "days": [0, 1, 2, 3, 4, 5, 6],
           "departureTimes": [
             "01:00",
             "03:00",
@@ -1455,20 +1227,8 @@
         {
           "operator": "SuperCat",
           "routeCode": "BTG-CAL",
-          "days": [
-            0,
-            1,
-            2,
-            3,
-            4,
-            5,
-            6
-          ],
-          "departureTimes": [
-            "09:30",
-            "13:30",
-            "17:30"
-          ],
+          "days": [0, 1, 2, 3, 4, 5, 6],
+          "departureTimes": ["09:30", "13:30", "17:30"],
           "durationMinutes": null,
           "timezone": "Asia/Manila",
           "sourceId": "supercatSchedules",
@@ -1479,17 +1239,8 @@
       "accommodationProfiles": [
         {
           "operator": "FastCat",
-          "routeCodes": [
-            "BTG-CAL",
-            "CAL-BTG",
-            "BUL-CAT",
-            "CAT-BUL"
-          ],
-          "classes": [
-            "Economy",
-            "Premium Economy",
-            "Business Class"
-          ],
+          "routeCodes": ["BTG-CAL", "CAL-BTG", "BUL-CAT", "CAT-BUL"],
+          "classes": ["Economy", "Premium Economy", "Business Class"],
           "sourceId": "fastcatClasses",
           "capacity": null,
           "surcharge": null,
@@ -1498,17 +1249,8 @@
         },
         {
           "operator": "Starlite Ferries",
-          "routeCodes": [
-            "BTG-CAL",
-            "CAL-BTG",
-            "ROX-CAT",
-            "CAT-ROX"
-          ],
-          "classes": [
-            "Economy",
-            "Tourist Class",
-            "Business Class"
-          ],
+          "routeCodes": ["BTG-CAL", "CAL-BTG", "ROX-CAT", "CAT-ROX"],
+          "classes": ["Economy", "Tourist Class", "Business Class"],
           "sourceId": "starliteSchedules",
           "capacity": null,
           "surcharge": null,
@@ -1517,15 +1259,8 @@
         },
         {
           "operator": "SuperCat",
-          "routeCodes": [
-            "BTG-CAL",
-            "CAL-BTG"
-          ],
-          "classes": [
-            "Economy (Open Air)",
-            "Tourist Class",
-            "Business Class"
-          ],
+          "routeCodes": ["BTG-CAL", "CAL-BTG"],
+          "classes": ["Economy (Open Air)", "Tourist Class", "Business Class"],
           "sourceId": "supercatSchedules",
           "capacity": null,
           "surcharge": null,
@@ -1534,15 +1269,8 @@
         },
         {
           "operator": "OceanJet",
-          "routeCodes": [
-            "BTG-CAL",
-            "CAL-BTG"
-          ],
-          "classes": [
-            "Open Air",
-            "Tourist Class",
-            "Business Class"
-          ],
+          "routeCodes": ["BTG-CAL", "CAL-BTG"],
+          "classes": ["Open Air", "Tourist Class", "Business Class"],
           "sourceId": "oceanjetClasses",
           "capacity": null,
           "surcharge": null,
@@ -1556,9 +1284,7 @@
       "origin": "BTG",
       "destination": "CAT",
       "durationMinutes": null,
-      "operators": [
-        "Starlite Ferries"
-      ],
+      "operators": ["Starlite Ferries"],
       "sources": [
         {
           "sourceId": "starlite",
@@ -1579,9 +1305,7 @@
       "origin": "BTG",
       "destination": "EST",
       "durationMinutes": null,
-      "operators": [
-        "Starlite Ferries"
-      ],
+      "operators": ["Starlite Ferries"],
       "sources": [
         {
           "sourceId": "marina",
@@ -1598,9 +1322,7 @@
       "origin": "BTG",
       "destination": "ILO",
       "durationMinutes": null,
-      "operators": [
-        "Starlite Ferries"
-      ],
+      "operators": ["Starlite Ferries"],
       "sources": [
         {
           "sourceId": "marina",
@@ -1617,9 +1339,7 @@
       "origin": "BTG",
       "destination": "MAG",
       "durationMinutes": null,
-      "operators": [
-        "Starlite Ferries"
-      ],
+      "operators": ["Starlite Ferries"],
       "sources": [
         {
           "sourceId": "starlite",
@@ -1636,10 +1356,7 @@
       "origin": "BTG",
       "destination": "ODI",
       "durationMinutes": null,
-      "operators": [
-        "Montenegro Shipping Lines",
-        "Starlite Ferries"
-      ],
+      "operators": ["Montenegro Shipping Lines", "Starlite Ferries"],
       "sources": [
         {
           "sourceId": "montenegro",
@@ -1689,10 +1406,7 @@
       "origin": "BTG",
       "destination": "ROM",
       "durationMinutes": null,
-      "operators": [
-        "Montenegro Shipping Lines",
-        "Starlite Ferries"
-      ],
+      "operators": ["Montenegro Shipping Lines", "Starlite Ferries"],
       "sources": [
         {
           "sourceId": "marina",
@@ -1713,9 +1427,7 @@
       "origin": "BTG",
       "destination": "RXS",
       "durationMinutes": null,
-      "operators": [
-        "Starlite Ferries"
-      ],
+      "operators": ["Starlite Ferries"],
       "sources": [
         {
           "sourceId": "marina",
@@ -1732,9 +1444,7 @@
       "origin": "BUL",
       "destination": "SEM",
       "durationMinutes": null,
-      "operators": [
-        "Montenegro Shipping Lines"
-      ],
+      "operators": ["Montenegro Shipping Lines"],
       "sources": [
         {
           "sourceId": "marina",
@@ -1755,9 +1465,7 @@
       "origin": "BUR",
       "destination": "ROX",
       "durationMinutes": null,
-      "operators": [
-        "Montenegro Shipping Lines"
-      ],
+      "operators": ["Montenegro Shipping Lines"],
       "sources": [
         {
           "sourceId": "marina",
@@ -1774,9 +1482,7 @@
       "origin": "BUR",
       "destination": "SEM",
       "durationMinutes": null,
-      "operators": [
-        "Montenegro Shipping Lines"
-      ],
+      "operators": ["Montenegro Shipping Lines"],
       "sources": [
         {
           "sourceId": "marina",
@@ -1828,23 +1534,8 @@
         {
           "operator": "FastCat",
           "routeCode": "CAL-BTG",
-          "days": [
-            0,
-            1,
-            2,
-            3,
-            4,
-            5,
-            6
-          ],
-          "departureTimes": [
-            "00:00",
-            "04:00",
-            "10:00",
-            "12:00",
-            "16:00",
-            "21:00"
-          ],
+          "days": [0, 1, 2, 3, 4, 5, 6],
+          "departureTimes": ["00:00", "04:00", "10:00", "12:00", "16:00", "21:00"],
           "durationMinutes": 120,
           "timezone": "Asia/Manila",
           "sourceId": "fastcatSchedules",
@@ -1854,15 +1545,7 @@
         {
           "operator": "Starlite Ferries",
           "routeCode": "CAL-BTG",
-          "days": [
-            0,
-            1,
-            2,
-            3,
-            4,
-            5,
-            6
-          ],
+          "days": [0, 1, 2, 3, 4, 5, 6],
           "departureTimes": [
             "01:00",
             "03:00",
@@ -1886,20 +1569,8 @@
         {
           "operator": "SuperCat",
           "routeCode": "CAL-BTG",
-          "days": [
-            0,
-            1,
-            2,
-            3,
-            4,
-            5,
-            6
-          ],
-          "departureTimes": [
-            "07:30",
-            "11:30",
-            "17:30"
-          ],
+          "days": [0, 1, 2, 3, 4, 5, 6],
+          "departureTimes": ["07:30", "11:30", "17:30"],
           "durationMinutes": null,
           "timezone": "Asia/Manila",
           "sourceId": "supercatSchedules",
@@ -1910,17 +1581,8 @@
       "accommodationProfiles": [
         {
           "operator": "FastCat",
-          "routeCodes": [
-            "BTG-CAL",
-            "CAL-BTG",
-            "BUL-CAT",
-            "CAT-BUL"
-          ],
-          "classes": [
-            "Economy",
-            "Premium Economy",
-            "Business Class"
-          ],
+          "routeCodes": ["BTG-CAL", "CAL-BTG", "BUL-CAT", "CAT-BUL"],
+          "classes": ["Economy", "Premium Economy", "Business Class"],
           "sourceId": "fastcatClasses",
           "capacity": null,
           "surcharge": null,
@@ -1929,17 +1591,8 @@
         },
         {
           "operator": "Starlite Ferries",
-          "routeCodes": [
-            "BTG-CAL",
-            "CAL-BTG",
-            "ROX-CAT",
-            "CAT-ROX"
-          ],
-          "classes": [
-            "Economy",
-            "Tourist Class",
-            "Business Class"
-          ],
+          "routeCodes": ["BTG-CAL", "CAL-BTG", "ROX-CAT", "CAT-ROX"],
+          "classes": ["Economy", "Tourist Class", "Business Class"],
           "sourceId": "starliteSchedules",
           "capacity": null,
           "surcharge": null,
@@ -1948,15 +1601,8 @@
         },
         {
           "operator": "SuperCat",
-          "routeCodes": [
-            "BTG-CAL",
-            "CAL-BTG"
-          ],
-          "classes": [
-            "Economy (Open Air)",
-            "Tourist Class",
-            "Business Class"
-          ],
+          "routeCodes": ["BTG-CAL", "CAL-BTG"],
+          "classes": ["Economy (Open Air)", "Tourist Class", "Business Class"],
           "sourceId": "supercatSchedules",
           "capacity": null,
           "surcharge": null,
@@ -1965,15 +1611,8 @@
         },
         {
           "operator": "OceanJet",
-          "routeCodes": [
-            "BTG-CAL",
-            "CAL-BTG"
-          ],
-          "classes": [
-            "Open Air",
-            "Tourist Class",
-            "Business Class"
-          ],
+          "routeCodes": ["BTG-CAL", "CAL-BTG"],
+          "classes": ["Open Air", "Tourist Class", "Business Class"],
           "sourceId": "oceanjetClasses",
           "capacity": null,
           "surcharge": null,
@@ -1987,9 +1626,7 @@
       "origin": "CAT",
       "destination": "BTG",
       "durationMinutes": null,
-      "operators": [
-        "Starlite Ferries"
-      ],
+      "operators": ["Starlite Ferries"],
       "sources": [
         {
           "sourceId": "starlite",
@@ -2010,9 +1647,7 @@
       "origin": "CAT",
       "destination": "CGN",
       "durationMinutes": null,
-      "operators": [
-        "Montenegro Shipping Lines"
-      ],
+      "operators": ["Montenegro Shipping Lines"],
       "sources": [
         {
           "sourceId": "marina",
@@ -2029,10 +1664,7 @@
       "origin": "CAT",
       "destination": "ODI",
       "durationMinutes": null,
-      "operators": [
-        "Starlite Ferries",
-        "Montenegro Shipping Lines"
-      ],
+      "operators": ["Starlite Ferries", "Montenegro Shipping Lines"],
       "sources": [
         {
           "sourceId": "marina",
@@ -2057,10 +1689,7 @@
       "origin": "CAT",
       "destination": "ROX",
       "durationMinutes": null,
-      "operators": [
-        "Montenegro Shipping Lines",
-        "Starlite Ferries"
-      ],
+      "operators": ["Montenegro Shipping Lines", "Starlite Ferries"],
       "sources": [
         {
           "sourceId": "montenegro",
@@ -2085,23 +1714,8 @@
         {
           "operator": "Starlite Ferries",
           "routeCode": "CAT-ROX",
-          "days": [
-            0,
-            1,
-            2,
-            3,
-            4,
-            5,
-            6
-          ],
-          "departureTimes": [
-            "01:00",
-            "05:00",
-            "09:00",
-            "12:00",
-            "16:00",
-            "20:00"
-          ],
+          "days": [0, 1, 2, 3, 4, 5, 6],
+          "departureTimes": ["01:00", "05:00", "09:00", "12:00", "16:00", "20:00"],
           "durationMinutes": null,
           "timezone": "Asia/Manila",
           "sourceId": "starliteSchedules",
@@ -2112,17 +1726,8 @@
       "accommodationProfiles": [
         {
           "operator": "Starlite Ferries",
-          "routeCodes": [
-            "BTG-CAL",
-            "CAL-BTG",
-            "ROX-CAT",
-            "CAT-ROX"
-          ],
-          "classes": [
-            "Economy",
-            "Tourist Class",
-            "Business Class"
-          ],
+          "routeCodes": ["BTG-CAL", "CAL-BTG", "ROX-CAT", "CAT-ROX"],
+          "classes": ["Economy", "Tourist Class", "Business Class"],
           "sourceId": "starliteSchedules",
           "capacity": null,
           "surcharge": null,
@@ -2136,9 +1741,7 @@
       "origin": "CAT",
       "destination": "STA",
       "durationMinutes": null,
-      "operators": [
-        "Montenegro Shipping Lines"
-      ],
+      "operators": ["Montenegro Shipping Lines"],
       "sources": [
         {
           "sourceId": "montenegro",
@@ -2155,9 +1758,7 @@
       "origin": "CEB",
       "destination": "DAP",
       "durationMinutes": null,
-      "operators": [
-        "Starlite Ferries"
-      ],
+      "operators": ["Starlite Ferries"],
       "sources": [
         {
           "sourceId": "starlite",
@@ -2174,9 +1775,7 @@
       "origin": "CEB",
       "destination": "NAS",
       "durationMinutes": null,
-      "operators": [
-        "Starlite Ferries"
-      ],
+      "operators": ["Starlite Ferries"],
       "sources": [
         {
           "sourceId": "starlite",
@@ -2193,9 +1792,7 @@
       "origin": "CEB",
       "destination": "SUR",
       "durationMinutes": null,
-      "operators": [
-        "Starlite Ferries"
-      ],
+      "operators": ["Starlite Ferries"],
       "sources": [
         {
           "sourceId": "starlite",
@@ -2212,9 +1809,7 @@
       "origin": "CGN",
       "destination": "CAT",
       "durationMinutes": null,
-      "operators": [
-        "Montenegro Shipping Lines"
-      ],
+      "operators": ["Montenegro Shipping Lines"],
       "sources": [
         {
           "sourceId": "marina",
@@ -2231,9 +1826,7 @@
       "origin": "CLR",
       "destination": "ROM",
       "durationMinutes": null,
-      "operators": [
-        "Montenegro Shipping Lines"
-      ],
+      "operators": ["Montenegro Shipping Lines"],
       "sources": [
         {
           "sourceId": "marina",
@@ -2250,9 +1843,7 @@
       "origin": "CLR",
       "destination": "ROX",
       "durationMinutes": null,
-      "operators": [
-        "Montenegro Shipping Lines"
-      ],
+      "operators": ["Montenegro Shipping Lines"],
       "sources": [
         {
           "sourceId": "marina",
@@ -2269,9 +1860,7 @@
       "origin": "CON",
       "destination": "BAN",
       "durationMinutes": null,
-      "operators": [
-        "Montenegro Shipping Lines"
-      ],
+      "operators": ["Montenegro Shipping Lines"],
       "sources": [
         {
           "sourceId": "marina",
@@ -2288,9 +1877,7 @@
       "origin": "CON",
       "destination": "PIN",
       "durationMinutes": null,
-      "operators": [
-        "Montenegro Shipping Lines"
-      ],
+      "operators": ["Montenegro Shipping Lines"],
       "sources": [
         {
           "sourceId": "marina",
@@ -2307,9 +1894,7 @@
       "origin": "COR",
       "destination": "CUL",
       "durationMinutes": null,
-      "operators": [
-        "Montenegro Shipping Lines"
-      ],
+      "operators": ["Montenegro Shipping Lines"],
       "sources": [
         {
           "sourceId": "montenegro",
@@ -2330,9 +1915,7 @@
       "origin": "COR",
       "destination": "ELN",
       "durationMinutes": null,
-      "operators": [
-        "Montenegro Shipping Lines"
-      ],
+      "operators": ["Montenegro Shipping Lines"],
       "sources": [
         {
           "sourceId": "montenegro",
@@ -2349,9 +1932,7 @@
       "origin": "COR",
       "destination": "SJM",
       "durationMinutes": null,
-      "operators": [
-        "Montenegro Shipping Lines"
-      ],
+      "operators": ["Montenegro Shipping Lines"],
       "sources": [
         {
           "sourceId": "marina",
@@ -2368,9 +1949,7 @@
       "origin": "COR",
       "destination": "TAY",
       "durationMinutes": null,
-      "operators": [
-        "Montenegro Shipping Lines"
-      ],
+      "operators": ["Montenegro Shipping Lines"],
       "sources": [
         {
           "sourceId": "marina",
@@ -2387,9 +1966,7 @@
       "origin": "CTA",
       "destination": "BOG",
       "durationMinutes": null,
-      "operators": [
-        "Montenegro Shipping Lines"
-      ],
+      "operators": ["Montenegro Shipping Lines"],
       "sources": [
         {
           "sourceId": "marina",
@@ -2410,9 +1987,7 @@
       "origin": "CTA",
       "destination": "NAV",
       "durationMinutes": null,
-      "operators": [
-        "Montenegro Shipping Lines"
-      ],
+      "operators": ["Montenegro Shipping Lines"],
       "sources": [
         {
           "sourceId": "marina",
@@ -2429,9 +2004,7 @@
       "origin": "CUL",
       "destination": "COR",
       "durationMinutes": null,
-      "operators": [
-        "Montenegro Shipping Lines"
-      ],
+      "operators": ["Montenegro Shipping Lines"],
       "sources": [
         {
           "sourceId": "montenegro",
@@ -2452,9 +2025,7 @@
       "origin": "CUY",
       "destination": "ILO",
       "durationMinutes": null,
-      "operators": [
-        "Montenegro Shipping Lines"
-      ],
+      "operators": ["Montenegro Shipping Lines"],
       "sources": [
         {
           "sourceId": "montenegro",
@@ -2475,9 +2046,7 @@
       "origin": "CUY",
       "destination": "PPS",
       "durationMinutes": null,
-      "operators": [
-        "Montenegro Shipping Lines"
-      ],
+      "operators": ["Montenegro Shipping Lines"],
       "sources": [
         {
           "sourceId": "montenegro",
@@ -2498,9 +2067,7 @@
       "origin": "DAP",
       "destination": "CEB",
       "durationMinutes": null,
-      "operators": [
-        "Starlite Ferries"
-      ],
+      "operators": ["Starlite Ferries"],
       "sources": [
         {
           "sourceId": "starlite",
@@ -2517,10 +2084,7 @@
       "origin": "DAP",
       "destination": "DUM",
       "durationMinutes": null,
-      "operators": [
-        "Montenegro Shipping Lines",
-        "FastCat"
-      ],
+      "operators": ["Montenegro Shipping Lines", "FastCat"],
       "sources": [
         {
           "sourceId": "montenegro",
@@ -2544,9 +2108,7 @@
       "origin": "DIN",
       "destination": "SUR",
       "durationMinutes": null,
-      "operators": [
-        "Montenegro Shipping Lines"
-      ],
+      "operators": ["Montenegro Shipping Lines"],
       "sources": [
         {
           "sourceId": "montenegro",
@@ -2567,9 +2129,7 @@
       "origin": "DMG",
       "destination": "BAC",
       "durationMinutes": null,
-      "operators": [
-        "Montenegro Shipping Lines"
-      ],
+      "operators": ["Montenegro Shipping Lines"],
       "sources": [
         {
           "sourceId": "montenegro",
@@ -2590,9 +2150,7 @@
       "origin": "DPA",
       "destination": "SUR",
       "durationMinutes": null,
-      "operators": [
-        "Montenegro Shipping Lines"
-      ],
+      "operators": ["Montenegro Shipping Lines"],
       "sources": [
         {
           "sourceId": "montenegro",
@@ -2613,10 +2171,7 @@
       "origin": "DUM",
       "destination": "DAP",
       "durationMinutes": null,
-      "operators": [
-        "Montenegro Shipping Lines",
-        "FastCat"
-      ],
+      "operators": ["Montenegro Shipping Lines", "FastCat"],
       "sources": [
         {
           "sourceId": "montenegro",
@@ -2640,9 +2195,7 @@
       "origin": "DUM",
       "destination": "LAR",
       "durationMinutes": null,
-      "operators": [
-        "Montenegro Shipping Lines"
-      ],
+      "operators": ["Montenegro Shipping Lines"],
       "sources": [
         {
           "sourceId": "marina",
@@ -2659,9 +2212,7 @@
       "origin": "DUM",
       "destination": "SIQ",
       "durationMinutes": null,
-      "operators": [
-        "Montenegro Shipping Lines"
-      ],
+      "operators": ["Montenegro Shipping Lines"],
       "sources": [
         {
           "sourceId": "montenegro",
@@ -2682,9 +2233,7 @@
       "origin": "ELN",
       "destination": "COR",
       "durationMinutes": null,
-      "operators": [
-        "Montenegro Shipping Lines"
-      ],
+      "operators": ["Montenegro Shipping Lines"],
       "sources": [
         {
           "sourceId": "montenegro",
@@ -2701,9 +2250,7 @@
       "origin": "ESC",
       "destination": "TBL",
       "durationMinutes": null,
-      "operators": [
-        "Montenegro Shipping Lines"
-      ],
+      "operators": ["Montenegro Shipping Lines"],
       "sources": [
         {
           "sourceId": "marina",
@@ -2720,9 +2267,7 @@
       "origin": "EST",
       "destination": "BAC",
       "durationMinutes": null,
-      "operators": [
-        "Starlite Ferries"
-      ],
+      "operators": ["Starlite Ferries"],
       "sources": [
         {
           "sourceId": "marina",
@@ -2739,9 +2284,7 @@
       "origin": "EST",
       "destination": "BOG",
       "durationMinutes": null,
-      "operators": [
-        "Starlite Ferries"
-      ],
+      "operators": ["Starlite Ferries"],
       "sources": [
         {
           "sourceId": "marina",
@@ -2758,9 +2301,7 @@
       "origin": "EST",
       "destination": "BTG",
       "durationMinutes": null,
-      "operators": [
-        "Starlite Ferries"
-      ],
+      "operators": ["Starlite Ferries"],
       "sources": [
         {
           "sourceId": "marina",
@@ -2777,9 +2318,7 @@
       "origin": "ILO",
       "destination": "ANT",
       "durationMinutes": null,
-      "operators": [
-        "Starlite Ferries"
-      ],
+      "operators": ["Starlite Ferries"],
       "sources": [
         {
           "sourceId": "marina",
@@ -2796,10 +2335,7 @@
       "origin": "ILO",
       "destination": "BAC",
       "durationMinutes": null,
-      "operators": [
-        "Montenegro Shipping Lines",
-        "Starlite Ferries"
-      ],
+      "operators": ["Montenegro Shipping Lines", "Starlite Ferries"],
       "sources": [
         {
           "sourceId": "montenegro",
@@ -2820,9 +2356,7 @@
       "origin": "ILO",
       "destination": "BTG",
       "durationMinutes": null,
-      "operators": [
-        "Starlite Ferries"
-      ],
+      "operators": ["Starlite Ferries"],
       "sources": [
         {
           "sourceId": "marina",
@@ -2839,9 +2373,7 @@
       "origin": "ILO",
       "destination": "CUY",
       "durationMinutes": null,
-      "operators": [
-        "Montenegro Shipping Lines"
-      ],
+      "operators": ["Montenegro Shipping Lines"],
       "sources": [
         {
           "sourceId": "montenegro",
@@ -2862,9 +2394,7 @@
       "origin": "ILO",
       "destination": "JRD",
       "durationMinutes": null,
-      "operators": [
-        "Montenegro Shipping Lines"
-      ],
+      "operators": ["Montenegro Shipping Lines"],
       "sources": [
         {
           "sourceId": "montenegro",
@@ -2881,9 +2411,7 @@
       "origin": "ILO",
       "destination": "PPS",
       "durationMinutes": null,
-      "operators": [
-        "Montenegro Shipping Lines"
-      ],
+      "operators": ["Montenegro Shipping Lines"],
       "sources": [
         {
           "sourceId": "montenegro",
@@ -2900,10 +2428,7 @@
       "origin": "ISA",
       "destination": "ZAM",
       "durationMinutes": null,
-      "operators": [
-        "Montenegro Shipping Lines",
-        "FastCat"
-      ],
+      "operators": ["Montenegro Shipping Lines", "FastCat"],
       "sources": [
         {
           "sourceId": "montenegro",
@@ -2927,9 +2452,7 @@
       "origin": "JOL",
       "destination": "ZAM",
       "durationMinutes": null,
-      "operators": [
-        "Montenegro Shipping Lines"
-      ],
+      "operators": ["Montenegro Shipping Lines"],
       "sources": [
         {
           "sourceId": "montenegro",
@@ -2950,9 +2473,7 @@
       "origin": "JRD",
       "destination": "ILO",
       "durationMinutes": null,
-      "operators": [
-        "Montenegro Shipping Lines"
-      ],
+      "operators": ["Montenegro Shipping Lines"],
       "sources": [
         {
           "sourceId": "montenegro",
@@ -2969,9 +2490,7 @@
       "origin": "LAG",
       "destination": "MAS",
       "durationMinutes": null,
-      "operators": [
-        "Montenegro Shipping Lines"
-      ],
+      "operators": ["Montenegro Shipping Lines"],
       "sources": [
         {
           "sourceId": "montenegro",
@@ -2992,9 +2511,7 @@
       "origin": "LAM",
       "destination": "ZAM",
       "durationMinutes": null,
-      "operators": [
-        "Montenegro Shipping Lines"
-      ],
+      "operators": ["Montenegro Shipping Lines"],
       "sources": [
         {
           "sourceId": "marina",
@@ -3011,9 +2528,7 @@
       "origin": "LAR",
       "destination": "DUM",
       "durationMinutes": null,
-      "operators": [
-        "Montenegro Shipping Lines"
-      ],
+      "operators": ["Montenegro Shipping Lines"],
       "sources": [
         {
           "sourceId": "marina",
@@ -3030,9 +2545,7 @@
       "origin": "LAR",
       "destination": "OSL",
       "durationMinutes": null,
-      "operators": [
-        "Montenegro Shipping Lines"
-      ],
+      "operators": ["Montenegro Shipping Lines"],
       "sources": [
         {
           "sourceId": "marina",
@@ -3049,9 +2562,7 @@
       "origin": "LAV",
       "destination": "BIR",
       "durationMinutes": null,
-      "operators": [
-        "Montenegro Shipping Lines"
-      ],
+      "operators": ["Montenegro Shipping Lines"],
       "sources": [
         {
           "sourceId": "montenegro",
@@ -3068,9 +2579,7 @@
       "origin": "LIL",
       "destination": "LIP",
       "durationMinutes": null,
-      "operators": [
-        "Montenegro Shipping Lines"
-      ],
+      "operators": ["Montenegro Shipping Lines"],
       "sources": [
         {
           "sourceId": "montenegro",
@@ -3087,9 +2596,7 @@
       "origin": "LIP",
       "destination": "BEN",
       "durationMinutes": null,
-      "operators": [
-        "Montenegro Shipping Lines"
-      ],
+      "operators": ["Montenegro Shipping Lines"],
       "sources": [
         {
           "sourceId": "montenegro",
@@ -3110,9 +2617,7 @@
       "origin": "LIP",
       "destination": "LIL",
       "durationMinutes": null,
-      "operators": [
-        "Montenegro Shipping Lines"
-      ],
+      "operators": ["Montenegro Shipping Lines"],
       "sources": [
         {
           "sourceId": "montenegro",
@@ -3129,9 +2634,7 @@
       "origin": "LIP",
       "destination": "SJL",
       "durationMinutes": null,
-      "operators": [
-        "Montenegro Shipping Lines"
-      ],
+      "operators": ["Montenegro Shipping Lines"],
       "sources": [
         {
           "sourceId": "marina",
@@ -3148,9 +2651,7 @@
       "origin": "LUC",
       "destination": "BAL",
       "durationMinutes": null,
-      "operators": [
-        "Montenegro Shipping Lines"
-      ],
+      "operators": ["Montenegro Shipping Lines"],
       "sources": [
         {
           "sourceId": "montenegro",
@@ -3171,9 +2672,7 @@
       "origin": "LUC",
       "destination": "ROM",
       "durationMinutes": null,
-      "operators": [
-        "Montenegro Shipping Lines"
-      ],
+      "operators": ["Montenegro Shipping Lines"],
       "sources": [
         {
           "sourceId": "montenegro",
@@ -3190,9 +2689,7 @@
       "origin": "LUC",
       "destination": "SAG",
       "durationMinutes": null,
-      "operators": [
-        "Montenegro Shipping Lines"
-      ],
+      "operators": ["Montenegro Shipping Lines"],
       "sources": [
         {
           "sourceId": "montenegro",
@@ -3209,9 +2706,7 @@
       "origin": "MAG",
       "destination": "BTG",
       "durationMinutes": null,
-      "operators": [
-        "Starlite Ferries"
-      ],
+      "operators": ["Starlite Ferries"],
       "sources": [
         {
           "sourceId": "starlite",
@@ -3228,10 +2723,7 @@
       "origin": "MAG",
       "destination": "ROM",
       "durationMinutes": null,
-      "operators": [
-        "Montenegro Shipping Lines",
-        "Starlite Ferries"
-      ],
+      "operators": ["Montenegro Shipping Lines", "Starlite Ferries"],
       "sources": [
         {
           "sourceId": "montenegro",
@@ -3256,9 +2748,7 @@
       "origin": "MAG",
       "destination": "RXS",
       "durationMinutes": null,
-      "operators": [
-        "Starlite Ferries"
-      ],
+      "operators": ["Starlite Ferries"],
       "sources": [
         {
           "sourceId": "starlite",
@@ -3279,9 +2769,7 @@
       "origin": "MAS",
       "destination": "LAG",
       "durationMinutes": null,
-      "operators": [
-        "Montenegro Shipping Lines"
-      ],
+      "operators": ["Montenegro Shipping Lines"],
       "sources": [
         {
           "sourceId": "montenegro",
@@ -3302,9 +2790,7 @@
       "origin": "MAS",
       "destination": "PIL",
       "durationMinutes": null,
-      "operators": [
-        "Montenegro Shipping Lines"
-      ],
+      "operators": ["Montenegro Shipping Lines"],
       "sources": [
         {
           "sourceId": "montenegro",
@@ -3325,9 +2811,7 @@
       "origin": "MAS",
       "destination": "PIO",
       "durationMinutes": null,
-      "operators": [
-        "Montenegro Shipping Lines"
-      ],
+      "operators": ["Montenegro Shipping Lines"],
       "sources": [
         {
           "sourceId": "marina",
@@ -3344,9 +2828,7 @@
       "origin": "MAS",
       "destination": "SUR",
       "durationMinutes": null,
-      "operators": [
-        "Montenegro Shipping Lines"
-      ],
+      "operators": ["Montenegro Shipping Lines"],
       "sources": [
         {
           "sourceId": "marina",
@@ -3363,9 +2845,7 @@
       "origin": "MBN",
       "destination": "TIN",
       "durationMinutes": null,
-      "operators": [
-        "Montenegro Shipping Lines"
-      ],
+      "operators": ["Montenegro Shipping Lines"],
       "sources": [
         {
           "sourceId": "montenegro",
@@ -3386,10 +2866,7 @@
       "origin": "MTN",
       "destination": "ADD",
       "durationMinutes": null,
-      "operators": [
-        "Montenegro Shipping Lines",
-        "FastCat"
-      ],
+      "operators": ["Montenegro Shipping Lines", "FastCat"],
       "sources": [
         {
           "sourceId": "marina",
@@ -3409,10 +2886,7 @@
       "origin": "MTN",
       "destination": "ALN",
       "durationMinutes": null,
-      "operators": [
-        "Montenegro Shipping Lines",
-        "Starlite Ferries"
-      ],
+      "operators": ["Montenegro Shipping Lines", "Starlite Ferries"],
       "sources": [
         {
           "sourceId": "montenegro",
@@ -3433,9 +2907,7 @@
       "origin": "MTN",
       "destination": "SIS",
       "durationMinutes": null,
-      "operators": [
-        "Montenegro Shipping Lines"
-      ],
+      "operators": ["Montenegro Shipping Lines"],
       "sources": [
         {
           "sourceId": "marina",
@@ -3452,9 +2924,7 @@
       "origin": "NAS",
       "destination": "CEB",
       "durationMinutes": null,
-      "operators": [
-        "Starlite Ferries"
-      ],
+      "operators": ["Starlite Ferries"],
       "sources": [
         {
           "sourceId": "starlite",
@@ -3471,9 +2941,7 @@
       "origin": "NAV",
       "destination": "CTA",
       "durationMinutes": null,
-      "operators": [
-        "Montenegro Shipping Lines"
-      ],
+      "operators": ["Montenegro Shipping Lines"],
       "sources": [
         {
           "sourceId": "marina",
@@ -3490,10 +2958,7 @@
       "origin": "ODI",
       "destination": "BTG",
       "durationMinutes": null,
-      "operators": [
-        "Montenegro Shipping Lines",
-        "Starlite Ferries"
-      ],
+      "operators": ["Montenegro Shipping Lines", "Starlite Ferries"],
       "sources": [
         {
           "sourceId": "montenegro",
@@ -3518,10 +2983,7 @@
       "origin": "ODI",
       "destination": "CAT",
       "durationMinutes": null,
-      "operators": [
-        "Starlite Ferries",
-        "Montenegro Shipping Lines"
-      ],
+      "operators": ["Starlite Ferries", "Montenegro Shipping Lines"],
       "sources": [
         {
           "sourceId": "marina",
@@ -3546,9 +3008,7 @@
       "origin": "ODI",
       "destination": "ROM",
       "durationMinutes": null,
-      "operators": [
-        "Montenegro Shipping Lines"
-      ],
+      "operators": ["Montenegro Shipping Lines"],
       "sources": [
         {
           "sourceId": "montenegro",
@@ -3573,10 +3033,7 @@
       "origin": "ODI",
       "destination": "ROX",
       "durationMinutes": null,
-      "operators": [
-        "Montenegro Shipping Lines",
-        "Starlite Ferries"
-      ],
+      "operators": ["Montenegro Shipping Lines", "Starlite Ferries"],
       "sources": [
         {
           "sourceId": "montenegro",
@@ -3605,9 +3062,7 @@
       "origin": "OSL",
       "destination": "LAR",
       "durationMinutes": null,
-      "operators": [
-        "Montenegro Shipping Lines"
-      ],
+      "operators": ["Montenegro Shipping Lines"],
       "sources": [
         {
           "sourceId": "marina",
@@ -3649,9 +3104,7 @@
       "origin": "PIL",
       "destination": "MAS",
       "durationMinutes": null,
-      "operators": [
-        "Montenegro Shipping Lines"
-      ],
+      "operators": ["Montenegro Shipping Lines"],
       "sources": [
         {
           "sourceId": "montenegro",
@@ -3672,9 +3125,7 @@
       "origin": "PIN",
       "destination": "CON",
       "durationMinutes": null,
-      "operators": [
-        "Montenegro Shipping Lines"
-      ],
+      "operators": ["Montenegro Shipping Lines"],
       "sources": [
         {
           "sourceId": "marina",
@@ -3691,9 +3142,7 @@
       "origin": "PIO",
       "destination": "ARO",
       "durationMinutes": null,
-      "operators": [
-        "Montenegro Shipping Lines"
-      ],
+      "operators": ["Montenegro Shipping Lines"],
       "sources": [
         {
           "sourceId": "marina",
@@ -3710,9 +3159,7 @@
       "origin": "PIO",
       "destination": "MAS",
       "durationMinutes": null,
-      "operators": [
-        "Montenegro Shipping Lines"
-      ],
+      "operators": ["Montenegro Shipping Lines"],
       "sources": [
         {
           "sourceId": "marina",
@@ -3729,9 +3176,7 @@
       "origin": "PPS",
       "destination": "CUY",
       "durationMinutes": null,
-      "operators": [
-        "Montenegro Shipping Lines"
-      ],
+      "operators": ["Montenegro Shipping Lines"],
       "sources": [
         {
           "sourceId": "montenegro",
@@ -3752,9 +3197,7 @@
       "origin": "PPS",
       "destination": "ILO",
       "durationMinutes": null,
-      "operators": [
-        "Montenegro Shipping Lines"
-      ],
+      "operators": ["Montenegro Shipping Lines"],
       "sources": [
         {
           "sourceId": "montenegro",
@@ -3771,10 +3214,7 @@
       "origin": "ROM",
       "destination": "BTG",
       "durationMinutes": null,
-      "operators": [
-        "Montenegro Shipping Lines",
-        "Starlite Ferries"
-      ],
+      "operators": ["Montenegro Shipping Lines", "Starlite Ferries"],
       "sources": [
         {
           "sourceId": "marina",
@@ -3795,9 +3235,7 @@
       "origin": "ROM",
       "destination": "CLR",
       "durationMinutes": null,
-      "operators": [
-        "Montenegro Shipping Lines"
-      ],
+      "operators": ["Montenegro Shipping Lines"],
       "sources": [
         {
           "sourceId": "marina",
@@ -3814,9 +3252,7 @@
       "origin": "ROM",
       "destination": "LUC",
       "durationMinutes": null,
-      "operators": [
-        "Montenegro Shipping Lines"
-      ],
+      "operators": ["Montenegro Shipping Lines"],
       "sources": [
         {
           "sourceId": "montenegro",
@@ -3833,10 +3269,7 @@
       "origin": "ROM",
       "destination": "MAG",
       "durationMinutes": null,
-      "operators": [
-        "Montenegro Shipping Lines",
-        "Starlite Ferries"
-      ],
+      "operators": ["Montenegro Shipping Lines", "Starlite Ferries"],
       "sources": [
         {
           "sourceId": "montenegro",
@@ -3861,9 +3294,7 @@
       "origin": "ROM",
       "destination": "ODI",
       "durationMinutes": null,
-      "operators": [
-        "Montenegro Shipping Lines"
-      ],
+      "operators": ["Montenegro Shipping Lines"],
       "sources": [
         {
           "sourceId": "montenegro",
@@ -3888,9 +3319,7 @@
       "origin": "ROM",
       "destination": "RXS",
       "durationMinutes": null,
-      "operators": [
-        "Starlite Ferries"
-      ],
+      "operators": ["Starlite Ferries"],
       "sources": [
         {
           "sourceId": "starlite",
@@ -3907,9 +3336,7 @@
       "origin": "ROM",
       "destination": "SAG",
       "durationMinutes": null,
-      "operators": [
-        "Montenegro Shipping Lines"
-      ],
+      "operators": ["Montenegro Shipping Lines"],
       "sources": [
         {
           "sourceId": "montenegro",
@@ -3930,9 +3357,7 @@
       "origin": "ROX",
       "destination": "BUR",
       "durationMinutes": null,
-      "operators": [
-        "Montenegro Shipping Lines"
-      ],
+      "operators": ["Montenegro Shipping Lines"],
       "sources": [
         {
           "sourceId": "marina",
@@ -3949,10 +3374,7 @@
       "origin": "ROX",
       "destination": "CAT",
       "durationMinutes": null,
-      "operators": [
-        "Montenegro Shipping Lines",
-        "Starlite Ferries"
-      ],
+      "operators": ["Montenegro Shipping Lines", "Starlite Ferries"],
       "sources": [
         {
           "sourceId": "montenegro",
@@ -3977,23 +3399,8 @@
         {
           "operator": "Starlite Ferries",
           "routeCode": "ROX-CAT",
-          "days": [
-            0,
-            1,
-            2,
-            3,
-            4,
-            5,
-            6
-          ],
-          "departureTimes": [
-            "02:00",
-            "06:00",
-            "11:00",
-            "14:00",
-            "18:00",
-            "23:00"
-          ],
+          "days": [0, 1, 2, 3, 4, 5, 6],
+          "departureTimes": ["02:00", "06:00", "11:00", "14:00", "18:00", "23:00"],
           "durationMinutes": null,
           "timezone": "Asia/Manila",
           "sourceId": "starliteSchedules",
@@ -4004,17 +3411,8 @@
       "accommodationProfiles": [
         {
           "operator": "Starlite Ferries",
-          "routeCodes": [
-            "BTG-CAL",
-            "CAL-BTG",
-            "ROX-CAT",
-            "CAT-ROX"
-          ],
-          "classes": [
-            "Economy",
-            "Tourist Class",
-            "Business Class"
-          ],
+          "routeCodes": ["BTG-CAL", "CAL-BTG", "ROX-CAT", "CAT-ROX"],
+          "classes": ["Economy", "Tourist Class", "Business Class"],
           "sourceId": "starliteSchedules",
           "capacity": null,
           "surcharge": null,
@@ -4028,9 +3426,7 @@
       "origin": "ROX",
       "destination": "CLR",
       "durationMinutes": null,
-      "operators": [
-        "Montenegro Shipping Lines"
-      ],
+      "operators": ["Montenegro Shipping Lines"],
       "sources": [
         {
           "sourceId": "marina",
@@ -4047,10 +3443,7 @@
       "origin": "ROX",
       "destination": "ODI",
       "durationMinutes": null,
-      "operators": [
-        "Montenegro Shipping Lines",
-        "Starlite Ferries"
-      ],
+      "operators": ["Montenegro Shipping Lines", "Starlite Ferries"],
       "sources": [
         {
           "sourceId": "montenegro",
@@ -4079,9 +3472,7 @@
       "origin": "ROX",
       "destination": "UNI",
       "durationMinutes": null,
-      "operators": [
-        "Montenegro Shipping Lines"
-      ],
+      "operators": ["Montenegro Shipping Lines"],
       "sources": [
         {
           "sourceId": "marina",
@@ -4098,9 +3489,7 @@
       "origin": "RXS",
       "destination": "BOG",
       "durationMinutes": null,
-      "operators": [
-        "Starlite Ferries"
-      ],
+      "operators": ["Starlite Ferries"],
       "sources": [
         {
           "sourceId": "marina",
@@ -4117,9 +3506,7 @@
       "origin": "RXS",
       "destination": "BTG",
       "durationMinutes": null,
-      "operators": [
-        "Starlite Ferries"
-      ],
+      "operators": ["Starlite Ferries"],
       "sources": [
         {
           "sourceId": "marina",
@@ -4136,9 +3523,7 @@
       "origin": "RXS",
       "destination": "MAG",
       "durationMinutes": null,
-      "operators": [
-        "Starlite Ferries"
-      ],
+      "operators": ["Starlite Ferries"],
       "sources": [
         {
           "sourceId": "starlite",
@@ -4159,9 +3544,7 @@
       "origin": "RXS",
       "destination": "ROM",
       "durationMinutes": null,
-      "operators": [
-        "Starlite Ferries"
-      ],
+      "operators": ["Starlite Ferries"],
       "sources": [
         {
           "sourceId": "starlite",
@@ -4178,9 +3561,7 @@
       "origin": "SAG",
       "destination": "LUC",
       "durationMinutes": null,
-      "operators": [
-        "Montenegro Shipping Lines"
-      ],
+      "operators": ["Montenegro Shipping Lines"],
       "sources": [
         {
           "sourceId": "montenegro",
@@ -4197,9 +3578,7 @@
       "origin": "SAG",
       "destination": "ROM",
       "durationMinutes": null,
-      "operators": [
-        "Montenegro Shipping Lines"
-      ],
+      "operators": ["Montenegro Shipping Lines"],
       "sources": [
         {
           "sourceId": "montenegro",
@@ -4220,9 +3599,7 @@
       "origin": "SEM",
       "destination": "BUL",
       "durationMinutes": null,
-      "operators": [
-        "Montenegro Shipping Lines"
-      ],
+      "operators": ["Montenegro Shipping Lines"],
       "sources": [
         {
           "sourceId": "marina",
@@ -4243,9 +3620,7 @@
       "origin": "SEM",
       "destination": "BUR",
       "durationMinutes": null,
-      "operators": [
-        "Montenegro Shipping Lines"
-      ],
+      "operators": ["Montenegro Shipping Lines"],
       "sources": [
         {
           "sourceId": "marina",
@@ -4262,9 +3637,7 @@
       "origin": "SEM",
       "destination": "SJM",
       "durationMinutes": null,
-      "operators": [
-        "Montenegro Shipping Lines"
-      ],
+      "operators": ["Montenegro Shipping Lines"],
       "sources": [
         {
           "sourceId": "marina",
@@ -4281,9 +3654,7 @@
       "origin": "SEM",
       "destination": "STA",
       "durationMinutes": null,
-      "operators": [
-        "Montenegro Shipping Lines"
-      ],
+      "operators": ["Montenegro Shipping Lines"],
       "sources": [
         {
           "sourceId": "marina",
@@ -4300,9 +3671,7 @@
       "origin": "SIQ",
       "destination": "DUM",
       "durationMinutes": null,
-      "operators": [
-        "Montenegro Shipping Lines"
-      ],
+      "operators": ["Montenegro Shipping Lines"],
       "sources": [
         {
           "sourceId": "montenegro",
@@ -4323,9 +3692,7 @@
       "origin": "SIS",
       "destination": "MTN",
       "durationMinutes": null,
-      "operators": [
-        "Montenegro Shipping Lines"
-      ],
+      "operators": ["Montenegro Shipping Lines"],
       "sources": [
         {
           "sourceId": "marina",
@@ -4342,9 +3709,7 @@
       "origin": "SJL",
       "destination": "LIP",
       "durationMinutes": null,
-      "operators": [
-        "Montenegro Shipping Lines"
-      ],
+      "operators": ["Montenegro Shipping Lines"],
       "sources": [
         {
           "sourceId": "marina",
@@ -4361,9 +3726,7 @@
       "origin": "SJM",
       "destination": "COR",
       "durationMinutes": null,
-      "operators": [
-        "Montenegro Shipping Lines"
-      ],
+      "operators": ["Montenegro Shipping Lines"],
       "sources": [
         {
           "sourceId": "marina",
@@ -4380,9 +3743,7 @@
       "origin": "SJM",
       "destination": "SEM",
       "durationMinutes": null,
-      "operators": [
-        "Montenegro Shipping Lines"
-      ],
+      "operators": ["Montenegro Shipping Lines"],
       "sources": [
         {
           "sourceId": "marina",
@@ -4399,9 +3760,7 @@
       "origin": "SJM",
       "destination": "STA",
       "durationMinutes": null,
-      "operators": [
-        "Montenegro Shipping Lines"
-      ],
+      "operators": ["Montenegro Shipping Lines"],
       "sources": [
         {
           "sourceId": "marina",
@@ -4418,9 +3777,7 @@
       "origin": "STA",
       "destination": "CAT",
       "durationMinutes": null,
-      "operators": [
-        "Montenegro Shipping Lines"
-      ],
+      "operators": ["Montenegro Shipping Lines"],
       "sources": [
         {
           "sourceId": "montenegro",
@@ -4437,9 +3794,7 @@
       "origin": "STA",
       "destination": "SEM",
       "durationMinutes": null,
-      "operators": [
-        "Montenegro Shipping Lines"
-      ],
+      "operators": ["Montenegro Shipping Lines"],
       "sources": [
         {
           "sourceId": "marina",
@@ -4456,9 +3811,7 @@
       "origin": "STA",
       "destination": "SJM",
       "durationMinutes": null,
-      "operators": [
-        "Montenegro Shipping Lines"
-      ],
+      "operators": ["Montenegro Shipping Lines"],
       "sources": [
         {
           "sourceId": "marina",
@@ -4475,9 +3828,7 @@
       "origin": "SUR",
       "destination": "CEB",
       "durationMinutes": null,
-      "operators": [
-        "Starlite Ferries"
-      ],
+      "operators": ["Starlite Ferries"],
       "sources": [
         {
           "sourceId": "starlite",
@@ -4494,9 +3845,7 @@
       "origin": "SUR",
       "destination": "DIN",
       "durationMinutes": null,
-      "operators": [
-        "Montenegro Shipping Lines"
-      ],
+      "operators": ["Montenegro Shipping Lines"],
       "sources": [
         {
           "sourceId": "montenegro",
@@ -4517,9 +3866,7 @@
       "origin": "SUR",
       "destination": "DPA",
       "durationMinutes": null,
-      "operators": [
-        "Montenegro Shipping Lines"
-      ],
+      "operators": ["Montenegro Shipping Lines"],
       "sources": [
         {
           "sourceId": "montenegro",
@@ -4540,9 +3887,7 @@
       "origin": "SUR",
       "destination": "MAS",
       "durationMinutes": null,
-      "operators": [
-        "Montenegro Shipping Lines"
-      ],
+      "operators": ["Montenegro Shipping Lines"],
       "sources": [
         {
           "sourceId": "marina",
@@ -4559,9 +3904,7 @@
       "origin": "TAB",
       "destination": "VIR",
       "durationMinutes": null,
-      "operators": [
-        "Montenegro Shipping Lines"
-      ],
+      "operators": ["Montenegro Shipping Lines"],
       "sources": [
         {
           "sourceId": "marina",
@@ -4578,9 +3921,7 @@
       "origin": "TAY",
       "destination": "COR",
       "durationMinutes": null,
-      "operators": [
-        "Montenegro Shipping Lines"
-      ],
+      "operators": ["Montenegro Shipping Lines"],
       "sources": [
         {
           "sourceId": "marina",
@@ -4597,9 +3938,7 @@
       "origin": "TBL",
       "destination": "ESC",
       "durationMinutes": null,
-      "operators": [
-        "Montenegro Shipping Lines"
-      ],
+      "operators": ["Montenegro Shipping Lines"],
       "sources": [
         {
           "sourceId": "marina",
@@ -4616,9 +3955,7 @@
       "origin": "TIN",
       "destination": "MBN",
       "durationMinutes": null,
-      "operators": [
-        "Montenegro Shipping Lines"
-      ],
+      "operators": ["Montenegro Shipping Lines"],
       "sources": [
         {
           "sourceId": "montenegro",
@@ -4639,9 +3976,7 @@
       "origin": "UNI",
       "destination": "ROX",
       "durationMinutes": null,
-      "operators": [
-        "Montenegro Shipping Lines"
-      ],
+      "operators": ["Montenegro Shipping Lines"],
       "sources": [
         {
           "sourceId": "marina",
@@ -4658,9 +3993,7 @@
       "origin": "VIR",
       "destination": "TAB",
       "durationMinutes": null,
-      "operators": [
-        "Montenegro Shipping Lines"
-      ],
+      "operators": ["Montenegro Shipping Lines"],
       "sources": [
         {
           "sourceId": "marina",
@@ -4677,10 +4010,7 @@
       "origin": "ZAM",
       "destination": "ISA",
       "durationMinutes": null,
-      "operators": [
-        "Montenegro Shipping Lines",
-        "FastCat"
-      ],
+      "operators": ["Montenegro Shipping Lines", "FastCat"],
       "sources": [
         {
           "sourceId": "montenegro",
@@ -4704,9 +4034,7 @@
       "origin": "ZAM",
       "destination": "JOL",
       "durationMinutes": null,
-      "operators": [
-        "Montenegro Shipping Lines"
-      ],
+      "operators": ["Montenegro Shipping Lines"],
       "sources": [
         {
           "sourceId": "montenegro",
@@ -4727,9 +4055,7 @@
       "origin": "ZAM",
       "destination": "LAM",
       "durationMinutes": null,
-      "operators": [
-        "Montenegro Shipping Lines"
-      ],
+      "operators": ["Montenegro Shipping Lines"],
       "sources": [
         {
           "sourceId": "marina",
@@ -4747,9 +4073,7 @@
       "destination": "CAT",
       "isActive": false,
       "inactiveReason": "Outside the active Batangas-Calapan service area.",
-      "operators": [
-        "FastCat"
-      ],
+      "operators": ["FastCat"],
       "sources": [
         {
           "sourceId": "marina",
@@ -4763,19 +4087,8 @@
         {
           "operator": "FastCat",
           "routeCode": "BUL-CAT",
-          "days": [
-            0,
-            1,
-            2,
-            3,
-            4,
-            5,
-            6
-          ],
-          "departureTimes": [
-            "10:00",
-            "22:00"
-          ],
+          "days": [0, 1, 2, 3, 4, 5, 6],
+          "departureTimes": ["10:00", "22:00"],
           "durationMinutes": 210,
           "timezone": "Asia/Manila",
           "sourceId": "fastcatSchedules",
@@ -4786,17 +4099,8 @@
       "accommodationProfiles": [
         {
           "operator": "FastCat",
-          "routeCodes": [
-            "BTG-CAL",
-            "CAL-BTG",
-            "BUL-CAT",
-            "CAT-BUL"
-          ],
-          "classes": [
-            "Economy",
-            "Premium Economy",
-            "Business Class"
-          ],
+          "routeCodes": ["BTG-CAL", "CAL-BTG", "BUL-CAT", "CAT-BUL"],
+          "classes": ["Economy", "Premium Economy", "Business Class"],
           "sourceId": "fastcatClasses",
           "capacity": null,
           "surcharge": null,
@@ -4811,9 +4115,7 @@
       "destination": "BUL",
       "isActive": false,
       "inactiveReason": "Outside the active Batangas-Calapan service area.",
-      "operators": [
-        "FastCat"
-      ],
+      "operators": ["FastCat"],
       "sources": [
         {
           "sourceId": "marina",
@@ -4827,19 +4129,8 @@
         {
           "operator": "FastCat",
           "routeCode": "CAT-BUL",
-          "days": [
-            0,
-            1,
-            2,
-            3,
-            4,
-            5,
-            6
-          ],
-          "departureTimes": [
-            "03:00",
-            "15:00"
-          ],
+          "days": [0, 1, 2, 3, 4, 5, 6],
+          "departureTimes": ["03:00", "15:00"],
           "durationMinutes": 210,
           "timezone": "Asia/Manila",
           "sourceId": "fastcatSchedules",
@@ -4850,17 +4141,8 @@
       "accommodationProfiles": [
         {
           "operator": "FastCat",
-          "routeCodes": [
-            "BTG-CAL",
-            "CAL-BTG",
-            "BUL-CAT",
-            "CAT-BUL"
-          ],
-          "classes": [
-            "Economy",
-            "Premium Economy",
-            "Business Class"
-          ],
+          "routeCodes": ["BTG-CAL", "CAL-BTG", "BUL-CAT", "CAT-BUL"],
+          "classes": ["Economy", "Premium Economy", "Business Class"],
           "sourceId": "fastcatClasses",
           "capacity": null,
           "surcharge": null,
@@ -4875,9 +4157,7 @@
       "destination": "BNG",
       "isActive": false,
       "inactiveReason": "Outside the active Batangas-Calapan service area.",
-      "operators": [
-        "FastCat"
-      ],
+      "operators": ["FastCat"],
       "sources": [
         {
           "sourceId": "fastcatSchedules"
@@ -4892,9 +4172,7 @@
       "destination": "DMG",
       "isActive": false,
       "inactiveReason": "Outside the active Batangas-Calapan service area.",
-      "operators": [
-        "FastCat"
-      ],
+      "operators": ["FastCat"],
       "sources": [
         {
           "sourceId": "fastcatSchedules"
@@ -4909,9 +4187,7 @@
       "destination": "TOL",
       "isActive": false,
       "inactiveReason": "Outside the active Batangas-Calapan service area.",
-      "operators": [
-        "FastCat"
-      ],
+      "operators": ["FastCat"],
       "sources": [
         {
           "sourceId": "fastcatSchedules"
@@ -4926,9 +4202,7 @@
       "destination": "SCA",
       "isActive": false,
       "inactiveReason": "Outside the active Batangas-Calapan service area.",
-      "operators": [
-        "FastCat"
-      ],
+      "operators": ["FastCat"],
       "sources": [
         {
           "sourceId": "fastcatSchedules"
@@ -4943,9 +4217,7 @@
       "destination": "TUB",
       "isActive": false,
       "inactiveReason": "Outside the active Batangas-Calapan service area.",
-      "operators": [
-        "FastCat"
-      ],
+      "operators": ["FastCat"],
       "sources": [
         {
           "sourceId": "fastcatSchedules"
@@ -4960,9 +4232,7 @@
       "destination": "CEB",
       "isActive": false,
       "inactiveReason": "Outside the active Batangas-Calapan service area.",
-      "operators": [
-        "FastCat"
-      ],
+      "operators": ["FastCat"],
       "sources": [
         {
           "sourceId": "fastcatSchedules"
@@ -4977,9 +4247,7 @@
       "destination": "SUR",
       "isActive": false,
       "inactiveReason": "Outside the active Batangas-Calapan service area.",
-      "operators": [
-        "FastCat"
-      ],
+      "operators": ["FastCat"],
       "sources": [
         {
           "sourceId": "fastcatSchedules"
@@ -4994,9 +4262,7 @@
       "destination": "MSN",
       "isActive": false,
       "inactiveReason": "Outside the active Batangas-Calapan service area.",
-      "operators": [
-        "FastCat"
-      ],
+      "operators": ["FastCat"],
       "sources": [
         {
           "sourceId": "fastcatSchedules"
@@ -5014,13 +4280,8 @@
       "passengerCapacity": 410,
       "isActive": false,
       "capacityStatus": "published reference capacity",
-      "publishedCapacities": [
-        410
-      ],
-      "routes": [
-        "ADI-BTG",
-        "BTG-ADI"
-      ],
+      "publishedCapacities": [410],
+      "routes": ["ADI-BTG", "BTG-ADI"],
       "observations": [
         {
           "sourceId": "marina",
@@ -5037,16 +4298,8 @@
       "passengerCapacity": null,
       "isActive": false,
       "capacityStatus": "conflicting published capacities",
-      "publishedCapacities": [
-        86,
-        92
-      ],
-      "routes": [
-        "BTG-PGA",
-        "CAT-CGN",
-        "CGN-CAT",
-        "PGA-BTG"
-      ],
+      "publishedCapacities": [86, 92],
+      "routes": ["BTG-PGA", "CAT-CGN", "CGN-CAT", "PGA-BTG"],
       "observations": [
         {
           "sourceId": "marina",
@@ -5068,13 +4321,8 @@
       "passengerCapacity": 92,
       "isActive": false,
       "capacityStatus": "published reference capacity",
-      "publishedCapacities": [
-        92
-      ],
-      "routes": [
-        "BTG-PGA",
-        "PGA-BTG"
-      ],
+      "publishedCapacities": [92],
+      "routes": ["BTG-PGA", "PGA-BTG"],
       "observations": [
         {
           "sourceId": "marina",
@@ -5092,10 +4340,7 @@
       "isActive": false,
       "capacityStatus": "capacity not published",
       "publishedCapacities": [],
-      "routes": [
-        "MBN-TIN",
-        "TIN-MBN"
-      ],
+      "routes": ["MBN-TIN", "TIN-MBN"],
       "observations": [
         {
           "sourceId": "marina",
@@ -5113,10 +4358,7 @@
       "isActive": false,
       "capacityStatus": "capacity not published",
       "publishedCapacities": [],
-      "routes": [
-        "MBN-TIN",
-        "TIN-MBN"
-      ],
+      "routes": ["MBN-TIN", "TIN-MBN"],
       "observations": [
         {
           "sourceId": "marina",
@@ -5134,10 +4376,7 @@
       "isActive": false,
       "capacityStatus": "capacity not published",
       "publishedCapacities": [],
-      "routes": [
-        "TAB-VIR",
-        "VIR-TAB"
-      ],
+      "routes": ["TAB-VIR", "VIR-TAB"],
       "observations": [
         {
           "sourceId": "marina",
@@ -5154,13 +4393,8 @@
       "passengerCapacity": 144,
       "isActive": false,
       "capacityStatus": "published reference capacity",
-      "publishedCapacities": [
-        144
-      ],
-      "routes": [
-        "COR-CUL",
-        "CUL-COR"
-      ],
+      "publishedCapacities": [144],
+      "routes": ["COR-CUL", "CUL-COR"],
       "observations": [
         {
           "sourceId": "marina",
@@ -5178,10 +4412,7 @@
       "isActive": false,
       "capacityStatus": "capacity not published",
       "publishedCapacities": [],
-      "routes": [
-        "MBN-TIN",
-        "TIN-MBN"
-      ],
+      "routes": ["MBN-TIN", "TIN-MBN"],
       "observations": [
         {
           "sourceId": "marina",
@@ -5199,10 +4430,7 @@
       "isActive": false,
       "capacityStatus": "capacity not published",
       "publishedCapacities": [],
-      "routes": [
-        "MBN-TIN",
-        "TIN-MBN"
-      ],
+      "routes": ["MBN-TIN", "TIN-MBN"],
       "observations": [
         {
           "sourceId": "marina",
@@ -5219,13 +4447,8 @@
       "passengerCapacity": 198,
       "isActive": false,
       "capacityStatus": "published reference capacity",
-      "publishedCapacities": [
-        198
-      ],
-      "routes": [
-        "BTG-PGA",
-        "PGA-BTG"
-      ],
+      "publishedCapacities": [198],
+      "routes": ["BTG-PGA", "PGA-BTG"],
       "observations": [
         {
           "sourceId": "marina",
@@ -5243,10 +4466,7 @@
       "isActive": false,
       "capacityStatus": "capacity not published",
       "publishedCapacities": [],
-      "routes": [
-        "COR-CUL",
-        "CUL-COR"
-      ],
+      "routes": ["COR-CUL", "CUL-COR"],
       "observations": [
         {
           "sourceId": "marina",
@@ -5264,10 +4484,7 @@
       "isActive": false,
       "capacityStatus": "capacity not published",
       "publishedCapacities": [],
-      "routes": [
-        "MBN-TIN",
-        "TIN-MBN"
-      ],
+      "routes": ["MBN-TIN", "TIN-MBN"],
       "observations": [
         {
           "sourceId": "marina",
@@ -5284,17 +4501,8 @@
       "passengerCapacity": 263,
       "isActive": false,
       "capacityStatus": "published reference capacity",
-      "publishedCapacities": [
-        263
-      ],
-      "routes": [
-        "BOG-CTA",
-        "BTG-ROM",
-        "CTA-BOG",
-        "ESC-TBL",
-        "ROM-BTG",
-        "TBL-ESC"
-      ],
+      "publishedCapacities": [263],
+      "routes": ["BOG-CTA", "BTG-ROM", "CTA-BOG", "ESC-TBL", "ROM-BTG", "TBL-ESC"],
       "observations": [
         {
           "sourceId": "marina",
@@ -5321,13 +4529,8 @@
       "passengerCapacity": 302,
       "isActive": false,
       "capacityStatus": "published reference capacity",
-      "publishedCapacities": [
-        302
-      ],
-      "routes": [
-        "BAC-DMG",
-        "DMG-BAC"
-      ],
+      "publishedCapacities": [302],
+      "routes": ["BAC-DMG", "DMG-BAC"],
       "observations": [
         {
           "sourceId": "marina",
@@ -5344,13 +4547,8 @@
       "passengerCapacity": 594,
       "isActive": true,
       "capacityStatus": "published reference capacity",
-      "publishedCapacities": [
-        594
-      ],
-      "routes": [
-        "BTG-CAL",
-        "CAL-BTG"
-      ],
+      "publishedCapacities": [594],
+      "routes": ["BTG-CAL", "CAL-BTG"],
       "observations": [
         {
           "sourceId": "marina",
@@ -5367,18 +4565,8 @@
       "passengerCapacity": null,
       "isActive": false,
       "capacityStatus": "conflicting published capacities",
-      "publishedCapacities": [
-        655,
-        410
-      ],
-      "routes": [
-        "CUY-ILO",
-        "CUY-PPS",
-        "ILO-CUY",
-        "JOL-ZAM",
-        "PPS-CUY",
-        "ZAM-JOL"
-      ],
+      "publishedCapacities": [655, 410],
+      "routes": ["CUY-ILO", "CUY-PPS", "ILO-CUY", "JOL-ZAM", "PPS-CUY", "ZAM-JOL"],
       "observations": [
         {
           "sourceId": "marina",
@@ -5400,17 +4588,8 @@
       "passengerCapacity": 398,
       "isActive": false,
       "capacityStatus": "published reference capacity",
-      "publishedCapacities": [
-        398
-      ],
-      "routes": [
-        "ADD-MTN",
-        "COR-SJM",
-        "COR-TAY",
-        "MTN-ADD",
-        "SJM-COR",
-        "TAY-COR"
-      ],
+      "publishedCapacities": [398],
+      "routes": ["ADD-MTN", "COR-SJM", "COR-TAY", "MTN-ADD", "SJM-COR", "TAY-COR"],
       "observations": [
         {
           "sourceId": "marina",
@@ -5432,10 +4611,7 @@
       "passengerCapacity": null,
       "isActive": false,
       "capacityStatus": "conflicting published capacities",
-      "publishedCapacities": [
-        413,
-        389
-      ],
+      "publishedCapacities": [413, 389],
       "routes": [
         "BAL-LUC",
         "BOG-CTA",
@@ -5479,15 +4655,8 @@
       "passengerCapacity": 327,
       "isActive": false,
       "capacityStatus": "published reference capacity",
-      "publishedCapacities": [
-        327
-      ],
-      "routes": [
-        "BTG-ODI",
-        "ODI-BTG",
-        "ODI-ROM",
-        "ROM-ODI"
-      ],
+      "publishedCapacities": [327],
+      "routes": ["BTG-ODI", "ODI-BTG", "ODI-ROM", "ROM-ODI"],
       "observations": [
         {
           "sourceId": "marina",
@@ -5504,15 +4673,8 @@
       "passengerCapacity": 427,
       "isActive": false,
       "capacityStatus": "published reference capacity",
-      "publishedCapacities": [
-        427
-      ],
-      "routes": [
-        "CUY-ILO",
-        "ILO-CUY",
-        "LAR-OSL",
-        "OSL-LAR"
-      ],
+      "publishedCapacities": [427],
+      "routes": ["CUY-ILO", "ILO-CUY", "LAR-OSL", "OSL-LAR"],
       "observations": [
         {
           "sourceId": "marina",
@@ -5534,15 +4696,8 @@
       "passengerCapacity": 242,
       "isActive": false,
       "capacityStatus": "published reference capacity",
-      "publishedCapacities": [
-        242
-      ],
-      "routes": [
-        "DAP-DUM",
-        "DUM-DAP",
-        "DUM-SIQ",
-        "SIQ-DUM"
-      ],
+      "publishedCapacities": [242],
+      "routes": ["DAP-DUM", "DUM-DAP", "DUM-SIQ", "SIQ-DUM"],
       "observations": [
         {
           "sourceId": "marina",
@@ -5564,15 +4719,8 @@
       "passengerCapacity": 148,
       "isActive": false,
       "capacityStatus": "published reference capacity",
-      "publishedCapacities": [
-        148
-      ],
-      "routes": [
-        "COR-CUL",
-        "CUL-COR",
-        "MTN-SIS",
-        "SIS-MTN"
-      ],
+      "publishedCapacities": [148],
+      "routes": ["COR-CUL", "CUL-COR", "MTN-SIS", "SIS-MTN"],
       "observations": [
         {
           "sourceId": "marina",
@@ -5594,15 +4742,8 @@
       "passengerCapacity": 280,
       "isActive": false,
       "capacityStatus": "published reference capacity",
-      "publishedCapacities": [
-        280
-      ],
-      "routes": [
-        "BAC-DMG",
-        "DMG-BAC",
-        "DUM-LAR",
-        "LAR-DUM"
-      ],
+      "publishedCapacities": [280],
+      "routes": ["BAC-DMG", "DMG-BAC", "DUM-LAR", "LAR-DUM"],
       "observations": [
         {
           "sourceId": "marina",
@@ -5624,18 +4765,8 @@
       "passengerCapacity": null,
       "isActive": false,
       "capacityStatus": "conflicting published capacities",
-      "publishedCapacities": [
-        675,
-        638
-      ],
-      "routes": [
-        "BTG-CAL",
-        "BTG-ROM",
-        "CAL-BTG",
-        "DUM-LAR",
-        "LAR-DUM",
-        "ROM-BTG"
-      ],
+      "publishedCapacities": [675, 638],
+      "routes": ["BTG-CAL", "BTG-ROM", "CAL-BTG", "DUM-LAR", "LAR-DUM", "ROM-BTG"],
       "observations": [
         {
           "sourceId": "marina",
@@ -5662,13 +4793,8 @@
       "passengerCapacity": 372,
       "isActive": true,
       "capacityStatus": "published reference capacity",
-      "publishedCapacities": [
-        372
-      ],
-      "routes": [
-        "BTG-CAL",
-        "CAL-BTG"
-      ],
+      "publishedCapacities": [372],
+      "routes": ["BTG-CAL", "CAL-BTG"],
       "observations": [
         {
           "sourceId": "marina",
@@ -5685,13 +4811,8 @@
       "passengerCapacity": 574,
       "isActive": false,
       "capacityStatus": "published reference capacity",
-      "publishedCapacities": [
-        574
-      ],
-      "routes": [
-        "JOL-ZAM",
-        "ZAM-JOL"
-      ],
+      "publishedCapacities": [574],
+      "routes": ["JOL-ZAM", "ZAM-JOL"],
       "observations": [
         {
           "sourceId": "marina",
@@ -5708,9 +4829,7 @@
       "passengerCapacity": 232,
       "isActive": false,
       "capacityStatus": "published reference capacity",
-      "publishedCapacities": [
-        232
-      ],
+      "publishedCapacities": [232],
       "routes": [
         "BAC-DMG",
         "DMG-BAC",
@@ -5754,17 +4873,8 @@
       "passengerCapacity": 490,
       "isActive": false,
       "capacityStatus": "published reference capacity",
-      "publishedCapacities": [
-        490
-      ],
-      "routes": [
-        "CLR-ROM",
-        "CLR-ROX",
-        "MAG-ROM",
-        "ROM-CLR",
-        "ROM-MAG",
-        "ROX-CLR"
-      ],
+      "publishedCapacities": [490],
+      "routes": ["CLR-ROM", "CLR-ROX", "MAG-ROM", "ROM-CLR", "ROM-MAG", "ROX-CLR"],
       "observations": [
         {
           "sourceId": "marina",
@@ -5781,13 +4891,8 @@
       "passengerCapacity": 410,
       "isActive": false,
       "capacityStatus": "published reference capacity",
-      "publishedCapacities": [
-        410
-      ],
-      "routes": [
-        "DUM-LAR",
-        "LAR-DUM"
-      ],
+      "publishedCapacities": [410],
+      "routes": ["DUM-LAR", "LAR-DUM"],
       "observations": [
         {
           "sourceId": "marina",
@@ -5804,13 +4909,8 @@
       "passengerCapacity": 660,
       "isActive": true,
       "capacityStatus": "published reference capacity",
-      "publishedCapacities": [
-        660
-      ],
-      "routes": [
-        "BTG-CAL",
-        "CAL-BTG"
-      ],
+      "publishedCapacities": [660],
+      "routes": ["BTG-CAL", "CAL-BTG"],
       "observations": [
         {
           "sourceId": "marina",
@@ -5827,16 +4927,8 @@
       "passengerCapacity": null,
       "isActive": false,
       "capacityStatus": "conflicting published capacities",
-      "publishedCapacities": [
-        660,
-        717
-      ],
-      "routes": [
-        "BTG-CAL",
-        "BTG-ROM",
-        "CAL-BTG",
-        "ROM-BTG"
-      ],
+      "publishedCapacities": [660, 717],
+      "routes": ["BTG-CAL", "BTG-ROM", "CAL-BTG", "ROM-BTG"],
       "observations": [
         {
           "sourceId": "marina",
@@ -5859,10 +4951,7 @@
       "isActive": false,
       "capacityStatus": "capacity not published",
       "publishedCapacities": [],
-      "routes": [
-        "ISA-ZAM",
-        "ZAM-ISA"
-      ],
+      "routes": ["ISA-ZAM", "ZAM-ISA"],
       "observations": [
         {
           "sourceId": "marina",
@@ -5879,13 +4968,8 @@
       "passengerCapacity": 204,
       "isActive": false,
       "capacityStatus": "published reference capacity",
-      "publishedCapacities": [
-        204
-      ],
-      "routes": [
-        "ESC-TBL",
-        "TBL-ESC"
-      ],
+      "publishedCapacities": [204],
+      "routes": ["ESC-TBL", "TBL-ESC"],
       "observations": [
         {
           "sourceId": "marina",
@@ -5902,18 +4986,8 @@
       "passengerCapacity": null,
       "isActive": false,
       "capacityStatus": "conflicting published capacities",
-      "publishedCapacities": [
-        779,
-        738
-      ],
-      "routes": [
-        "BTG-PGA",
-        "CAT-ROX",
-        "PGA-BTG",
-        "ROX-CAT",
-        "SEM-SJM",
-        "SJM-SEM"
-      ],
+      "publishedCapacities": [779, 738],
+      "routes": ["BTG-PGA", "CAT-ROX", "PGA-BTG", "ROX-CAT", "SEM-SJM", "SJM-SEM"],
       "observations": [
         {
           "sourceId": "marina",
@@ -5940,10 +5014,7 @@
       "passengerCapacity": null,
       "isActive": false,
       "capacityStatus": "conflicting published capacities",
-      "publishedCapacities": [
-        1025,
-        930
-      ],
+      "publishedCapacities": [1025, 930],
       "routes": [
         "BTG-ODI",
         "BTG-ROM",
@@ -5980,15 +5051,8 @@
       "passengerCapacity": 626,
       "isActive": true,
       "capacityStatus": "published reference capacity",
-      "publishedCapacities": [
-        626
-      ],
-      "routes": [
-        "BTG-CAL",
-        "BUR-ROX",
-        "CAL-BTG",
-        "ROX-BUR"
-      ],
+      "publishedCapacities": [626],
+      "routes": ["BTG-CAL", "BUR-ROX", "CAL-BTG", "ROX-BUR"],
       "observations": [
         {
           "sourceId": "marina",
@@ -6010,13 +5074,8 @@
       "passengerCapacity": 230,
       "isActive": false,
       "capacityStatus": "published reference capacity",
-      "publishedCapacities": [
-        230
-      ],
-      "routes": [
-        "BEN-LIP",
-        "LIP-BEN"
-      ],
+      "publishedCapacities": [230],
+      "routes": ["BEN-LIP", "LIP-BEN"],
       "observations": [
         {
           "sourceId": "marina",
@@ -6033,9 +5092,7 @@
       "passengerCapacity": 584,
       "isActive": false,
       "capacityStatus": "published reference capacity",
-      "publishedCapacities": [
-        584
-      ],
+      "publishedCapacities": [584],
       "routes": [
         "ADI-BTG",
         "BAN-CON",
@@ -6074,13 +5131,8 @@
       "passengerCapacity": 593,
       "isActive": true,
       "capacityStatus": "published reference capacity",
-      "publishedCapacities": [
-        593
-      ],
-      "routes": [
-        "BTG-CAL",
-        "CAL-BTG"
-      ],
+      "publishedCapacities": [593],
+      "routes": ["BTG-CAL", "CAL-BTG"],
       "observations": [
         {
           "sourceId": "marina",
@@ -6097,13 +5149,8 @@
       "passengerCapacity": 780,
       "isActive": true,
       "capacityStatus": "published reference capacity",
-      "publishedCapacities": [
-        780
-      ],
-      "routes": [
-        "BTG-CAL",
-        "CAL-BTG"
-      ],
+      "publishedCapacities": [780],
+      "routes": ["BTG-CAL", "CAL-BTG"],
       "observations": [
         {
           "sourceId": "marina",
@@ -6120,18 +5167,8 @@
       "passengerCapacity": null,
       "isActive": false,
       "capacityStatus": "conflicting published capacities",
-      "publishedCapacities": [
-        320,
-        282
-      ],
-      "routes": [
-        "ARO-PIO",
-        "BTG-PGA",
-        "LAM-ZAM",
-        "PGA-BTG",
-        "PIO-ARO",
-        "ZAM-LAM"
-      ],
+      "publishedCapacities": [320, 282],
+      "routes": ["ARO-PIO", "BTG-PGA", "LAM-ZAM", "PGA-BTG", "PIO-ARO", "ZAM-LAM"],
       "observations": [
         {
           "sourceId": "marina",
@@ -6158,17 +5195,8 @@
       "passengerCapacity": 335,
       "isActive": false,
       "capacityStatus": "published reference capacity",
-      "publishedCapacities": [
-        335
-      ],
-      "routes": [
-        "BAC-DMG",
-        "DMG-BAC",
-        "ISA-ZAM",
-        "ROX-UNI",
-        "UNI-ROX",
-        "ZAM-ISA"
-      ],
+      "publishedCapacities": [335],
+      "routes": ["BAC-DMG", "DMG-BAC", "ISA-ZAM", "ROX-UNI", "UNI-ROX", "ZAM-ISA"],
       "observations": [
         {
           "sourceId": "marina",
@@ -6195,15 +5223,8 @@
       "passengerCapacity": 265,
       "isActive": false,
       "capacityStatus": "published reference capacity",
-      "publishedCapacities": [
-        265
-      ],
-      "routes": [
-        "DPA-SUR",
-        "MAS-PIL",
-        "PIL-MAS",
-        "SUR-DPA"
-      ],
+      "publishedCapacities": [265],
+      "routes": ["DPA-SUR", "MAS-PIL", "PIL-MAS", "SUR-DPA"],
       "observations": [
         {
           "sourceId": "marina",
@@ -6225,9 +5246,7 @@
       "passengerCapacity": 308,
       "isActive": false,
       "capacityStatus": "published reference capacity",
-      "publishedCapacities": [
-        308
-      ],
+      "publishedCapacities": [308],
       "routes": [
         "BUL-SEM",
         "DAP-DUM",
@@ -6269,9 +5288,7 @@
       "passengerCapacity": 230,
       "isActive": false,
       "capacityStatus": "published reference capacity",
-      "publishedCapacities": [
-        230
-      ],
+      "publishedCapacities": [230],
       "routes": [
         "ALN-MTN",
         "BUL-SEM",
@@ -6310,15 +5327,8 @@
       "passengerCapacity": 318,
       "isActive": false,
       "capacityStatus": "published reference capacity",
-      "publishedCapacities": [
-        318
-      ],
-      "routes": [
-        "BUR-ROX",
-        "DIN-SUR",
-        "ROX-BUR",
-        "SUR-DIN"
-      ],
+      "publishedCapacities": [318],
+      "routes": ["BUR-ROX", "DIN-SUR", "ROX-BUR", "SUR-DIN"],
       "observations": [
         {
           "sourceId": "marina",
@@ -6340,16 +5350,8 @@
       "passengerCapacity": null,
       "isActive": false,
       "capacityStatus": "conflicting published capacities",
-      "publishedCapacities": [
-        265,
-        538
-      ],
-      "routes": [
-        "BUR-ROX",
-        "CAT-ROX",
-        "ROX-BUR",
-        "ROX-CAT"
-      ],
+      "publishedCapacities": [265, 538],
+      "routes": ["BUR-ROX", "CAT-ROX", "ROX-BUR", "ROX-CAT"],
       "observations": [
         {
           "sourceId": "marina",
@@ -6371,13 +5373,8 @@
       "passengerCapacity": 265,
       "isActive": false,
       "capacityStatus": "published reference capacity",
-      "publishedCapacities": [
-        265
-      ],
-      "routes": [
-        "BEN-LIP",
-        "LIP-BEN"
-      ],
+      "publishedCapacities": [265],
+      "routes": ["BEN-LIP", "LIP-BEN"],
       "observations": [
         {
           "sourceId": "marina",
@@ -6394,15 +5391,8 @@
       "passengerCapacity": 265,
       "isActive": false,
       "capacityStatus": "published reference capacity",
-      "publishedCapacities": [
-        265
-      ],
-      "routes": [
-        "DPA-SUR",
-        "DUM-SIQ",
-        "SIQ-DUM",
-        "SUR-DPA"
-      ],
+      "publishedCapacities": [265],
+      "routes": ["DPA-SUR", "DUM-SIQ", "SIQ-DUM", "SUR-DPA"],
       "observations": [
         {
           "sourceId": "marina",
@@ -6424,13 +5414,8 @@
       "passengerCapacity": 513,
       "isActive": true,
       "capacityStatus": "published reference capacity",
-      "publishedCapacities": [
-        513
-      ],
-      "routes": [
-        "BTG-CAL",
-        "CAL-BTG"
-      ],
+      "publishedCapacities": [513],
+      "routes": ["BTG-CAL", "CAL-BTG"],
       "observations": [
         {
           "sourceId": "marina",
@@ -6447,13 +5432,8 @@
       "passengerCapacity": 396,
       "isActive": true,
       "capacityStatus": "published reference capacity",
-      "publishedCapacities": [
-        396
-      ],
-      "routes": [
-        "BTG-CAL",
-        "CAL-BTG"
-      ],
+      "publishedCapacities": [396],
+      "routes": ["BTG-CAL", "CAL-BTG"],
       "observations": [
         {
           "sourceId": "marina",
@@ -6470,9 +5450,7 @@
       "passengerCapacity": 419,
       "isActive": false,
       "capacityStatus": "published reference capacity",
-      "publishedCapacities": [
-        419
-      ],
+      "publishedCapacities": [419],
       "routes": [
         "ADI-BTG",
         "BAC-DMG",
@@ -6509,13 +5487,8 @@
       "passengerCapacity": 425,
       "isActive": true,
       "capacityStatus": "published reference capacity",
-      "publishedCapacities": [
-        425
-      ],
-      "routes": [
-        "BTG-CAL",
-        "CAL-BTG"
-      ],
+      "publishedCapacities": [425],
+      "routes": ["BTG-CAL", "CAL-BTG"],
       "observations": [
         {
           "sourceId": "marina",
@@ -6532,15 +5505,8 @@
       "passengerCapacity": 1025,
       "isActive": false,
       "capacityStatus": "published reference capacity",
-      "publishedCapacities": [
-        1025
-      ],
-      "routes": [
-        "BTG-ODI",
-        "ODI-BTG",
-        "ODI-ROM",
-        "ROM-ODI"
-      ],
+      "publishedCapacities": [1025],
+      "routes": ["BTG-ODI", "ODI-BTG", "ODI-ROM", "ROM-ODI"],
       "observations": [
         {
           "sourceId": "marina",
@@ -6557,13 +5523,8 @@
       "passengerCapacity": 643,
       "isActive": true,
       "capacityStatus": "published reference capacity",
-      "publishedCapacities": [
-        643
-      ],
-      "routes": [
-        "BTG-CAL",
-        "CAL-BTG"
-      ],
+      "publishedCapacities": [643],
+      "routes": ["BTG-CAL", "CAL-BTG"],
       "observations": [
         {
           "sourceId": "marina",
@@ -6580,13 +5541,8 @@
       "passengerCapacity": 410,
       "isActive": false,
       "capacityStatus": "published reference capacity",
-      "publishedCapacities": [
-        410
-      ],
-      "routes": [
-        "ADI-BTG",
-        "BTG-ADI"
-      ],
+      "publishedCapacities": [410],
+      "routes": ["ADI-BTG", "BTG-ADI"],
       "observations": [
         {
           "sourceId": "marina",
@@ -6603,13 +5559,8 @@
       "passengerCapacity": 712,
       "isActive": true,
       "capacityStatus": "published reference capacity",
-      "publishedCapacities": [
-        712
-      ],
-      "routes": [
-        "BTG-CAL",
-        "CAL-BTG"
-      ],
+      "publishedCapacities": [712],
+      "routes": ["BTG-CAL", "CAL-BTG"],
       "observations": [
         {
           "sourceId": "starlite",
@@ -6625,17 +5576,8 @@
       "accommodationProfiles": [
         {
           "operator": "Starlite Ferries",
-          "routeCodes": [
-            "BTG-CAL",
-            "CAL-BTG",
-            "ROX-CAT",
-            "CAT-ROX"
-          ],
-          "classes": [
-            "Economy",
-            "Tourist Class",
-            "Business Class"
-          ],
+          "routeCodes": ["BTG-CAL", "CAL-BTG", "ROX-CAT", "CAT-ROX"],
+          "classes": ["Economy", "Tourist Class", "Business Class"],
           "sourceId": "starliteSchedules",
           "capacity": null,
           "surcharge": null,
@@ -6652,14 +5594,7 @@
       "isActive": false,
       "capacityStatus": "capacity not published",
       "publishedCapacities": [],
-      "routes": [
-        "ALN-MTN",
-        "CEB-NAS",
-        "CEB-SUR",
-        "MTN-ALN",
-        "NAS-CEB",
-        "SUR-CEB"
-      ],
+      "routes": ["ALN-MTN", "CEB-NAS", "CEB-SUR", "MTN-ALN", "NAS-CEB", "SUR-CEB"],
       "observations": [
         {
           "sourceId": "starlite",
@@ -6686,16 +5621,8 @@
       "passengerCapacity": null,
       "isActive": false,
       "capacityStatus": "conflicting published capacities",
-      "publishedCapacities": [
-        737,
-        711
-      ],
-      "routes": [
-        "CAT-ROX",
-        "ODI-ROX",
-        "ROX-CAT",
-        "ROX-ODI"
-      ],
+      "publishedCapacities": [737, 711],
+      "routes": ["CAT-ROX", "ODI-ROX", "ROX-CAT", "ROX-ODI"],
       "observations": [
         {
           "sourceId": "starlite",
@@ -6716,17 +5643,8 @@
       "accommodationProfiles": [
         {
           "operator": "Starlite Ferries",
-          "routeCodes": [
-            "BTG-CAL",
-            "CAL-BTG",
-            "ROX-CAT",
-            "CAT-ROX"
-          ],
-          "classes": [
-            "Economy",
-            "Tourist Class",
-            "Business Class"
-          ],
+          "routeCodes": ["BTG-CAL", "CAL-BTG", "ROX-CAT", "CAT-ROX"],
+          "classes": ["Economy", "Tourist Class", "Business Class"],
           "sourceId": "starliteSchedules",
           "capacity": null,
           "surcharge": null,
@@ -6742,13 +5660,8 @@
       "passengerCapacity": 307,
       "isActive": true,
       "capacityStatus": "published reference capacity",
-      "publishedCapacities": [
-        307
-      ],
-      "routes": [
-        "BTG-CAL",
-        "CAL-BTG"
-      ],
+      "publishedCapacities": [307],
+      "routes": ["BTG-CAL", "CAL-BTG"],
       "observations": [
         {
           "sourceId": "starlite",
@@ -6764,17 +5677,8 @@
       "accommodationProfiles": [
         {
           "operator": "Starlite Ferries",
-          "routeCodes": [
-            "BTG-CAL",
-            "CAL-BTG",
-            "ROX-CAT",
-            "CAT-ROX"
-          ],
-          "classes": [
-            "Economy",
-            "Tourist Class",
-            "Business Class"
-          ],
+          "routeCodes": ["BTG-CAL", "CAL-BTG", "ROX-CAT", "CAT-ROX"],
+          "classes": ["Economy", "Tourist Class", "Business Class"],
           "sourceId": "starliteSchedules",
           "capacity": null,
           "surcharge": null,
@@ -6791,10 +5695,7 @@
       "isActive": false,
       "capacityStatus": "capacity not published",
       "publishedCapacities": [],
-      "routes": [
-        "BTG-CAL",
-        "CAL-BTG"
-      ],
+      "routes": ["BTG-CAL", "CAL-BTG"],
       "observations": [
         {
           "sourceId": "marina",
@@ -6805,17 +5706,8 @@
       "accommodationProfiles": [
         {
           "operator": "Starlite Ferries",
-          "routeCodes": [
-            "BTG-CAL",
-            "CAL-BTG",
-            "ROX-CAT",
-            "CAT-ROX"
-          ],
-          "classes": [
-            "Economy",
-            "Tourist Class",
-            "Business Class"
-          ],
+          "routeCodes": ["BTG-CAL", "CAL-BTG", "ROX-CAT", "CAT-ROX"],
+          "classes": ["Economy", "Tourist Class", "Business Class"],
           "sourceId": "starliteSchedules",
           "capacity": null,
           "surcharge": null,
@@ -6831,13 +5723,8 @@
       "passengerCapacity": 350,
       "isActive": true,
       "capacityStatus": "published reference capacity",
-      "publishedCapacities": [
-        350
-      ],
-      "routes": [
-        "BTG-CAL",
-        "CAL-BTG"
-      ],
+      "publishedCapacities": [350],
+      "routes": ["BTG-CAL", "CAL-BTG"],
       "observations": [
         {
           "sourceId": "starlite",
@@ -6853,17 +5740,8 @@
       "accommodationProfiles": [
         {
           "operator": "Starlite Ferries",
-          "routeCodes": [
-            "BTG-CAL",
-            "CAL-BTG",
-            "ROX-CAT",
-            "CAT-ROX"
-          ],
-          "classes": [
-            "Economy",
-            "Tourist Class",
-            "Business Class"
-          ],
+          "routeCodes": ["BTG-CAL", "CAL-BTG", "ROX-CAT", "CAT-ROX"],
+          "classes": ["Economy", "Tourist Class", "Business Class"],
           "sourceId": "starliteSchedules",
           "capacity": null,
           "surcharge": null,
@@ -6879,9 +5757,7 @@
       "passengerCapacity": 690,
       "isActive": false,
       "capacityStatus": "published reference capacity",
-      "publishedCapacities": [
-        690
-      ],
+      "publishedCapacities": [690],
       "routes": [
         "BOG-EST",
         "BOG-RXS",
@@ -6961,17 +5837,8 @@
       "accommodationProfiles": [
         {
           "operator": "Starlite Ferries",
-          "routeCodes": [
-            "BTG-CAL",
-            "CAL-BTG",
-            "ROX-CAT",
-            "CAT-ROX"
-          ],
-          "classes": [
-            "Economy",
-            "Tourist Class",
-            "Business Class"
-          ],
+          "routeCodes": ["BTG-CAL", "CAL-BTG", "ROX-CAT", "CAT-ROX"],
+          "classes": ["Economy", "Tourist Class", "Business Class"],
           "sourceId": "starliteSchedules",
           "capacity": null,
           "surcharge": null,
@@ -6987,13 +5854,8 @@
       "passengerCapacity": 192,
       "isActive": false,
       "capacityStatus": "published reference capacity",
-      "publishedCapacities": [
-        192
-      ],
-      "routes": [
-        "BTG-PGA",
-        "PGA-BTG"
-      ],
+      "publishedCapacities": [192],
+      "routes": ["BTG-PGA", "PGA-BTG"],
       "observations": [
         {
           "sourceId": "marina",
@@ -7010,16 +5872,8 @@
       "passengerCapacity": null,
       "isActive": false,
       "capacityStatus": "conflicting published capacities",
-      "publishedCapacities": [
-        711,
-        741
-      ],
-      "routes": [
-        "CAT-ROX",
-        "ODI-ROX",
-        "ROX-CAT",
-        "ROX-ODI"
-      ],
+      "publishedCapacities": [711, 741],
+      "routes": ["CAT-ROX", "ODI-ROX", "ROX-CAT", "ROX-ODI"],
       "observations": [
         {
           "sourceId": "starlite",
@@ -7045,17 +5899,8 @@
       "accommodationProfiles": [
         {
           "operator": "Starlite Ferries",
-          "routeCodes": [
-            "BTG-CAL",
-            "CAL-BTG",
-            "ROX-CAT",
-            "CAT-ROX"
-          ],
-          "classes": [
-            "Economy",
-            "Tourist Class",
-            "Business Class"
-          ],
+          "routeCodes": ["BTG-CAL", "CAL-BTG", "ROX-CAT", "CAT-ROX"],
+          "classes": ["Economy", "Tourist Class", "Business Class"],
           "sourceId": "starliteSchedules",
           "capacity": null,
           "surcharge": null,
@@ -7096,17 +5941,8 @@
       "accommodationProfiles": [
         {
           "operator": "Starlite Ferries",
-          "routeCodes": [
-            "BTG-CAL",
-            "CAL-BTG",
-            "ROX-CAT",
-            "CAT-ROX"
-          ],
-          "classes": [
-            "Economy",
-            "Tourist Class",
-            "Business Class"
-          ],
+          "routeCodes": ["BTG-CAL", "CAL-BTG", "ROX-CAT", "CAT-ROX"],
+          "classes": ["Economy", "Tourist Class", "Business Class"],
           "sourceId": "starliteSchedules",
           "capacity": null,
           "surcharge": null,
@@ -7122,10 +5958,7 @@
       "passengerCapacity": null,
       "isActive": false,
       "capacityStatus": "conflicting published capacities",
-      "publishedCapacities": [
-        685,
-        394
-      ],
+      "publishedCapacities": [685, 394],
       "routes": [
         "BTG-CAL",
         "BTG-CAT",
@@ -7172,17 +6005,8 @@
       "accommodationProfiles": [
         {
           "operator": "Starlite Ferries",
-          "routeCodes": [
-            "BTG-CAL",
-            "CAL-BTG",
-            "ROX-CAT",
-            "CAT-ROX"
-          ],
-          "classes": [
-            "Economy",
-            "Tourist Class",
-            "Business Class"
-          ],
+          "routeCodes": ["BTG-CAL", "CAL-BTG", "ROX-CAT", "CAT-ROX"],
+          "classes": ["Economy", "Tourist Class", "Business Class"],
           "sourceId": "starliteSchedules",
           "capacity": null,
           "surcharge": null,
@@ -7198,13 +6022,8 @@
       "passengerCapacity": 182,
       "isActive": true,
       "capacityStatus": "published reference capacity",
-      "publishedCapacities": [
-        182
-      ],
-      "routes": [
-        "BTG-CAL",
-        "CAL-BTG"
-      ],
+      "publishedCapacities": [182],
+      "routes": ["BTG-CAL", "CAL-BTG"],
       "observations": [
         {
           "sourceId": "starlite",
@@ -7220,17 +6039,8 @@
       "accommodationProfiles": [
         {
           "operator": "Starlite Ferries",
-          "routeCodes": [
-            "BTG-CAL",
-            "CAL-BTG",
-            "ROX-CAT",
-            "CAT-ROX"
-          ],
-          "classes": [
-            "Economy",
-            "Tourist Class",
-            "Business Class"
-          ],
+          "routeCodes": ["BTG-CAL", "CAL-BTG", "ROX-CAT", "CAT-ROX"],
+          "classes": ["Economy", "Tourist Class", "Business Class"],
           "sourceId": "starliteSchedules",
           "capacity": null,
           "surcharge": null,
@@ -7246,10 +6056,7 @@
       "passengerCapacity": null,
       "isActive": false,
       "capacityStatus": "conflicting published capacities",
-      "publishedCapacities": [
-        742,
-        403
-      ],
+      "publishedCapacities": [742, 403],
       "routes": [
         "ANT-BTG",
         "ANT-ILO",
@@ -7297,9 +6104,7 @@
       "passengerCapacity": 558,
       "isActive": false,
       "capacityStatus": "published reference capacity",
-      "publishedCapacities": [
-        558
-      ],
+      "publishedCapacities": [558],
       "routes": [
         "BTG-CAT",
         "BTG-MAG",
@@ -7348,15 +6153,8 @@
       "passengerCapacity": 977,
       "isActive": true,
       "capacityStatus": "published reference capacity",
-      "publishedCapacities": [
-        977
-      ],
-      "routes": [
-        "BTG-CAL",
-        "CAL-BTG",
-        "CAT-ROX",
-        "ROX-CAT"
-      ],
+      "publishedCapacities": [977],
+      "routes": ["BTG-CAL", "CAL-BTG", "CAT-ROX", "ROX-CAT"],
       "observations": [
         {
           "sourceId": "starlite",
@@ -7382,17 +6180,8 @@
       "accommodationProfiles": [
         {
           "operator": "Starlite Ferries",
-          "routeCodes": [
-            "BTG-CAL",
-            "CAL-BTG",
-            "ROX-CAT",
-            "CAT-ROX"
-          ],
-          "classes": [
-            "Economy",
-            "Tourist Class",
-            "Business Class"
-          ],
+          "routeCodes": ["BTG-CAL", "CAL-BTG", "ROX-CAT", "CAT-ROX"],
+          "classes": ["Economy", "Tourist Class", "Business Class"],
           "sourceId": "starliteSchedules",
           "capacity": null,
           "surcharge": null,
@@ -7409,12 +6198,7 @@
       "isActive": false,
       "capacityStatus": "capacity not published",
       "publishedCapacities": [],
-      "routes": [
-        "MAG-ROM",
-        "MAG-RXS",
-        "ROM-MAG",
-        "RXS-MAG"
-      ],
+      "routes": ["MAG-ROM", "MAG-RXS", "ROM-MAG", "RXS-MAG"],
       "observations": [
         {
           "sourceId": "starlite",
@@ -7436,13 +6220,8 @@
       "passengerCapacity": 289,
       "isActive": true,
       "capacityStatus": "published reference capacity",
-      "publishedCapacities": [
-        289
-      ],
-      "routes": [
-        "BTG-CAL",
-        "CAL-BTG"
-      ],
+      "publishedCapacities": [289],
+      "routes": ["BTG-CAL", "CAL-BTG"],
       "observations": [
         {
           "sourceId": "marina",
@@ -7454,17 +6233,8 @@
       "accommodationProfiles": [
         {
           "operator": "FastCat",
-          "routeCodes": [
-            "BTG-CAL",
-            "CAL-BTG",
-            "BUL-CAT",
-            "CAT-BUL"
-          ],
-          "classes": [
-            "Economy",
-            "Premium Economy",
-            "Business Class"
-          ],
+          "routeCodes": ["BTG-CAL", "CAL-BTG", "BUL-CAT", "CAT-BUL"],
+          "classes": ["Economy", "Premium Economy", "Business Class"],
           "sourceId": "fastcatClasses",
           "capacity": null,
           "surcharge": null,
@@ -7480,13 +6250,8 @@
       "passengerCapacity": 330,
       "isActive": true,
       "capacityStatus": "published reference capacity",
-      "publishedCapacities": [
-        330
-      ],
-      "routes": [
-        "BTG-CAL",
-        "CAL-BTG"
-      ],
+      "publishedCapacities": [330],
+      "routes": ["BTG-CAL", "CAL-BTG"],
       "observations": [
         {
           "sourceId": "marina",
@@ -7498,17 +6263,8 @@
       "accommodationProfiles": [
         {
           "operator": "FastCat",
-          "routeCodes": [
-            "BTG-CAL",
-            "CAL-BTG",
-            "BUL-CAT",
-            "CAT-BUL"
-          ],
-          "classes": [
-            "Economy",
-            "Premium Economy",
-            "Business Class"
-          ],
+          "routeCodes": ["BTG-CAL", "CAL-BTG", "BUL-CAT", "CAT-BUL"],
+          "classes": ["Economy", "Premium Economy", "Business Class"],
           "sourceId": "fastcatClasses",
           "capacity": null,
           "surcharge": null,
@@ -7524,13 +6280,8 @@
       "passengerCapacity": 350,
       "isActive": true,
       "capacityStatus": "published reference capacity",
-      "publishedCapacities": [
-        350
-      ],
-      "routes": [
-        "BTG-CAL",
-        "CAL-BTG"
-      ],
+      "publishedCapacities": [350],
+      "routes": ["BTG-CAL", "CAL-BTG"],
       "observations": [
         {
           "sourceId": "marina",
@@ -7542,17 +6293,8 @@
       "accommodationProfiles": [
         {
           "operator": "FastCat",
-          "routeCodes": [
-            "BTG-CAL",
-            "CAL-BTG",
-            "BUL-CAT",
-            "CAT-BUL"
-          ],
-          "classes": [
-            "Economy",
-            "Premium Economy",
-            "Business Class"
-          ],
+          "routeCodes": ["BTG-CAL", "CAL-BTG", "BUL-CAT", "CAT-BUL"],
+          "classes": ["Economy", "Premium Economy", "Business Class"],
           "sourceId": "fastcatClasses",
           "capacity": null,
           "surcharge": null,
@@ -7568,13 +6310,8 @@
       "passengerCapacity": 275,
       "isActive": false,
       "capacityStatus": "published reference capacity",
-      "publishedCapacities": [
-        275
-      ],
-      "routes": [
-        "BUL-CAT",
-        "CAT-BUL"
-      ],
+      "publishedCapacities": [275],
+      "routes": ["BUL-CAT", "CAT-BUL"],
       "observations": [
         {
           "sourceId": "marina",
@@ -7586,17 +6323,8 @@
       "accommodationProfiles": [
         {
           "operator": "FastCat",
-          "routeCodes": [
-            "BTG-CAL",
-            "CAL-BTG",
-            "BUL-CAT",
-            "CAT-BUL"
-          ],
-          "classes": [
-            "Economy",
-            "Premium Economy",
-            "Business Class"
-          ],
+          "routeCodes": ["BTG-CAL", "CAL-BTG", "BUL-CAT", "CAT-BUL"],
+          "classes": ["Economy", "Premium Economy", "Business Class"],
           "sourceId": "fastcatClasses",
           "capacity": null,
           "surcharge": null,
@@ -7612,13 +6340,8 @@
       "passengerCapacity": 323,
       "isActive": false,
       "capacityStatus": "published reference capacity",
-      "publishedCapacities": [
-        323
-      ],
-      "routes": [
-        "BTG-CAL",
-        "CAL-BTG"
-      ],
+      "publishedCapacities": [323],
+      "routes": ["BTG-CAL", "CAL-BTG"],
       "observations": [
         {
           "sourceId": "marina",
@@ -7631,15 +6354,8 @@
       "accommodationProfiles": [
         {
           "operator": "OceanJet",
-          "routeCodes": [
-            "BTG-CAL",
-            "CAL-BTG"
-          ],
-          "classes": [
-            "Open Air",
-            "Tourist Class",
-            "Business Class"
-          ],
+          "routeCodes": ["BTG-CAL", "CAL-BTG"],
+          "classes": ["Open Air", "Tourist Class", "Business Class"],
           "sourceId": "oceanjetClasses",
           "capacity": null,
           "surcharge": null,
@@ -7655,13 +6371,8 @@
       "passengerCapacity": 319,
       "isActive": true,
       "capacityStatus": "published reference capacity",
-      "publishedCapacities": [
-        319
-      ],
-      "routes": [
-        "BTG-CAL",
-        "CAL-BTG"
-      ],
+      "publishedCapacities": [319],
+      "routes": ["BTG-CAL", "CAL-BTG"],
       "observations": [
         {
           "sourceId": "marina",
@@ -7673,15 +6384,8 @@
       "accommodationProfiles": [
         {
           "operator": "OceanJet",
-          "routeCodes": [
-            "BTG-CAL",
-            "CAL-BTG"
-          ],
-          "classes": [
-            "Open Air",
-            "Tourist Class",
-            "Business Class"
-          ],
+          "routeCodes": ["BTG-CAL", "CAL-BTG"],
+          "classes": ["Open Air", "Tourist Class", "Business Class"],
           "sourceId": "oceanjetClasses",
           "capacity": null,
           "surcharge": null,
@@ -7697,13 +6401,8 @@
       "passengerCapacity": 292,
       "isActive": true,
       "capacityStatus": "published reference capacity",
-      "publishedCapacities": [
-        292
-      ],
-      "routes": [
-        "BTG-CAL",
-        "CAL-BTG"
-      ],
+      "publishedCapacities": [292],
+      "routes": ["BTG-CAL", "CAL-BTG"],
       "observations": [
         {
           "sourceId": "marina",
@@ -7715,15 +6414,8 @@
       "accommodationProfiles": [
         {
           "operator": "SuperCat",
-          "routeCodes": [
-            "BTG-CAL",
-            "CAL-BTG"
-          ],
-          "classes": [
-            "Economy (Open Air)",
-            "Tourist Class",
-            "Business Class"
-          ],
+          "routeCodes": ["BTG-CAL", "CAL-BTG"],
+          "classes": ["Economy (Open Air)", "Tourist Class", "Business Class"],
           "sourceId": "supercatSchedules",
           "capacity": null,
           "surcharge": null,
@@ -7739,13 +6431,8 @@
       "passengerCapacity": 247,
       "isActive": true,
       "capacityStatus": "published reference capacity",
-      "publishedCapacities": [
-        247
-      ],
-      "routes": [
-        "BTG-CAL",
-        "CAL-BTG"
-      ],
+      "publishedCapacities": [247],
+      "routes": ["BTG-CAL", "CAL-BTG"],
       "observations": [
         {
           "sourceId": "marina",
@@ -7757,15 +6444,8 @@
       "accommodationProfiles": [
         {
           "operator": "SuperCat",
-          "routeCodes": [
-            "BTG-CAL",
-            "CAL-BTG"
-          ],
-          "classes": [
-            "Economy (Open Air)",
-            "Tourist Class",
-            "Business Class"
-          ],
+          "routeCodes": ["BTG-CAL", "CAL-BTG"],
+          "classes": ["Economy (Open Air)", "Tourist Class", "Business Class"],
           "sourceId": "supercatSchedules",
           "capacity": null,
           "surcharge": null,
@@ -7781,16 +6461,8 @@
       "passengerCapacity": null,
       "isActive": false,
       "capacityStatus": "conflicting published capacities",
-      "publishedCapacities": [
-        820,
-        498
-      ],
-      "routes": [
-        "BTG-CAL",
-        "CAL-BTG",
-        "BTG-ADI",
-        "ADI-BTG"
-      ],
+      "publishedCapacities": [820, 498],
+      "routes": ["BTG-CAL", "CAL-BTG", "BTG-ADI", "ADI-BTG"],
       "observations": [
         {
           "sourceId": "marina",
@@ -7814,15 +6486,8 @@
       "passengerCapacity": 288,
       "isActive": true,
       "capacityStatus": "published reference capacity",
-      "publishedCapacities": [
-        288
-      ],
-      "routes": [
-        "BTG-CAL",
-        "CAL-BTG",
-        "BTG-ADI",
-        "ADI-BTG"
-      ],
+      "publishedCapacities": [288],
+      "routes": ["BTG-CAL", "CAL-BTG", "BTG-ADI", "ADI-BTG"],
       "observations": [
         {
           "sourceId": "marina",
@@ -7846,15 +6511,8 @@
       "passengerCapacity": 288,
       "isActive": true,
       "capacityStatus": "published reference capacity",
-      "publishedCapacities": [
-        288
-      ],
-      "routes": [
-        "BTG-CAL",
-        "CAL-BTG",
-        "BTG-ADI",
-        "ADI-BTG"
-      ],
+      "publishedCapacities": [288],
+      "routes": ["BTG-CAL", "CAL-BTG", "BTG-ADI", "ADI-BTG"],
       "observations": [
         {
           "sourceId": "marina",
@@ -7878,13 +6536,8 @@
       "passengerCapacity": 800,
       "isActive": false,
       "capacityStatus": "published reference capacity",
-      "publishedCapacities": [
-        800
-      ],
-      "routes": [
-        "BTG-ADI",
-        "ADI-BTG"
-      ],
+      "publishedCapacities": [800],
+      "routes": ["BTG-ADI", "ADI-BTG"],
       "observations": [
         {
           "sourceId": "marina",
@@ -7902,13 +6555,8 @@
       "passengerCapacity": 800,
       "isActive": false,
       "capacityStatus": "published reference capacity",
-      "publishedCapacities": [
-        800
-      ],
-      "routes": [
-        "BTG-ADI",
-        "ADI-BTG"
-      ],
+      "publishedCapacities": [800],
+      "routes": ["BTG-ADI", "ADI-BTG"],
       "observations": [
         {
           "sourceId": "marina",
@@ -7926,13 +6574,8 @@
       "passengerCapacity": 182,
       "isActive": false,
       "capacityStatus": "published reference capacity",
-      "publishedCapacities": [
-        182
-      ],
-      "routes": [
-        "BTG-PGA",
-        "PGA-BTG"
-      ],
+      "publishedCapacities": [182],
+      "routes": ["BTG-PGA", "PGA-BTG"],
       "observations": [
         {
           "sourceId": "marina",
@@ -7950,13 +6593,8 @@
       "passengerCapacity": 278,
       "isActive": false,
       "capacityStatus": "published reference capacity",
-      "publishedCapacities": [
-        278
-      ],
-      "routes": [
-        "BTG-PGA",
-        "PGA-BTG"
-      ],
+      "publishedCapacities": [278],
+      "routes": ["BTG-PGA", "PGA-BTG"],
       "observations": [
         {
           "sourceId": "marina",
@@ -7974,13 +6612,8 @@
       "passengerCapacity": 300,
       "isActive": true,
       "capacityStatus": "published special-permit capacity (April 2026)",
-      "publishedCapacities": [
-        300
-      ],
-      "routes": [
-        "BTG-CAL",
-        "CAL-BTG"
-      ],
+      "publishedCapacities": [300],
+      "routes": ["BTG-CAL", "CAL-BTG"],
       "observations": [
         {
           "sourceId": "marinaSaga",
@@ -7996,23 +6629,8 @@
     {
       "operator": "FastCat",
       "routeCode": "BTG-CAL",
-      "days": [
-        0,
-        1,
-        2,
-        3,
-        4,
-        5,
-        6
-      ],
-      "departureTimes": [
-        "01:00",
-        "06:00",
-        "09:00",
-        "13:00",
-        "15:00",
-        "21:00"
-      ],
+      "days": [0, 1, 2, 3, 4, 5, 6],
+      "departureTimes": ["01:00", "06:00", "09:00", "13:00", "15:00", "21:00"],
       "durationMinutes": 120,
       "timezone": "Asia/Manila",
       "sourceId": "fastcatSchedules",
@@ -8022,23 +6640,8 @@
     {
       "operator": "FastCat",
       "routeCode": "CAL-BTG",
-      "days": [
-        0,
-        1,
-        2,
-        3,
-        4,
-        5,
-        6
-      ],
-      "departureTimes": [
-        "00:00",
-        "04:00",
-        "10:00",
-        "12:00",
-        "16:00",
-        "21:00"
-      ],
+      "days": [0, 1, 2, 3, 4, 5, 6],
+      "departureTimes": ["00:00", "04:00", "10:00", "12:00", "16:00", "21:00"],
       "durationMinutes": 120,
       "timezone": "Asia/Manila",
       "sourceId": "fastcatSchedules",
@@ -8048,19 +6651,8 @@
     {
       "operator": "FastCat",
       "routeCode": "BUL-CAT",
-      "days": [
-        0,
-        1,
-        2,
-        3,
-        4,
-        5,
-        6
-      ],
-      "departureTimes": [
-        "10:00",
-        "22:00"
-      ],
+      "days": [0, 1, 2, 3, 4, 5, 6],
+      "departureTimes": ["10:00", "22:00"],
       "durationMinutes": 210,
       "timezone": "Asia/Manila",
       "sourceId": "fastcatSchedules",
@@ -8070,19 +6662,8 @@
     {
       "operator": "FastCat",
       "routeCode": "CAT-BUL",
-      "days": [
-        0,
-        1,
-        2,
-        3,
-        4,
-        5,
-        6
-      ],
-      "departureTimes": [
-        "03:00",
-        "15:00"
-      ],
+      "days": [0, 1, 2, 3, 4, 5, 6],
+      "departureTimes": ["03:00", "15:00"],
       "durationMinutes": 210,
       "timezone": "Asia/Manila",
       "sourceId": "fastcatSchedules",
@@ -8092,15 +6673,7 @@
     {
       "operator": "Starlite Ferries",
       "routeCode": "BTG-CAL",
-      "days": [
-        0,
-        1,
-        2,
-        3,
-        4,
-        5,
-        6
-      ],
+      "days": [0, 1, 2, 3, 4, 5, 6],
       "departureTimes": [
         "01:00",
         "03:00",
@@ -8124,15 +6697,7 @@
     {
       "operator": "Starlite Ferries",
       "routeCode": "CAL-BTG",
-      "days": [
-        0,
-        1,
-        2,
-        3,
-        4,
-        5,
-        6
-      ],
+      "days": [0, 1, 2, 3, 4, 5, 6],
       "departureTimes": [
         "01:00",
         "03:00",
@@ -8156,20 +6721,8 @@
     {
       "operator": "SuperCat",
       "routeCode": "BTG-CAL",
-      "days": [
-        0,
-        1,
-        2,
-        3,
-        4,
-        5,
-        6
-      ],
-      "departureTimes": [
-        "09:30",
-        "13:30",
-        "17:30"
-      ],
+      "days": [0, 1, 2, 3, 4, 5, 6],
+      "departureTimes": ["09:30", "13:30", "17:30"],
       "durationMinutes": null,
       "timezone": "Asia/Manila",
       "sourceId": "supercatSchedules",
@@ -8179,20 +6732,8 @@
     {
       "operator": "SuperCat",
       "routeCode": "CAL-BTG",
-      "days": [
-        0,
-        1,
-        2,
-        3,
-        4,
-        5,
-        6
-      ],
-      "departureTimes": [
-        "07:30",
-        "11:30",
-        "17:30"
-      ],
+      "days": [0, 1, 2, 3, 4, 5, 6],
+      "departureTimes": ["07:30", "11:30", "17:30"],
       "durationMinutes": null,
       "timezone": "Asia/Manila",
       "sourceId": "supercatSchedules",
@@ -8202,23 +6743,8 @@
     {
       "operator": "Starlite Ferries",
       "routeCode": "ROX-CAT",
-      "days": [
-        0,
-        1,
-        2,
-        3,
-        4,
-        5,
-        6
-      ],
-      "departureTimes": [
-        "02:00",
-        "06:00",
-        "11:00",
-        "14:00",
-        "18:00",
-        "23:00"
-      ],
+      "days": [0, 1, 2, 3, 4, 5, 6],
+      "departureTimes": ["02:00", "06:00", "11:00", "14:00", "18:00", "23:00"],
       "durationMinutes": null,
       "timezone": "Asia/Manila",
       "sourceId": "starliteSchedules",
@@ -8228,23 +6754,8 @@
     {
       "operator": "Starlite Ferries",
       "routeCode": "CAT-ROX",
-      "days": [
-        0,
-        1,
-        2,
-        3,
-        4,
-        5,
-        6
-      ],
-      "departureTimes": [
-        "01:00",
-        "05:00",
-        "09:00",
-        "12:00",
-        "16:00",
-        "20:00"
-      ],
+      "days": [0, 1, 2, 3, 4, 5, 6],
+      "departureTimes": ["01:00", "05:00", "09:00", "12:00", "16:00", "20:00"],
       "durationMinutes": null,
       "timezone": "Asia/Manila",
       "sourceId": "starliteSchedules",
@@ -8262,17 +6773,8 @@
   "accommodationProfiles": [
     {
       "operator": "FastCat",
-      "routeCodes": [
-        "BTG-CAL",
-        "CAL-BTG",
-        "BUL-CAT",
-        "CAT-BUL"
-      ],
-      "classes": [
-        "Economy",
-        "Premium Economy",
-        "Business Class"
-      ],
+      "routeCodes": ["BTG-CAL", "CAL-BTG", "BUL-CAT", "CAT-BUL"],
+      "classes": ["Economy", "Premium Economy", "Business Class"],
       "sourceId": "fastcatClasses",
       "capacity": null,
       "surcharge": null,
@@ -8281,17 +6783,8 @@
     },
     {
       "operator": "Starlite Ferries",
-      "routeCodes": [
-        "BTG-CAL",
-        "CAL-BTG",
-        "ROX-CAT",
-        "CAT-ROX"
-      ],
-      "classes": [
-        "Economy",
-        "Tourist Class",
-        "Business Class"
-      ],
+      "routeCodes": ["BTG-CAL", "CAL-BTG", "ROX-CAT", "CAT-ROX"],
+      "classes": ["Economy", "Tourist Class", "Business Class"],
       "sourceId": "starliteSchedules",
       "capacity": null,
       "surcharge": null,
@@ -8300,15 +6793,8 @@
     },
     {
       "operator": "SuperCat",
-      "routeCodes": [
-        "BTG-CAL",
-        "CAL-BTG"
-      ],
-      "classes": [
-        "Economy (Open Air)",
-        "Tourist Class",
-        "Business Class"
-      ],
+      "routeCodes": ["BTG-CAL", "CAL-BTG"],
+      "classes": ["Economy (Open Air)", "Tourist Class", "Business Class"],
       "sourceId": "supercatSchedules",
       "capacity": null,
       "surcharge": null,
@@ -8317,15 +6803,8 @@
     },
     {
       "operator": "OceanJet",
-      "routeCodes": [
-        "BTG-CAL",
-        "CAL-BTG"
-      ],
-      "classes": [
-        "Open Air",
-        "Tourist Class",
-        "Business Class"
-      ],
+      "routeCodes": ["BTG-CAL", "CAL-BTG"],
+      "classes": ["Open Air", "Tourist Class", "Business Class"],
       "sourceId": "oceanjetClasses",
       "capacity": null,
       "surcharge": null,

@@ -5,15 +5,21 @@ async function verify() {
   const browser = await chromium.launch({ channel: 'msedge', headless: true });
   try {
     for (const width of [1440, 390]) {
-      const context = await browser.newContext({ viewport: { width, height: 900 }, reducedMotion: 'reduce' });
+      const context = await browser.newContext({
+        viewport: { width, height: 900 },
+        reducedMotion: 'reduce',
+      });
       const page = await context.newPage();
       page.setDefaultTimeout(10000);
       const errors = [];
-      page.on('pageerror', error => errors.push(error.message));
+      page.on('pageerror', (error) => errors.push(error.message));
       const baseUrl = process.env.BARKOLINK_UI_URL || 'http://127.0.0.1:8100';
-      const visible = selector => page.locator(`.ion-page:not(.ion-page-hidden):not(.ion-page-invisible) ${selector}`).filter({ visible: true });
-      const waitForPath = async path => {
-        await page.waitForURL(url => url.pathname === path);
+      const visible = (selector) =>
+        page
+          .locator(`.ion-page:not(.ion-page-hidden):not(.ion-page-invisible) ${selector}`)
+          .filter({ visible: true });
+      const waitForPath = async (path) => {
+        await page.waitForURL((url) => url.pathname === path);
         await page.waitForTimeout(650);
       };
       await page.goto(baseUrl + '/login?redirect=%2Ftrip-details');
@@ -58,9 +64,16 @@ async function verify() {
       await waitForPath('/register');
       assert.equal(await visible('#terms').isChecked(), false);
       assert.deepEqual(errors, []);
-      console.log(`Registration/privacy return, form preservation, manual acknowledgement and booking redirect passed: ${width}px`);
+      console.log(
+        `Registration/privacy return, form preservation, manual acknowledgement and booking redirect passed: ${width}px`,
+      );
       await context.close();
     }
-  } finally { await browser.close(); }
+  } finally {
+    await browser.close();
+  }
 }
-verify().catch(error => { console.error(error); process.exitCode = 1; });
+verify().catch((error) => {
+  console.error(error);
+  process.exitCode = 1;
+});

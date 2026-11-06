@@ -16,14 +16,14 @@ The secret check covers known patterns, configured private values and reachable 
 
 The existing `.gitignore` already excludes all discovered files that must remain local. No ignore-rule change was necessary.
 
-| Files/folders | Result |
-| --- | --- |
-| `.env.chatbot.local` | Ignored; Cloudflare credentials remain local |
-| `.env.local`, `.env.supabase-management`, `.env.paymongo.local`, `.env.weather.local` | Ignored; not tracked |
-| `.audit/`, `.backups/`, `docs/screenshots/` | Ignored; includes screenshots, reports, saved snapshots and copied verification trees |
-| `node_modules/`, `dist/`, test/coverage output | Ignored generated files |
-| Android copied web assets, generated config, build/cache output, local SDK settings and signing material | Ignored |
-| `.env.example` | Eligible; reviewed template contains blank settings and no private credentials |
+| Files/folders                                                                                            | Result                                                                                |
+| -------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
+| `.env.chatbot.local`                                                                                     | Ignored; Cloudflare credentials remain local                                          |
+| `.env.local`, `.env.supabase-management`, `.env.paymongo.local`, `.env.weather.local`                    | Ignored; not tracked                                                                  |
+| `.audit/`, `.backups/`, `docs/screenshots/`                                                              | Ignored; includes screenshots, reports, saved snapshots and copied verification trees |
+| `node_modules/`, `dist/`, test/coverage output                                                           | Ignored generated files                                                               |
+| Android copied web assets, generated config, build/cache output, local SDK settings and signing material | Ignored                                                                               |
+| `.env.example`                                                                                           | Eligible; reviewed template contains blank settings and no private credentials        |
 
 Application source, dependency manifests/lockfile, schema/migrations, synthetic test/seed data, documentation, verification/setup scripts, and Android source/Gradle wrapper belong in the repository. Setup scripts read credentials from ignored local files; those credential files are not bundled into Git when committing the scripts. SQL migrations/setup contain schema and application logic, not a live passenger database export.
 

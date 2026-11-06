@@ -1,84 +1,153 @@
 <template>
   <section class="catalog-panel broadcasts-panel">
     <div class="catalog-tools">
-      <p>
-        Send in-app notices to passengers, staff, or travelers booked on a
-        selected trip.
-      </p>
-      <Button :disabled="busy || loading" @click="start">
-        New notification
-      </Button>
+      <p>Send in-app notices to passengers, staff, or travelers booked on a selected trip.</p>
+      <Button :disabled="busy || loading" @click="start"> New notification </Button>
     </div>
     <p v-if="error" class="catalog-error" role="alert">{{ error }}</p>
     <p v-if="notice" role="status">{{ notice }}</p>
-<IonModal :is-open="editing" :can-dismiss="canDismiss" class="communication-modal broadcast-modal" @didDismiss="dismiss"><section class="communication-dialog broadcast-dialog"><header class="communication-dialog-heading"><div><p class="eyebrow">IN-APP BROADCAST</p><h2>New notification</h2><p>Choose an audience and review before sending.</p></div><button type="button" aria-label="Close notification" :disabled="busy" @click="close"><AppIcon :icon="closeOutline" /></button></header>    <form class="communication-form" @submit.prevent="send">
-      <div class="communication-scroll"><fieldset :disabled="busy" class="communication-fields">
-      <p v-if="formError" role="alert" class="catalog-error full-field">{{ formError }}</p><p v-if="formNotice" role="status" class="full-field">{{ formNotice }}</p>
-      <label
-        >Title<input
-          v-model.trim="draft.title"
-          required
-          minlength="3"
-          maxlength="120" /></label
-      ><label
-        >Audience<select v-model="draft.audience">
-          <option value="PASSENGERS">Passengers</option>
-          <option value="STAFF">Staff</option>
-          <option value="ALL">All accounts</option>
-          <option value="TRIP">Passengers on a trip</option>
-        </select></label
-      ><label class="full-field" v-if="draft.audience === 'TRIP'"
-        >Trip<select v-model="draft.sailingCode" required>
-          <option value="" disabled>Select trip</option>
-          <option v-for="s in sailings" :key="s.code" :value="s.code">
-            {{ s.code }} · {{ s.origin.name }} → {{ s.destination.name }}
-          </option></select
-        ><button
-          v-if="sailings.length < tripTotal"
-          type="button"
-          :disabled="busy"
-          @click="moreTrips"
-        >
-          Load older trips
-        </button></label
-      ><label class="full-field"
-        >Message<textarea
-          v-model.trim="draft.message"
-          rows="3"
-          minlength="3"
-          maxlength="2000"
-          required
-        />
-      </label>
-</fieldset></div><footer class="communication-footer"><Button variant="outline" type="button" :disabled="busy" @click="close">Cancel</Button><Button type="submit" :disabled="busy">{{ busy ? 'Sending...' : 'Review and send' }}</Button></footer></form></section></IonModal>
+    <IonModal
+      :is-open="editing"
+      :can-dismiss="canDismiss"
+      class="communication-modal broadcast-modal"
+      @didDismiss="dismiss"
+      ><section class="communication-dialog broadcast-dialog">
+        <header class="communication-dialog-heading">
+          <div>
+            <p class="eyebrow">IN-APP BROADCAST</p>
+            <h2>New notification</h2>
+            <p>Choose an audience and review before sending.</p>
+          </div>
+          <button type="button" aria-label="Close notification" :disabled="busy" @click="close">
+            <AppIcon :icon="closeOutline" />
+          </button>
+        </header>
+        <form class="communication-form" @submit.prevent="send">
+          <div class="communication-scroll">
+            <fieldset :disabled="busy" class="communication-fields">
+              <p v-if="formError" role="alert" class="catalog-error full-field">{{ formError }}</p>
+              <p v-if="formNotice" role="status" class="full-field">{{ formNotice }}</p>
+              <label
+                >Title<input
+                  v-model.trim="draft.title"
+                  required
+                  minlength="3"
+                  maxlength="120" /></label
+              ><label
+                >Audience<select v-model="draft.audience">
+                  <option value="PASSENGERS">Passengers</option>
+                  <option value="STAFF">Staff</option>
+                  <option value="ALL">All accounts</option>
+                  <option value="TRIP">Passengers on a trip</option>
+                </select></label
+              ><label class="full-field" v-if="draft.audience === 'TRIP'"
+                >Trip<select v-model="draft.sailingCode" required>
+                  <option value="" disabled>Select trip</option>
+                  <option v-for="s in sailings" :key="s.code" :value="s.code">
+                    {{ s.code }} · {{ s.origin.name }} → {{ s.destination.name }}
+                  </option></select
+                ><button
+                  v-if="sailings.length < tripTotal"
+                  type="button"
+                  :disabled="busy"
+                  @click="moreTrips"
+                >
+                  Load older trips
+                </button></label
+              ><label class="full-field"
+                >Message<textarea
+                  v-model.trim="draft.message"
+                  rows="3"
+                  minlength="3"
+                  maxlength="2000"
+                  required
+                />
+              </label>
+            </fieldset>
+          </div>
+          <footer class="communication-footer">
+            <Button variant="outline" type="button" :disabled="busy" @click="close">Cancel</Button
+            ><Button type="submit" :disabled="busy">{{
+              busy ? 'Sending...' : 'Review and send'
+            }}</Button>
+          </footer>
+        </form>
+      </section></IonModal
+    >
     <p v-if="loading" role="status">Loading broadcasts...</p>
     <button v-if="error && !loading" type="button" @click="load">Retry loading broadcasts</button>
-    <div class="communication-directory"><div class="communication-heading"><div><p class="eyebrow">DELIVERY HISTORY</p><h2>Sent broadcasts</h2></div><Badge>{{ total }} total</Badge></div>
-    <div class="broadcast-filters"><label>Search broadcasts<input v-model="table.query.value" type="search" placeholder="Search all broadcasts" /></label><label>Sort all broadcasts<select v-model="table.sort.value"><option value="">Newest first</option><option value="createdAt:asc">Oldest first</option><option value="title:asc">Title: A–Z</option><option value="recipientCount:desc">Most recipients</option></select></label><Button variant="ghost" :disabled="!table.query.value" @click="table.query.value = ''">Reset search</Button></div>
-    <RecordsGrid v-if="!error" title="Sent broadcasts" :columns="['Title', 'Message', 'Audience', 'Recipients', 'Sent (PH)']" :column-types="['text', 'text', 'text', 'number', 'date']" :rows="gridRows" :loading="loading" density="compact" :column-min-widths="[200, 280, 155, 125, 180]" :column-flex="[1.2, 2.2, 1, .75, 1.1]" :max-grid-height="360">
-      <template #cell="{ index, value }"><strong v-if="index === 0">{{ value }}</strong><RecordText v-else-if="index === 1" :text="String(value)" /><Badge v-else-if="index === 2">{{ value }}</Badge><span v-else>{{ value }}</span></template>
-    </RecordsGrid>
-    <WorkspacePagination :page="page" :total="total" item-label="broadcasts" :disabled="busy || loading" @change="page = $event" />
+    <div class="communication-directory">
+      <div class="communication-heading">
+        <div>
+          <p class="eyebrow">DELIVERY HISTORY</p>
+          <h2>Sent broadcasts</h2>
+        </div>
+        <Badge>{{ total }} total</Badge>
+      </div>
+      <div class="broadcast-filters">
+        <label
+          >Search broadcasts<input
+            v-model="table.query.value"
+            type="search"
+            placeholder="Search all broadcasts" /></label
+        ><label
+          >Sort all broadcasts<select v-model="table.sort.value">
+            <option value="">Newest first</option>
+            <option value="createdAt:asc">Oldest first</option>
+            <option value="title:asc">Title: A–Z</option>
+            <option value="recipientCount:desc">Most recipients</option>
+          </select></label
+        ><Button variant="ghost" :disabled="!table.query.value" @click="table.query.value = ''"
+          >Reset search</Button
+        >
+      </div>
+      <RecordsGrid
+        v-if="!error"
+        title="Sent broadcasts"
+        :columns="['Title', 'Message', 'Audience', 'Recipients', 'Sent (PH)']"
+        :column-types="['text', 'text', 'text', 'number', 'date']"
+        :rows="gridRows"
+        :loading="loading"
+        density="compact"
+        :column-min-widths="[200, 280, 155, 125, 180]"
+        :column-flex="[1.2, 2.2, 1, 0.75, 1.1]"
+        :max-grid-height="360"
+      >
+        <template #cell="{ index, value }"
+          ><strong v-if="index === 0">{{ value }}</strong
+          ><RecordText v-else-if="index === 1" :text="String(value)" /><Badge
+            v-else-if="index === 2"
+            >{{ value }}</Badge
+          ><span v-else>{{ value }}</span></template
+        >
+      </RecordsGrid>
+      <WorkspacePagination
+        :page="page"
+        :total="total"
+        item-label="broadcasts"
+        :disabled="busy || loading"
+        @change="page = $event"
+      />
     </div>
   </section>
 </template>
 <script setup lang="ts">
 import { notifyError, notifySuccess, notify } from '@/composables/toast';
-import { useRoute, useRouter } from "vue-router";
-import WorkspacePagination from "../shared/WorkspacePagination.vue";
-import { IonModal } from "@ionic/vue";
-import AppIcon from "@/components/ui/icon/AppIcon.vue";
-import { closeOutline } from "ionicons/icons";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import "../../theme/communication.css";
-import { confirmAction } from "../../composables/confirmation";
-import RecordsGrid from "../shared/RecordsGrid.vue";
+import { useRoute, useRouter } from 'vue-router';
+import WorkspacePagination from '../shared/WorkspacePagination.vue';
+import { IonModal } from '@ionic/vue';
+import AppIcon from '@/components/ui/icon/AppIcon.vue';
+import { closeOutline } from 'ionicons/icons';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import '../../theme/communication.css';
+import { confirmAction } from '../../composables/confirmation';
+import RecordsGrid from '../shared/RecordsGrid.vue';
 import RecordText from '../shared/RecordText.vue';
-import { useTableRecords } from "../../composables/tableRecords";
-import { useUnsavedChanges } from "../../composables/unsavedChanges";
-import { computed, onMounted, reactive, ref, watch } from "vue";
-import { staffDatabase } from "../../services/session";
+import { useTableRecords } from '../../composables/tableRecords';
+import { useUnsavedChanges } from '../../composables/unsavedChanges';
+import { computed, onMounted, reactive, ref, watch } from 'vue';
+import { staffDatabase } from '../../services/session';
 import {
   campaigns,
   notificationRecipients,
@@ -86,36 +155,63 @@ import {
   staffTrips,
   type Campaign,
   type WorkspaceTrip,
-} from "../../services/database/workspaces";
-import { databaseRequestError } from "../../data/databaseErrors";
+} from '../../services/database/workspaces';
+import { databaseRequestError } from '../../data/databaseErrors';
 const rows = ref<Campaign[]>([]),
   sailings = ref<WorkspaceTrip[]>([]),
   editing = ref(false),
   busy = ref(false),
   loading = ref(false),
-  error = ref(""),
-  notice = ref(""),
+  error = ref(''),
+  notice = ref(''),
   page = ref(0),
   total = ref(0),
   tripPage = ref(0),
   tripTotal = ref(0);
 const draft = reactive({
-  title: "",
-  message: "",
-  audience: "PASSENGERS",
-  sailingCode: "",
+  title: '',
+  message: '',
+  audience: 'PASSENGERS',
+  sailingCode: '',
 });
 const table = useTableRecords(rows);
-const route = useRoute(), router = useRouter();
-table.query.value = String(route?.query?.broadcastSearch || "");
-table.sort.value = String(route?.query?.broadcastSort || "");
-const formError = ref(''), formNotice = ref('');
-const audienceLabel = (value: string) => ({ ALL: 'All accounts', STAFF: 'Staff', PASSENGERS: 'Passengers' }[value] || value);
-function dismiss() { editing.value = false; Object.assign(draft, { title: "", message: "", audience: "PASSENGERS", sailingCode: "" }); }
-function start() { formError.value = ''; formNotice.value = ''; editing.value = true; }
-async function canDismiss() { return !busy.value && (!hasUnsavedChanges() || await confirmAction({ title: 'Discard notification?', message: 'Your unsent notification will be lost.', confirmText: 'Discard changes' })); }
-async function close() { if (await canDismiss()) { editing.value = false; Object.assign(draft, { title: '', message: '', audience: 'PASSENGERS', sailingCode: '' }); } }
-const hasUnsavedChanges = () => editing.value && !!(draft.title || draft.message || draft.sailingCode || draft.audience !== "PASSENGERS");
+const route = useRoute(),
+  router = useRouter();
+table.query.value = String(route?.query?.broadcastSearch || '');
+table.sort.value = String(route?.query?.broadcastSort || '');
+const formError = ref(''),
+  formNotice = ref('');
+const audienceLabel = (value: string) =>
+  ({ ALL: 'All accounts', STAFF: 'Staff', PASSENGERS: 'Passengers' })[value] || value;
+function dismiss() {
+  editing.value = false;
+  Object.assign(draft, { title: '', message: '', audience: 'PASSENGERS', sailingCode: '' });
+}
+function start() {
+  formError.value = '';
+  formNotice.value = '';
+  editing.value = true;
+}
+async function canDismiss() {
+  return (
+    !busy.value &&
+    (!hasUnsavedChanges() ||
+      (await confirmAction({
+        title: 'Discard notification?',
+        message: 'Your unsent notification will be lost.',
+        confirmText: 'Discard changes',
+      })))
+  );
+}
+async function close() {
+  if (await canDismiss()) {
+    editing.value = false;
+    Object.assign(draft, { title: '', message: '', audience: 'PASSENGERS', sailingCode: '' });
+  }
+}
+const hasUnsavedChanges = () =>
+  editing.value &&
+  !!(draft.title || draft.message || draft.sailingCode || draft.audience !== 'PASSENGERS');
 useUnsavedChanges(hasUnsavedChanges);
 defineExpose({ hasUnsavedChanges });
 let requestId = crypto.randomUUID();
@@ -123,38 +219,66 @@ watch(draft, () => {
   requestId = crypto.randomUUID();
 });
 const date = (v: string) =>
-  new Date(v).toLocaleString("en-PH", {
-    timeZone: "Asia/Manila",
-    dateStyle: "medium",
-    timeStyle: "short",
+  new Date(v).toLocaleString('en-PH', {
+    timeZone: 'Asia/Manila',
+    dateStyle: 'medium',
+    timeStyle: 'short',
   });
-watch([table.query, table.sort], () => { page.value = 0; if (router && route) void router.replace({ query: { ...route.query, broadcastSearch: table.query.value || undefined, broadcastSort: table.sort.value || undefined } }); });
-watch([page,table.query,table.sort], () => { void load(); });
-const gridRows = computed(() => rows.value.map(campaign => ({
-  key: campaign.id,
-  source: campaign,
-  cells: [campaign.title, campaign.message, campaign.audience === 'TRIP' ? campaign.sailingCode || 'Trip passengers' : audienceLabel(campaign.audience), campaign.recipientCount, date(campaign.createdAt)],
-  sortValues: [campaign.title, campaign.message, campaign.audience === 'TRIP' ? campaign.sailingCode || '' : audienceLabel(campaign.audience), campaign.recipientCount, Date.parse(campaign.createdAt)],
-})));
-let loadVersion=0;
+watch([table.query, table.sort], () => {
+  page.value = 0;
+  if (router && route)
+    void router.replace({
+      query: {
+        ...route.query,
+        broadcastSearch: table.query.value || undefined,
+        broadcastSort: table.sort.value || undefined,
+      },
+    });
+});
+watch([page, table.query, table.sort], () => {
+  void load();
+});
+const gridRows = computed(() =>
+  rows.value.map((campaign) => ({
+    key: campaign.id,
+    source: campaign,
+    cells: [
+      campaign.title,
+      campaign.message,
+      campaign.audience === 'TRIP'
+        ? campaign.sailingCode || 'Trip passengers'
+        : audienceLabel(campaign.audience),
+      campaign.recipientCount,
+      date(campaign.createdAt),
+    ],
+    sortValues: [
+      campaign.title,
+      campaign.message,
+      campaign.audience === 'TRIP' ? campaign.sailingCode || '' : audienceLabel(campaign.audience),
+      campaign.recipientCount,
+      Date.parse(campaign.createdAt),
+    ],
+  })),
+);
+let loadVersion = 0;
 async function load() {
   if (!staffDatabase) return;
-  const version=++loadVersion;
+  const version = ++loadVersion;
   loading.value = true;
-  error.value = "";
+  error.value = '';
   try {
-    const r = await campaigns(staffDatabase, page.value, {search:table.query.value,sort:table.sort.value});
-    if(version!==loadVersion)return;
+    const r = await campaigns(staffDatabase, page.value, {
+      search: table.query.value,
+      sort: table.sort.value,
+    });
+    if (version !== loadVersion) return;
     rows.value = r.data.campaigns;
     total.value = r.data.totalCount;
   } catch (e) {
-    if(version!==loadVersion)return;
-    error.value = databaseRequestError(
-      e,
-      "Could not load notification campaigns.",
-    );
+    if (version !== loadVersion) return;
+    error.value = databaseRequestError(e, 'Could not load notification campaigns.');
   } finally {
-    if(version===loadVersion)loading.value = false;
+    if (version === loadVersion) loading.value = false;
   }
 }
 async function moreTrips() {
@@ -165,40 +289,42 @@ async function moreTrips() {
     tripPage.value++;
     tripTotal.value = r.data.totalCount;
   } catch (e) {
-    formError.value = databaseRequestError(e, "Could not load trips.");
+    formError.value = databaseRequestError(e, 'Could not load trips.');
   }
 }
 async function send() {
   if (!staffDatabase || busy.value) return;
   busy.value = true;
-  formError.value = ""; formNotice.value = ""; notice.value = "";
+  formError.value = '';
+  formNotice.value = '';
+  notice.value = '';
   try {
     const args = {
       ...draft,
-      sailingCode: draft.audience === "TRIP" ? draft.sailingCode : undefined,
+      sailingCode: draft.audience === 'TRIP' ? draft.sailingCode : undefined,
     };
-    const count = (await notificationRecipients(staffDatabase, args)).data
-      .recipients;
+    const count = (await notificationRecipients(staffDatabase, args)).data.recipients;
     if (!count) {
-      notify("No eligible accounts in this audience.");
+      notify('No eligible accounts in this audience.');
       return;
     }
     if (
       !(await confirmAction({
-        title: "Send notification?",
+        title: 'Send notification?',
         message: `Send "${draft.title}" to ${count} accounts in their BarkoLink inbox?`,
-        confirmText: "Send notification",
+        confirmText: 'Send notification',
       }))
     )
       return;
     const r = await sendNotification(staffDatabase, { ...args, requestId });
     notifySuccess(`Notification sent to ${r.data.sent} accounts.`);
-    busy.value = false; editing.value = false;
-    Object.assign(draft, { title: "", message: "", audience: "PASSENGERS", sailingCode: "" });
+    busy.value = false;
+    editing.value = false;
+    Object.assign(draft, { title: '', message: '', audience: 'PASSENGERS', sailingCode: '' });
     page.value = 0;
     await load();
   } catch (e) {
-    notifyError(databaseRequestError(e, "Could not send notification."));
+    notifyError(databaseRequestError(e, 'Could not send notification.'));
   } finally {
     busy.value = false;
   }
@@ -211,57 +337,220 @@ onMounted(async () => {
       sailings.value = r.data.sailings;
       tripTotal.value = r.data.totalCount;
     } catch (e) {
-      error.value = databaseRequestError(e, "Could not load trips.");
+      error.value = databaseRequestError(e, 'Could not load trips.');
     }
   }
 });
 </script>
 <style scoped>
-.broadcasts-panel { display: grid; gap: 14px; min-width: 0; color: var(--ink); font-family: var(--ion-font-family); }
-.broadcasts-panel > .catalog-tools { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 0; }
-.catalog-tools p { margin: 0; color: var(--muted); font-size: var(--text-label); line-height: 1.6; }
-.catalog-tools > button { flex: none; }
-.broadcasts-panel > p { margin: 0; font-size: var(--text-label); }
-.communication-directory { border-radius: 14px; min-width: 0; }
-.communication-directory > .communication-heading { padding: 14px 16px; }
-.communication-heading h2 { font-size: 17px; }
-.communication-heading p { margin-top: 5px; font-size: var(--text-caption); }
-.broadcast-filters { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: end; gap: 12px; padding: 12px 16px; border-bottom: 1px solid var(--line); }
-label { display: grid; gap: 7px; min-width: 0; color: var(--muted); font-size: var(--text-label); font-weight: 600; }
-.broadcast-filters input, .broadcast-dialog input, .broadcast-dialog select, .broadcast-dialog textarea { box-sizing: border-box; width: 100%; min-width: 0; min-height: 40px; padding: 8px 12px; border: 1px solid var(--line); border-radius: 9px; background: var(--surface-soft); color: var(--ink); font: inherit; font-size: var(--text-label); }
-.broadcast-dialog textarea { min-height: 76px; resize: vertical; line-height: 1.5; }
-.broadcasts-panel button, .broadcast-dialog button { min-height: 40px; font-family: inherit; font-size: var(--text-label); }
-.communication-directory :deep(.grid-tools) { padding: 8px 16px; border-bottom: 1px solid var(--line); }
-.communication-directory :deep(.grid-tools button) { min-height: 34px; padding: 6px 8px; }
-.communication-directory :deep(.desktop-grid) { padding: 8px; }
-.communication-directory :deep(.grid-cell-content) { font-size: var(--text-label); line-height: 1.5; padding: 7px 0; }
-.communication-directory :deep(.workspace-pagination) { padding: 12px 16px; }
-.communication-directory :deep(.workspace-pagination button) { min-height: 34px; }
-.full-field { grid-column: 1 / -1; }
-.broadcast-modal { --width: min(620px, calc(100vw - 32px)); --border-radius: 16px; }
-.broadcast-dialog { font-family: var(--ion-font-family); min-height: 0; }
-.broadcast-dialog .communication-dialog-heading { padding: 14px 20px; gap: 12px; }
-.broadcast-dialog .communication-dialog-heading h2 { font-size: 17px; }
-.broadcast-dialog .communication-dialog-heading > button { width: 44px; height: 44px; padding: 0; }
-.broadcast-dialog .communication-scroll { padding: 14px 20px; scrollbar-width: thin; }
-.broadcast-dialog fieldset { gap: 14px; }
-.broadcast-dialog .communication-footer { padding: 12px 20px; background: var(--surface-soft); }
-.broadcast-dialog input:focus-visible, .broadcast-dialog select:focus-visible, .broadcast-dialog textarea:focus-visible, .broadcast-filters input:focus-visible { outline: 2px solid var(--ocean); outline-offset: 2px; }
+.broadcasts-panel {
+  display: grid;
+  gap: 14px;
+  min-width: 0;
+  color: var(--ink);
+  font-family: var(--ion-font-family);
+}
+.broadcasts-panel > .catalog-tools {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 0;
+}
+.catalog-tools p {
+  margin: 0;
+  color: var(--muted);
+  font-size: var(--text-label);
+  line-height: 1.6;
+}
+.catalog-tools > button {
+  flex: none;
+}
+.broadcasts-panel > p {
+  margin: 0;
+  font-size: var(--text-label);
+}
+.communication-directory {
+  border-radius: 14px;
+  min-width: 0;
+}
+.communication-directory > .communication-heading {
+  padding: 14px 16px;
+}
+.communication-heading h2 {
+  font-size: 17px;
+}
+.communication-heading p {
+  margin-top: 5px;
+  font-size: var(--text-caption);
+}
+.broadcast-filters {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+  gap: 12px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--line);
+}
+label {
+  display: grid;
+  gap: 7px;
+  min-width: 0;
+  color: var(--muted);
+  font-size: var(--text-label);
+  font-weight: 600;
+}
+.broadcast-filters input,
+.broadcast-dialog input,
+.broadcast-dialog select,
+.broadcast-dialog textarea {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  min-height: 40px;
+  padding: 8px 12px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: var(--surface-soft);
+  color: var(--ink);
+  font: inherit;
+  font-size: var(--text-label);
+}
+.broadcast-dialog textarea {
+  min-height: 76px;
+  resize: vertical;
+  line-height: 1.5;
+}
+.broadcasts-panel button,
+.broadcast-dialog button {
+  min-height: 40px;
+  font-family: inherit;
+  font-size: var(--text-label);
+}
+.communication-directory :deep(.grid-tools) {
+  padding: 8px 16px;
+  border-bottom: 1px solid var(--line);
+}
+.communication-directory :deep(.grid-tools button) {
+  min-height: 34px;
+  padding: 6px 8px;
+}
+.communication-directory :deep(.desktop-grid) {
+  padding: 8px;
+}
+.communication-directory :deep(.grid-cell-content) {
+  font-size: var(--text-label);
+  line-height: 1.5;
+  padding: 7px 0;
+}
+.communication-directory :deep(.workspace-pagination) {
+  padding: 12px 16px;
+}
+.communication-directory :deep(.workspace-pagination button) {
+  min-height: 34px;
+}
+.full-field {
+  grid-column: 1 / -1;
+}
+.broadcast-modal {
+  --width: min(620px, calc(100vw - 32px));
+  --border-radius: 16px;
+}
+.broadcast-dialog {
+  font-family: var(--ion-font-family);
+  min-height: 0;
+}
+.broadcast-dialog .communication-dialog-heading {
+  padding: 14px 20px;
+  gap: 12px;
+}
+.broadcast-dialog .communication-dialog-heading h2 {
+  font-size: 17px;
+}
+.broadcast-dialog .communication-dialog-heading > button {
+  width: 44px;
+  height: 44px;
+  padding: 0;
+}
+.broadcast-dialog .communication-scroll {
+  padding: 14px 20px;
+  scrollbar-width: thin;
+}
+.broadcast-dialog fieldset {
+  gap: 14px;
+}
+.broadcast-dialog .communication-footer {
+  padding: 12px 20px;
+  background: var(--surface-soft);
+}
+.broadcast-dialog input:focus-visible,
+.broadcast-dialog select:focus-visible,
+.broadcast-dialog textarea:focus-visible,
+.broadcast-filters input:focus-visible {
+  outline: 2px solid var(--ocean);
+  outline-offset: 2px;
+}
 @media (max-width: 700px) {
-  .broadcasts-panel > .catalog-tools { align-items: flex-start; flex-direction: column; gap: 10px; }
-  .communication-directory :deep(.grid-tools) { flex-wrap: wrap; }
+  .broadcasts-panel > .catalog-tools {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .communication-directory :deep(.grid-tools) {
+    flex-wrap: wrap;
+  }
 }
 @media (max-width: 600px) {
-  .broadcast-modal { --width: calc(100vw - 24px); }
-  .broadcast-dialog .communication-dialog-heading, .broadcast-dialog .communication-scroll { padding: 16px; }
-  .broadcast-dialog .communication-footer { padding: 12px 16px; }
-  .broadcast-dialog .communication-footer button { flex: 1; min-height: 44px; }
-  .broadcast-filters input, .broadcast-dialog input, .broadcast-dialog select, .broadcast-dialog textarea { min-height: 44px; font-size: 16px; }
-  .broadcasts-panel button { min-height: 44px; }
+  .broadcast-modal {
+    --width: calc(100vw - 24px);
+  }
+  .broadcast-dialog .communication-dialog-heading,
+  .broadcast-dialog .communication-scroll {
+    padding: 16px;
+  }
+  .broadcast-dialog .communication-footer {
+    padding: 12px 16px;
+  }
+  .broadcast-dialog .communication-footer button {
+    flex: 1;
+    min-height: 44px;
+  }
+  .broadcast-filters input,
+  .broadcast-dialog input,
+  .broadcast-dialog select,
+  .broadcast-dialog textarea {
+    min-height: 44px;
+    font-size: 16px;
+  }
+  .broadcasts-panel button {
+    min-height: 44px;
+  }
 }
 </style>
 
 <style scoped>
-.broadcast-filters { grid-template-columns:minmax(0,1.4fr) minmax(160px,1fr) auto; }.broadcast-filters label { min-width:0; }.broadcast-filters select { width:100%; min-height:44px; border:1px solid var(--line); border-radius:var(--button-radius); padding:10px; background:var(--surface); color:var(--ink); font:inherit; }
-@media(max-width:800px){ .broadcast-filters { grid-template-columns:1fr; }.broadcast-filters button { justify-self:start; } }
+.broadcast-filters {
+  grid-template-columns: minmax(0, 1.4fr) minmax(160px, 1fr) auto;
+}
+.broadcast-filters label {
+  min-width: 0;
+}
+.broadcast-filters select {
+  width: 100%;
+  min-height: 44px;
+  border: 1px solid var(--line);
+  border-radius: var(--button-radius);
+  padding: 10px;
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+}
+@media (max-width: 800px) {
+  .broadcast-filters {
+    grid-template-columns: 1fr;
+  }
+  .broadcast-filters button {
+    justify-self: start;
+  }
+}
 </style>

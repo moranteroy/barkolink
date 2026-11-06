@@ -1,97 +1,157 @@
-import { flushPromises, mount } from '@vue/test-utils'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
-import AdminReportsPanel from '../../src/components/admin/AdminReportsPanel.vue'
-import { reportNumberFields } from '../../src/data/reportAnalytics'
-const mocks = vi.hoisted(() => ({ reports: vi.fn(), pdf: vi.fn(), gridApi: undefined as unknown }))
-vi.mock('../../src/data/reportPdf', () => ({ downloadReportPdf: mocks.pdf }))
-vi.mock('../../src/services/session', () => ({ staffDatabase: {} }))
-vi.mock('../../src/services/database/staff', () => ({ adminReports: mocks.reports }))
-vi.mock('../../src/components/shared/RecordsGrid.vue', () => ({ default: {
-  props: ['rows', 'columns'],
-  setup() { return { getApi: () => mocks.gridApi } },
-  template: '<div class="records-grid"><div v-for="row in rows" :key="row.key" class="test-grid-row"><slot name="cell" v-for="(value, index) in row.cells" :row="row" :value="value" :index="index" /></div><p v-if="!rows.length">No matching records.</p></div>',
-} }))
-const row = (code: string, vesselId: string, vessel: string, revenue: number) => ({ ...Object.fromEntries(reportNumberFields.map(k => [k,0])), code, vesselId, vessel, departureAt: '2026-10-02T08:00:00Z', originId: 'a', origin: 'Origin', destinationId: 'b', destination: 'Destination', status: 'SCHEDULED', collectedRevenue: revenue, capacity: 100, reservedSeats: 25 })
-beforeEach(() => { mocks.gridApi = undefined; mocks.pdf.mockReset(); mocks.reports.mockReset(); mocks.reports.mockResolvedValue({ data: { sailings: [row('TRP1','v1','Ferry One',100),row('TRP2','v2','Ferry Two',300)] } }) })
+import { flushPromises, mount } from '@vue/test-utils';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import AdminReportsPanel from '../../src/components/admin/AdminReportsPanel.vue';
+import { reportNumberFields } from '../../src/data/reportAnalytics';
+const mocks = vi.hoisted(() => ({ reports: vi.fn(), pdf: vi.fn(), gridApi: undefined as unknown }));
+vi.mock('../../src/data/reportPdf', () => ({ downloadReportPdf: mocks.pdf }));
+vi.mock('../../src/services/session', () => ({ staffDatabase: {} }));
+vi.mock('../../src/services/database/staff', () => ({ adminReports: mocks.reports }));
+vi.mock('../../src/components/shared/RecordsGrid.vue', () => ({
+  default: {
+    props: ['rows', 'columns'],
+    setup() {
+      return { getApi: () => mocks.gridApi };
+    },
+    template:
+      '<div class="records-grid"><div v-for="row in rows" :key="row.key" class="test-grid-row"><slot name="cell" v-for="(value, index) in row.cells" :row="row" :value="value" :index="index" /></div><p v-if="!rows.length">No matching records.</p></div>',
+  },
+}));
+const row = (code: string, vesselId: string, vessel: string, revenue: number) => ({
+  ...Object.fromEntries(reportNumberFields.map((k) => [k, 0])),
+  code,
+  vesselId,
+  vessel,
+  departureAt: '2026-10-02T08:00:00Z',
+  originId: 'a',
+  origin: 'Origin',
+  destinationId: 'b',
+  destination: 'Destination',
+  status: 'SCHEDULED',
+  collectedRevenue: revenue,
+  capacity: 100,
+  reservedSeats: 25,
+});
+beforeEach(() => {
+  mocks.gridApi = undefined;
+  mocks.pdf.mockReset();
+  mocks.reports.mockReset();
+  mocks.reports.mockResolvedValue({
+    data: { sailings: [row('TRP1', 'v1', 'Ferry One', 100), row('TRP2', 'v2', 'Ferry Two', 300)] },
+  });
+});
 describe('admin reports panel', () => {
   it('loads reports, filters analytics by vessel, and groups the details', async () => {
-    const wrapper = mount(AdminReportsPanel, { props: { refreshToken: 0 } }); await flushPromises()
-    expect(mocks.reports).toHaveBeenCalledWith({},expect.objectContaining({ startAt: expect.any(String), endAt: expect.any(String) }),{ fetchPolicy: 'SERVER_ONLY' })
-    expect(wrapper.findAll('.test-grid-row')).toHaveLength(2)
-    await wrapper.findAll('select')[2].setValue('v2')
-    expect(wrapper.findAll('.test-grid-row')).toHaveLength(1)
-    expect(wrapper.find('.report-metrics').text()).toContain('₱300')
-    await wrapper.findAll('.tabs button')[2].trigger('click')
-    expect(wrapper.find('.records-grid').text()).toContain('Ferry Two')
-    expect(wrapper.find('.records-grid').text()).not.toContain('Ferry One')
-    wrapper.unmount()
-  })
+    const wrapper = mount(AdminReportsPanel, { props: { refreshToken: 0 } });
+    await flushPromises();
+    expect(mocks.reports).toHaveBeenCalledWith(
+      {},
+      expect.objectContaining({ startAt: expect.any(String), endAt: expect.any(String) }),
+      { fetchPolicy: 'SERVER_ONLY' },
+    );
+    expect(wrapper.findAll('.test-grid-row')).toHaveLength(2);
+    await wrapper.findAll('select')[2].setValue('v2');
+    expect(wrapper.findAll('.test-grid-row')).toHaveLength(1);
+    expect(wrapper.find('.report-metrics').text()).toContain('₱300');
+    await wrapper.findAll('.tabs button')[2].trigger('click');
+    expect(wrapper.find('.records-grid').text()).toContain('Ferry Two');
+    expect(wrapper.find('.records-grid').text()).not.toContain('Ferry One');
+    wrapper.unmount();
+  });
   it('shows service errors and recovers after refresh', async () => {
-    mocks.reports.mockRejectedValueOnce(new Error('Offline'))
-    const wrapper = mount(AdminReportsPanel, { props: { refreshToken: 0 } }); await flushPromises()
-    expect(wrapper.find('[role="alert"]').exists()).toBe(true)
-    expect(wrapper.find('.report-metrics').exists()).toBe(false)
-    await wrapper.setProps({ refreshToken: 1 }); await flushPromises()
-    expect(wrapper.find('.report-metrics').exists()).toBe(true)
-    wrapper.unmount()
-  })
+    mocks.reports.mockRejectedValueOnce(new Error('Offline'));
+    const wrapper = mount(AdminReportsPanel, { props: { refreshToken: 0 } });
+    await flushPromises();
+    expect(wrapper.find('[role="alert"]').exists()).toBe(true);
+    expect(wrapper.find('.report-metrics').exists()).toBe(false);
+    await wrapper.setProps({ refreshToken: 1 });
+    await flushPromises();
+    expect(wrapper.find('.report-metrics').exists()).toBe(true);
+    wrapper.unmount();
+  });
   it('does not request invalid date ranges or show stale charts', async () => {
-    const wrapper = mount(AdminReportsPanel, { props: { refreshToken: 0 } }); await flushPromises()
-    await wrapper.findAll('input[type="date"]')[0].setValue('2099-01-01'); await flushPromises()
-    expect(mocks.reports).toHaveBeenCalledTimes(1)
-    expect(wrapper.find('[role="alert"]').exists()).toBe(true)
-    expect(wrapper.find('.charts').exists()).toBe(false)
-    wrapper.unmount()
-  })
+    const wrapper = mount(AdminReportsPanel, { props: { refreshToken: 0 } });
+    await flushPromises();
+    await wrapper.findAll('input[type="date"]')[0].setValue('2099-01-01');
+    await flushPromises();
+    expect(mocks.reports).toHaveBeenCalledTimes(1);
+    expect(wrapper.find('[role="alert"]').exists()).toBe(true);
+    expect(wrapper.find('.charts').exists()).toBe(false);
+    wrapper.unmount();
+  });
   it('ignores older requests that finish after a refresh', async () => {
-    let finishOld!: (value: unknown) => void
-    mocks.reports.mockImplementationOnce(() => new Promise(resolve => { finishOld = resolve }))
-    const wrapper = mount(AdminReportsPanel, { props: { refreshToken: 0 } })
-    await wrapper.setProps({ refreshToken: 1 }); await flushPromises()
-    finishOld({ data: { sailings: [row('OLD','v3','Old Ferry',999)] } }); await flushPromises()
-    expect(wrapper.find('.records-grid').text()).toContain('TRP1')
-    expect(wrapper.find('.records-grid').text()).not.toContain('OLD')
-    wrapper.unmount()
-  })
+    let finishOld!: (value: unknown) => void;
+    mocks.reports.mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          finishOld = resolve;
+        }),
+    );
+    const wrapper = mount(AdminReportsPanel, { props: { refreshToken: 0 } });
+    await wrapper.setProps({ refreshToken: 1 });
+    await flushPromises();
+    finishOld({ data: { sailings: [row('OLD', 'v3', 'Old Ferry', 999)] } });
+    await flushPromises();
+    expect(wrapper.find('.records-grid').text()).toContain('TRP1');
+    expect(wrapper.find('.records-grid').text()).not.toContain('OLD');
+    wrapper.unmount();
+  });
   it('resets vessel and search filters to the current month', async () => {
-    const wrapper = mount(AdminReportsPanel, { props: { refreshToken: 0 } }); await flushPromises()
-    await wrapper.findAll('select')[2].setValue('v2')
-    await wrapper.find('input[type="search"]').setValue('missing')
-    expect(wrapper.find('.records-grid').text()).toContain('No matching records.')
-    await wrapper.find('.filter-heading button').trigger('click'); await flushPromises()
-    expect((wrapper.findAll('select')[0].element as HTMLSelectElement).value).toBe('month')
-    expect((wrapper.findAll('select')[2].element as HTMLSelectElement).value).toBe('ALL')
-    expect((wrapper.find('input[type="search"]').element as HTMLInputElement).value).toBe('')
-    expect(wrapper.findAll('.test-grid-row')).toHaveLength(2)
-    expect(mocks.reports).toHaveBeenCalledTimes(2)
-    wrapper.unmount()
-  })
+    const wrapper = mount(AdminReportsPanel, { props: { refreshToken: 0 } });
+    await flushPromises();
+    await wrapper.findAll('select')[2].setValue('v2');
+    await wrapper.find('input[type="search"]').setValue('missing');
+    expect(wrapper.find('.records-grid').text()).toContain('No matching records.');
+    await wrapper.find('.filter-heading button').trigger('click');
+    await flushPromises();
+    expect((wrapper.findAll('select')[0].element as HTMLSelectElement).value).toBe('month');
+    expect((wrapper.findAll('select')[2].element as HTMLSelectElement).value).toBe('ALL');
+    expect((wrapper.find('input[type="search"]').element as HTMLInputElement).value).toBe('');
+    expect(wrapper.findAll('.test-grid-row')).toHaveLength(2);
+    expect(mocks.reports).toHaveBeenCalledTimes(2);
+    wrapper.unmount();
+  });
 
   it('exports only column-filtered rows in table order and reconciles the summary', async () => {
-    const wrapper = mount(AdminReportsPanel, { props: { refreshToken: 0 } }); await flushPromises()
-    const source = ['TRP2', 'Oct 2, 2026', 'Origin to Destination', 'Ferry Two', '25 / 100', '25%', 3, 300, 0, 0, 'SCHEDULED']
+    const wrapper = mount(AdminReportsPanel, { props: { refreshToken: 0 } });
+    await flushPromises();
+    const source = [
+      'TRP2',
+      'Oct 2, 2026',
+      'Origin to Destination',
+      'Ferry Two',
+      '25 / 100',
+      '25%',
+      3,
+      300,
+      0,
+      0,
+      'SCHEDULED',
+    ];
     mocks.gridApi = {
       isDestroyed: () => false,
       isAnyFilterPresent: () => true,
-      forEachNodeAfterFilterAndSort: (callback: (node: unknown) => void) => callback({ data: { source } }),
-    }
-    await wrapper.find('.export').trigger('click'); await flushPromises()
-    await vi.waitFor(() => expect(mocks.pdf).toHaveBeenCalledTimes(1))
-    const report = mocks.pdf.mock.calls[0][0]
-    expect(report.rows).toHaveLength(1)
-    expect(report.rows[0][0]).toBe('TRP2')
-    expect(report.rows[0][7]).toBe('PHP 300.00')
-    expect(report.summary).toContainEqual({ label: 'Collected revenue', value: 'PHP 300.00' })
-    expect(report.summary).toContainEqual({ label: 'Reservations', value: '3' })
-    expect(report.scope).toContain('Table column filters applied')
-    wrapper.unmount()
-  })
+      forEachNodeAfterFilterAndSort: (callback: (node: unknown) => void) =>
+        callback({ data: { source } }),
+    };
+    await wrapper.find('.export').trigger('click');
+    await flushPromises();
+    await vi.waitFor(() => expect(mocks.pdf).toHaveBeenCalledTimes(1));
+    const report = mocks.pdf.mock.calls[0][0];
+    expect(report.rows).toHaveLength(1);
+    expect(report.rows[0][0]).toBe('TRP2');
+    expect(report.rows[0][7]).toBe('PHP 300.00');
+    expect(report.summary).toContainEqual({ label: 'Collected revenue', value: 'PHP 300.00' });
+    expect(report.summary).toContainEqual({ label: 'Reservations', value: '3' });
+    expect(report.scope).toContain('Table column filters applied');
+    wrapper.unmount();
+  });
   it('does not export all records when column filters match no rows', async () => {
-    const wrapper = mount(AdminReportsPanel, { props: { refreshToken: 0 } }); await flushPromises()
-    mocks.gridApi = { isDestroyed: () => false, forEachNodeAfterFilterAndSort: () => undefined }
-    await wrapper.find('.export').trigger('click'); await flushPromises()
-    expect(mocks.pdf).not.toHaveBeenCalled()
-    wrapper.unmount()
-  })
-
-})
+    const wrapper = mount(AdminReportsPanel, { props: { refreshToken: 0 } });
+    await flushPromises();
+    mocks.gridApi = { isDestroyed: () => false, forEachNodeAfterFilterAndSort: () => undefined };
+    await wrapper.find('.export').trigger('click');
+    await flushPromises();
+    expect(mocks.pdf).not.toHaveBeenCalled();
+    wrapper.unmount();
+  });
+});

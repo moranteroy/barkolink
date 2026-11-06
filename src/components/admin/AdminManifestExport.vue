@@ -1,11 +1,14 @@
 <template>
-  <section class="manifest-export" :class="{ 'workspace-export': sailingCode || externalSelection }" aria-labelledby="manifest-export-title">
+  <section
+    class="manifest-export"
+    :class="{ 'workspace-export': sailingCode || externalSelection }"
+    aria-labelledby="manifest-export-title"
+  >
     <div class="export-heading">
       <span class="export-symbol"><FileText aria-hidden="true" /></span>
       <div>
-      <p class="eyebrow">PDF DOWNLOAD</p>
-      <h2 id="manifest-export-title">Passenger manifest export</h2>
-
+        <p class="eyebrow">PDF DOWNLOAD</p>
+        <h2 id="manifest-export-title">Passenger manifest export</h2>
       </div>
     </div>
     <div class="export-controls">
@@ -20,61 +23,66 @@
             {{ s.code }} · {{ s.origin }} → {{ s.destination }} · {{ s.vessel }}
           </option>
         </select></label
-      ><button data-slot="button" data-variant="default" data-size="default" :disabled="!selected || exporting" @click="exportManifest">
+      ><button
+        data-slot="button"
+        data-variant="default"
+        data-size="default"
+        :disabled="!selected || exporting"
+        @click="exportManifest"
+      >
         <Download aria-hidden="true" />
-        {{ exporting ? "Exporting…" : "Download manifest PDF" }}
+        {{ exporting ? 'Exporting…' : 'Download manifest PDF' }}
       </button>
     </div>
-    <p v-if="!sailings.length">
-      No sailings are available to export.
-    </p>
+    <p v-if="!sailings.length">No sailings are available to export.</p>
     <p v-if="error" class="error" role="alert">{{ error }}</p>
     <p v-if="notice" role="status">{{ notice }}</p>
   </section>
 </template>
 <script setup lang="ts">
 import { notifySuccess, notifyError } from '@/composables/toast';
-import { onBeforeUnmount, ref, watch } from "vue";
-import { FileText, Download } from "@lucide/vue";
-import {
-  adminExportManifest,
-  type AdminExportManifestData,
-} from "../../services/database/staff";
-import { staffDatabase } from "../../services/session";
-import { type ReportSailing } from "../../data/reportAnalytics";
-import { ticketRequestError } from "../../data/ticketActions";
+import { onBeforeUnmount, ref, watch } from 'vue';
+import { FileText, Download } from '@lucide/vue';
+import { adminExportManifest, type AdminExportManifestData } from '../../services/database/staff';
+import { staffDatabase } from '../../services/session';
+import { type ReportSailing } from '../../data/reportAnalytics';
+import { ticketRequestError } from '../../data/ticketActions';
 const props = defineProps<{
-  sailings: Pick<ReportSailing, "code" | "origin" | "destination" | "vessel">[];
+  sailings: Pick<ReportSailing, 'code' | 'origin' | 'destination' | 'vessel'>[];
   sailingCode?: string;
   externalSelection?: boolean;
 }>();
-const selected = ref(""),
+const selected = ref(''),
   exporting = ref(false),
-  error = ref(""),
-  notice = ref("");
+  error = ref(''),
+  notice = ref('');
 let request = 0;
-watch(() => props.sailingCode, (code) => {
-  request++;
-  exporting.value = false;
-  selected.value = code && props.sailings.some(s => s.code === code) ? code : '';
-  error.value = '';
-  notice.value = '';
-}, { immediate: true });
+watch(
+  () => props.sailingCode,
+  (code) => {
+    request++;
+    exporting.value = false;
+    selected.value = code && props.sailings.some((s) => s.code === code) ? code : '';
+    error.value = '';
+    notice.value = '';
+  },
+  { immediate: true },
+);
 watch(
   () => props.sailings,
   (sailings) => {
     if (selected.value && !sailings.some((s) => s.code === selected.value)) {
       request++;
-      selected.value = "";
+      selected.value = '';
       exporting.value = false;
-      error.value = "";
-      notice.value = "";
+      error.value = '';
+      notice.value = '';
     }
   },
 );
 watch(selected, () => {
-  error.value = "";
-  notice.value = "";
+  error.value = '';
+  notice.value = '';
 });
 onBeforeUnmount(() => {
   request++;
@@ -84,72 +92,64 @@ async function exportManifest() {
   const code = selected.value,
     version = ++request;
   exporting.value = true;
-  error.value = "";
-  notice.value = "";
+  error.value = '';
+  notice.value = '';
   try {
-    if (!staffDatabase) throw new Error("The manifest service is unavailable.");
-    const passengers: AdminExportManifestData["bookingPassengers"] = [];
+    if (!staffDatabase) throw new Error('The manifest service is unavailable.');
+    const passengers: AdminExportManifestData['bookingPassengers'] = [];
     for (let offset = 0; ; offset += 500) {
       const result = await adminExportManifest(
         staffDatabase,
         { sailingCode: code, offset },
-        { fetchPolicy: "SERVER_ONLY" },
+        { fetchPolicy: 'SERVER_ONLY' },
       );
       if (version !== request) return;
       passengers.push(...result.data.bookingPassengers);
       if (result.data.bookingPassengers.length < 500) break;
     }
     if (!passengers.length) {
-      notice.value = "No paid, confirmed passengers to export for this sailing.";
+      notice.value = 'No paid, confirmed passengers to export for this sailing.';
       return;
     }
     const dateTime = (value: string) =>
-      new Intl.DateTimeFormat("en-PH", {
-        timeZone: "Asia/Manila",
-        dateStyle: "medium",
-        timeStyle: "short",
+      new Intl.DateTimeFormat('en-PH', {
+        timeZone: 'Asia/Manila',
+        dateStyle: 'medium',
+        timeStyle: 'short',
       }).format(new Date(value));
-    const input = { headers:
-      [
-        "Passenger",
-        "Sex",
-        "Type",
-        "Booking",
-        "Sailing",
-        "Ticket",
-        "Boarded at (PH)",
-      ],
+    const input = {
+      headers: ['Passenger', 'Sex', 'Type', 'Booking', 'Sailing', 'Ticket', 'Boarded at (PH)'],
       rows: passengers.map((p) => [
         p.fullName,
-        p.sex?.trim() || "Not provided",
+        p.sex?.trim() || 'Not provided',
         p.passengerType,
         p.booking.reference,
         p.booking.sailing.code,
         p.ticketStatus,
-        p.boardedAt ? dateTime(p.boardedAt) : "",
+        p.boardedAt ? dateTime(p.boardedAt) : '',
       ]),
       title: 'Passenger manifest',
-      scope: [`Sailing ${code}`, `${props.sailings.find(s => s.code === code)?.origin || ''} to ${props.sailings.find(s => s.code === code)?.destination || ''}`, props.sailings.find(s => s.code === code)?.vessel || '', `${passengers.length} passengers`],
+      scope: [
+        `Sailing ${code}`,
+        `${props.sailings.find((s) => s.code === code)?.origin || ''} to ${props.sailings.find((s) => s.code === code)?.destination || ''}`,
+        props.sailings.find((s) => s.code === code)?.vessel || '',
+        `${passengers.length} passengers`,
+      ],
       note: 'Paid, confirmed reservations. Boarding timestamps use Philippine time. Handle passenger information securely.',
     };
     const { createReportPdf } = await import('../../data/reportPdf');
     const pdf = await createReportPdf(input);
     if (version !== request) return;
-    const url = URL.createObjectURL(
-      pdf.output("blob"),
-    );
-    const link = document.createElement("a");
+    const url = URL.createObjectURL(pdf.output('blob'));
+    const link = document.createElement('a');
     link.href = url;
     link.download = `manifest-${code}.pdf`;
     link.click();
-    setTimeout(() => URL.revokeObjectURL(url),10000);
+    setTimeout(() => URL.revokeObjectURL(url), 10000);
     notifySuccess(`Exported ${passengers.length} passengers for ${code}.`);
   } catch (e) {
     if (version === request)
-      notifyError(ticketRequestError(
-        e,
-        "Could not export the manifest. Try again.",
-      ));
+      notifyError(ticketRequestError(e, 'Could not export the manifest. Try again.'));
   } finally {
     if (version === request) exporting.value = false;
   }
@@ -163,11 +163,29 @@ async function exportManifest() {
   border-radius: 14px;
   color: var(--ink);
 }
-.workspace-export { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 14px; padding: 16px 18px; border-radius: 12px; }
-.workspace-export .export-heading { margin: 0; }
-.workspace-export h2 { font-size: 15px; }
-.workspace-export > p { grid-column: 1 / -1; margin: 0; }
-.workspace-export button { font-size: var(--text-label); min-height: 40px; padding: 10px 14px; }
+.workspace-export {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 14px;
+  padding: 16px 18px;
+  border-radius: 12px;
+}
+.workspace-export .export-heading {
+  margin: 0;
+}
+.workspace-export h2 {
+  font-size: 15px;
+}
+.workspace-export > p {
+  grid-column: 1 / -1;
+  margin: 0;
+}
+.workspace-export button {
+  font-size: var(--text-label);
+  min-height: 40px;
+  padding: 10px 14px;
+}
 h2 {
   font-size: 17px;
   margin: 0 0 10px;
@@ -228,16 +246,52 @@ button:disabled {
 .manifest-export > p {
   margin: 14px 0 0;
 }
-.export-heading { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 12px; }
-.export-heading p:last-child { margin-bottom: 0; }
-.export-symbol { display: grid; place-items: center; width: 36px; height: 36px; flex: none; border-radius: 10px; background: var(--light-blue); color: var(--ocean); }
-.export-symbol svg { width: 23px; height: 23px; }
-.export-heading .eyebrow { margin: 0 0 6px; color: var(--ocean); font-size: var(--text-caption); font-weight: 800; letter-spacing: .1em; }
-.export-heading h2 { margin-bottom: 6px; }
-button svg { width: 16px; height: 16px; }
-button:focus-visible, select:focus-visible { outline: 2px solid var(--ocean); outline-offset: 3px; }
+.export-heading {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+.export-heading p:last-child {
+  margin-bottom: 0;
+}
+.export-symbol {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  flex: none;
+  border-radius: 10px;
+  background: var(--light-blue);
+  color: var(--ocean);
+}
+.export-symbol svg {
+  width: 23px;
+  height: 23px;
+}
+.export-heading .eyebrow {
+  margin: 0 0 6px;
+  color: var(--ocean);
+  font-size: var(--text-caption);
+  font-weight: 800;
+  letter-spacing: 0.1em;
+}
+.export-heading h2 {
+  margin-bottom: 6px;
+}
+button svg {
+  width: 16px;
+  height: 16px;
+}
+button:focus-visible,
+select:focus-visible {
+  outline: 2px solid var(--ocean);
+  outline-offset: 3px;
+}
 @media (max-width: 700px) {
-  .workspace-export { grid-template-columns: 1fr; }
+  .workspace-export {
+    grid-template-columns: 1fr;
+  }
   .export-controls {
     flex-direction: column;
     align-items: stretch;
@@ -245,7 +299,12 @@ button:focus-visible, select:focus-visible { outline: 2px solid var(--ocean); ou
   .manifest-export {
     padding: 16px;
   }
-  select { min-height: 44px; font-size: 16px; }
-  button { min-height: 44px; }
+  select {
+    min-height: 44px;
+    font-size: 16px;
+  }
+  button {
+    min-height: 44px;
+  }
 }
 </style>

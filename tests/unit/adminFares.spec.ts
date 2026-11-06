@@ -1,500 +1,947 @@
-import { flushPromises, mount } from '@vue/test-utils'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
-import AdminWorkspacePage from '../../src/views/admin/AdminWorkspacePage.vue'
-import { recordsGridStub } from '../support/recordsGridStub'
-import { clearToasts, toastMessages } from '../../src/composables/toast'
+import { flushPromises, mount } from '@vue/test-utils';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import AdminWorkspacePage from '../../src/views/admin/AdminWorkspacePage.vue';
+import { recordsGridStub } from '../support/recordsGridStub';
+import { clearToasts, toastMessages } from '../../src/composables/toast';
 
-vi.mock('../../src/services/database/workspaces', () => ({ routes: mocks.routes }))
-vi.mock('../../src/composables/confirmation', () => ({ confirmAction: vi.fn(async () => true) }))
+vi.mock('../../src/services/database/workspaces', () => ({ routes: mocks.routes }));
+vi.mock('../../src/composables/confirmation', () => ({ confirmAction: vi.fn(async () => true) }));
 const mocks = vi.hoisted(() => ({
   route: { path: '/admin/trips', params: { section: 'trips' }, query: {} },
   enter: vi.fn(),
-  settings: vi.fn(), saveSettings: vi.fn(), createTrip: vi.fn(), nextCode: vi.fn(),
-  bookings: vi.fn(), directoryBookings: vi.fn(), updateTrip: vi.fn(),
-  passengerRecords: vi.fn(), board: vi.fn(), checkIn: vi.fn(),
-  reports: vi.fn(), updateVessel: vi.fn(), routes: vi.fn(),
-  generatePassword: vi.fn(), createUser: vi.fn(),
-}))
-vi.mock('vue-router', () => ({ onBeforeRouteLeave: vi.fn(), onBeforeRouteUpdate: vi.fn(), useRoute: () => mocks.route, useRouter: () => ({ replace: vi.fn() }) }))
-vi.mock('../../src/services/session', () => ({ auth: null, functions: {}, staffDatabase: {} }))
-vi.mock('../../src/services/accountFunctions', () => ({ accountFunction: (_functions: unknown, name: string) => name === 'generateTemporaryPassword' ? mocks.generatePassword : mocks.createUser }))
+  settings: vi.fn(),
+  saveSettings: vi.fn(),
+  createTrip: vi.fn(),
+  nextCode: vi.fn(),
+  bookings: vi.fn(),
+  directoryBookings: vi.fn(),
+  updateTrip: vi.fn(),
+  passengerRecords: vi.fn(),
+  board: vi.fn(),
+  checkIn: vi.fn(),
+  reports: vi.fn(),
+  updateVessel: vi.fn(),
+  routes: vi.fn(),
+  generatePassword: vi.fn(),
+  createUser: vi.fn(),
+}));
+vi.mock('vue-router', () => ({
+  onBeforeRouteLeave: vi.fn(),
+  onBeforeRouteUpdate: vi.fn(),
+  useRoute: () => mocks.route,
+  useRouter: () => ({ replace: vi.fn() }),
+}));
+vi.mock('../../src/services/session', () => ({ auth: null, functions: {}, staffDatabase: {} }));
+vi.mock('../../src/services/accountFunctions', () => ({
+  accountFunction: (_functions: unknown, name: string) =>
+    name === 'generateTemporaryPassword' ? mocks.generatePassword : mocks.createUser,
+}));
 vi.mock('@ionic/vue', () => ({
-  IonPage: { template: '<div><slot /></div>' }, IonContent: { template: '<div><slot /></div>' },
+  IonPage: { template: '<div><slot /></div>' },
+  IonContent: { template: '<div><slot /></div>' },
   IonIcon: { template: '<span />' },
   IonModal: { props: ['isOpen'], template: '<div v-if="isOpen"><slot /></div>' },
   onIonViewWillEnter: mocks.enter,
-}))
+}));
 const sailing = {
-  code: 'TRP-EXISTING', status: 'SCHEDULED', departureAt: '2099-01-01T08:00:00Z', arrivalAt: '2099-01-01T10:00:00Z',
-  origin: { id: 'origin', name: 'Origin' }, destination: { id: 'destination', name: 'Destination' },
-  vessel: { id: 'vessel', name: 'Ferry', passengerCapacity: 100 }, availableSeats: 100,
-  regularFare: 600, studentFare: 420, seniorFare: 450, childFare: 300, pwdFare: 400,
-}
+  code: 'TRP-EXISTING',
+  status: 'SCHEDULED',
+  departureAt: '2099-01-01T08:00:00Z',
+  arrivalAt: '2099-01-01T10:00:00Z',
+  origin: { id: 'origin', name: 'Origin' },
+  destination: { id: 'destination', name: 'Destination' },
+  vessel: { id: 'vessel', name: 'Ferry', passengerCapacity: 100 },
+  availableSeats: 100,
+  regularFare: 600,
+  studentFare: 420,
+  seniorFare: 450,
+  childFare: 300,
+  pwdFare: 400,
+};
 vi.mock('../../src/services/database/staff', () => ({
   adminReports: mocks.reports,
-  adminFareSettings: mocks.settings, adminSaveFareSettings: mocks.saveSettings,
+  adminFareSettings: mocks.settings,
+  adminSaveFareSettings: mocks.saveSettings,
   adminNextTripCode: mocks.nextCode,
-  adminCreateSailing: mocks.createTrip, adminSailingBookings: mocks.bookings, adminUpdateUnbookedSailing: mocks.updateTrip,
+  adminCreateSailing: mocks.createTrip,
+  adminSailingBookings: mocks.bookings,
+  adminUpdateUnbookedSailing: mocks.updateTrip,
   staffBookings: mocks.directoryBookings,
   adminSailings: async () => ({ data: { sailings: [sailing] } }),
   adminSailingOptions: async () => ({ data: { sailings: [sailing] } }),
   adminUsers: async () => ({ data: { users: [] } }),
-  adminPorts: async () => ({ data: { ports: [{ id: 'origin', code: 'ORG', name: 'Origin', city: 'Origin City', isActive: true }, { id: 'destination', code: 'DST', name: 'Destination', city: 'Destination City', isActive: true }] } }),
-  adminVessels: async () => ({ data: { vessels: [{ id: 'vessel', code: 'F1', name: 'Ferry', passengerCapacity: 100, isActive: true }, { id: 'vessel-2', code: 'F2', name: 'Fast Ferry', passengerCapacity: 80, isActive: true }, { id: 'unpriced', code: 'F3', name: 'New Ferry', passengerCapacity: 50, isActive: true }] } }),
+  adminPorts: async () => ({
+    data: {
+      ports: [
+        { id: 'origin', code: 'ORG', name: 'Origin', city: 'Origin City', isActive: true },
+        {
+          id: 'destination',
+          code: 'DST',
+          name: 'Destination',
+          city: 'Destination City',
+          isActive: true,
+        },
+      ],
+    },
+  }),
+  adminVessels: async () => ({
+    data: {
+      vessels: [
+        { id: 'vessel', code: 'F1', name: 'Ferry', passengerCapacity: 100, isActive: true },
+        { id: 'vessel-2', code: 'F2', name: 'Fast Ferry', passengerCapacity: 80, isActive: true },
+        { id: 'unpriced', code: 'F3', name: 'New Ferry', passengerCapacity: 50, isActive: true },
+      ],
+    },
+  }),
   adminPassengerRecords: mocks.passengerRecords,
   adminDashboardStats: async () => ({ data: {} }),
-  adminCancelBooking: vi.fn(), adminCreatePort: vi.fn(), adminCreateVessel: vi.fn(), adminRescheduleSailing: vi.fn(),
-  adminUpdatePort: vi.fn(), adminUpdateSailingStatus: vi.fn(), adminUpdateVessel: mocks.updateVessel, boardTicket: mocks.board, checkInTicket: mocks.checkIn,
-}))
+  adminCancelBooking: vi.fn(),
+  adminCreatePort: vi.fn(),
+  adminCreateVessel: vi.fn(),
+  adminRescheduleSailing: vi.fn(),
+  adminUpdatePort: vi.fn(),
+  adminUpdateSailingStatus: vi.fn(),
+  adminUpdateVessel: mocks.updateVessel,
+  boardTicket: mocks.board,
+  checkInTicket: mocks.checkIn,
+}));
 
 async function load(section = 'trips') {
-  mocks.route.path = `/admin/${section}`
-  mocks.route.params.section = section
-  const wrapper = mount(AdminWorkspacePage, { global: { stubs: { RecordsGrid:recordsGridStub, RouterLink: { template: '<a><slot /></a>' } } } })
-  mocks.enter.mock.calls.at(-1)![0]()
-  await flushPromises()
-  await vi.dynamicImportSettled()
-  await flushPromises()
-  return wrapper
+  mocks.route.path = `/admin/${section}`;
+  mocks.route.params.section = section;
+  const wrapper = mount(AdminWorkspacePage, {
+    global: {
+      stubs: { RecordsGrid: recordsGridStub, RouterLink: { template: '<a><slot /></a>' } },
+    },
+  });
+  mocks.enter.mock.calls.at(-1)![0]();
+  await flushPromises();
+  await vi.dynamicImportSettled();
+  await flushPromises();
+  return wrapper;
 }
 beforeEach(() => {
-  clearToasts()
-  vi.clearAllMocks()
-  mocks.routes.mockResolvedValue({data:{routes:[]}})
-  mocks.reports.mockResolvedValue({ data: { sailings: [] } })
-  mocks.generatePassword.mockResolvedValue({ data: { password: 'Generated-password123' } })
-  mocks.createUser.mockResolvedValue({ data: { email: 'new@example.com', role: 'TICKETING' } })
-  mocks.settings.mockResolvedValue({ data: { fareSettings: null, vesselFareSettings: [
-    { code: 'vessel', regularFare: 1000, studentDiscount: 20, seniorDiscount: 30, childDiscount: 50, pwdDiscount: 25 },
-    { code: 'vessel-2', regularFare: 2000, studentDiscount: 10, seniorDiscount: 20, childDiscount: 40, pwdDiscount: 30 },
-  ] } })
-  mocks.saveSettings.mockResolvedValue({ data: { fareSettings_upsert: { code: 'DEFAULT' } } })
-  mocks.nextCode.mockResolvedValue({ data: { nextTripCode: { code: 'TRP2026-1002001' } } })
-  mocks.createTrip.mockResolvedValue({ data: { sailing_insert: { code: 'TRP2026-1002002' } } })
-  mocks.bookings.mockResolvedValue({ data: { bookings: [] } })
-  mocks.directoryBookings.mockResolvedValue({ data: { bookings: [], totalCount: 0 } })
-  mocks.updateTrip.mockResolvedValue({ data: { sailing_update: { code: sailing.code } } })
-  mocks.passengerRecords.mockResolvedValue({ data: { bookingPassengers: [] } })
-  mocks.board.mockResolvedValue({ data: {} })
-  mocks.checkIn.mockResolvedValue({ data: {} })
-})
+  clearToasts();
+  vi.clearAllMocks();
+  mocks.routes.mockResolvedValue({ data: { routes: [] } });
+  mocks.reports.mockResolvedValue({ data: { sailings: [] } });
+  mocks.generatePassword.mockResolvedValue({ data: { password: 'Generated-password123' } });
+  mocks.createUser.mockResolvedValue({ data: { email: 'new@example.com', role: 'TICKETING' } });
+  mocks.settings.mockResolvedValue({
+    data: {
+      fareSettings: null,
+      vesselFareSettings: [
+        {
+          code: 'vessel',
+          regularFare: 1000,
+          studentDiscount: 20,
+          seniorDiscount: 30,
+          childDiscount: 50,
+          pwdDiscount: 25,
+        },
+        {
+          code: 'vessel-2',
+          regularFare: 2000,
+          studentDiscount: 10,
+          seniorDiscount: 20,
+          childDiscount: 40,
+          pwdDiscount: 30,
+        },
+      ],
+    },
+  });
+  mocks.saveSettings.mockResolvedValue({ data: { fareSettings_upsert: { code: 'DEFAULT' } } });
+  mocks.nextCode.mockResolvedValue({ data: { nextTripCode: { code: 'TRP2026-1002001' } } });
+  mocks.createTrip.mockResolvedValue({ data: { sailing_insert: { code: 'TRP2026-1002002' } } });
+  mocks.bookings.mockResolvedValue({ data: { bookings: [] } });
+  mocks.directoryBookings.mockResolvedValue({ data: { bookings: [], totalCount: 0 } });
+  mocks.updateTrip.mockResolvedValue({ data: { sailing_update: { code: sailing.code } } });
+  mocks.passengerRecords.mockResolvedValue({ data: { bookingPassengers: [] } });
+  mocks.board.mockResolvedValue({ data: {} });
+  mocks.checkIn.mockResolvedValue({ data: {} });
+});
 describe('booking directory details', () => {
   it('keeps full references and voucher details accessible while restricting cancellation to eligible unpaid bookings', async () => {
-    const paid = { reference: 'BKG2026-101154048-LONG-REFERENCE', owner: { fullName: 'Camille Dela Cruz' }, sailing, passengerCount: 2, total: 780, status: 'CONFIRMED', paymentStatus: 'PAID', paymentMethod: 'CASH', voucherCode: 'VCH-X9JPTDF5K5EC6M4D', voucherDiscount: 75 }
-    mocks.directoryBookings.mockResolvedValue({ data: { bookings: [paid, { ...paid, reference: 'UNPAID-BOOKING', paymentStatus: 'UNPAID' }], totalCount: 2 } })
-    const wrapper = await load('bookings')
-    expect(wrapper.find('.booking-identity strong').text()).toBe(paid.reference)
-    expect(wrapper.find('.booking-total').text()).toContain('Saved PHP 75')
-    expect(wrapper.find('.booking-payment').text()).not.toContain(paid.voucherCode)
-    expect(wrapper.findAll('button[aria-label^="Cancel booking"]')).toHaveLength(1)
-    expect(wrapper.find('button[aria-label="Cancel booking UNPAID-BOOKING"]').exists()).toBe(true)
-    await wrapper.find(`button[aria-label="View booking ${paid.reference}"]`).trigger('click')
-    expect(wrapper.find('.booking-detail-dialog').text()).toContain(paid.voucherCode)
-    expect(wrapper.find('.booking-detail-dialog').text()).toContain('Camille Dela Cruz')
-    expect(wrapper.find('.booking-detail-dialog').text()).toContain('Discount: PHP 75')
-    await wrapper.find('button[aria-label="Close booking details"]').trigger('click')
-    expect(wrapper.find('.booking-detail-dialog').exists()).toBe(false)
-    wrapper.unmount()
-  })
-})
+    const paid = {
+      reference: 'BKG2026-101154048-LONG-REFERENCE',
+      owner: { fullName: 'Camille Dela Cruz' },
+      sailing,
+      passengerCount: 2,
+      total: 780,
+      status: 'CONFIRMED',
+      paymentStatus: 'PAID',
+      paymentMethod: 'CASH',
+      voucherCode: 'VCH-X9JPTDF5K5EC6M4D',
+      voucherDiscount: 75,
+    };
+    mocks.directoryBookings.mockResolvedValue({
+      data: {
+        bookings: [paid, { ...paid, reference: 'UNPAID-BOOKING', paymentStatus: 'UNPAID' }],
+        totalCount: 2,
+      },
+    });
+    const wrapper = await load('bookings');
+    expect(wrapper.find('.booking-identity strong').text()).toBe(paid.reference);
+    expect(wrapper.find('.booking-total').text()).toContain('Saved PHP 75');
+    expect(wrapper.find('.booking-payment').text()).not.toContain(paid.voucherCode);
+    expect(wrapper.findAll('button[aria-label^="Cancel booking"]')).toHaveLength(1);
+    expect(wrapper.find('button[aria-label="Cancel booking UNPAID-BOOKING"]').exists()).toBe(true);
+    await wrapper.find(`button[aria-label="View booking ${paid.reference}"]`).trigger('click');
+    expect(wrapper.find('.booking-detail-dialog').text()).toContain(paid.voucherCode);
+    expect(wrapper.find('.booking-detail-dialog').text()).toContain('Camille Dela Cruz');
+    expect(wrapper.find('.booking-detail-dialog').text()).toContain('Discount: PHP 75');
+    await wrapper.find('button[aria-label="Close booking details"]').trigger('click');
+    expect(wrapper.find('.booking-detail-dialog').exists()).toBe(false);
+    wrapper.unmount();
+  });
+});
 
 describe('admin navigation accordion', () => {
   it('groups pricing separately, matches the page category and toggles one accessible panel at a time', async () => {
-    const wrapper = await load('fares')
-    const pricing = wrapper.findAll('.nav-group').find(group => group.find('.nav-group-toggle').exists() && group.find('.nav-group-toggle').text() === 'Pricing & promos')!
-    const fleet = wrapper.findAll('.nav-group').find(group => group.find('.nav-group-toggle').exists() && group.find('.nav-group-toggle').text() === 'Fleet setup')!
-    expect(pricing.findAll('a').map(link => link.text())).toEqual(['Fares & discounts', 'Vouchers'])
-    expect(fleet.findAll('a').map(link => link.text())).toEqual(['Ports', 'Routes', 'Vessels', 'Accommodation'])
-    expect(pricing.find('.nav-group-toggle').attributes('aria-expanded')).toBe('true')
-    expect(wrapper.find('.heading .eyebrow').text()).toBe('PRICING & PROMOS')
-    expect(pricing.find('[aria-current="page"]').text()).toBe('Fares & discounts')
-    const toggle = fleet.find('.nav-group-toggle')
-    expect(fleet.find('[role="region"]').attributes('id')).toBe(toggle.attributes('aria-controls'))
-    expect(fleet.find('[role="region"]').attributes('aria-labelledby')).toBe(toggle.attributes('id'))
-    await toggle.trigger('click')
-    expect(wrapper.findAll('.nav-group-toggle[aria-expanded="true"]')).toHaveLength(1)
-    expect(pricing.find('.nav-group-items').isVisible()).toBe(false)
-    expect(fleet.find('.nav-group-items').isVisible()).toBe(true)
-    await toggle.trigger('click')
-    expect(wrapper.findAll('.nav-group-toggle[aria-expanded="true"]')).toHaveLength(0)
-    wrapper.unmount()
-  })
-})
+    const wrapper = await load('fares');
+    const pricing = wrapper
+      .findAll('.nav-group')
+      .find(
+        (group) =>
+          group.find('.nav-group-toggle').exists() &&
+          group.find('.nav-group-toggle').text() === 'Pricing & promos',
+      )!;
+    const fleet = wrapper
+      .findAll('.nav-group')
+      .find(
+        (group) =>
+          group.find('.nav-group-toggle').exists() &&
+          group.find('.nav-group-toggle').text() === 'Fleet setup',
+      )!;
+    expect(pricing.findAll('a').map((link) => link.text())).toEqual([
+      'Fares & discounts',
+      'Vouchers',
+    ]);
+    expect(fleet.findAll('a').map((link) => link.text())).toEqual([
+      'Ports',
+      'Routes',
+      'Vessels',
+      'Accommodation',
+    ]);
+    expect(pricing.find('.nav-group-toggle').attributes('aria-expanded')).toBe('true');
+    expect(wrapper.find('.heading .eyebrow').text()).toBe('PRICING & PROMOS');
+    expect(pricing.find('[aria-current="page"]').text()).toBe('Fares & discounts');
+    const toggle = fleet.find('.nav-group-toggle');
+    expect(fleet.find('[role="region"]').attributes('id')).toBe(toggle.attributes('aria-controls'));
+    expect(fleet.find('[role="region"]').attributes('aria-labelledby')).toBe(
+      toggle.attributes('id'),
+    );
+    await toggle.trigger('click');
+    expect(wrapper.findAll('.nav-group-toggle[aria-expanded="true"]')).toHaveLength(1);
+    expect(pricing.find('.nav-group-items').isVisible()).toBe(false);
+    expect(fleet.find('.nav-group-items').isVisible()).toBe(true);
+    await toggle.trigger('click');
+    expect(wrapper.findAll('.nav-group-toggle[aria-expanded="true"]')).toHaveLength(0);
+    wrapper.unmount();
+  });
+});
 
 describe('port directory filters', () => {
   it('counts ports independently of passenger totals and does not paginate an unpaged catalog', async () => {
-    mocks.passengerRecords.mockResolvedValue({ data: { bookingPassengers: [], totalCount: 169 } })
-    const wrapper = await load('ports')
-    expect(wrapper.find('.table-foot').text()).toContain('2 of 2 ports.')
-    expect(wrapper.find('.workspace-pagination').exists()).toBe(false)
-    await wrapper.find('#directory-search').setValue('Origin')
-    expect(wrapper.find('.table-foot').text()).toContain('1 of 2 ports.')
-    wrapper.unmount()
-  })
+    mocks.passengerRecords.mockResolvedValue({ data: { bookingPassengers: [], totalCount: 169 } });
+    const wrapper = await load('ports');
+    expect(wrapper.find('.table-foot').text()).toContain('2 of 2 ports.');
+    expect(wrapper.find('.workspace-pagination').exists()).toBe(false);
+    await wrapper.find('#directory-search').setValue('Origin');
+    expect(wrapper.find('.table-foot').text()).toContain('1 of 2 ports.');
+    wrapper.unmount();
+  });
   it('keeps the port code fixed while allowing details and availability to be edited', async () => {
-    const wrapper = await load('ports')
-    await wrapper.findAll('button').find(button => button.text() === 'Edit')!.trigger('click')
-    expect(wrapper.find('#port-code').attributes('disabled')).toBeDefined()
-    expect(wrapper.find('#port-name').attributes('disabled')).toBeUndefined()
-    expect(wrapper.find('.port-availability input').exists()).toBe(true)
-    expect(wrapper.find('.port-form-footer').text()).toContain('Save changes')
-    wrapper.unmount()
-  })
+    const wrapper = await load('ports');
+    await wrapper
+      .findAll('button')
+      .find((button) => button.text() === 'Edit')!
+      .trigger('click');
+    expect(wrapper.find('#port-code').attributes('disabled')).toBeDefined();
+    expect(wrapper.find('#port-name').attributes('disabled')).toBeUndefined();
+    expect(wrapper.find('.port-availability input').exists()).toBe(true);
+    expect(wrapper.find('.port-form-footer').text()).toContain('Save changes');
+    wrapper.unmount();
+  });
   it('filters port names and active status and resets both filters', async () => {
-    const wrapper = await load('ports')
-    expect(wrapper.findAll('.records-grid tbody tr')).toHaveLength(2)
-    await wrapper.find('#directory-search').setValue('Origin')
-    expect(wrapper.findAll('.records-grid tbody tr')).toHaveLength(1)
-    await wrapper.find('#directory-status').setValue('INACTIVE')
-    expect(wrapper.findAll('.records-grid tbody tr')).toHaveLength(0)
-    await wrapper.findAll('button').find(button => button.text() === 'Reset filters')!.trigger('click')
-    expect(wrapper.findAll('.records-grid tbody tr')).toHaveLength(2)
-    expect((wrapper.find('#directory-search').element as HTMLInputElement).value).toBe('')
-    expect((wrapper.find('#directory-status').element as HTMLSelectElement).value).toBe('ACTIVE')
-    wrapper.unmount()
-  })
-})
+    const wrapper = await load('ports');
+    expect(wrapper.findAll('.records-grid tbody tr')).toHaveLength(2);
+    await wrapper.find('#directory-search').setValue('Origin');
+    expect(wrapper.findAll('.records-grid tbody tr')).toHaveLength(1);
+    await wrapper.find('#directory-status').setValue('INACTIVE');
+    expect(wrapper.findAll('.records-grid tbody tr')).toHaveLength(0);
+    await wrapper
+      .findAll('button')
+      .find((button) => button.text() === 'Reset filters')!
+      .trigger('click');
+    expect(wrapper.findAll('.records-grid tbody tr')).toHaveLength(2);
+    expect((wrapper.find('#directory-search').element as HTMLInputElement).value).toBe('');
+    expect((wrapper.find('#directory-status').element as HTMLSelectElement).value).toBe('ACTIVE');
+    wrapper.unmount();
+  });
+});
 
 describe('vessel directory', () => {
   it('filters vessel names and status and resets both filters', async () => {
-    const wrapper = await load('vessels')
-    expect(wrapper.findAll('.records-grid tbody tr')).toHaveLength(3)
-    await wrapper.find('#directory-search').setValue('Fast Ferry')
-    expect(wrapper.findAll('.records-grid tbody tr')).toHaveLength(1)
-    await wrapper.find('#directory-status').setValue('INACTIVE')
-    expect(wrapper.findAll('.records-grid tbody tr')).toHaveLength(0)
-    await wrapper.findAll('button').find(button => button.text() === 'Reset filters')!.trigger('click')
-    expect(wrapper.findAll('.records-grid tbody tr')).toHaveLength(3)
-    wrapper.unmount()
-  })
+    const wrapper = await load('vessels');
+    expect(wrapper.findAll('.records-grid tbody tr')).toHaveLength(3);
+    await wrapper.find('#directory-search').setValue('Fast Ferry');
+    expect(wrapper.findAll('.records-grid tbody tr')).toHaveLength(1);
+    await wrapper.find('#directory-status').setValue('INACTIVE');
+    expect(wrapper.findAll('.records-grid tbody tr')).toHaveLength(0);
+    await wrapper
+      .findAll('button')
+      .find((button) => button.text() === 'Reset filters')!
+      .trigger('click');
+    expect(wrapper.findAll('.records-grid tbody tr')).toHaveLength(3);
+    wrapper.unmount();
+  });
   it('keeps the vessel code fixed and allows editing passenger capacity', async () => {
-    const wrapper = await load('vessels')
-    await wrapper.findAll('button').find(button => button.text() === 'Edit')!.trigger('click')
-    expect(wrapper.find('#vessel-code').attributes('disabled')).toBeDefined()
-    expect(wrapper.find('#vessel-capacity').attributes('disabled')).toBeUndefined()
-    expect(wrapper.find('#vessel-name').attributes('disabled')).toBeUndefined()
-    expect(wrapper.text()).toContain('Capacity can change when this vessel has no active sailings')
-    wrapper.unmount()
-  })
+    const wrapper = await load('vessels');
+    await wrapper
+      .findAll('button')
+      .find((button) => button.text() === 'Edit')!
+      .trigger('click');
+    expect(wrapper.find('#vessel-code').attributes('disabled')).toBeDefined();
+    expect(wrapper.find('#vessel-capacity').attributes('disabled')).toBeUndefined();
+    expect(wrapper.find('#vessel-name').attributes('disabled')).toBeUndefined();
+    expect(wrapper.text()).toContain('Capacity can change when this vessel has no active sailings');
+    wrapper.unmount();
+  });
   it('submits an edited capacity to the vessel update operation', async () => {
-    mocks.updateVessel.mockResolvedValue({ data: {} })
-    const wrapper = await load('vessels')
-    await wrapper.findAll('button').find(button => button.text() === 'Edit')!.trigger('click')
-    await wrapper.find('#vessel-capacity').setValue('120')
-    await wrapper.find('form.port-form').trigger('submit')
-    await flushPromises()
-    expect(mocks.updateVessel).toHaveBeenCalledWith({}, expect.objectContaining({ id: 'vessel', capacity: 120 }))
-    expect(wrapper.find('#vessel-capacity').exists()).toBe(false)
-    wrapper.unmount()
-  })
+    mocks.updateVessel.mockResolvedValue({ data: {} });
+    const wrapper = await load('vessels');
+    await wrapper
+      .findAll('button')
+      .find((button) => button.text() === 'Edit')!
+      .trigger('click');
+    await wrapper.find('#vessel-capacity').setValue('120');
+    await wrapper.find('form.port-form').trigger('submit');
+    await flushPromises();
+    expect(mocks.updateVessel).toHaveBeenCalledWith(
+      {},
+      expect.objectContaining({ id: 'vessel', capacity: 120 }),
+    );
+    expect(wrapper.find('#vessel-capacity').exists()).toBe(false);
+    wrapper.unmount();
+  });
   it('retains the edited capacity and explains a server rejection in a toast', async () => {
-    mocks.updateVessel.mockRejectedValue(new Error('Change capacity only when this vessel has no active sailings.'))
-    const wrapper = await load('vessels')
-    await wrapper.findAll('button').find(button => button.text() === 'Edit')!.trigger('click')
-    await wrapper.find('#vessel-capacity').setValue('120')
-    await wrapper.find('form.port-form').trigger('submit')
-    await flushPromises()
-    expect((wrapper.find('#vessel-capacity').element as HTMLInputElement).value).toBe('120')
-    expect(wrapper.find('.vessel-editor-dialog [role="alert"]').exists()).toBe(false)
-    expect(toastMessages.value.some(toast => toast.message === 'Change capacity only when this vessel has no active sailings.')).toBe(true)
-    wrapper.unmount()
-  })
-})
+    mocks.updateVessel.mockRejectedValue(
+      new Error('Change capacity only when this vessel has no active sailings.'),
+    );
+    const wrapper = await load('vessels');
+    await wrapper
+      .findAll('button')
+      .find((button) => button.text() === 'Edit')!
+      .trigger('click');
+    await wrapper.find('#vessel-capacity').setValue('120');
+    await wrapper.find('form.port-form').trigger('submit');
+    await flushPromises();
+    expect((wrapper.find('#vessel-capacity').element as HTMLInputElement).value).toBe('120');
+    expect(wrapper.find('.vessel-editor-dialog [role="alert"]').exists()).toBe(false);
+    expect(
+      toastMessages.value.some(
+        (toast) =>
+          toast.message === 'Change capacity only when this vessel has no active sailings.',
+      ),
+    ).toBe(true);
+    wrapper.unmount();
+  });
+});
 
 describe('reports workspace', () => {
   it('offers authorized export on the manifest page with sailing choices', async () => {
-    const wrapper = await load('manifest')
-    expect(wrapper.findAll('button').some(b => b.text() === 'Download manifest PDF')).toBe(true)
-    expect(wrapper.find('#check-in-sailing').text()).toContain('TRP-EXISTING')
-    wrapper.unmount()
-  })
+    const wrapper = await load('manifest');
+    expect(wrapper.findAll('button').some((b) => b.text() === 'Download manifest PDF')).toBe(true);
+    expect(wrapper.find('#check-in-sailing').text()).toContain('TRP-EXISTING');
+    wrapper.unmount();
+  });
   it('loads aggregate reports without fetching the limited dashboard records', async () => {
-    const wrapper = await load('reports')
-    expect(mocks.reports).toHaveBeenCalled()
-    expect(mocks.settings).not.toHaveBeenCalled()
-    expect(mocks.passengerRecords).not.toHaveBeenCalled()
-    expect(wrapper.text()).toContain('Collection trend')
-    expect(wrapper.text()).toContain('No sailings in this report')
-    wrapper.unmount()
-  })
-})
+    const wrapper = await load('reports');
+    expect(mocks.reports).toHaveBeenCalled();
+    expect(mocks.settings).not.toHaveBeenCalled();
+    expect(mocks.passengerRecords).not.toHaveBeenCalled();
+    expect(wrapper.text()).toContain('Collection trend');
+    expect(wrapper.text()).toContain('No sailings in this report');
+    wrapper.unmount();
+  });
+});
 describe('managed accounts', () => {
   async function openUser() {
-    const wrapper = await load('users')
-    await wrapper.findAll('button').find(button => button.text() === 'Add user')!.trigger('click')
-    return wrapper
+    const wrapper = await load('users');
+    await wrapper
+      .findAll('button')
+      .find((button) => button.text() === 'Add user')!
+      .trigger('click');
+    return wrapper;
   }
   it('generates a password and prevents concurrent account requests', async () => {
-    let finish!: (value: unknown) => void
-    mocks.generatePassword.mockImplementationOnce(() => new Promise(resolve => { finish = resolve }))
-    const wrapper = await openUser()
-    await wrapper.findAll('button').find(button => button.text() === 'Generate')!.trigger('click')
-    expect(wrapper.find('form fieldset').attributes('disabled')).toBeDefined()
-    expect(wrapper.text()).toContain('Generating...')
-    finish({ data: { password: 'Strong-generated123' } }); await flushPromises()
-    expect((wrapper.find('form input[minlength="8"]').element as HTMLInputElement).value).toBe('Strong-generated123')
-    expect(wrapper.find('form fieldset').attributes('disabled')).toBeUndefined()
-    wrapper.unmount()
-  })
+    let finish!: (value: unknown) => void;
+    mocks.generatePassword.mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          finish = resolve;
+        }),
+    );
+    const wrapper = await openUser();
+    await wrapper
+      .findAll('button')
+      .find((button) => button.text() === 'Generate')!
+      .trigger('click');
+    expect(wrapper.find('form fieldset').attributes('disabled')).toBeDefined();
+    expect(wrapper.text()).toContain('Generating...');
+    finish({ data: { password: 'Strong-generated123' } });
+    await flushPromises();
+    expect((wrapper.find('form input[minlength="8"]').element as HTMLInputElement).value).toBe(
+      'Strong-generated123',
+    );
+    expect(wrapper.find('form fieldset').attributes('disabled')).toBeUndefined();
+    wrapper.unmount();
+  });
   it('shows a readable connection failure for Generate', async () => {
-    mocks.generatePassword.mockRejectedValueOnce({ code: 'functions/internal', message: 'internal' })
-    const wrapper = await openUser()
-    await wrapper.findAll('button').find(button => button.text() === 'Generate')!.trigger('click'); await flushPromises()
-    expect(toastMessages.value.some(toast => toast.message.includes('The account service is unavailable.'))).toBe(true)
-    expect(wrapper.text()).not.toContain('The account service is unavailable.')
-    wrapper.unmount()
-  })
+    mocks.generatePassword.mockRejectedValueOnce({
+      code: 'functions/internal',
+      message: 'internal',
+    });
+    const wrapper = await openUser();
+    await wrapper
+      .findAll('button')
+      .find((button) => button.text() === 'Generate')!
+      .trigger('click');
+    await flushPromises();
+    expect(
+      toastMessages.value.some((toast) =>
+        toast.message.includes('The account service is unavailable.'),
+      ),
+    ).toBe(true);
+    expect(wrapper.text()).not.toContain('The account service is unavailable.');
+    wrapper.unmount();
+  });
   it('creates an account with the displayed password and reports duplicate emails', async () => {
-    const wrapper = await openUser()
-    await wrapper.find('form input[maxlength="120"]').setValue('New Staff')
-    await wrapper.find('form input[type="email"]').setValue('new@example.com')
-    await wrapper.find('form select').setValue('TICKETING')
-    await wrapper.find('form input[minlength="8"]').setValue('Strong-password123')
-    mocks.createUser.mockRejectedValueOnce({ code: 'functions/already-exists', message: 'An account already uses this email address.' })
-    await wrapper.find('main form, .modal-body form').trigger('submit'); await flushPromises()
-    expect(toastMessages.value.some(toast => toast.message.includes('An account already uses this email address.'))).toBe(true)
-    expect(wrapper.text()).not.toContain('An account already uses this email address.')
-    await wrapper.find('main form, .modal-body form').trigger('submit'); await flushPromises()
-    expect(mocks.createUser).toHaveBeenLastCalledWith(expect.objectContaining({ fullName: 'New Staff', email: 'new@example.com', role: 'TICKETING', password: 'Strong-password123' }))
-    expect(wrapper.find('.user-dialog h2').text()).toBe('Account created')
-    expect(wrapper.find('.created code').text()).toBe('Strong-password123')
-    wrapper.unmount()
-  })
-})
+    const wrapper = await openUser();
+    await wrapper.find('form input[maxlength="120"]').setValue('New Staff');
+    await wrapper.find('form input[type="email"]').setValue('new@example.com');
+    await wrapper.find('form select').setValue('TICKETING');
+    await wrapper.find('form input[minlength="8"]').setValue('Strong-password123');
+    mocks.createUser.mockRejectedValueOnce({
+      code: 'functions/already-exists',
+      message: 'An account already uses this email address.',
+    });
+    await wrapper.find('main form, .modal-body form').trigger('submit');
+    await flushPromises();
+    expect(
+      toastMessages.value.some((toast) =>
+        toast.message.includes('An account already uses this email address.'),
+      ),
+    ).toBe(true);
+    expect(wrapper.text()).not.toContain('An account already uses this email address.');
+    await wrapper.find('main form, .modal-body form').trigger('submit');
+    await flushPromises();
+    expect(mocks.createUser).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        fullName: 'New Staff',
+        email: 'new@example.com',
+        role: 'TICKETING',
+        password: 'Strong-password123',
+      }),
+    );
+    expect(wrapper.find('.user-dialog h2').text()).toBe('Account created');
+    expect(wrapper.find('.created code').text()).toBe('Strong-password123');
+    wrapper.unmount();
+  });
+});
 function gatePassenger(sailingStatus = 'BOARDING', ticketStatus = 'CHECKED_IN') {
-  return { id: 'passenger', fullName: 'Test Passenger', ticketStatus, checkedInAt: '2026-10-02T08:00:00Z', booking: {
-    reference: 'BOOKING-1', status: 'CONFIRMED', paymentStatus: 'PAID',
-    sailing: { code: 'TRP2026-1002001', status: sailingStatus, departureAt: '2099-01-01T08:00:00Z' },
-  } }
+  return {
+    id: 'passenger',
+    fullName: 'Test Passenger',
+    ticketStatus,
+    checkedInAt: '2026-10-02T08:00:00Z',
+    booking: {
+      reference: 'BOOKING-1',
+      status: 'CONFIRMED',
+      paymentStatus: 'PAID',
+      sailing: {
+        code: 'TRP2026-1002001',
+        status: sailingStatus,
+        departureAt: '2099-01-01T08:00:00Z',
+      },
+    },
+  };
 }
 
 describe('editable passenger discounts', () => {
   it('renames existing Student, changes its percentage, and deletes every default discount', async () => {
-    const wrapper = await load('fares')
-    const student=wrapper.findAll('.custom-discount-row')[0]
-    await student.find('input').setValue('Scholar')
-    await student.find('input[type="number"]').setValue('35')
-    expect(wrapper.find('.fare-preview').text()).toContain('PHP 650')
-    await wrapper.find('main form').trigger('submit'); await flushPromises()
-    expect(mocks.saveSettings).toHaveBeenLastCalledWith({},expect.objectContaining({passengerDiscounts:expect.arrayContaining([expect.objectContaining({name:'Scholar',percentage:35})])}))
-    for(const row of wrapper.findAll('.custom-discount-row')) await row.find('button[aria-label^="Delete discount"]').trigger('click')
-    await wrapper.find('main form').trigger('submit'); await flushPromises()
-    expect(mocks.saveSettings).toHaveBeenLastCalledWith({},expect.objectContaining({passengerDiscounts:[]}))
-    expect(wrapper.text()).toContain('regular fare only')
-    wrapper.unmount()
-  })
+    const wrapper = await load('fares');
+    const student = wrapper.findAll('.custom-discount-row')[0];
+    await student.find('input').setValue('Scholar');
+    await student.find('input[type="number"]').setValue('35');
+    expect(wrapper.find('.fare-preview').text()).toContain('PHP 650');
+    await wrapper.find('main form').trigger('submit');
+    await flushPromises();
+    expect(mocks.saveSettings).toHaveBeenLastCalledWith(
+      {},
+      expect.objectContaining({
+        passengerDiscounts: expect.arrayContaining([
+          expect.objectContaining({ name: 'Scholar', percentage: 35 }),
+        ]),
+      }),
+    );
+    for (const row of wrapper.findAll('.custom-discount-row'))
+      await row.find('button[aria-label^="Delete discount"]').trigger('click');
+    await wrapper.find('main form').trigger('submit');
+    await flushPromises();
+    expect(mocks.saveSettings).toHaveBeenLastCalledWith(
+      {},
+      expect.objectContaining({ passengerDiscounts: [] }),
+    );
+    expect(wrapper.text()).toContain('regular fare only');
+    wrapper.unmount();
+  });
   it('adds, previews, saves and removes a named vessel discount', async () => {
-    const wrapper = await load('fares')
-    await wrapper.findAll('button').find(b => b.text() === 'Add passenger discount')!.trigger('click')
-    const row = wrapper.findAll('.custom-discount-row').at(-1)!
-    await row.find('input[placeholder="Special discount"]').setValue('Special discount')
-    await row.find('input[type="number"]').setValue('15')
-    expect(wrapper.find('.fare-preview').text()).toContain('PHP 850')
-    await wrapper.find('main form').trigger('submit'); await flushPromises()
-    expect(mocks.saveSettings).toHaveBeenLastCalledWith({}, expect.objectContaining({passengerDiscounts:expect.arrayContaining([expect.objectContaining({name:'Special discount',percentage:15,isActive:true})])}))
-    await row.find('button[aria-label^="Delete discount"]').trigger('click')
-    await wrapper.find('main form').trigger('submit'); await flushPromises()
-    expect(mocks.saveSettings).toHaveBeenLastCalledWith({}, expect.objectContaining({passengerDiscounts:expect.not.arrayContaining([expect.objectContaining({name:'Special discount'})])}))
-    wrapper.unmount()
-  })
+    const wrapper = await load('fares');
+    await wrapper
+      .findAll('button')
+      .find((b) => b.text() === 'Add passenger discount')!
+      .trigger('click');
+    const row = wrapper.findAll('.custom-discount-row').at(-1)!;
+    await row.find('input[placeholder="Special discount"]').setValue('Special discount');
+    await row.find('input[type="number"]').setValue('15');
+    expect(wrapper.find('.fare-preview').text()).toContain('PHP 850');
+    await wrapper.find('main form').trigger('submit');
+    await flushPromises();
+    expect(mocks.saveSettings).toHaveBeenLastCalledWith(
+      {},
+      expect.objectContaining({
+        passengerDiscounts: expect.arrayContaining([
+          expect.objectContaining({ name: 'Special discount', percentage: 15, isActive: true }),
+        ]),
+      }),
+    );
+    await row.find('button[aria-label^="Delete discount"]').trigger('click');
+    await wrapper.find('main form').trigger('submit');
+    await flushPromises();
+    expect(mocks.saveSettings).toHaveBeenLastCalledWith(
+      {},
+      expect.objectContaining({
+        passengerDiscounts: expect.not.arrayContaining([
+          expect.objectContaining({ name: 'Special discount' }),
+        ]),
+      }),
+    );
+    wrapper.unmount();
+  });
   it('rejects reserved names and keeps independent drafts per vessel', async () => {
-    const wrapper = await load('fares')
-    await wrapper.findAll('button').find(b => b.text() === 'Add passenger discount')!.trigger('click')
-    await wrapper.findAll('.custom-discount-row').at(-1)!.find('input').setValue('Student')
-    await wrapper.find('main form').trigger('submit'); await flushPromises()
-    expect(mocks.saveSettings).not.toHaveBeenCalled()
-    await wrapper.findAll('.custom-discount-row').at(-1)!.find('input').setValue('Special discount')
-    await wrapper.find('#fare-vessel').setValue('unpriced')
-    expect(wrapper.findAll('.custom-discount-row')).toHaveLength(5)
-    await wrapper.find('#fare-vessel').setValue('vessel')
-    expect((wrapper.findAll('.custom-discount-row').at(-1)!.find('input').element as HTMLInputElement).value).toBe('Special discount')
-    wrapper.unmount()
-  })
-})
+    const wrapper = await load('fares');
+    await wrapper
+      .findAll('button')
+      .find((b) => b.text() === 'Add passenger discount')!
+      .trigger('click');
+    await wrapper.findAll('.custom-discount-row').at(-1)!.find('input').setValue('Student');
+    await wrapper.find('main form').trigger('submit');
+    await flushPromises();
+    expect(mocks.saveSettings).not.toHaveBeenCalled();
+    await wrapper
+      .findAll('.custom-discount-row')
+      .at(-1)!
+      .find('input')
+      .setValue('Special discount');
+    await wrapper.find('#fare-vessel').setValue('unpriced');
+    expect(wrapper.findAll('.custom-discount-row')).toHaveLength(5);
+    await wrapper.find('#fare-vessel').setValue('vessel');
+    expect(
+      (wrapper.findAll('.custom-discount-row').at(-1)!.find('input').element as HTMLInputElement)
+        .value,
+    ).toBe('Special discount');
+    wrapper.unmount();
+  });
+});
 
 describe('admin boarding actions', () => {
   it('disables Board and explains that a scheduled trip must open boarding first', async () => {
-    mocks.passengerRecords.mockResolvedValue({ data: { bookingPassengers: [gatePassenger('SCHEDULED')] } })
-    const wrapper = await load('boarding')
-    const button = wrapper.find('button[aria-label="Board Test Passenger"]')
-    expect(button.attributes('disabled')).toBeDefined()
-    expect(button.attributes('title')).toContain('Set trip TRP2026-1002001 to BOARDING')
-    expect(wrapper.find('.boarding-row-action small').exists()).toBe(false)
-    expect(wrapper.findAll('th').map(cell => cell.text())).toContain('Sailing status')
-    await button.trigger('click')
-    expect(mocks.board).not.toHaveBeenCalled()
-    wrapper.unmount()
-  })
+    mocks.passengerRecords.mockResolvedValue({
+      data: { bookingPassengers: [gatePassenger('SCHEDULED')] },
+    });
+    const wrapper = await load('boarding');
+    const button = wrapper.find('button[aria-label="Board Test Passenger"]');
+    expect(button.attributes('disabled')).toBeDefined();
+    expect(button.attributes('title')).toContain('Set trip TRP2026-1002001 to BOARDING');
+    expect(wrapper.find('.boarding-row-action small').exists()).toBe(false);
+    expect(wrapper.findAll('th').map((cell) => cell.text())).toContain('Sailing status');
+    await button.trigger('click');
+    expect(mocks.board).not.toHaveBeenCalled();
+    wrapper.unmount();
+  });
   it('boards an eligible passenger and refreshes the completed record', async () => {
-    const confirm = vi.spyOn(window, 'confirm').mockReturnValue(true)
-    mocks.passengerRecords.mockResolvedValueOnce({ data: { bookingPassengers: [gatePassenger()] } }).mockResolvedValue({ data: { bookingPassengers: [gatePassenger('BOARDING', 'BOARDED')] } })
-    const wrapper = await load('boarding')
-    const button = wrapper.findAll('button').find(button => button.text() === 'Board')!
-    expect(button.attributes('disabled')).toBeUndefined()
-    await button.trigger('click'); await flushPromises()
-    expect(mocks.board).toHaveBeenCalledWith({}, { passengerId: 'passenger' })
-    expect(toastMessages.value.filter(toast => toast.message === 'Test Passenger boarded for TRP2026-1002001.')).toHaveLength(1)
-    expect(wrapper.text()).not.toContain('Test Passenger boarded for TRP2026-1002001.')
-    expect(wrapper.findAll('button').find(button => button.text() === 'Boarded')!.attributes('disabled')).toBeDefined()
-    confirm.mockRestore(); wrapper.unmount()
-  })
+    const confirm = vi.spyOn(window, 'confirm').mockReturnValue(true);
+    mocks.passengerRecords
+      .mockResolvedValueOnce({ data: { bookingPassengers: [gatePassenger()] } })
+      .mockResolvedValue({ data: { bookingPassengers: [gatePassenger('BOARDING', 'BOARDED')] } });
+    const wrapper = await load('boarding');
+    const button = wrapper.findAll('button').find((button) => button.text() === 'Board')!;
+    expect(button.attributes('disabled')).toBeUndefined();
+    await button.trigger('click');
+    await flushPromises();
+    expect(mocks.board).toHaveBeenCalledWith({}, { passengerId: 'passenger' });
+    expect(
+      toastMessages.value.filter(
+        (toast) => toast.message === 'Test Passenger boarded for TRP2026-1002001.',
+      ),
+    ).toHaveLength(1);
+    expect(wrapper.text()).not.toContain('Test Passenger boarded for TRP2026-1002001.');
+    expect(
+      wrapper
+        .findAll('button')
+        .find((button) => button.text() === 'Boarded')!
+        .attributes('disabled'),
+    ).toBeDefined();
+    confirm.mockRestore();
+    wrapper.unmount();
+  });
   it('refreshes stale records after rejection and shows a readable error', async () => {
-    const confirm = vi.spyOn(window, 'confirm').mockReturnValue(true)
-    mocks.passengerRecords.mockResolvedValueOnce({ data: { bookingPassengers: [gatePassenger()] } }).mockResolvedValue({ data: { bookingPassengers: [gatePassenger('DELAYED')] } })
-    mocks.board.mockRejectedValue(new Error('DataConnect error while performing request: [{"message":"Trip must be BOARDING. (aborted)\\n(rolled back)","extensions":{"code":"PERMISSION_DENIED"}},{"message":"(aborted)"}]'))
-    const wrapper = await load('boarding')
-    await wrapper.findAll('button').find(button => button.text() === 'Board')!.trigger('click'); await flushPromises()
-    expect(wrapper.find('[role="alert"]').exists()).toBe(false)
-    expect(toastMessages.value.some(toast => toast.message === 'Trip must be BOARDING.')).toBe(true)
-    expect(wrapper.text()).not.toContain('DataConnect error')
-    expect(wrapper.find('button[aria-label="Board Test Passenger"]').attributes('disabled')).toBeDefined()
-    expect(wrapper.find('button[aria-label="Board Test Passenger"]').attributes('title')).toContain('Current status: DELAYED.')
-    confirm.mockRestore(); wrapper.unmount()
-  })
-})
+    const confirm = vi.spyOn(window, 'confirm').mockReturnValue(true);
+    mocks.passengerRecords
+      .mockResolvedValueOnce({ data: { bookingPassengers: [gatePassenger()] } })
+      .mockResolvedValue({ data: { bookingPassengers: [gatePassenger('DELAYED')] } });
+    mocks.board.mockRejectedValue(
+      new Error(
+        'DataConnect error while performing request: [{"message":"Trip must be BOARDING. (aborted)\\n(rolled back)","extensions":{"code":"PERMISSION_DENIED"}},{"message":"(aborted)"}]',
+      ),
+    );
+    const wrapper = await load('boarding');
+    await wrapper
+      .findAll('button')
+      .find((button) => button.text() === 'Board')!
+      .trigger('click');
+    await flushPromises();
+    expect(wrapper.find('[role="alert"]').exists()).toBe(false);
+    expect(toastMessages.value.some((toast) => toast.message === 'Trip must be BOARDING.')).toBe(
+      true,
+    );
+    expect(wrapper.text()).not.toContain('DataConnect error');
+    expect(
+      wrapper.find('button[aria-label="Board Test Passenger"]').attributes('disabled'),
+    ).toBeDefined();
+    expect(wrapper.find('button[aria-label="Board Test Passenger"]').attributes('title')).toContain(
+      'Current status: DELAYED.',
+    );
+    confirm.mockRestore();
+    wrapper.unmount();
+  });
+});
 
 describe('admin fare flow', () => {
-  const routeFixture = {id:'two-hours',code:'ORG-DST',originPortId:'origin',destinationPortId:'destination',origin:{name:'Origin'},destination:{name:'Destination'},durationMinutes:120,isActive:true};
+  const routeFixture = {
+    id: 'two-hours',
+    code: 'ORG-DST',
+    originPortId: 'origin',
+    destinationPortId: 'destination',
+    origin: { name: 'Origin' },
+    destination: { name: 'Destination' },
+    durationMinutes: 120,
+    isActive: true,
+  };
   it('updates arrival from the matching route even when ports are chosen manually and handles midnight', async () => {
-    mocks.routes.mockResolvedValue({data:{routes:[routeFixture]}})
-    const wrapper=await load()
-    await wrapper.findAll('button').find(b=>b.text()==='Create trip')!.trigger('click')
-    await wrapper.find('#trip-origin').setValue('origin');await wrapper.find('#trip-destination').setValue('destination')
-    await wrapper.find('#trip-departure').setValue('2099-01-02T20:00')
-    expect((wrapper.find('#trip-arrival').element as HTMLInputElement).value).toBe('2099-01-02T22:00')
-    expect(wrapper.find('#trip-arrival').attributes('readonly')).toBeDefined()
-    await wrapper.find('#trip-departure').setValue('2099-01-02T23:00')
-    expect((wrapper.find('#trip-arrival').element as HTMLInputElement).value).toBe('2099-01-03T01:00')
-    await wrapper.find('.trip-arrival-mode input').setValue(false)
-    await wrapper.find('#trip-arrival').setValue('2099-01-03T02:00')
-    await wrapper.find('#trip-departure').setValue('2099-01-02T23:30')
-    expect((wrapper.find('#trip-arrival').element as HTMLInputElement).value).toBe('2099-01-03T02:00')
-    await wrapper.find('.trip-arrival-mode input').setValue(true)
-    await wrapper.find('#trip-route').setValue('')
-    expect((wrapper.find('#trip-origin').element as HTMLSelectElement).value).toBe('')
-    expect((wrapper.find('#trip-arrival').element as HTMLInputElement).value).toBe('')
-    wrapper.unmount()
-  })
+    mocks.routes.mockResolvedValue({ data: { routes: [routeFixture] } });
+    const wrapper = await load();
+    await wrapper
+      .findAll('button')
+      .find((b) => b.text() === 'Create trip')!
+      .trigger('click');
+    await wrapper.find('#trip-origin').setValue('origin');
+    await wrapper.find('#trip-destination').setValue('destination');
+    await wrapper.find('#trip-departure').setValue('2099-01-02T20:00');
+    expect((wrapper.find('#trip-arrival').element as HTMLInputElement).value).toBe(
+      '2099-01-02T22:00',
+    );
+    expect(wrapper.find('#trip-arrival').attributes('readonly')).toBeDefined();
+    await wrapper.find('#trip-departure').setValue('2099-01-02T23:00');
+    expect((wrapper.find('#trip-arrival').element as HTMLInputElement).value).toBe(
+      '2099-01-03T01:00',
+    );
+    await wrapper.find('.trip-arrival-mode input').setValue(false);
+    await wrapper.find('#trip-arrival').setValue('2099-01-03T02:00');
+    await wrapper.find('#trip-departure').setValue('2099-01-02T23:30');
+    expect((wrapper.find('#trip-arrival').element as HTMLInputElement).value).toBe(
+      '2099-01-03T02:00',
+    );
+    await wrapper.find('.trip-arrival-mode input').setValue(true);
+    await wrapper.find('#trip-route').setValue('');
+    expect((wrapper.find('#trip-origin').element as HTMLSelectElement).value).toBe('');
+    expect((wrapper.find('#trip-arrival').element as HTMLInputElement).value).toBe('');
+    wrapper.unmount();
+  });
   it('blocks creation if the next daily trip code cannot be loaded', async () => {
-    mocks.nextCode.mockRejectedValue(new Error('Unavailable'))
-    const wrapper = await load()
-    await wrapper.findAll('button').find(button => button.text() === 'Create trip')!.trigger('click')
-    expect(wrapper.find('main form, .modal-body form').exists()).toBe(false)
-    expect(wrapper.text()).toContain('Refresh the trip code before creating a trip.')
-    expect(mocks.createTrip).not.toHaveBeenCalled()
-    wrapper.unmount()
-  })
+    mocks.nextCode.mockRejectedValue(new Error('Unavailable'));
+    const wrapper = await load();
+    await wrapper
+      .findAll('button')
+      .find((button) => button.text() === 'Create trip')!
+      .trigger('click');
+    expect(wrapper.find('main form, .modal-body form').exists()).toBe(false);
+    expect(wrapper.text()).toContain('Refresh the trip code before creating a trip.');
+    expect(mocks.createTrip).not.toHaveBeenCalled();
+    wrapper.unmount();
+  });
   it('switches fare settings between vessels and preserves unsaved drafts separately', async () => {
-    const wrapper = await load('fares')
-    expect((wrapper.find('input[type="number"]').element as HTMLInputElement).value).toBe('1000')
-    await wrapper.find('input[type="number"]').setValue('1500')
-    await wrapper.find('#fare-vessel').setValue('vessel-2')
-    expect((wrapper.find('input[type="number"]').element as HTMLInputElement).value).toBe('2000')
-    expect(wrapper.find('.fare-preview').text()).toContain('PHP 1,800')
-    await wrapper.find('main form, .modal-body form').trigger('submit'); await flushPromises()
-    expect(mocks.saveSettings).toHaveBeenCalledWith({}, expect.objectContaining({ vesselId: 'vessel-2', regularFare: 2000, studentDiscount: 10 }))
-    await wrapper.find('#fare-vessel').setValue('vessel')
-    expect((wrapper.find('input[type="number"]').element as HTMLInputElement).value).toBe('1500')
-    wrapper.unmount()
-  })
+    const wrapper = await load('fares');
+    expect((wrapper.find('input[type="number"]').element as HTMLInputElement).value).toBe('1000');
+    await wrapper.find('input[type="number"]').setValue('1500');
+    await wrapper.find('#fare-vessel').setValue('vessel-2');
+    expect((wrapper.find('input[type="number"]').element as HTMLInputElement).value).toBe('2000');
+    expect(wrapper.find('.fare-preview').text()).toContain('PHP 1,800');
+    await wrapper.find('main form, .modal-body form').trigger('submit');
+    await flushPromises();
+    expect(mocks.saveSettings).toHaveBeenCalledWith(
+      {},
+      expect.objectContaining({ vesselId: 'vessel-2', regularFare: 2000, studentDiscount: 10 }),
+    );
+    await wrapper.find('#fare-vessel').setValue('vessel');
+    expect((wrapper.find('input[type="number"]').element as HTMLInputElement).value).toBe('1500');
+    wrapper.unmount();
+  });
   it('recalculates trip fares whenever its vessel changes', async () => {
-    const wrapper = await load()
-    await wrapper.findAll('button').find(button => button.text() === 'Create trip')!.trigger('click')
-    const selector = wrapper.findAll('form select')[2]
-    await selector.setValue('vessel')
-    expect(wrapper.findAll('input[type="number"]').map(input => (input.element as HTMLInputElement).value)).toEqual(['1000', '800', '700', '500', '750', '1000'])
-    await selector.setValue('vessel-2')
-    expect(wrapper.findAll('input[type="number"]').map(input => (input.element as HTMLInputElement).value)).toEqual(['2000', '1800', '1600', '1200', '1400', '2000'])
-    wrapper.unmount()
-  })
+    const wrapper = await load();
+    await wrapper
+      .findAll('button')
+      .find((button) => button.text() === 'Create trip')!
+      .trigger('click');
+    const selector = wrapper.findAll('form select')[2];
+    await selector.setValue('vessel');
+    expect(
+      wrapper
+        .findAll('input[type="number"]')
+        .map((input) => (input.element as HTMLInputElement).value),
+    ).toEqual(['1000', '800', '700', '500', '750', '1000']);
+    await selector.setValue('vessel-2');
+    expect(
+      wrapper
+        .findAll('input[type="number"]')
+        .map((input) => (input.element as HTMLInputElement).value),
+    ).toEqual(['2000', '1800', '1600', '1200', '1400', '2000']);
+    wrapper.unmount();
+  });
   it('blocks an unpriced vessel and clears the previous vessel fares', async () => {
-    const wrapper = await load()
-    await wrapper.findAll('button').find(button => button.text() === 'Create trip')!.trigger('click')
-    const selector = wrapper.findAll('form select')[2]
-    await selector.setValue('vessel'); await selector.setValue('unpriced')
-    expect(wrapper.findAll('input[type="number"]').map(input => (input.element as HTMLInputElement).value)).toEqual(['0', '0', '0', '0', '0', '0'])
-    expect(wrapper.findAll('button').filter(button => button.text() === 'Create trip').at(-1)!.attributes('disabled')).toBeDefined()
-    await wrapper.find('main form, .modal-body form').trigger('submit'); await flushPromises()
-    expect(mocks.createTrip).not.toHaveBeenCalled()
-    expect(wrapper.text()).toContain('Save fare settings for the selected vessel')
-    wrapper.unmount()
-  })
+    const wrapper = await load();
+    await wrapper
+      .findAll('button')
+      .find((button) => button.text() === 'Create trip')!
+      .trigger('click');
+    const selector = wrapper.findAll('form select')[2];
+    await selector.setValue('vessel');
+    await selector.setValue('unpriced');
+    expect(
+      wrapper
+        .findAll('input[type="number"]')
+        .map((input) => (input.element as HTMLInputElement).value),
+    ).toEqual(['0', '0', '0', '0', '0', '0']);
+    expect(
+      wrapper
+        .findAll('button')
+        .filter((button) => button.text() === 'Create trip')
+        .at(-1)!
+        .attributes('disabled'),
+    ).toBeDefined();
+    await wrapper.find('main form, .modal-body form').trigger('submit');
+    await flushPromises();
+    expect(mocks.createTrip).not.toHaveBeenCalled();
+    expect(wrapper.text()).toContain('Save fare settings for the selected vessel');
+    wrapper.unmount();
+  });
   it('uses legacy global rates only as an unsaved starting point for vessel settings', async () => {
-    mocks.settings.mockResolvedValue({ data: { fareSettings: { regularFare: 900, studentDiscount: 20, seniorDiscount: 20, childDiscount: 40, pwdDiscount: 20 }, vesselFareSettings: [] } })
-    const wrapper = await load('fares')
-    expect((wrapper.find('input[type="number"]').element as HTMLInputElement).value).toBe('900')
-    expect(wrapper.text()).toContain('Rates not saved yet')
-    await wrapper.find('main form, .modal-body form').trigger('submit'); await flushPromises()
-    expect(mocks.saveSettings).toHaveBeenCalledWith({}, expect.objectContaining({ vesselId: 'vessel', regularFare: 900 }))
-    expect(wrapper.text()).toContain('Saved rates')
-    wrapper.unmount()
-  })
+    mocks.settings.mockResolvedValue({
+      data: {
+        fareSettings: {
+          regularFare: 900,
+          studentDiscount: 20,
+          seniorDiscount: 20,
+          childDiscount: 40,
+          pwdDiscount: 20,
+        },
+        vesselFareSettings: [],
+      },
+    });
+    const wrapper = await load('fares');
+    expect((wrapper.find('input[type="number"]').element as HTMLInputElement).value).toBe('900');
+    expect(wrapper.text()).toContain('Rates not saved yet');
+    await wrapper.find('main form, .modal-body form').trigger('submit');
+    await flushPromises();
+    expect(mocks.saveSettings).toHaveBeenCalledWith(
+      {},
+      expect.objectContaining({ vesselId: 'vessel', regularFare: 900 }),
+    );
+    expect(wrapper.text()).toContain('Saved rates');
+    wrapper.unmount();
+  });
   it('previews only active editable discounts when creating a new trip', async () => {
-    mocks.settings.mockResolvedValue({data:{fareSettings:null,vesselFareSettings:[{code:'vessel',regularFare:1000,studentDiscount:0,seniorDiscount:0,childDiscount:0,pwdDiscount:0,pregnantDiscount:0,passengerDiscounts:[{id:'ffffffff-0000-4000-8000-000000000001',name:'Scholar',percentage:35,isActive:true},{id:'ffffffff-0000-4000-8000-000000000004',name:'PWD',percentage:20,isActive:false}]}]}})
-    const wrapper = await load()
-    await wrapper.findAll('button').find(b=>b.text()==='Create trip')!.trigger('click')
-    await wrapper.findAll('form select')[2].setValue('vessel')
-    expect(wrapper.find('.trip-discount-fares').text()).toContain('Scholar')
-    expect(wrapper.find('.trip-discount-fares').text()).not.toContain('Student')
-    expect(wrapper.find('.trip-discount-fares').text()).not.toContain('PWD')
-    expect((wrapper.find('.trip-discount-fares input').element as HTMLInputElement).value).toBe('650')
-    wrapper.unmount()
-  })
+    mocks.settings.mockResolvedValue({
+      data: {
+        fareSettings: null,
+        vesselFareSettings: [
+          {
+            code: 'vessel',
+            regularFare: 1000,
+            studentDiscount: 0,
+            seniorDiscount: 0,
+            childDiscount: 0,
+            pwdDiscount: 0,
+            pregnantDiscount: 0,
+            passengerDiscounts: [
+              {
+                id: 'ffffffff-0000-4000-8000-000000000001',
+                name: 'Scholar',
+                percentage: 35,
+                isActive: true,
+              },
+              {
+                id: 'ffffffff-0000-4000-8000-000000000004',
+                name: 'PWD',
+                percentage: 20,
+                isActive: false,
+              },
+            ],
+          },
+        ],
+      },
+    });
+    const wrapper = await load();
+    await wrapper
+      .findAll('button')
+      .find((b) => b.text() === 'Create trip')!
+      .trigger('click');
+    await wrapper.findAll('form select')[2].setValue('vessel');
+    expect(wrapper.find('.trip-discount-fares').text()).toContain('Scholar');
+    expect(wrapper.find('.trip-discount-fares').text()).not.toContain('Student');
+    expect(wrapper.find('.trip-discount-fares').text()).not.toContain('PWD');
+    expect((wrapper.find('.trip-discount-fares input').element as HTMLInputElement).value).toBe(
+      '650',
+    );
+    wrapper.unmount();
+  });
   it('creates a trip with an automatic code and saved discounted fares', async () => {
-    const wrapper = await load()
-    await wrapper.findAll('button').find(button => button.text() === 'Create trip')!.trigger('click')
-    const tripCode = wrapper.find('.trip-code-banner input')
-    expect(tripCode.attributes('readonly')).toBeDefined()
-    expect((tripCode.element as HTMLInputElement).value).toBe('TRP2026-1002001')
-    const selects = wrapper.findAll('form select')
-    await selects[0].setValue('origin'); await selects[1].setValue('destination'); await selects[2].setValue('vessel')
-    const amounts = wrapper.findAll('input[type="number"]')
-    expect(amounts.map(input => (input.element as HTMLInputElement).value)).toEqual(['1000', '800', '700', '500', '750', '1000'])
-    expect(amounts.every(input => input.attributes('readonly') !== undefined)).toBe(true)
-    const dates = wrapper.findAll('input[type="datetime-local"]')
-    await dates[0].setValue('2099-01-02T08:00'); await dates[1].setValue('2099-01-02T10:00')
-    await dates[2].setValue('2099-01-02T07:30')
-    await wrapper.find('textarea[placeholder="Confirmed by the operator or terminal"]').setValue('Confirmed by the terminal supervisor')
-    await wrapper.find('main form, .modal-body form').trigger('submit'); await flushPromises()
-    expect(mocks.createTrip).toHaveBeenCalledWith({}, expect.objectContaining({ regularFare: 1000, studentFare: 800, seniorFare: 700, childFare: 500, pwdFare: 750 }))
-    expect(toastMessages.value.filter(toast => toast.message === 'TRP2026-1002002 created.')).toHaveLength(1)
-    expect(wrapper.text()).not.toContain('TRP2026-1002002 created.')
-    wrapper.unmount()
-  })
+    const wrapper = await load();
+    await wrapper
+      .findAll('button')
+      .find((button) => button.text() === 'Create trip')!
+      .trigger('click');
+    const tripCode = wrapper.find('.trip-code-banner input');
+    expect(tripCode.attributes('readonly')).toBeDefined();
+    expect((tripCode.element as HTMLInputElement).value).toBe('TRP2026-1002001');
+    const selects = wrapper.findAll('form select');
+    await selects[0].setValue('origin');
+    await selects[1].setValue('destination');
+    await selects[2].setValue('vessel');
+    const amounts = wrapper.findAll('input[type="number"]');
+    expect(amounts.map((input) => (input.element as HTMLInputElement).value)).toEqual([
+      '1000',
+      '800',
+      '700',
+      '500',
+      '750',
+      '1000',
+    ]);
+    expect(amounts.every((input) => input.attributes('readonly') !== undefined)).toBe(true);
+    const dates = wrapper.findAll('input[type="datetime-local"]');
+    await dates[0].setValue('2099-01-02T08:00');
+    await dates[1].setValue('2099-01-02T10:00');
+    await dates[2].setValue('2099-01-02T07:30');
+    await wrapper
+      .find('textarea[placeholder="Confirmed by the operator or terminal"]')
+      .setValue('Confirmed by the terminal supervisor');
+    await wrapper.find('main form, .modal-body form').trigger('submit');
+    await flushPromises();
+    expect(mocks.createTrip).toHaveBeenCalledWith(
+      {},
+      expect.objectContaining({
+        regularFare: 1000,
+        studentFare: 800,
+        seniorFare: 700,
+        childFare: 500,
+        pwdFare: 750,
+      }),
+    );
+    expect(
+      toastMessages.value.filter((toast) => toast.message === 'TRP2026-1002002 created.'),
+    ).toHaveLength(1);
+    expect(wrapper.text()).not.toContain('TRP2026-1002002 created.');
+    wrapper.unmount();
+  });
   it('saves rates from the sidebar page with a live preview', async () => {
-    const wrapper = await load('fares')
-    await wrapper.find('input[type="number"]').setValue('2000')
-    expect(wrapper.find('.fare-preview').text()).toContain('PHP 1,600')
-    await wrapper.find('main form, .modal-body form').trigger('submit'); await flushPromises()
-    expect(mocks.saveSettings).toHaveBeenCalledWith({}, expect.objectContaining({ vesselId: 'vessel', regularFare: 2000, studentDiscount: 20, seniorDiscount: 30, childDiscount: 50, pwdDiscount: 25, pregnantDiscount: 0 }))
-    expect(toastMessages.value.some(toast => toast.message.includes('New trips for this vessel will use these rates.'))).toBe(true)
-    expect(wrapper.text()).not.toContain('New trips for this vessel will use these rates.')
-    wrapper.unmount()
-  })
+    const wrapper = await load('fares');
+    await wrapper.find('input[type="number"]').setValue('2000');
+    expect(wrapper.find('.fare-preview').text()).toContain('PHP 1,600');
+    await wrapper.find('main form, .modal-body form').trigger('submit');
+    await flushPromises();
+    expect(mocks.saveSettings).toHaveBeenCalledWith(
+      {},
+      expect.objectContaining({
+        vesselId: 'vessel',
+        regularFare: 2000,
+        studentDiscount: 20,
+        seniorDiscount: 30,
+        childDiscount: 50,
+        pwdDiscount: 25,
+        pregnantDiscount: 0,
+      }),
+    );
+    expect(
+      toastMessages.value.some((toast) =>
+        toast.message.includes('New trips for this vessel will use these rates.'),
+      ),
+    ).toBe(true);
+    expect(wrapper.text()).not.toContain('New trips for this vessel will use these rates.');
+    wrapper.unmount();
+  });
   it('blocks creation when saved rates cannot be loaded', async () => {
-    mocks.settings.mockRejectedValue(new Error('Unavailable'))
-    const wrapper = await load()
-    await wrapper.findAll('button').find(button => button.text() === 'Create trip')!.trigger('click')
-    expect(wrapper.find('main form, .modal-body form').exists()).toBe(false)
-    expect(wrapper.text()).toContain('Refresh fare settings before creating a trip.')
-    expect(mocks.createTrip).not.toHaveBeenCalled()
-    wrapper.unmount()
-  })
+    mocks.settings.mockRejectedValue(new Error('Unavailable'));
+    const wrapper = await load();
+    await wrapper
+      .findAll('button')
+      .find((button) => button.text() === 'Create trip')!
+      .trigger('click');
+    expect(wrapper.find('main form, .modal-body form').exists()).toBe(false);
+    expect(wrapper.text()).toContain('Refresh fare settings before creating a trip.');
+    expect(mocks.createTrip).not.toHaveBeenCalled();
+    wrapper.unmount();
+  });
   it('preserves existing fares on opening an edit and recalculates when regular fare changes', async () => {
-    const wrapper = await load()
-    await wrapper.findAll('button').find(button => button.text() === 'Edit')!.trigger('click'); await flushPromises()
-    const amounts = wrapper.findAll('input[type="number"]')
-    expect(amounts.map(input => (input.element as HTMLInputElement).value)).toEqual(['600', '420', '450', '300', '400', '600'])
-    await amounts[0].setValue('1200')
-    expect(amounts.map(input => (input.element as HTMLInputElement).value)).toEqual(['1200', '960', '840', '600', '900', '1200'])
-    wrapper.unmount()
-  })
+    const wrapper = await load();
+    await wrapper
+      .findAll('button')
+      .find((button) => button.text() === 'Edit')!
+      .trigger('click');
+    await flushPromises();
+    const amounts = wrapper.findAll('input[type="number"]');
+    expect(amounts.map((input) => (input.element as HTMLInputElement).value)).toEqual([
+      '600',
+      '420',
+      '450',
+      '300',
+      '400',
+      '600',
+    ]);
+    await amounts[0].setValue('1200');
+    expect(amounts.map((input) => (input.element as HTMLInputElement).value)).toEqual([
+      '1200',
+      '960',
+      '840',
+      '600',
+      '900',
+      '1200',
+    ]);
+    wrapper.unmount();
+  });
   it('keeps fares locked for trips with active reservations', async () => {
-    mocks.bookings.mockResolvedValue({ data: { bookings: [{ id: 'booking', bookingChannel: 'ONLINE' }] } })
-    const wrapper = await load()
-    await wrapper.findAll('button').find(button => button.text() === 'Edit')!.trigger('click'); await flushPromises()
-    expect(wrapper.find('input[type="number"]').attributes('disabled')).toBeDefined()
-    expect(wrapper.text()).toContain('Only departure and arrival can be changed.')
-    wrapper.unmount()
-  })
-})
+    mocks.bookings.mockResolvedValue({
+      data: { bookings: [{ id: 'booking', bookingChannel: 'ONLINE' }] },
+    });
+    const wrapper = await load();
+    await wrapper
+      .findAll('button')
+      .find((button) => button.text() === 'Edit')!
+      .trigger('click');
+    await flushPromises();
+    expect(wrapper.find('input[type="number"]').attributes('disabled')).toBeDefined();
+    expect(wrapper.text()).toContain('Only departure and arrival can be changed.');
+    wrapper.unmount();
+  });
+});

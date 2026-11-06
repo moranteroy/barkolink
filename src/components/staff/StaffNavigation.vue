@@ -8,16 +8,14 @@
       :class="{ active: route.path === item.to }"
       :aria-current="route.path === item.to ? 'page' : undefined"
       @click="$emit('navigate')"
-      ><AppIcon :icon="item.icon" aria-hidden="true" />{{
-        item.label
-      }}</router-link
+      ><AppIcon :icon="item.icon" aria-hidden="true" />{{ item.label }}</router-link
     >
   </nav>
 </template>
 <script setup lang="ts">
-import { computed } from "vue";
-import { useRoute } from "vue-router";
-import AppIcon from "@/components/ui/icon/AppIcon.vue";
+import { computed } from 'vue';
+import { useRoute } from 'vue-router';
+import AppIcon from '@/components/ui/icon/AppIcon.vue';
 import {
   enterOutline,
   personAddOutline,
@@ -29,57 +27,57 @@ import {
   listOutline,
   personRemoveOutline,
   pricetagOutline,
-} from "ionicons/icons";
-const props = defineProps<{ role: "ticketing" | "boarding" }>();
+} from 'ionicons/icons';
+const props = defineProps<{ role: 'ticketing' | 'boarding' }>();
 defineEmits<{ navigate: [] }>();
 const route = useRoute();
 const items = computed(() =>
-  props.role === "ticketing"
+  props.role === 'ticketing'
     ? [
-        { label: "Dashboard", to: "/staff/ticketing", icon: gridOutline },
+        { label: 'Dashboard', to: '/staff/ticketing', icon: gridOutline },
         {
-          label: "Bookings",
-          to: "/staff/ticketing/bookings",
+          label: 'Bookings',
+          to: '/staff/ticketing/bookings',
           icon: ticketOutline,
         },
         {
-          label: "Walk-in booking",
-          to: "/staff/ticketing/walk-in",
+          label: 'Walk-in booking',
+          to: '/staff/ticketing/walk-in',
           icon: personAddOutline,
         },
         {
-          label: "Passengers",
-          to: "/staff/ticketing/passengers",
+          label: 'Passengers',
+          to: '/staff/ticketing/passengers',
           icon: peopleOutline,
         },
-        { label: "Trips", to: "/staff/ticketing/trips", icon: boatOutline },
-        { label: "Fares", to: "/staff/ticketing/fares", icon: pricetagOutline },
+        { label: 'Trips', to: '/staff/ticketing/trips', icon: boatOutline },
+        { label: 'Fares', to: '/staff/ticketing/fares', icon: pricetagOutline },
       ]
     : [
-        { label: "Dashboard", to: "/staff/boarding", icon: gridOutline },
+        { label: 'Dashboard', to: '/staff/boarding', icon: gridOutline },
         {
-          label: "Active trips",
-          to: "/staff/boarding/trips",
+          label: 'Active trips',
+          to: '/staff/boarding/trips',
           icon: boatOutline,
         },
         {
-          label: "Check-in",
-          to: "/staff/boarding/check-in",
+          label: 'Check-in',
+          to: '/staff/boarding/check-in',
           icon: scanOutline,
         },
         {
-          label: "Boarding",
-          to: "/staff/boarding/boarding",
+          label: 'Boarding',
+          to: '/staff/boarding/boarding',
           icon: enterOutline,
         },
         {
-          label: "Manifest",
-          to: "/staff/boarding/manifest",
+          label: 'Manifest',
+          to: '/staff/boarding/manifest',
           icon: listOutline,
         },
         {
-          label: "No-shows",
-          to: "/staff/boarding/no-shows",
+          label: 'No-shows',
+          to: '/staff/boarding/no-shows',
           icon: personRemoveOutline,
         },
       ],
@@ -127,6 +125,8 @@ const items = computed(() =>
   color: white;
 }
 @media (max-width: 800px) {
-  .staff-navigation a { min-height: 44px; }
+  .staff-navigation a {
+    min-height: 44px;
+  }
 }
 </style>

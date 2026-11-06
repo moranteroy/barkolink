@@ -16,7 +16,9 @@ describe('staff queue loading and recovery', () => {
     wrapper.unmount();
   });
   it('keeps the failed-update guidance visible until recovery', async () => {
-    const wrapper = mount(QueueFreshness, { props: { updatedAt: Date.now(), loading: false, error: 'Offline' } });
+    const wrapper = mount(QueueFreshness, {
+      props: { updatedAt: Date.now(), loading: false, error: 'Offline' },
+    });
     expect(wrapper.get('[role="status"]').text()).toContain('Showing previously loaded records.');
     expect(wrapper.text()).toContain('Refresh before recording a payment or attendance.');
     expect(wrapper.text()).not.toContain('Updated');

@@ -1,7 +1,14 @@
 <template>
   <ion-page
     ><ion-content :fullscreen="true"
-      ><main class="demo-page" :class="{ 'bookings-page': kind === 'bookings', 'notifications-page': kind === 'notifications', 'ticket-page': kind === 'ticket' }">
+      ><main
+        class="demo-page"
+        :class="{
+          'bookings-page': kind === 'bookings',
+          'notifications-page': kind === 'notifications',
+          'ticket-page': kind === 'ticket',
+        }"
+      >
         <PassengerHeader />
         <section class="page-title">
           <p class="kicker">{{ eyebrow }}</p>
@@ -11,22 +18,25 @@
             {{ loadError }}
           </p>
         </section>
-        <PaymentReturn v-if="kind === 'bookings' && returnedBooking" :key="returnedBooking.id"
-          :booking-id="returnedBooking.id" :reference="returnedBooking.reference"
+        <PaymentReturn
+          v-if="kind === 'bookings' && returnedBooking"
+          :key="returnedBooking.id"
+          :booking-id="returnedBooking.id"
+          :reference="returnedBooking.reference"
           :ticket-eligible="bookingTicketReady(returnedBooking)"
           :awaiting-verification="awaitingPaymentVerification(returnedBooking)"
-          :cancelled="route.query.payment === 'cancelled'" @checking="returnVerificationPending = true" @updated="paymentVerified" />
+          :cancelled="route.query.payment === 'cancelled'"
+          @checking="returnVerificationPending = true"
+          @updated="paymentVerified"
+        />
         <template v-if="kind === 'ticket'"
-          ><div
-            v-if="
-              bookingTicketReady(currentBooking)
-            "
-            class="ticket-actions"
-          >
+          ><div v-if="bookingTicketReady(currentBooking)" class="ticket-actions">
             <Button variant="outline" :disabled="ticketBusy" @click="printTicket">
               <AppIcon :icon="printOutline" aria-hidden="true" /><span>Print/PDF</span></Button
             ><Button :disabled="ticketBusy" @click="exportTicket('download')">
-              <AppIcon :icon="downloadOutline" aria-hidden="true" /><span>{{ ticketBusy ? "Preparing…" : "Download" }}</span></Button
+              <AppIcon :icon="downloadOutline" aria-hidden="true" /><span>{{
+                ticketBusy ? 'Preparing…' : 'Download'
+              }}</span></Button
             ><Button variant="outline" :disabled="ticketBusy" @click="exportTicket('share')">
               <AppIcon :icon="shareOutline" aria-hidden="true" /><span>Share</span>
             </Button>
@@ -37,25 +47,26 @@
             class="ticket-picker"
             aria-label="Choose an e-ticket"
           >
-            <span>Your tickets <small>{{ ticketBookings.length }} bookings</small></span>
+            <span
+              >Your tickets <small>{{ ticketBookings.length }} bookings</small></span
+            >
             <select :value="currentBooking?.reference" @change="chooseTicket">
               <option v-for="item in ticketBookings" :key="item.reference" :value="item.reference">
                 {{ item.from }} → {{ item.to }} · {{ item.date }} · {{ item.reference }}
               </option>
             </select>
           </label>
-          <article
-            v-if="
-              currentBooking &&
-              bookingTicketReady(currentBooking)
-            "
-            class="ticket"
-          >
+          <article v-if="currentBooking && bookingTicketReady(currentBooking)" class="ticket">
             <div class="ticket-head">
               <div class="ticket-title">
                 <small
-                  ><AppIcon :icon="ticketOutline" aria-hidden="true" />
-                  BARKOLINK <span>·</span> {{ travelWindow(currentBooking).recordOnly || currentBooking.passengers.every(person => person.ticketStatus === 'BOARDED') ? 'TICKET RECORD' : 'DIGITAL BOARDING PASS' }}</small
+                  ><AppIcon :icon="ticketOutline" aria-hidden="true" /> BARKOLINK <span>·</span>
+                  {{
+                    travelWindow(currentBooking).recordOnly ||
+                    currentBooking.passengers.every((person) => person.ticketStatus === 'BOARDED')
+                      ? 'TICKET RECORD'
+                      : 'DIGITAL BOARDING PASS'
+                  }}</small
                 >
                 <h2>
                   <span class="route-port">{{ currentBooking.from }}</span>
@@ -67,38 +78,42 @@
               </div>
               <b><AppIcon :icon="checkmarkCircleOutline" aria-hidden="true" /> PAID</b>
             </div>
-            <div class="ticket-record-banner" :class="bookingStatus(currentBooking).tone" role="status">
+            <div
+              class="ticket-record-banner"
+              :class="bookingStatus(currentBooking).tone"
+              role="status"
+            >
               <AppIcon :icon="bookingStatus(currentBooking).icon" aria-hidden="true" />
-              <div><strong>{{ bookingStatus(currentBooking).label }}</strong><p>{{ travelWindow(currentBooking).recordOnly ? 'Saved for your transaction records. This travel period is closed.' : 'Each passenger has a separate ticket status below.' }}</p></div>
+              <div>
+                <strong>{{ bookingStatus(currentBooking).label }}</strong>
+                <p>
+                  {{
+                    travelWindow(currentBooking).recordOnly
+                      ? 'Saved for your transaction records. This travel period is closed.'
+                      : 'Each passenger has a separate ticket status below.'
+                  }}
+                </p>
+              </div>
             </div>
             <div class="ticket-meta">
               <div>
-                <small
-                  ><AppIcon :icon="calendarOutline" aria-hidden="true" />
-                  DEPARTURE</small
+                <small><AppIcon :icon="calendarOutline" aria-hidden="true" /> DEPARTURE</small
                 ><strong
-                  >{{ currentBooking.date }} <span>·</span>
-                  {{ currentBooking.departure }}</strong
+                  >{{ currentBooking.date }} <span>·</span> {{ currentBooking.departure }}</strong
                 >
               </div>
               <div>
-                <small
-                  ><AppIcon :icon="boatOutline" aria-hidden="true" />
-                  VESSEL</small
+                <small><AppIcon :icon="boatOutline" aria-hidden="true" /> VESSEL</small
                 ><strong>{{ currentBooking.vessel }}</strong>
               </div>
               <div>
                 <small
-                  ><AppIcon :icon="bookmarkOutline" aria-hidden="true" />
-                  BOOKING REFERENCE</small
+                  ><AppIcon :icon="bookmarkOutline" aria-hidden="true" /> BOOKING REFERENCE</small
                 ><strong>{{ currentBooking.reference }}</strong>
               </div>
             </div>
             <div class="ticket-passengers">
-              <h3>
-                <AppIcon :icon="peopleOutline" aria-hidden="true" /> Passenger
-                tickets
-              </h3>
+              <h3><AppIcon :icon="peopleOutline" aria-hidden="true" /> Passenger tickets</h3>
               <div
                 v-for="person in currentBooking.passengers"
                 :key="person.id || person.name"
@@ -112,24 +127,23 @@
                     <strong>{{ person.name }}</strong
                     ><small>{{ person.type }} passenger</small>
                   </div>
-                  <b :class="{ 'past-ticket': !ticketState(currentBooking, person).showQr && person.ticketStatus !== 'BOARDED' }"
-                    ><AppIcon
-                      :icon="checkmarkCircleOutline"
-                      aria-hidden="true"
-                    />
+                  <b
+                    :class="{
+                      'past-ticket':
+                        !ticketState(currentBooking, person).showQr &&
+                        person.ticketStatus !== 'BOARDED',
+                    }"
+                    ><AppIcon :icon="checkmarkCircleOutline" aria-hidden="true" />
                     {{ ticketState(currentBooking, person).label }}</b
                   >
                 </div>
                 <div
-                  v-if="
-                    person.ticketCode && ticketState(currentBooking, person).showQr
-                  "
+                  v-if="person.ticketCode && ticketState(currentBooking, person).showQr"
                   class="qr-block"
                 >
                   <img
                     v-if="
-                      qrImageUrl(person.ticketCode) &&
-                      !qrFailedCodes.includes(person.ticketCode)
+                      qrImageUrl(person.ticketCode) && !qrFailedCodes.includes(person.ticketCode)
                     "
                     :src="qrImageUrl(person.ticketCode)"
                     :alt="`QR code for ${person.name}'s ticket`"
@@ -140,17 +154,24 @@
                     @error="markQrUnavailable(person.ticketCode)"
                   /><span v-else class="qr-unavailable">{{
                     qrFailedCodes.includes(person.ticketCode)
-                      ? "QR image unavailable. Show the ticket code to staff."
-                      : "Refresh this ticket to load its verified QR. Staff can verify the ticket code."
+                      ? 'QR image unavailable. Show the ticket code to staff.'
+                      : 'Refresh this ticket to load its verified QR. Staff can verify the ticket code.'
                   }}</span>
                   <div>
-                    <small>{{ person.ticketStatus === 'CHECKED_IN' ? 'PRESENT FOR BOARDING' : 'PRESENT FOR CHECK-IN' }}</small
+                    <small>{{
+                      person.ticketStatus === 'CHECKED_IN'
+                        ? 'PRESENT FOR BOARDING'
+                        : 'PRESENT FOR CHECK-IN'
+                    }}</small
                     ><code>{{ person.ticketCode }}</code>
                     <p>{{ ticketState(currentBooking, person).message }}</p>
                   </div>
                 </div>
                 <div v-else class="ticket-record-state">
-                  <AppIcon :icon="person.ticketStatus === 'BOARDED' ? checkmarkCircleOutline : timeOutline" aria-hidden="true" />
+                  <AppIcon
+                    :icon="person.ticketStatus === 'BOARDED' ? checkmarkCircleOutline : timeOutline"
+                    aria-hidden="true"
+                  />
                   <strong>Transaction record</strong>
                   <p>{{ ticketState(currentBooking, person).message }}</p>
                   <code v-if="person.ticketCode">{{ person.ticketCode }}</code>
@@ -179,12 +200,22 @@
               <AppIcon :icon="ticketOutline" aria-hidden="true" />
             </div>
             <h2>{{ bookingStatus(currentBooking).label }}</h2>
-            <p v-if="travelWindow(currentBooking).recordOnly">This reservation is retained for your transaction history. It is no longer available for travel. {{ currentBooking.paymentStatus === 'PAID' ? bookingPaymentRecord(currentBooking) : 'No payment was confirmed. Contact ticketing if you need assistance.' }}</p>
-            <p v-else-if="awaitingPaymentVerification(currentBooking)">Your payment was received. Staff must verify the transaction before your e-ticket is issued. Do not pay again.</p>
+            <p v-if="travelWindow(currentBooking).recordOnly">
+              This reservation is retained for your transaction history. It is no longer available
+              for travel.
+              {{
+                currentBooking.paymentStatus === 'PAID'
+                  ? bookingPaymentRecord(currentBooking)
+                  : 'No payment was confirmed. Contact ticketing if you need assistance.'
+              }}
+            </p>
+            <p v-else-if="awaitingPaymentVerification(currentBooking)">
+              Your payment was received. Staff must verify the transaction before your e-ticket is
+              issued. Do not pay again.
+            </p>
             <p v-else>
-              Show booking {{ currentBooking.reference }} at the ticketing desk.
-              Pay PHP {{ currentBooking.total.toLocaleString() }} to receive
-              your e-ticket.
+              Show booking {{ currentBooking.reference }} at the ticketing desk. Pay PHP
+              {{ currentBooking.total.toLocaleString() }} to receive your e-ticket.
             </p>
             <ion-button
               class="primary"
@@ -197,41 +228,55 @@
               <AppIcon :icon="ticketOutline" aria-hidden="true" />
             </div>
             <h2>No ticket yet</h2>
-            <p>
-              Pay for your reservation at the ticketing desk to receive a
-              passenger e-ticket.
-            </p>
-            <ion-button class="primary" router-link="/trips"
-              >Find a sailing</ion-button
-            >
+            <p>Pay for your reservation at the ticketing desk to receive a passenger e-ticket.</p>
+            <ion-button class="primary" router-link="/trips">Find a sailing</ion-button>
           </div>
         </template>
-        <template v-else-if="loading && ['bookings', 'booking-details', 'notifications'].includes(kind) && (kind === 'notifications' ? !notices.length : !bookings.length)">
-          <div class="empty-state" role="status"><h2>Loading {{ title.toLowerCase() }}...</h2><p>Checking the latest records.</p></div>
+        <template
+          v-else-if="
+            loading &&
+            ['bookings', 'booking-details', 'notifications'].includes(kind) &&
+            (kind === 'notifications' ? !notices.length : !bookings.length)
+          "
+        >
+          <div class="empty-state" role="status">
+            <h2>Loading {{ title.toLowerCase() }}...</h2>
+            <p>Checking the latest records.</p>
+          </div>
         </template>
-        <template v-else-if="loadError && ['bookings', 'booking-details', 'notifications'].includes(kind)">
-          <div class="empty-state"><h2>Could not load {{ title.toLowerCase() }}</h2><ion-button class="primary" @click="loadData">Retry</ion-button></div>
+        <template
+          v-else-if="loadError && ['bookings', 'booking-details', 'notifications'].includes(kind)"
+        >
+          <div class="empty-state">
+            <h2>Could not load {{ title.toLowerCase() }}</h2>
+            <ion-button class="primary" @click="loadData">Retry</ion-button>
+          </div>
         </template>
         <template v-else-if="kind === 'bookings'"
           ><div class="booking-filter-panel">
-          <div class="filter-panel-heading"><span><AppIcon :icon="ticketOutline" aria-hidden="true" /> Your reservations</span><small>{{ bookings.length }} total</small></div>
-          <div class="booking-filters">
-            <label
-              ><span><AppIcon :icon="searchOutline" aria-hidden="true" /> Find a booking</span><input
-                v-model.trim="bookingSearch"
-                type="search"
-                placeholder="Reference, route, vessel or passenger" /></label
-            ><label
-              ><span><AppIcon :icon="walletOutline" aria-hidden="true" /> Payment status</span><select v-model="bookingPayment">
-                <option value="ALL">All payments</option>
-                <option value="UNPAID">Awaiting payment</option>
-                <option value="PAID">All paid bookings</option>
-                <option value="AWAITING_VERIFICATION">Awaiting staff verification</option>
-                <option value="REFUND_PENDING">Refund pending</option>
-                <option value="REFUNDED">Refunded</option>
-              </select></label
-            >
-          </div>
+            <div class="filter-panel-heading">
+              <span><AppIcon :icon="ticketOutline" aria-hidden="true" /> Your reservations</span
+              ><small>{{ bookings.length }} total</small>
+            </div>
+            <div class="booking-filters">
+              <label
+                ><span><AppIcon :icon="searchOutline" aria-hidden="true" /> Find a booking</span
+                ><input
+                  v-model.trim="bookingSearch"
+                  type="search"
+                  placeholder="Reference, route, vessel or passenger" /></label
+              ><label
+                ><span><AppIcon :icon="walletOutline" aria-hidden="true" /> Payment status</span
+                ><select v-model="bookingPayment">
+                  <option value="ALL">All payments</option>
+                  <option value="UNPAID">Awaiting payment</option>
+                  <option value="PAID">All paid bookings</option>
+                  <option value="AWAITING_VERIFICATION">Awaiting staff verification</option>
+                  <option value="REFUND_PENDING">Refund pending</option>
+                  <option value="REFUNDED">Refunded</option>
+                </select></label
+              >
+            </div>
           </div>
           <div class="tabs" role="group" aria-label="Filter by booking status">
             <button
@@ -243,10 +288,25 @@
               @click="selectedTab = tab"
             >
               <AppIcon :icon="tabIcon(tab)" aria-hidden="true" />
-              <span>{{ tab }}</span><small aria-hidden="true">{{ tabCounts[tab] }}</small>
+              <span>{{ tab }}</span
+              ><small aria-hidden="true">{{ tabCounts[tab] }}</small>
             </button>
           </div>
-          <div class="booking-results" aria-live="polite"><span><strong>{{ visibleBookings.length }}</strong> {{ visibleBookings.length === 1 ? 'reservation' : 'reservations' }} <small>· {{ selectedTab }}</small></span><button v-if="bookingSearch || bookingPayment !== 'ALL'" @click="bookingSearch = ''; bookingPayment = 'ALL'">Reset filters</button></div>
+          <div class="booking-results" aria-live="polite">
+            <span
+              ><strong>{{ visibleBookings.length }}</strong>
+              {{ visibleBookings.length === 1 ? 'reservation' : 'reservations' }}
+              <small>· {{ selectedTab }}</small></span
+            ><button
+              v-if="bookingSearch || bookingPayment !== 'ALL'"
+              @click="
+                bookingSearch = '';
+                bookingPayment = 'ALL';
+              "
+            >
+              Reset filters
+            </button>
+          </div>
           <div v-if="visibleBookings.length" class="booking-list">
             <article
               v-for="booking in visibleBookings"
@@ -257,30 +317,44 @@
                 <div class="row-heading">
                   <h2>
                     <span class="booking-port">{{ booking.from }}</span>
-                    <span
-                      ><AppIcon :icon="arrowForwardOutline" aria-hidden="true"
-                    /></span>
+                    <span><AppIcon :icon="arrowForwardOutline" aria-hidden="true" /></span>
                     <span class="booking-port">{{ booking.to }}</span>
                   </h2>
-                  <b class="booking-status" :class="bookingStatus(booking).tone"><AppIcon :icon="bookingStatus(booking).icon" aria-hidden="true" />{{ bookingStatus(booking).label }}</b>
+                  <b class="booking-status" :class="bookingStatus(booking).tone"
+                    ><AppIcon :icon="bookingStatus(booking).icon" aria-hidden="true" />{{
+                      bookingStatus(booking).label
+                    }}</b
+                  >
                 </div>
                 <div class="booking-meta">
                   <span
-                    ><AppIcon :icon="calendarOutline" aria-hidden="true" />
-                    {{ booking.date }} · {{ booking.departure }}</span
+                    ><AppIcon :icon="calendarOutline" aria-hidden="true" /> {{ booking.date }} ·
+                    {{ booking.departure }}</span
                   ><span
-                    ><AppIcon :icon="boatOutline" aria-hidden="true" />
-                    {{ booking.vessel }}</span
+                    ><AppIcon :icon="boatOutline" aria-hidden="true" /> {{ booking.vessel }}</span
                   >
                 </div>
-                <div class="booking-schedule"><div><small>Departure</small><strong>{{ booking.departure || booking.time || 'Not listed' }}</strong></div><span class="schedule-track"><AppIcon :icon="boatOutline" aria-hidden="true" /></span><div><small>Arrival</small><strong>{{ booking.arrival || 'Not listed' }}</strong></div></div>
+                <div class="booking-schedule">
+                  <div>
+                    <small>Departure</small
+                    ><strong>{{ booking.departure || booking.time || 'Not listed' }}</strong>
+                  </div>
+                  <span class="schedule-track"
+                    ><AppIcon :icon="boatOutline" aria-hidden="true"
+                  /></span>
+                  <div>
+                    <small>Arrival</small><strong>{{ booking.arrival || 'Not listed' }}</strong>
+                  </div>
+                </div>
                 <div class="booking-fare-panel">
-                <div class="booking-total"><span>Booking total</span><strong>PHP {{ booking.total.toLocaleString() }}</strong></div>
-                <p v-if="booking.accommodationName" class="booking-accommodation">
-                  {{ booking.accommodationName }} accommodation · PHP
-                  {{ (booking.serviceFee || 0).toLocaleString() }} additional
-                  fare included
-                </p>
+                  <div class="booking-total">
+                    <span>Booking total</span
+                    ><strong>PHP {{ booking.total.toLocaleString() }}</strong>
+                  </div>
+                  <p v-if="booking.accommodationName" class="booking-accommodation">
+                    {{ booking.accommodationName }} accommodation · PHP
+                    {{ (booking.serviceFee || 0).toLocaleString() }} additional fare included
+                  </p>
                 </div>
                 <div class="booking-reference">
                   <span
@@ -289,43 +363,52 @@
                   ><span
                     ><AppIcon :icon="peopleOutline" aria-hidden="true" />
                     {{ booking.passengers.length }} passenger{{
-                      booking.passengers.length === 1 ? "" : "s"
+                      booking.passengers.length === 1 ? '' : 's'
                     }}</span
                   >
                 </div>
                 <OnlinePayment
-                  v-if="!travelWindow(booking).recordOnly && booking.paymentStatus === 'UNPAID' && ['PENDING','CONFIRMED'].includes(booking.status) && !(returnedBooking?.id === booking.id && returnVerificationPending)"
-                  :booking-id="booking.id" :reference="booking.reference" @updated="loadData"
+                  v-if="
+                    !travelWindow(booking).recordOnly &&
+                    booking.paymentStatus === 'UNPAID' &&
+                    ['PENDING', 'CONFIRMED'].includes(booking.status) &&
+                    !(returnedBooking?.id === booking.id && returnVerificationPending)
+                  "
+                  :booking-id="booking.id"
+                  :reference="booking.reference"
+                  @updated="loadData"
                 />
-                <p v-if="booking.paymentStatus === 'PAID'" class="payment-hint">{{ bookingPaymentRecord(booking) }} · {{ paymentMethodLabel(booking) }}</p>
+                <p v-if="booking.paymentStatus === 'PAID'" class="payment-hint">
+                  {{ bookingPaymentRecord(booking) }} · {{ paymentMethodLabel(booking) }}
+                </p>
                 <PaymentDeadline
                   v-if="
-                    booking.paymentDeadline && !travelWindow(booking).recordOnly &&
+                    booking.paymentDeadline &&
+                    !travelWindow(booking).recordOnly &&
                     booking.paymentStatus === 'UNPAID' &&
                     ['PENDING', 'CONFIRMED'].includes(booking.status)
                   "
                   :deadline="booking.paymentDeadline"
                   @expired="loadData"
                 />
-                <p
-                  v-if="booking.paymentStatus === 'REFUND_PENDING'"
-                  class="payment-hint"
-                >
-                  {{ booking.paymentMethod === 'PAYMONGO_TEST' ? 'Contact ticketing for assistance with your online payment.' : 'Visit the ticketing desk for your cash refund.' }}
+                <p v-if="booking.paymentStatus === 'REFUND_PENDING'" class="payment-hint">
+                  {{
+                    booking.paymentMethod === 'PAYMONGO_TEST'
+                      ? 'Contact ticketing for assistance with your online payment.'
+                      : 'Visit the ticketing desk for your cash refund.'
+                  }}
                 </p>
                 <div class="booking-actions">
                   <router-link
                     class="booking-details-link"
                     :to="`/booking-details?reference=${encodeURIComponent(booking.reference)}`"
-                    ><AppIcon :icon="documentTextOutline" aria-hidden="true" /> View details</router-link
+                    ><AppIcon :icon="documentTextOutline" aria-hidden="true" /> View
+                    details</router-link
                   ><router-link
                     class="booking-ticket-link"
-                    v-if="
-                      bookingTicketReady(booking)
-                    "
+                    v-if="bookingTicketReady(booking)"
                     :to="`/ticket?reference=${encodeURIComponent(booking.reference)}`"
-                    ><AppIcon :icon="ticketOutline" aria-hidden="true" /> View
-                    e-ticket</router-link
+                    ><AppIcon :icon="ticketOutline" aria-hidden="true" /> View e-ticket</router-link
                   ><button
                     class="booking-cancel-link"
                     v-if="
@@ -347,8 +430,8 @@
             </div>
             <h2>
               {{
-                bookingSearch || bookingPayment !== "ALL"
-                  ? "No matching bookings"
+                bookingSearch || bookingPayment !== 'ALL'
+                  ? 'No matching bookings'
                   : `No ${selectedTab.toLowerCase()} bookings`
               }}
             </h2>
@@ -362,143 +445,274 @@
             >
               Clear filters
             </button>
-            <p>{{ bookingSearch || bookingPayment !== 'ALL' ? 'Try another reference, route or payment status. You can also check another tab.' : bookingEmptyDescription }}</p>
-            <ion-button class="primary" router-link="/trips"
-              >Browse sailings</ion-button
-            >
+            <p>
+              {{
+                bookingSearch || bookingPayment !== 'ALL'
+                  ? 'Try another reference, route or payment status. You can also check another tab.'
+                  : bookingEmptyDescription
+              }}
+            </p>
+            <ion-button class="primary" router-link="/trips">Browse sailings</ion-button>
           </div></template
         >
         <template v-else-if="kind === 'booking-details'"
-          ><article
-            v-if="currentBooking"
-            class="booking-detail-card glass-panel"
-          >
+          ><article v-if="currentBooking" class="booking-detail-card glass-panel">
             <div class="row-heading">
               <h2>
                 {{ currentBooking.from }}
-                <span
-                  ><AppIcon :icon="arrowForwardOutline" aria-hidden="true"
-                /></span>
+                <span><AppIcon :icon="arrowForwardOutline" aria-hidden="true" /></span>
                 {{ currentBooking.to }}
               </h2>
-              <b class="detail-status" :class="bookingStatus(currentBooking).tone">{{ bookingStatus(currentBooking).label }}</b>
+              <b class="detail-status" :class="bookingStatus(currentBooking).tone">{{
+                bookingStatus(currentBooking).label
+              }}</b>
             </div>
             <p class="detail-reference">
               <span>Booking reference</span><strong>{{ currentBooking.reference }}</strong>
             </p>
             <div class="booking-meta">
-              <div><span><AppIcon :icon="calendarOutline" aria-hidden="true" />Departure</span><strong>{{ currentBooking.date }} · {{ currentBooking.departure }}</strong></div>
-              <div><span><AppIcon :icon="boatOutline" aria-hidden="true" />Ferry</span><strong>{{ currentBooking.vessel }}</strong></div>
+              <div>
+                <span><AppIcon :icon="calendarOutline" aria-hidden="true" />Departure</span
+                ><strong>{{ currentBooking.date }} · {{ currentBooking.departure }}</strong>
+              </div>
+              <div>
+                <span><AppIcon :icon="boatOutline" aria-hidden="true" />Ferry</span
+                ><strong>{{ currentBooking.vessel }}</strong>
+              </div>
             </div>
             <section class="detail-fares" aria-labelledby="detail-fares-heading">
               <h3 id="detail-fares-heading">Fare breakdown</h3>
-              <div><span>Passenger fares</span><b>PHP {{ (currentBooking.total - (currentBooking.serviceFee || 0)).toLocaleString() }}</b></div>
-              <div v-if="currentBooking.accommodationName || currentBooking.serviceFee"><span>Accommodation<small>{{ currentBooking.accommodationName || 'Standard' }}</small></span><b>PHP {{ (currentBooking.serviceFee || 0).toLocaleString() }}</b></div>
-              <div v-if="currentBooking.voucherCode" class="detail-fare-total"><span>Voucher {{currentBooking.voucherCode}}</span><strong>- PHP {{currentBooking.voucherDiscount}}</strong></div>
-              <div class="detail-fare-total"><strong>Booking total</strong><strong>PHP {{ currentBooking.total.toLocaleString() }}</strong></div>
+              <div>
+                <span>Passenger fares</span
+                ><b
+                  >PHP
+                  {{
+                    (currentBooking.total - (currentBooking.serviceFee || 0)).toLocaleString()
+                  }}</b
+                >
+              </div>
+              <div v-if="currentBooking.accommodationName || currentBooking.serviceFee">
+                <span
+                  >Accommodation<small>{{
+                    currentBooking.accommodationName || 'Standard'
+                  }}</small></span
+                ><b>PHP {{ (currentBooking.serviceFee || 0).toLocaleString() }}</b>
+              </div>
+              <div v-if="currentBooking.voucherCode" class="detail-fare-total">
+                <span>Voucher {{ currentBooking.voucherCode }}</span
+                ><strong>- PHP {{ currentBooking.voucherDiscount }}</strong>
+              </div>
+              <div class="detail-fare-total">
+                <strong>Booking total</strong
+                ><strong>PHP {{ currentBooking.total.toLocaleString() }}</strong>
+              </div>
             </section>
             <div class="detail-passengers">
               <h3>Passengers ({{ currentBooking.passengers.length }})</h3>
-              <div
-                v-for="(person, index) in currentBooking.passengers"
-                :key="person.id || index"
-              >
+              <div v-for="(person, index) in currentBooking.passengers" :key="person.id || index">
                 <span class="ticket-person-icon"
                   ><AppIcon :icon="personOutline" aria-hidden="true" /></span
                 ><span
                   ><strong>{{ person.name }}</strong
-                  ><small>{{ person.type === 'PWD' ? 'PWD' : person.type.replaceAll('_', ' ').toLowerCase() }} passenger</small></span>
-                <b class="detail-person-fare">PHP {{ person.fare.toLocaleString() }}<small>Base fare</small></b>
+                  ><small
+                    >{{
+                      person.type === 'PWD' ? 'PWD' : person.type.replaceAll('_', ' ').toLowerCase()
+                    }}
+                    passenger</small
+                  ></span
+                >
+                <b class="detail-person-fare"
+                  >PHP {{ person.fare.toLocaleString() }}<small>Base fare</small></b
+                >
               </div>
             </div>
             <div
               v-if="
-                !travelWindow(currentBooking).recordOnly && currentBooking.paymentStatus === 'UNPAID' &&
+                !travelWindow(currentBooking).recordOnly &&
+                currentBooking.paymentStatus === 'UNPAID' &&
                 ['PENDING', 'CONFIRMED'].includes(currentBooking.status)
               "
               class="detail-payment"
             >
-            <OnlinePayment
-              v-if="currentBooking.paymentStatus === 'UNPAID' && ['PENDING','CONFIRMED'].includes(currentBooking.status)"
-              :booking-id="currentBooking.id" :reference="currentBooking.reference" @updated="loadData"
-            />
-            <PaymentDeadline
-              v-if="currentBooking.paymentDeadline"
-              :deadline="currentBooking.paymentDeadline"
-              @expired="loadData"
-            />
+              <OnlinePayment
+                v-if="
+                  currentBooking.paymentStatus === 'UNPAID' &&
+                  ['PENDING', 'CONFIRMED'].includes(currentBooking.status)
+                "
+                :booking-id="currentBooking.id"
+                :reference="currentBooking.reference"
+                @updated="loadData"
+              />
+              <PaymentDeadline
+                v-if="currentBooking.paymentDeadline"
+                :deadline="currentBooking.paymentDeadline"
+                @expired="loadData"
+              />
               <h3 v-else>Pay before departure</h3>
               <p>Pay before the deadline to receive your QR ticket. Booking fee: PHP 0.</p>
             </div>
-            <p v-if="currentBooking.paymentStatus === 'PAID'" class="payment-hint">{{ bookingPaymentRecord(currentBooking) }} &middot; {{ paymentMethodLabel(currentBooking) }}</p>
+            <p v-if="currentBooking.paymentStatus === 'PAID'" class="payment-hint">
+              {{ bookingPaymentRecord(currentBooking) }} &middot;
+              {{ paymentMethodLabel(currentBooking) }}
+            </p>
             <p v-if="currentBooking.cancellationReason" class="payment-hint">
               {{ currentBooking.cancellationReason }}
             </p>
-            <p
-              v-if="currentBooking.paymentStatus === 'REFUND_PENDING'"
-              class="payment-hint"
-            >
-              {{ currentBooking.paymentMethod === 'PAYMONGO_TEST' ? 'Contact ticketing for assistance with your online payment.' : 'Visit the ticketing desk for your cash refund.' }}
+            <p v-if="currentBooking.paymentStatus === 'REFUND_PENDING'" class="payment-hint">
+              {{
+                currentBooking.paymentMethod === 'PAYMONGO_TEST'
+                  ? 'Contact ticketing for assistance with your online payment.'
+                  : 'Visit the ticketing desk for your cash refund.'
+              }}
             </p>
             <div class="detail-actions">
               <ion-button
-                v-if="
-                  bookingTicketReady(currentBooking)
-                "
+                v-if="bookingTicketReady(currentBooking)"
                 class="primary"
                 :router-link="`/ticket?reference=${encodeURIComponent(currentBooking.reference)}`"
                 >View e-ticket</ion-button
-              ><ion-button fill="outline" router-link="/bookings"
-                >All bookings</ion-button
-              >
+              ><ion-button fill="outline" router-link="/bookings">All bookings</ion-button>
             </div>
           </article>
           <div v-else class="empty-state">
             <h2>No active reservation</h2>
             <p>Book a sailing to see trip details here.</p>
-            <ion-button class="primary" router-link="/trips"
-              >Find a sailing</ion-button
-            >
+            <ion-button class="primary" router-link="/trips">Find a sailing</ion-button>
           </div></template
         >
         <template v-else-if="kind === 'notifications'">
           <section class="notification-toolbar" aria-label="Inbox overview">
-            <span class="inbox-icon"><AppIcon :icon="notificationsOutline" aria-hidden="true" /></span>
-            <div><strong>{{ unreadCount ? `${unreadCount} unread ${unreadCount === 1 ? 'update' : 'updates'}` : 'You are all caught up' }}</strong></div>
-            <button :disabled="noticeBusy || !!noticeUpdating || !unreadCount" @click="markAllRead"><AppIcon :icon="checkmarkOutline" aria-hidden="true" />{{ noticeBusy ? 'Updating...' : 'Mark all read' }}</button>
+            <span class="inbox-icon"
+              ><AppIcon :icon="notificationsOutline" aria-hidden="true"
+            /></span>
+            <div>
+              <strong>{{
+                unreadCount
+                  ? `${unreadCount} unread ${unreadCount === 1 ? 'update' : 'updates'}`
+                  : 'You are all caught up'
+              }}</strong>
+            </div>
+            <button :disabled="noticeBusy || !!noticeUpdating || !unreadCount" @click="markAllRead">
+              <AppIcon :icon="checkmarkOutline" aria-hidden="true" />{{
+                noticeBusy ? 'Updating...' : 'Mark all read'
+              }}
+            </button>
           </section>
           <div class="notification-view" role="group" aria-label="Read status">
-            <button :aria-pressed="!unreadOnly" :class="{ selected: !unreadOnly }" @click="unreadOnly = false">All updates <small>{{ noticeInboxCount }}</small></button>
-            <button :aria-pressed="unreadOnly" :class="{ selected: unreadOnly }" @click="unreadOnly = true">Unread <small>{{ unreadCount }}</small></button>
+            <button
+              :aria-pressed="!unreadOnly"
+              :class="{ selected: !unreadOnly }"
+              @click="unreadOnly = false"
+            >
+              All updates <small>{{ noticeInboxCount }}</small>
+            </button>
+            <button
+              :aria-pressed="unreadOnly"
+              :class="{ selected: unreadOnly }"
+              @click="unreadOnly = true"
+            >
+              Unread <small>{{ unreadCount }}</small>
+            </button>
           </div>
-          <div class="notification-filters" tabindex="0" role="group" aria-label="Notification category">
-            <button v-for="category in notificationCategories" :key="category" :aria-pressed="notificationFilter === category" :aria-label="notificationCategoryLabel(category)" :class="{ active: notificationFilter === category }" @click="notificationFilter = category">
-              <AppIcon :icon="noticeIcon(category)" aria-hidden="true" />{{ notificationCategoryLabel(category) }}<small aria-hidden="true">{{ notificationCategoryCount(category) }}</small>
+          <div
+            class="notification-filters"
+            tabindex="0"
+            role="group"
+            aria-label="Notification category"
+          >
+            <button
+              v-for="category in notificationCategories"
+              :key="category"
+              :aria-pressed="notificationFilter === category"
+              :aria-label="notificationCategoryLabel(category)"
+              :class="{ active: notificationFilter === category }"
+              @click="notificationFilter = category"
+            >
+              <AppIcon :icon="noticeIcon(category)" aria-hidden="true" />{{
+                notificationCategoryLabel(category)
+              }}<small aria-hidden="true">{{ notificationCategoryCount(category) }}</small>
             </button>
           </div>
           <p v-if="noticeError" class="notice-error" role="alert">{{ noticeError }}</p>
-          <p class="notification-results" aria-live="polite">{{ filteredNotices.length }} {{ filteredNotices.length === 1 ? 'update' : 'updates' }}<span>Latest first</span></p>
+          <p class="notification-results" aria-live="polite">
+            {{ filteredNotices.length }} {{ filteredNotices.length === 1 ? 'update' : 'updates'
+            }}<span>Latest first</span>
+          </p>
           <div v-if="filteredNotices.length" class="notifications">
-            <article v-for="notice in filteredNotices" :key="notice.id" :class="{ unread: notice.unread }">
-              <span class="notice-icon" :class="notice.type.toLowerCase()"><AppIcon :icon="noticeIcon(notice.type)" aria-hidden="true" /></span>
+            <article
+              v-for="notice in filteredNotices"
+              :key="notice.id"
+              :class="{ unread: notice.unread }"
+            >
+              <span class="notice-icon" :class="notice.type.toLowerCase()"
+                ><AppIcon :icon="noticeIcon(notice.type)" aria-hidden="true"
+              /></span>
               <div class="notice-copy">
-                <div class="notice-eyebrow"><span>{{ notificationCategoryLabel(notice.type) }}</span><b v-if="notice.unread"><i aria-hidden="true"></i>Unread</b></div>
+                <div class="notice-eyebrow">
+                  <span>{{ notificationCategoryLabel(notice.type) }}</span
+                  ><b v-if="notice.unread"><i aria-hidden="true"></i>Unread</b>
+                </div>
                 <h2>{{ notice.title }}</h2>
                 <p>{{ notice.body }}</p>
-                <div class="notice-footer"><time :datetime="notice.createdAt"><AppIcon :icon="timeOutline" aria-hidden="true" />{{ notice.time }}</time>
-                  <button v-if="notice.unread" :disabled="noticeBusy || !!noticeUpdating" :aria-label="`Mark read: ${notice.title}`" @click="markNotice(notice)"><AppIcon :icon="checkmarkOutline" aria-hidden="true" />{{ noticeUpdating === notice.id ? 'Updating...' : 'Mark read' }}</button>
-                  <span v-else class="notice-read"><AppIcon :icon="checkmarkCircleOutline" aria-hidden="true" />Read</span>
+                <div class="notice-footer">
+                  <time :datetime="notice.createdAt"
+                    ><AppIcon :icon="timeOutline" aria-hidden="true" />{{ notice.time }}</time
+                  >
+                  <button
+                    v-if="notice.unread"
+                    :disabled="noticeBusy || !!noticeUpdating"
+                    :aria-label="`Mark read: ${notice.title}`"
+                    @click="markNotice(notice)"
+                  >
+                    <AppIcon :icon="checkmarkOutline" aria-hidden="true" />{{
+                      noticeUpdating === notice.id ? 'Updating...' : 'Mark read'
+                    }}
+                  </button>
+                  <span v-else class="notice-read"
+                    ><AppIcon :icon="checkmarkCircleOutline" aria-hidden="true" />Read</span
+                  >
                 </div>
               </div>
             </article>
           </div>
           <div v-else class="empty-state">
-            <div class="empty-icon"><AppIcon :icon="notificationsOutline" aria-hidden="true" /></div>
-            <h2>{{ unreadOnly ? 'No unread updates' : notificationFilter !== 'ALL' ? `No ${notificationCategoryLabel(notificationFilter).toLowerCase()} updates` : 'Your inbox is ready' }}</h2>
-            <p>{{ unreadOnly ? 'You have read all updates in this view. Check all updates to see your history.' : 'Booking confirmations, sailing changes and other travel updates will appear here.' }}</p>
-            <button v-if="unreadOnly || notificationFilter !== 'ALL'" class="reset-notices" @click="unreadOnly = false; notificationFilter = 'ALL'">View all updates</button>
+            <div class="empty-icon">
+              <AppIcon :icon="notificationsOutline" aria-hidden="true" />
+            </div>
+            <h2>
+              {{
+                unreadOnly
+                  ? 'No unread updates'
+                  : notificationFilter !== 'ALL'
+                    ? `No ${notificationCategoryLabel(notificationFilter).toLowerCase()} updates`
+                    : 'Your inbox is ready'
+              }}
+            </h2>
+            <p>
+              {{
+                unreadOnly
+                  ? 'You have read all updates in this view. Check all updates to see your history.'
+                  : 'Booking confirmations, sailing changes and other travel updates will appear here.'
+              }}
+            </p>
+            <button
+              v-if="unreadOnly || notificationFilter !== 'ALL'"
+              class="reset-notices"
+              @click="
+                unreadOnly = false;
+                notificationFilter = 'ALL';
+              "
+            >
+              View all updates
+            </button>
           </div>
-          <WorkspacePagination :page="noticePage" :total="noticeTotal" item-label="notifications" :disabled="loading || noticeBusy || !!noticeUpdating" @change="noticePage = $event" />
+          <WorkspacePagination
+            :page="noticePage"
+            :total="noticeTotal"
+            item-label="notifications"
+            :disabled="loading || noticeBusy || !!noticeUpdating"
+            @change="noticePage = $event"
+          />
         </template>
         <template v-else
           ><section class="profile-card glass-panel">
@@ -513,16 +727,11 @@
             <form @submit.prevent="saveProfile">
               <label
                 ><span class="field-label"
-                  ><AppIcon :icon="personOutline" aria-hidden="true" /> Full
-                  name</span
-                ><input
-                  v-model.trim="profile.name"
-                  autocomplete="name"
-                  required /></label
+                  ><AppIcon :icon="personOutline" aria-hidden="true" /> Full name</span
+                ><input v-model.trim="profile.name" autocomplete="name" required /></label
               ><label
                 ><span class="field-label"
-                  ><AppIcon :icon="mailOutline" aria-hidden="true" /> Email
-                  address</span
+                  ><AppIcon :icon="mailOutline" aria-hidden="true" /> Email address</span
                 ><input
                   v-model.trim="profile.email"
                   type="email"
@@ -530,28 +739,27 @@
                   readonly /></label
               ><label
                 ><span class="field-label"
-                  ><AppIcon :icon="callOutline" aria-hidden="true" /> Mobile
-                  number</span
+                  ><AppIcon :icon="callOutline" aria-hidden="true" /> Mobile number</span
                 ><input
                   v-model.trim="profile.phone"
                   type="tel"
                   autocomplete="tel"
                   placeholder="09XX XXX XXXX" /></label
               ><ion-button type="submit" class="primary"
-                ><AppIcon
-                  slot="start"
-                  :icon="saved ? checkmarkOutline : saveOutline"
-                />{{ saved ? "Saved" : "Save changes" }}</ion-button
+                ><AppIcon slot="start" :icon="saved ? checkmarkOutline : saveOutline" />{{
+                  saved ? 'Saved' : 'Save changes'
+                }}</ion-button
               >
             </form>
             <router-link :to="{ name: 'settings' }" class="settings-link"
               ><AppIcon :icon="settingsOutline" aria-hidden="true" />
               Preferences & settings
-            </router-link></section
-        ></template>
+            </router-link>
+          </section></template
+        >
         <p class="prototype-note">
-          Your bookings, e-tickets, notifications, and profile are synced with
-          the reservation database.
+          Your bookings, e-tickets, notifications, and profile are synced with the reservation
+          database.
         </p>
       </main>
       <PassengerBottomNav /></ion-content
@@ -559,22 +767,32 @@
 </template>
 <script setup lang="ts">
 import { notifyError, notifySuccess } from '@/composables/toast';
-import { bookingTravelStatus, bookingPaymentRecord, passengerTicketState, travelWindow } from "../../data/bookingLifecycle";
-import { Button } from "@/components/ui/button";
-import { confirmAction } from "../../composables/confirmation";
-import PaymentDeadline from "../../components/passenger/PaymentDeadline.vue";
+import {
+  bookingTravelStatus,
+  bookingPaymentRecord,
+  passengerTicketState,
+  travelWindow,
+} from '../../data/bookingLifecycle';
+import { Button } from '@/components/ui/button';
+import { confirmAction } from '../../composables/confirmation';
+import PaymentDeadline from '../../components/passenger/PaymentDeadline.vue';
 import WorkspacePagination from '../../components/shared/WorkspacePagination.vue';
-import OnlinePayment from "../../components/passenger/OnlinePayment.vue";
-import { markAllNotificationsRead } from "../../services/database/experience";
-import { clearNotificationUnread, setUnreadNotifications, notificationUpdates, notificationUnreadCount } from "../../composables/notificationUnread";
-import { downloadTicket, shareTicket, printTicketDocument } from "../../data/ticketExport";
-import { useQueueRefresh } from "../../composables/queueRefresh";
-import { databaseRequestError } from "../../data/databaseErrors";
-import { computed, nextTick, ref, watch } from "vue";
-import QRCode from "qrcode";
-import { useRoute, useRouter } from "vue-router";
-import { IonButton, IonContent, IonPage, onIonViewWillEnter } from "@ionic/vue";
-import AppIcon from "@/components/ui/icon/AppIcon.vue";
+import OnlinePayment from '../../components/passenger/OnlinePayment.vue';
+import { markAllNotificationsRead } from '../../services/database/experience';
+import {
+  clearNotificationUnread,
+  setUnreadNotifications,
+  notificationUpdates,
+  notificationUnreadCount,
+} from '../../composables/notificationUnread';
+import { downloadTicket, shareTicket, printTicketDocument } from '../../data/ticketExport';
+import { useQueueRefresh } from '../../composables/queueRefresh';
+import { databaseRequestError } from '../../data/databaseErrors';
+import { computed, nextTick, ref, watch } from 'vue';
+import QRCode from 'qrcode';
+import { useRoute, useRouter } from 'vue-router';
+import { IonButton, IonContent, IonPage, onIonViewWillEnter } from '@ionic/vue';
+import AppIcon from '@/components/ui/icon/AppIcon.vue';
 import {
   arrowForwardOutline,
   bookmarkOutline,
@@ -600,12 +818,12 @@ import {
   closeCircleOutline,
   hourglassOutline,
   giftOutline,
-} from "ionicons/icons";
-import PassengerHeader from "../../components/passenger/PassengerHeader.vue";
-import PaymentReturn from "../../components/passenger/PaymentReturn.vue";
-import { paymentMethodLabel } from "../../data/paymentMethod";
-import { awaitingPaymentVerification, bookingTicketReady } from "../../data/paymentVerification";
-import PassengerBottomNav from "../../components/passenger/PassengerBottomNav.vue";
+} from 'ionicons/icons';
+import PassengerHeader from '../../components/passenger/PassengerHeader.vue';
+import PaymentReturn from '../../components/passenger/PaymentReturn.vue';
+import { paymentMethodLabel } from '../../data/paymentMethod';
+import { awaitingPaymentVerification, bookingTicketReady } from '../../data/paymentVerification';
+import PassengerBottomNav from '../../components/passenger/PassengerBottomNav.vue';
 import {
   cancelMyBooking,
   markNotificationRead,
@@ -614,8 +832,8 @@ import {
   type MyNotificationsData,
   myProfile,
   updateMyProfile,
-} from "../../services/database/passenger";
-import { auth, database } from "../../services/session";
+} from '../../services/database/passenger';
+import { auth, database } from '../../services/session';
 type Passenger = {
   id?: string;
   name: string;
@@ -660,14 +878,17 @@ function chooseTicket(event: Event) {
   const reference = (event.target as HTMLSelectElement).value;
   void router.replace({ path: '/ticket', query: { reference } });
 }
-const kind = computed(() => String(route.name || "bookings"));
-const bookingSearch = ref(""),
-  bookingPayment = ref("ALL");
-const tabs = ["Upcoming", "Past departures", "Cancelled", "Expired"];
-const selectedTab = ref("Upcoming");
+const kind = computed(() => String(route.name || 'bookings'));
+const bookingSearch = ref(''),
+  bookingPayment = ref('ALL');
+const tabs = ['Upcoming', 'Past departures', 'Cancelled', 'Expired'];
+const selectedTab = ref('Upcoming');
 const bookings = ref<Booking[]>([]);
-const returnedBooking = computed(() => ['returned', 'cancelled'].includes(String(route.query.payment))
-  ? bookings.value.find(booking => booking.reference === route.query.reference) : undefined);
+const returnedBooking = computed(() =>
+  ['returned', 'cancelled'].includes(String(route.query.payment))
+    ? bookings.value.find((booking) => booking.reference === route.query.reference)
+    : undefined,
+);
 const returnVerificationPending = ref(true);
 function paymentVerified() {
   returnVerificationPending.value = false;
@@ -684,82 +905,111 @@ const notices = ref<
     unread: boolean;
   }>
 >([]);
-const loadError = ref("");
-const unreadOnly = ref(false), noticeUpdating = ref(''), noticeError = ref('');
-const noticePage=ref(0),noticeTotal=ref(0),noticeCategories=ref<string[]>([]);
-const noticeInboxCount=ref(0),noticeCategoryCounts=ref<Record<string,number>|undefined>();
-const notificationFilter = ref("ALL"),
+const loadError = ref('');
+const unreadOnly = ref(false),
+  noticeUpdating = ref(''),
+  noticeError = ref('');
+const noticePage = ref(0),
+  noticeTotal = ref(0),
+  noticeCategories = ref<string[]>([]);
+const noticeInboxCount = ref(0),
+  noticeCategoryCounts = ref<Record<string, number> | undefined>();
+const notificationFilter = ref('ALL'),
   noticeBusy = ref(false),
   ticketBusy = ref(false),
-  ticketNotice = ref("");
-function applyNotificationItems(items:ReadonlyArray<MyNotificationsData['notifications'][number]>){
-  notices.value = items.map((item) => ({
-        id: item.id,
-        title: item.title,
-        body: item.message,
-        type: item.category,
-        createdAt: item.createdAt,
-        time: new Date(item.createdAt).toLocaleString('en-PH', { timeZone: 'Asia/Manila', month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' }),
-        unread: !item.readAt,
-      })).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  ticketNotice = ref('');
+function applyNotificationItems(
+  items: ReadonlyArray<MyNotificationsData['notifications'][number]>,
+) {
+  notices.value = items
+    .map((item) => ({
+      id: item.id,
+      title: item.title,
+      body: item.message,
+      type: item.category,
+      createdAt: item.createdAt,
+      time: new Date(item.createdAt).toLocaleString('en-PH', {
+        timeZone: 'Asia/Manila',
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
+        hour: 'numeric',
+        minute: '2-digit',
+      }),
+      unread: !item.readAt,
+    }))
+    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 }
-watch(notificationUpdates,update=>{
-  if(update && kind.value==='notifications' && update.uid===auth?.currentUser?.uid && !noticeBusy.value && !noticeUpdating.value){
-    if(update.totalCount!==undefined){void loadData();return;}
-    applyNotificationItems(update.items);loadError.value='';
+watch(notificationUpdates, (update) => {
+  if (
+    update &&
+    kind.value === 'notifications' &&
+    update.uid === auth?.currentUser?.uid &&
+    !noticeBusy.value &&
+    !noticeUpdating.value
+  ) {
+    if (update.totalCount !== undefined) {
+      void loadData();
+      return;
+    }
+    applyNotificationItems(update.items);
+    loadError.value = '';
   }
 });
 const unreadCount = notificationUnreadCount;
-watch([notificationFilter,unreadOnly],()=>{if(noticePage.value!==0)noticePage.value=0;else if(kind.value==='notifications')void loadData();});
-watch(noticePage,()=>{if(kind.value==='notifications')void loadData().then(async()=>{await nextTick();document.querySelector('.notifications-page .notification-toolbar')?.scrollIntoView({block:'start'});});});
+watch([notificationFilter, unreadOnly], () => {
+  if (noticePage.value !== 0) noticePage.value = 0;
+  else if (kind.value === 'notifications') void loadData();
+});
+watch(noticePage, () => {
+  if (kind.value === 'notifications')
+    void loadData().then(async () => {
+      await nextTick();
+      document
+        .querySelector('.notifications-page .notification-toolbar')
+        ?.scrollIntoView({ block: 'start' });
+    });
+});
 const notificationCategories = computed(() => [
-  "ALL",
-  ...new Set([...noticeCategories.value,...notices.value.map((n) => n.type)]),
+  'ALL',
+  ...new Set([...noticeCategories.value, ...notices.value.map((n) => n.type)]),
 ]);
 const filteredNotices = computed(() =>
   notices.value.filter(
     (n) =>
-      (notificationFilter.value === "ALL" || n.type === notificationFilter.value) && (!unreadOnly.value || n.unread),
+      (notificationFilter.value === 'ALL' || n.type === notificationFilter.value) &&
+      (!unreadOnly.value || n.unread),
   ),
 );
 async function markAllRead() {
   if (!database || noticeBusy.value || noticeUpdating.value) return;
   const uid = auth?.currentUser?.uid;
   noticeBusy.value = true;
-  noticeError.value = "";
+  noticeError.value = '';
   try {
     await markAllNotificationsRead(database);
     notifySuccess('All notifications marked as read.');
     clearNotificationUnread(undefined, uid);
-    notices.value.forEach(notice => { notice.unread = false; });
-    if(unreadOnly.value&&noticeCategoryCounts.value)noticeCategoryCounts.value={};
-
+    notices.value.forEach((notice) => {
+      notice.unread = false;
+    });
+    if (unreadOnly.value && noticeCategoryCounts.value) noticeCategoryCounts.value = {};
   } catch (cause) {
-    notifyError(databaseRequestError(
-      cause,
-      "Could not mark notifications read.",
-    ));
+    notifyError(databaseRequestError(cause, 'Could not mark notifications read.'));
   } finally {
     noticeBusy.value = false;
   }
 }
-async function exportTicket(mode: "download" | "share") {
+async function exportTicket(mode: 'download' | 'share') {
   if (!currentBooking.value || ticketBusy.value) return;
   ticketBusy.value = true;
-  ticketNotice.value = "";
+  ticketNotice.value = '';
   try {
-    await (mode === "download" ? downloadTicket : shareTicket)(
-      currentBooking.value,
-    );
+    await (mode === 'download' ? downloadTicket : shareTicket)(currentBooking.value);
     ticketNotice.value =
-      mode === "download"
-        ? "Ticket downloaded. Open the file to view or print."
-        : "Ticket shared.";
+      mode === 'download' ? 'Ticket downloaded. Open the file to view or print.' : 'Ticket shared.';
   } catch (cause) {
-    ticketNotice.value = databaseRequestError(
-      cause,
-      "Could not export ticket.",
-    );
+    ticketNotice.value = databaseRequestError(cause, 'Could not export ticket.');
   } finally {
     ticketBusy.value = false;
   }
@@ -767,37 +1017,40 @@ async function exportTicket(mode: "download" | "share") {
 async function printTicket() {
   if (!currentBooking.value || ticketBusy.value) return;
   ticketBusy.value = true;
-  try { await printTicketDocument(currentBooking.value); }
-  catch (cause) { notifyError(databaseRequestError(cause, 'Could not open ticket printing. Try again.')); }
-  finally { ticketBusy.value = false; }
+  try {
+    await printTicketDocument(currentBooking.value);
+  } catch (cause) {
+    notifyError(databaseRequestError(cause, 'Could not open ticket printing. Try again.'));
+  } finally {
+    ticketBusy.value = false;
+  }
 }
 const loading = ref(true);
 const qrFailedCodes = ref<string[]>([]);
 const qrImages = ref<Record<string, string>>({});
 let qrRequest = 0;
 watch(
-  () =>
-    bookings.value
-      .flatMap((b) => b.passengers.map((p) => p.ticketQrPayload || ""))
-      .join("|"),
+  () => bookings.value.flatMap((b) => b.passengers.map((p) => p.ticketQrPayload || '')).join('|'),
   async () => {
     const request = ++qrRequest;
-    const tickets = bookings.value.flatMap(b=>b.passengers).filter(p=>p.ticketCode && p.ticketQrPayload);
+    const tickets = bookings.value
+      .flatMap((b) => b.passengers)
+      .filter((p) => p.ticketCode && p.ticketQrPayload);
     const results = await Promise.all(
       tickets.map(async (person) => {
-        const code=person.ticketCode!;
+        const code = person.ticketCode!;
         try {
           return [
             code,
             await QRCode.toDataURL(person.ticketQrPayload!, {
               width: 360,
               margin: 4,
-              errorCorrectionLevel: "M",
+              errorCorrectionLevel: 'M',
             }),
           ] as const;
         } catch {
           markQrUnavailable(code);
-          return [code, ""] as const;
+          return [code, ''] as const;
         }
       }),
     );
@@ -805,11 +1058,10 @@ watch(
   },
 );
 function qrImageUrl(ticketCode?: string) {
-  return ticketCode ? qrImages.value[ticketCode] || "" : "";
+  return ticketCode ? qrImages.value[ticketCode] || '' : '';
 }
 function markQrUnavailable(ticketCode: string) {
-  if (!qrFailedCodes.value.includes(ticketCode))
-    qrFailedCodes.value.push(ticketCode);
+  if (!qrFailedCodes.value.includes(ticketCode)) qrFailedCodes.value.push(ticketCode);
 }
 
 const ticketBookings = computed(() =>
@@ -820,18 +1072,15 @@ const ticketBookings = computed(() =>
         item.passengers.some(
           (person) =>
             person.ticketCode &&
-            ["ISSUED", "CHECKED_IN", "BOARDED"].includes(
-              person.ticketStatus || "",
-            ),
+            ['ISSUED', 'CHECKED_IN', 'BOARDED'].includes(person.ticketStatus || ''),
         ),
     )
     .sort((a, b) => b.departureAt.localeCompare(a.departureAt)),
 );
 const currentBooking = computed(() => {
-  const selected = String(route.query.reference || "");
-  if (selected)
-    return bookings.value.find((item) => item.reference === selected) || null;
-  if (kind.value === "ticket")
+  const selected = String(route.query.reference || '');
+  if (selected) return bookings.value.find((item) => item.reference === selected) || null;
+  if (kind.value === 'ticket')
     return (
       ticketBookings.value
         .filter((item) => new Date(item.departureAt) > new Date())
@@ -842,37 +1091,74 @@ const currentBooking = computed(() => {
   return (
     bookings.value.find(
       (item) =>
-        !["CANCELLED", "EXPIRED"].includes(item.status) &&
-        new Date(item.departureAt) > new Date(),
+        !['CANCELLED', 'EXPIRED'].includes(item.status) && new Date(item.departureAt) > new Date(),
     ) || null
   );
 });
 function belongsToBookingTab(item: Booking, tab: string) {
-  if (tab === "Cancelled") return item.status === "CANCELLED";
-  if (tab === "Expired") return item.status === "EXPIRED";
-  if (["CANCELLED", "EXPIRED"].includes(item.status)) return false;
-  return tab === "Past departures" ? new Date(item.departureAt) <= new Date() : new Date(item.departureAt) > new Date();
+  if (tab === 'Cancelled') return item.status === 'CANCELLED';
+  if (tab === 'Expired') return item.status === 'EXPIRED';
+  if (['CANCELLED', 'EXPIRED'].includes(item.status)) return false;
+  return tab === 'Past departures'
+    ? new Date(item.departureAt) <= new Date()
+    : new Date(item.departureAt) > new Date();
 }
-const filteredBookings = computed(() => bookings.value.filter(item =>
-  (bookingPayment.value === 'ALL' || (bookingPayment.value === 'AWAITING_VERIFICATION'
-    ? awaitingPaymentVerification(item) : item.paymentStatus === bookingPayment.value)) &&
-  (!bookingSearch.value || [item.reference, item.from, item.to, item.vessel, ...item.passengers.map(p => p.name)]
-    .join(' ').toLowerCase().includes(bookingSearch.value.toLowerCase()))
-));
-const visibleBookings = computed(() => filteredBookings.value.filter(item => belongsToBookingTab(item, selectedTab.value)));
-const tabCounts = computed(() => Object.fromEntries(tabs.map(tab => [tab, filteredBookings.value.filter(item => belongsToBookingTab(item, tab)).length])));
+const filteredBookings = computed(() =>
+  bookings.value.filter(
+    (item) =>
+      (bookingPayment.value === 'ALL' ||
+        (bookingPayment.value === 'AWAITING_VERIFICATION'
+          ? awaitingPaymentVerification(item)
+          : item.paymentStatus === bookingPayment.value)) &&
+      (!bookingSearch.value ||
+        [item.reference, item.from, item.to, item.vessel, ...item.passengers.map((p) => p.name)]
+          .join(' ')
+          .toLowerCase()
+          .includes(bookingSearch.value.toLowerCase())),
+  ),
+);
+const visibleBookings = computed(() =>
+  filteredBookings.value.filter((item) => belongsToBookingTab(item, selectedTab.value)),
+);
+const tabCounts = computed(() =>
+  Object.fromEntries(
+    tabs.map((tab) => [
+      tab,
+      filteredBookings.value.filter((item) => belongsToBookingTab(item, tab)).length,
+    ]),
+  ),
+);
 function tabIcon(tab: string) {
-  return ({ Upcoming: calendarOutline, 'Past departures': boatOutline, Cancelled: closeCircleOutline, Expired: hourglassOutline })[tab] || calendarOutline;
+  return (
+    {
+      Upcoming: calendarOutline,
+      'Past departures': boatOutline,
+      Cancelled: closeCircleOutline,
+      Expired: hourglassOutline,
+    }[tab] || calendarOutline
+  );
 }
-const bookingEmptyDescription = computed(() => ({
-  Upcoming: 'Ready for your next journey? Book a sailing and manage your reservation here.',
-  'Past departures': 'Reservations for departures that have already passed will appear here.',
-  Cancelled: 'Your cancelled reservations and any refund updates will appear here.',
-  Expired: 'Reservations whose payment window has expired will appear here. Browse sailings to reserve again.',
-})[selectedTab.value] || 'Your reservations will appear here.');
+const bookingEmptyDescription = computed(
+  () =>
+    ({
+      Upcoming: 'Ready for your next journey? Book a sailing and manage your reservation here.',
+      'Past departures': 'Reservations for departures that have already passed will appear here.',
+      Cancelled: 'Your cancelled reservations and any refund updates will appear here.',
+      Expired:
+        'Reservations whose payment window has expired will appear here. Browse sailings to reserve again.',
+    })[selectedTab.value] || 'Your reservations will appear here.',
+);
 function bookingStatus(booking: Booking) {
   const state = bookingTravelStatus(booking);
-  return { ...state, icon: state.tone === 'success' ? checkmarkCircleOutline : state.tone === 'warning' ? timeOutline : boatOutline };
+  return {
+    ...state,
+    icon:
+      state.tone === 'success'
+        ? checkmarkCircleOutline
+        : state.tone === 'warning'
+          ? timeOutline
+          : boatOutline,
+  };
 }
 function ticketState(booking: Booking, person: Passenger) {
   return passengerTicketState(booking, person);
@@ -881,63 +1167,62 @@ function ticketState(booking: Booking, person: Passenger) {
 const title = computed(
   () =>
     ({
-      ticket: "Your e-ticket",
-      bookings: "My bookings",
-      "booking-details": "Booking details",
-      notifications: "Notifications",
-      profile: "Your profile",
-    })[kind.value] || "My bookings",
+      ticket: 'Your e-ticket',
+      bookings: 'My bookings',
+      'booking-details': 'Booking details',
+      notifications: 'Notifications',
+      profile: 'Your profile',
+    })[kind.value] || 'My bookings',
 );
 const eyebrow = computed(
   () =>
     ({
-      ticket: "DIGITAL PASS",
-      bookings: "YOUR TRAVEL",
-      "booking-details": "RESERVATION DETAILS",
-      notifications: "TRAVEL UPDATES",
-      profile: "ACCOUNT",
-    })[kind.value] || "YOUR TRAVEL",
+      ticket: 'DIGITAL PASS',
+      bookings: 'YOUR TRAVEL',
+      'booking-details': 'RESERVATION DETAILS',
+      notifications: 'TRAVEL UPDATES',
+      profile: 'ACCOUNT',
+    })[kind.value] || 'YOUR TRAVEL',
 );
 const description = computed(
   () =>
     ({
-      ticket: "Your reservation details, ready for the terminal.",
-      bookings: "Manage upcoming reservations and past journeys.",
-      "booking-details":
-        "Review the sailing, passengers and payment details for this reservation.",
-      notifications: "Stay up to date with booking and sailing changes.",
-      profile: "Keep your contact details up to date.",
-    })[kind.value] || "",
+      ticket: 'Your reservation details, ready for the terminal.',
+      bookings: 'Manage upcoming reservations and past journeys.',
+      'booking-details': 'Review the sailing, passengers and payment details for this reservation.',
+      notifications: 'Stay up to date with booking and sailing changes.',
+      profile: 'Keep your contact details up to date.',
+    })[kind.value] || '',
 );
-const profile = ref({ name: "", email: "", phone: "" });
+const profile = ref({ name: '', email: '', phone: '' });
 const saved = ref(false);
 const formatDay = (v: string) =>
-  new Date(v).toLocaleDateString("en-PH", {
-        timeZone: "Asia/Manila",
-    month: "short",
-    day: "numeric",
-    year: "numeric",
+  new Date(v).toLocaleDateString('en-PH', {
+    timeZone: 'Asia/Manila',
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
   });
 const formatTime = (v: string) =>
-  new Date(v).toLocaleTimeString("en-PH", {
-        timeZone: "Asia/Manila",
-    hour: "numeric",
-    minute: "2-digit",
+  new Date(v).toLocaleTimeString('en-PH', {
+    timeZone: 'Asia/Manila',
+    hour: 'numeric',
+    minute: '2-digit',
   });
-let dataRequest=0;
+let dataRequest = 0;
 async function loadData() {
-  const request=++dataRequest;
+  const request = ++dataRequest;
   loading.value = true;
-  loadError.value = "";
+  loadError.value = '';
   if (!database) {
     loadError.value =
-      "Supabase is not configured. Add the project URL and publishable key to .env.local.";
+      'Supabase is not configured. Add the project URL and publishable key to .env.local.';
     loading.value = false;
     return;
   }
   try {
-    if (["bookings", "booking-details", "ticket"].includes(kind.value)) {
-      const result = await myBookings(database, { fetchPolicy: "SERVER_ONLY" });
+    if (['bookings', 'booking-details', 'ticket'].includes(kind.value)) {
+      const result = await myBookings(database, { fetchPolicy: 'SERVER_ONLY' });
       bookings.value = result.data.bookings.map((item) => ({
         id: item.id,
         departureAt: item.sailing.departureAt,
@@ -975,66 +1260,64 @@ async function loadData() {
         })),
       }));
     }
-    if (kind.value === "notifications") {
+    if (kind.value === 'notifications') {
       const uid = auth?.currentUser?.uid;
       const result = await myNotifications(database, {
-        fetchPolicy: "SERVER_ONLY",
-        page:noticePage.value,pageSize:30,category:notificationFilter.value,unreadOnly:unreadOnly.value,
+        fetchPolicy: 'SERVER_ONLY',
+        page: noticePage.value,
+        pageSize: 30,
+        category: notificationFilter.value,
+        unreadOnly: unreadOnly.value,
       });
-      if(request!==dataRequest)return;
+      if (request !== dataRequest) return;
       applyNotificationItems(result.data.notifications);
-      noticeTotal.value=result.data.totalCount??result.data.notifications.length;
-      noticeCategories.value=result.data.categories??[];
-      noticeInboxCount.value=result.data.inboxCount??result.data.notifications.length;
-      noticeCategoryCounts.value=result.data.categoryCounts;
-      setUnreadNotifications(result.data.notifications, uid,result.data.unreadCount);
+      noticeTotal.value = result.data.totalCount ?? result.data.notifications.length;
+      noticeCategories.value = result.data.categories ?? [];
+      noticeInboxCount.value = result.data.inboxCount ?? result.data.notifications.length;
+      noticeCategoryCounts.value = result.data.categoryCounts;
+      setUnreadNotifications(result.data.notifications, uid, result.data.unreadCount);
     }
-    if (kind.value === "profile") {
-      const result = await myProfile(database, { fetchPolicy: "SERVER_ONLY" });
+    if (kind.value === 'profile') {
+      const result = await myProfile(database, { fetchPolicy: 'SERVER_ONLY' });
       profile.value = {
-        name:
-          result.data.user?.fullName || auth?.currentUser?.displayName || "",
-        email: result.data.user?.email || auth?.currentUser?.email || "",
-        phone: result.data.user?.phone || "",
+        name: result.data.user?.fullName || auth?.currentUser?.displayName || '',
+        email: result.data.user?.email || auth?.currentUser?.email || '',
+        phone: result.data.user?.phone || '',
       };
     }
   } catch (error) {
-    if(request!==dataRequest)return;
-    loadError.value = databaseRequestError(
-      error,
-      "Could not load account data.",
-    );
+    if (request !== dataRequest) return;
+    loadError.value = databaseRequestError(error, 'Could not load account data.');
   } finally {
-    if(request===dataRequest)loading.value = false;
+    if (request === dataRequest) loading.value = false;
   }
 }
 onIonViewWillEnter(() => {
-  if (kind.value === "bookings")
+  if (kind.value === 'bookings')
     selectedTab.value = tabs.includes(String(route.query.tab))
       ? String(route.query.tab)
-      : "Upcoming";
+      : 'Upcoming';
   void loadData();
 });
 useQueueRefresh(
   loadData,
   () =>
-    ["/bookings", "/booking-details", "/ticket", "/notifications"].includes(
-      route.path,
-    ) && !loading.value,
+    ['/bookings', '/booking-details', '/ticket', '/notifications'].includes(route.path) &&
+    !loading.value,
 );
 async function cancel(reference: string) {
   if (!database) return;
   const item = bookings.value.find((x) => x.reference === reference);
   if (!item) return;
   if (new Date(item.departureAt) <= new Date()) {
-    loadError.value = "Departed trips cannot be cancelled.";
+    loadError.value = 'Departed trips cannot be cancelled.';
     return;
   }
   if (
     !(await confirmAction({
-      title: "Cancel reservation?",
+      title: 'Cancel reservation?',
       message: `Cancel reservation ${reference} and release ${item.passengerCount} reserved seat(s)? No payment has been collected.`,
-      confirmText: "Cancel reservation",
+      confirmText: 'Cancel reservation',
       danger: true,
     }))
   )
@@ -1047,21 +1330,34 @@ async function cancel(reference: string) {
     });
     notifySuccess('Reservation cancelled.');
     await loadData();
-    selectedTab.value = "Cancelled";
+    selectedTab.value = 'Cancelled';
   } catch (error) {
-    notifyError(databaseRequestError(
-      error,
-      "Could not cancel reservation.",
-    ));
+    notifyError(databaseRequestError(error, 'Could not cancel reservation.'));
   }
 }
 function notificationCategoryLabel(category: string) {
-  const labels: Record<string, string> = { ALL: 'All categories', BOOKING: 'Bookings', TRIPS: 'Sailings', PROMO: 'Promos', GENERAL: 'General', SYSTEM: 'System' };
-  return labels[category] || category.charAt(0) + category.slice(1).toLowerCase().replaceAll('_', ' ');
+  const labels: Record<string, string> = {
+    ALL: 'All categories',
+    BOOKING: 'Bookings',
+    TRIPS: 'Sailings',
+    PROMO: 'Promos',
+    GENERAL: 'General',
+    SYSTEM: 'System',
+  };
+  return (
+    labels[category] || category.charAt(0) + category.slice(1).toLowerCase().replaceAll('_', ' ')
+  );
 }
 function notificationCategoryCount(category: string) {
-  if(noticeCategoryCounts.value)return category==='ALL' ? (unreadOnly.value?unreadCount.value:noticeInboxCount.value) : noticeCategoryCounts.value[category]??0;
-  return notices.value.filter(n => (category === 'ALL' || n.type === category) && (!unreadOnly.value || n.unread)).length;
+  if (noticeCategoryCounts.value)
+    return category === 'ALL'
+      ? unreadOnly.value
+        ? unreadCount.value
+        : noticeInboxCount.value
+      : (noticeCategoryCounts.value[category] ?? 0);
+  return notices.value.filter(
+    (n) => (category === 'ALL' || n.type === category) && (!unreadOnly.value || n.unread),
+  ).length;
 }
 function noticeIcon(type: string) {
   if (type === 'TRIPS') return boatOutline;
@@ -1076,12 +1372,18 @@ async function markNotice(notice: { id: string; unread: boolean }) {
   noticeError.value = '';
   try {
     await markNotificationRead(database, { id: notice.id });
-    const category=notices.value.find(item=>item.id===notice.id)?.type;
-    if(unreadOnly.value&&category&&noticeCategoryCounts.value)noticeCategoryCounts.value[category]=Math.max(0,(noticeCategoryCounts.value[category]??0)-1);
+    const category = notices.value.find((item) => item.id === notice.id)?.type;
+    if (unreadOnly.value && category && noticeCategoryCounts.value)
+      noticeCategoryCounts.value[category] = Math.max(
+        0,
+        (noticeCategoryCounts.value[category] ?? 0) - 1,
+      );
     notice.unread = false;
-    clearNotificationUnread(notice.id, uid,true);
+    clearNotificationUnread(notice.id, uid, true);
   } catch (error) {
-    notifyError(databaseRequestError(error, 'Could not update notification. Try marking it read again.'));
+    notifyError(
+      databaseRequestError(error, 'Could not update notification. Try marking it read again.'),
+    );
   } finally {
     noticeUpdating.value = '';
   }
@@ -1097,7 +1399,7 @@ async function saveProfile() {
     notifySuccess('Profile saved.');
     window.setTimeout(() => (saved.value = false), 1800);
   } catch (error) {
-    notifyError(databaseRequestError(error, "Could not save profile."));
+    notifyError(databaseRequestError(error, 'Could not save profile.'));
   }
 }
 </script>
@@ -2275,7 +2577,7 @@ async function saveProfile() {
   padding-top: 14px;
   border-top: 1px solid var(--line);
 }
-.booking-detail-card .detail-actions ion-button[fill="outline"] {
+.booking-detail-card .detail-actions ion-button[fill='outline'] {
   --color: var(--ocean);
   --border-color: var(--line);
 }
@@ -2368,281 +2670,1455 @@ button:disabled {
   }
 }
 /* Booking details use one padded card and distinct fare/payment sections. */
-.booking-detail-card { padding: 20px; border-radius: 18px; }
-.booking-detail-card .row-heading { display: flex; flex-direction: column; align-items: flex-start; gap: 12px; padding: 0; }
-.booking-detail-card .row-heading h2 { font-size: 22px; line-height: 1.5; }
-.booking-detail-card .row-heading h2 span { margin-inline: 5px; }
-.booking-detail-card .row-heading > .detail-status { padding: 5px 9px; border-radius: 6px; font-size: var(--text-caption); line-height: 1.5; letter-spacing: .025em; }
-.booking-detail-card .detail-status.warning { color: #8a5100; background: #fff0d5; }
-.booking-detail-card .detail-status.success { color: var(--ocean); background: var(--light-blue); }
-.booking-detail-card .detail-status.neutral { color: var(--muted); background: var(--surface-soft); border:1px solid var(--line); }
-.booking-detail-card .detail-status.cancelled { color:var(--danger); background:var(--surface-soft); }
-.booking-detail-card .detail-reference { display: grid; gap: 5px; margin: 18px 0 0; padding: 0; border-radius: 0; background: none; font-weight: 400; }
-.booking-detail-card .detail-reference span { color: var(--muted); font-size: var(--text-caption); }
-.booking-detail-card .detail-reference strong { color: var(--ink); font-size: 13px; line-height: 1.6; overflow-wrap: anywhere; }
-.booking-detail-card .booking-meta { margin: 20px 0 0; padding: 18px 0; border-top: 1px solid var(--line); gap: 16px; }
-.booking-detail-card .booking-meta > div { min-width: 0; }
-.booking-detail-card .booking-meta span { display: flex; align-items: center; gap: 6px; font-size: var(--text-caption); color: var(--muted); }
-.booking-detail-card .booking-meta strong { display: block; margin-top: 7px; color: var(--ink); font-size: 13px; line-height: 1.6; overflow-wrap: anywhere; }
-.detail-fares { margin-top: 20px; padding: 16px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface-soft); }
-.detail-fares h3, .booking-detail-card .detail-passengers h3 { margin: 0 0 14px; font-size: 14px; line-height: 1.5; color: var(--ink); }
-.detail-fares > div { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; margin-top: 12px; color: var(--muted); font-size: var(--text-label); line-height: 1.6; }
-.detail-fares > div > span { min-width: 0; overflow-wrap: anywhere; }
-.detail-fares b { flex: none; font-size: var(--text-label); color: var(--ink); white-space: nowrap; }
-.detail-fares small { display: block; margin-top: 3px; color: var(--muted); font-size: var(--text-caption); }
-.detail-fares > .detail-fare-total { flex-wrap: wrap; align-items: center; margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--line); color: var(--ink); }
-.detail-fare-total strong:first-child { font-size: 13px; }
-.detail-fare-total strong:last-child { font-size: 22px; line-height: 1.4; white-space: nowrap; }
-.booking-detail-card .detail-passengers { margin: 24px 0 0; padding: 0; }
-.booking-detail-card .detail-passengers > div { display: grid; grid-template-columns: 34px minmax(0, 1fr) auto; align-items: start; gap: 10px; padding: 14px 0; }
-.booking-detail-card .detail-passengers > div > span:nth-child(2) { min-width: 0; overflow-wrap: anywhere; }
-.booking-detail-card .detail-passengers strong { display: block; font-size: 14px; line-height: 1.5; }
-.booking-detail-card .detail-passengers small { display: block; margin-top: 5px; font-size: var(--text-caption); line-height: 1.5; }
-.detail-person-fare { text-align: right; white-space: nowrap; color: var(--ink); font-size: var(--text-label); line-height: 1.5; }
-.detail-person-fare small { font-weight: 400; }
-.detail-payment { margin-top: 20px; }
-.detail-payment > p { margin: 12px 0 0; color: var(--muted); font-size: var(--text-label); line-height: 1.8; }
-.detail-payment > h3 { font-size: 14px; color: var(--ink); }
-.detail-payment :deep(.deadline) { display: grid; grid-template-columns: 24px minmax(0, 1fr); align-items: start; gap: 10px; margin: 0; padding: 16px; }
-.detail-payment :deep(.deadline div) { min-width: 0; }
-.detail-payment :deep(.deadline strong) { font-size: 13px; line-height: 1.5; }
-.detail-payment :deep(.deadline small) { font-size: var(--text-label); line-height: 1.6; }
-.detail-payment :deep(.deadline b) { grid-column: 2; margin: 0; font-size: 15px; line-height: 1.5; }
-.detail-payment :deep(.deadline b)::before { content: 'Time left · '; font-size: var(--text-caption); font-weight: 400; }
-.booking-detail-card .payment-hint { margin: 16px 0 0; font-size: 13px; line-height: 1.7; }
-.booking-detail-card .detail-actions { margin: 24px 0 0; padding-top: 18px; gap: 10px; }
-.booking-detail-card .detail-actions ion-button { margin: 0; min-height: 46px; font-size: 13px; }
-:global(:root[data-theme="dark"]) .booking-detail-card .detail-status.warning { color: #ffda8a; background: #33260f; }
+.booking-detail-card {
+  padding: 20px;
+  border-radius: 18px;
+}
+.booking-detail-card .row-heading {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 0;
+}
+.booking-detail-card .row-heading h2 {
+  font-size: 22px;
+  line-height: 1.5;
+}
+.booking-detail-card .row-heading h2 span {
+  margin-inline: 5px;
+}
+.booking-detail-card .row-heading > .detail-status {
+  padding: 5px 9px;
+  border-radius: 6px;
+  font-size: var(--text-caption);
+  line-height: 1.5;
+  letter-spacing: 0.025em;
+}
+.booking-detail-card .detail-status.warning {
+  color: #8a5100;
+  background: #fff0d5;
+}
+.booking-detail-card .detail-status.success {
+  color: var(--ocean);
+  background: var(--light-blue);
+}
+.booking-detail-card .detail-status.neutral {
+  color: var(--muted);
+  background: var(--surface-soft);
+  border: 1px solid var(--line);
+}
+.booking-detail-card .detail-status.cancelled {
+  color: var(--danger);
+  background: var(--surface-soft);
+}
+.booking-detail-card .detail-reference {
+  display: grid;
+  gap: 5px;
+  margin: 18px 0 0;
+  padding: 0;
+  border-radius: 0;
+  background: none;
+  font-weight: 400;
+}
+.booking-detail-card .detail-reference span {
+  color: var(--muted);
+  font-size: var(--text-caption);
+}
+.booking-detail-card .detail-reference strong {
+  color: var(--ink);
+  font-size: 13px;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+.booking-detail-card .booking-meta {
+  margin: 20px 0 0;
+  padding: 18px 0;
+  border-top: 1px solid var(--line);
+  gap: 16px;
+}
+.booking-detail-card .booking-meta > div {
+  min-width: 0;
+}
+.booking-detail-card .booking-meta span {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--text-caption);
+  color: var(--muted);
+}
+.booking-detail-card .booking-meta strong {
+  display: block;
+  margin-top: 7px;
+  color: var(--ink);
+  font-size: 13px;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+.detail-fares {
+  margin-top: 20px;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface-soft);
+}
+.detail-fares h3,
+.booking-detail-card .detail-passengers h3 {
+  margin: 0 0 14px;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--ink);
+}
+.detail-fares > div {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  margin-top: 12px;
+  color: var(--muted);
+  font-size: var(--text-label);
+  line-height: 1.6;
+}
+.detail-fares > div > span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.detail-fares b {
+  flex: none;
+  font-size: var(--text-label);
+  color: var(--ink);
+  white-space: nowrap;
+}
+.detail-fares small {
+  display: block;
+  margin-top: 3px;
+  color: var(--muted);
+  font-size: var(--text-caption);
+}
+.detail-fares > .detail-fare-total {
+  flex-wrap: wrap;
+  align-items: center;
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+  color: var(--ink);
+}
+.detail-fare-total strong:first-child {
+  font-size: 13px;
+}
+.detail-fare-total strong:last-child {
+  font-size: 22px;
+  line-height: 1.4;
+  white-space: nowrap;
+}
+.booking-detail-card .detail-passengers {
+  margin: 24px 0 0;
+  padding: 0;
+}
+.booking-detail-card .detail-passengers > div {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 10px;
+  padding: 14px 0;
+}
+.booking-detail-card .detail-passengers > div > span:nth-child(2) {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.booking-detail-card .detail-passengers strong {
+  display: block;
+  font-size: 14px;
+  line-height: 1.5;
+}
+.booking-detail-card .detail-passengers small {
+  display: block;
+  margin-top: 5px;
+  font-size: var(--text-caption);
+  line-height: 1.5;
+}
+.detail-person-fare {
+  text-align: right;
+  white-space: nowrap;
+  color: var(--ink);
+  font-size: var(--text-label);
+  line-height: 1.5;
+}
+.detail-person-fare small {
+  font-weight: 400;
+}
+.detail-payment {
+  margin-top: 20px;
+}
+.detail-payment > p {
+  margin: 12px 0 0;
+  color: var(--muted);
+  font-size: var(--text-label);
+  line-height: 1.8;
+}
+.detail-payment > h3 {
+  font-size: 14px;
+  color: var(--ink);
+}
+.detail-payment :deep(.deadline) {
+  display: grid;
+  grid-template-columns: 24px minmax(0, 1fr);
+  align-items: start;
+  gap: 10px;
+  margin: 0;
+  padding: 16px;
+}
+.detail-payment :deep(.deadline div) {
+  min-width: 0;
+}
+.detail-payment :deep(.deadline strong) {
+  font-size: 13px;
+  line-height: 1.5;
+}
+.detail-payment :deep(.deadline small) {
+  font-size: var(--text-label);
+  line-height: 1.6;
+}
+.detail-payment :deep(.deadline b) {
+  grid-column: 2;
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.5;
+}
+.detail-payment :deep(.deadline b)::before {
+  content: 'Time left · ';
+  font-size: var(--text-caption);
+  font-weight: 400;
+}
+.booking-detail-card .payment-hint {
+  margin: 16px 0 0;
+  font-size: 13px;
+  line-height: 1.7;
+}
+.booking-detail-card .detail-actions {
+  margin: 24px 0 0;
+  padding-top: 18px;
+  gap: 10px;
+}
+.booking-detail-card .detail-actions ion-button {
+  margin: 0;
+  min-height: 46px;
+  font-size: 13px;
+}
+:global(:root[data-theme='dark']) .booking-detail-card .detail-status.warning {
+  color: #ffda8a;
+  background: #33260f;
+}
 @container passenger (max-width:380px) {
-  .booking-detail-card { padding: 16px; }
-  .booking-detail-card .row-heading h2 { font-size: 19px; }
-  .booking-detail-card .detail-passengers > div { grid-template-columns: 34px minmax(0, 1fr); }
-  .detail-person-fare { grid-column: 2; text-align: left; }
-  .booking-detail-card .detail-person-fare small { display: inline; margin-left: 6px; }
-  .detail-payment :deep(.deadline) { padding: 12px; }
-  .detail-payment :deep(.deadline b) { font-size: 13px; }
+  .booking-detail-card {
+    padding: 16px;
+  }
+  .booking-detail-card .row-heading h2 {
+    font-size: 19px;
+  }
+  .booking-detail-card .detail-passengers > div {
+    grid-template-columns: 34px minmax(0, 1fr);
+  }
+  .detail-person-fare {
+    grid-column: 2;
+    text-align: left;
+  }
+  .booking-detail-card .detail-person-fare small {
+    display: inline;
+    margin-left: 6px;
+  }
+  .detail-payment :deep(.deadline) {
+    padding: 12px;
+  }
+  .detail-payment :deep(.deadline b) {
+    font-size: 13px;
+  }
 }
 /* Compact booking list, independent of the ticket and detail screens. */
-.bookings-page .page-title { margin: 24px 0 20px; }
-.bookings-page .page-title h1 { font-size: 26px; line-height: 1.3; }
-.bookings-page .booking-filters { grid-template-columns: minmax(0, 1fr); gap: 12px; margin: 0 0 18px; }
-.bookings-page .booking-filters label { min-width: 0; font-size: var(--text-caption); font-weight: 600; }
-.bookings-page .booking-filters label:last-child { grid-template-columns: minmax(0, 1fr); gap: 7px; }
-.bookings-page .booking-filters input, .bookings-page .booking-filters select { min-width: 0; min-height: 44px; border-radius: 10px; font-size: 14px; }
-.bookings-page .booking-filters input::placeholder { font-size: var(--text-label); font-weight: 400; }
-.bookings-page .tabs { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px; margin: 0 0 18px; padding: 4px; border: 1px solid var(--line); border-radius: 11px; background: var(--surface-soft); overflow: visible; }
-.bookings-page .tabs button { min-width: 0; min-height: 44px; padding: 7px 4px; border: 0; border-radius: 7px; background: transparent; color: var(--muted); font-size: var(--text-caption); font-weight: 600; line-height: 1.5; white-space: normal; }
-.bookings-page .tabs button.selected { background: var(--action); color: #fff; border: 0; }
-.bookings-page .booking-list { gap: 16px; }
-.bookings-page .booking-card { display: block; padding: 18px; border-radius: 15px; background: var(--surface); }
-.bookings-page .booking-copy { width: 100%; }
-.bookings-page .booking-card .row-heading { display: flex; flex-direction: column; align-items: flex-start; gap: 10px; margin: 0; }
-.bookings-page .booking-card .row-heading h2 { margin: 0; font-size: 18px; line-height: 1.5; font-weight: 650; overflow-wrap: anywhere; }
-.bookings-page .booking-card .row-heading h2 span { display: inline; margin-inline: 4px; color: var(--ocean); }
-.bookings-page .booking-card .row-heading > b { padding: 5px 9px; border-radius: 7px; font-size: var(--text-caption); line-height: 1.5; letter-spacing: .02em; }
-.bookings-page .row-heading > b.unpaid { background: #fff0d5; color: #8a5100; }
-.bookings-page .row-heading > b.paid { background: var(--light-blue); color: var(--ocean); }
-.bookings-page .row-heading > b.cancelled, .bookings-page .row-heading > b.expired { background: var(--surface-soft); color: var(--muted); }
-.bookings-page .row-heading > b.refund_pending { background: #fff0d5; color: #8a5100; }
-.bookings-page .booking-meta { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 10px; margin: 16px 0; }
-.bookings-page .booking-meta span { display: flex; align-items: flex-start; gap: 6px; min-width: 0; color: var(--muted); font-size: var(--text-caption); line-height: 1.7; overflow-wrap: anywhere; }
-.bookings-page .booking-meta .app-icon { flex: none; margin-top: 3px; color: var(--ocean); font-size: 15px; }
-.bookings-page .booking-fare-panel { padding: 13px 14px; border: 1px solid var(--line); border-radius: 11px; background: var(--surface-soft); }
-.bookings-page .booking-total { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px 14px; }
-.bookings-page .booking-total span { color: var(--muted); font-size: var(--text-label); }
-.bookings-page .booking-total strong { color: var(--ink); font-size: 21px; line-height: 1.4; white-space: nowrap; }
-.bookings-page .booking-accommodation { margin: 8px 0 0; color: var(--muted); font-size: var(--text-caption); line-height: 1.7; }
-.bookings-page .booking-reference { display: flex; flex-wrap: wrap; gap: 8px 16px; margin: 16px 0; color: var(--muted); }
-.bookings-page .booking-reference span { display: inline-flex; align-items: center; gap: 6px; min-width: 0; font-size: var(--text-caption); line-height: 1.6; overflow-wrap: anywhere; }
-.bookings-page .booking-reference .app-icon { flex: none; color: var(--ocean); font-size: 15px; }
-.bookings-page .booking-card :deep(.deadline) { display: grid; grid-template-columns: 22px minmax(0, 1fr); gap: 8px 10px; margin: 16px 0; padding: 14px; }
-.bookings-page .booking-card :deep(.deadline > .app-icon) { align-self: start; font-size: 21px; }
-.bookings-page .booking-card :deep(.deadline strong) { font-size: var(--text-label); line-height: 1.5; }
-.bookings-page .booking-card :deep(.deadline small) { font-size: var(--text-caption); line-height: 1.6; }
-.bookings-page .booking-card :deep(.deadline > b) { grid-column: 2; margin: 0; font-size: 14px; line-height: 1.5; }
-.bookings-page .booking-card :deep(.deadline > b)::before { content: 'Time left · '; font-size: var(--text-caption); font-weight: 400; }
-.bookings-page .booking-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--line); }
-.bookings-page .booking-actions a, .bookings-page .booking-actions button { display: inline-flex; align-items: center; justify-content: center; gap: 7px; min-height: 44px; padding: 10px; border: 1px solid var(--line); border-radius: 9px; background: var(--surface); color: var(--ocean); font-size: var(--text-label); font-weight: 600; line-height: 1.5; text-align: center; }
-.bookings-page .booking-actions a .app-icon { font-size: 17px; flex: none; }
-.bookings-page .booking-actions .booking-ticket-link { background: var(--action); color: #fff; border-color: transparent; }
-.bookings-page .booking-actions .booking-cancel-link { color: var(--danger); font-size: var(--text-caption); }
-.bookings-page .booking-actions > :only-child { grid-column: 1 / -1; }
-@container passenger (max-width: 380px) {
-  .bookings-page .booking-card { padding: 16px; }
-  .bookings-page .booking-meta { grid-template-columns: minmax(0, 1fr); gap: 8px; }
-  .bookings-page .tabs button { font-size: var(--text-caption); }
-  .bookings-page .booking-card .row-heading h2 { font-size: 17px; }
-  .bookings-page .booking-actions { grid-template-columns: minmax(0, 1fr); }
+.bookings-page .page-title {
+  margin: 24px 0 20px;
 }
-.bookings-page { font-family: var(--ion-font-family); padding-bottom: calc(120px + env(safe-area-inset-bottom)); }
-.bookings-page .page-title h1 { letter-spacing: -.7px; }
-.bookings-page .booking-filter-panel { padding: 16px; margin-bottom: 18px; border: 1px solid var(--line); border-radius: 16px; background: var(--surface); }
-.bookings-page .filter-panel-heading { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 16px; }
-.bookings-page .filter-panel-heading > span { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 650; }
-.bookings-page .filter-panel-heading .app-icon { color: var(--ocean); font-size: 18px; }
-.bookings-page .filter-panel-heading small { color: var(--muted); font-size: var(--text-caption); }
-.bookings-page .booking-filters { margin-bottom: 0; }
-.bookings-page .booking-filters label > span { display: flex; align-items: center; gap: 6px; }
-.bookings-page .booking-filters label .app-icon { color: var(--ocean); font-size: 15px; }
-.bookings-page .booking-filters select { background-color: var(--surface-soft); }
-.bookings-page .tabs { gap: 6px; padding: 6px; margin-bottom: 14px; border-radius: 14px; }
-.bookings-page .tabs button { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; padding: 10px 3px; border-radius: 10px; min-height: 88px; line-height: 1.35; transition: background .18s, color .18s; }
-.bookings-page .tabs button > .app-icon { font-size: 19px; color: var(--ocean); }
-.bookings-page .tabs button:nth-child(3) > .app-icon { color: #e47d86; }
-.bookings-page .tabs button:nth-child(4) > .app-icon { color: #dca948; }
-.bookings-page .tabs button small { display: grid; place-items: center; min-width: 22px; padding: 1px 6px; border-radius: 6px; background: var(--surface); font-size: var(--text-caption); }
-.bookings-page .tabs button.selected > .app-icon { color: #fff; }
-.bookings-page .tabs button.selected small { color: #fff; background: #ffffff24; }
-.bookings-page .tabs button:hover:not(.selected) { background: var(--light-blue); }
-.bookings-page .booking-results { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin: 0 0 14px; font-size: var(--text-label); color: var(--muted); }
-.bookings-page .booking-results strong { color: var(--ink); }
-.bookings-page .booking-results small { font-size: var(--text-caption); }
-.bookings-page .booking-results button { padding: 8px 0 8px 8px; border: 0; background: transparent; color: var(--ocean); font-size: var(--text-caption); }
-.bookings-page .booking-card { border-radius: 18px; border-top: 3px solid color-mix(in srgb, var(--ocean) 55%, var(--line)); }
-.bookings-page .booking-card .row-heading h2 { display: grid; grid-template-columns: minmax(0, 1fr) 22px minmax(0, 1fr); gap: 8px; width: 100%; align-items: center; font-family: inherit; font-size: 18px; line-height: 1.4; }
-.bookings-page .booking-card .row-heading h2 span { margin: 0; }
-.bookings-page .booking-card .row-heading h2 .booking-port { color: var(--ink); }
-.bookings-page .booking-card .row-heading > .booking-status { display: inline-flex; align-items: center; gap: 6px; text-transform: none; letter-spacing: 0; font-family: inherit; font-size: var(--text-caption); font-weight: 600; }
-.bookings-page .booking-status .app-icon { font-size: 15px; flex: none; }
-.bookings-page .booking-status.warning { color: #895500; background: #fff0d3; }
-.bookings-page .booking-status.success { color: #13724e; background: #e2f6ec; }
-.bookings-page .booking-status.cancelled { color: #a13e4b; background: #ffebee; }
-.bookings-page .booking-status.neutral { color: var(--muted); background: var(--surface-soft); }
-.bookings-page .booking-schedule { display: grid; grid-template-columns: minmax(0, 1fr) 70px minmax(0, 1fr); gap: 10px; align-items: center; margin: 0 0 16px; padding: 14px 0; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
-.bookings-page .booking-schedule > div:last-child { text-align: right; }
-.bookings-page .booking-schedule small { display: block; margin-bottom: 5px; color: var(--muted); font-size: var(--text-caption); }
-.bookings-page .booking-schedule strong { font-size: 16px; font-weight: 650; }
-.bookings-page .schedule-track { display: flex; align-items: center; gap: 6px; color: var(--ocean); }
-.bookings-page .schedule-track::before, .bookings-page .schedule-track::after { content: ''; flex: 1; height: 1px; background: var(--line); }
-.bookings-page .schedule-track .app-icon { font-size: 20px; }
-.bookings-page .booking-card .payment-hint { padding: 12px; border-radius: 10px; background: var(--light-blue); color: var(--ink); font-size: var(--text-caption); line-height: 1.7; font-weight: 400; }
-.bookings-page .empty-state { margin-top: 0; padding: 32px 20px; border: 1px solid var(--line); border-radius: 18px; background: radial-gradient(ellipse at top, var(--light-blue), var(--surface) 75%); }
-.bookings-page .empty-state h2 { font-family: inherit; font-size: 21px; }
-.bookings-page .empty-state p { max-width: 320px; margin: 12px auto 20px; font-size: 13px; line-height: 1.8; }
-.bookings-page .empty-state .empty-icon { width: 60px; height: 60px; border-radius: 18px; }
-.bookings-page button:focus-visible, .bookings-page a:focus-visible { outline: 2px solid var(--ocean); outline-offset: 3px; }
-:global(:root[data-theme="dark"]) .bookings-page .booking-status.warning { background: #392b13; color: #ffd17b; }
-:global(:root[data-theme="dark"]) .bookings-page .booking-status.success { background: #15362c; color: #80dfb2; }
-:global(:root[data-theme="dark"]) .bookings-page .booking-status.cancelled { background: #3b222b; color: #ffabb6; }
+.bookings-page .page-title h1 {
+  font-size: 26px;
+  line-height: 1.3;
+}
+.bookings-page .booking-filters {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 12px;
+  margin: 0 0 18px;
+}
+.bookings-page .booking-filters label {
+  min-width: 0;
+  font-size: var(--text-caption);
+  font-weight: 600;
+}
+.bookings-page .booking-filters label:last-child {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 7px;
+}
+.bookings-page .booking-filters input,
+.bookings-page .booking-filters select {
+  min-width: 0;
+  min-height: 44px;
+  border-radius: 10px;
+  font-size: 14px;
+}
+.bookings-page .booking-filters input::placeholder {
+  font-size: var(--text-label);
+  font-weight: 400;
+}
+.bookings-page .tabs {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 4px;
+  margin: 0 0 18px;
+  padding: 4px;
+  border: 1px solid var(--line);
+  border-radius: 11px;
+  background: var(--surface-soft);
+  overflow: visible;
+}
+.bookings-page .tabs button {
+  min-width: 0;
+  min-height: 44px;
+  padding: 7px 4px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--muted);
+  font-size: var(--text-caption);
+  font-weight: 600;
+  line-height: 1.5;
+  white-space: normal;
+}
+.bookings-page .tabs button.selected {
+  background: var(--action);
+  color: #fff;
+  border: 0;
+}
+.bookings-page .booking-list {
+  gap: 16px;
+}
+.bookings-page .booking-card {
+  display: block;
+  padding: 18px;
+  border-radius: 15px;
+  background: var(--surface);
+}
+.bookings-page .booking-copy {
+  width: 100%;
+}
+.bookings-page .booking-card .row-heading {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+  margin: 0;
+}
+.bookings-page .booking-card .row-heading h2 {
+  margin: 0;
+  font-size: 18px;
+  line-height: 1.5;
+  font-weight: 650;
+  overflow-wrap: anywhere;
+}
+.bookings-page .booking-card .row-heading h2 span {
+  display: inline;
+  margin-inline: 4px;
+  color: var(--ocean);
+}
+.bookings-page .booking-card .row-heading > b {
+  padding: 5px 9px;
+  border-radius: 7px;
+  font-size: var(--text-caption);
+  line-height: 1.5;
+  letter-spacing: 0.02em;
+}
+.bookings-page .row-heading > b.unpaid {
+  background: #fff0d5;
+  color: #8a5100;
+}
+.bookings-page .row-heading > b.paid {
+  background: var(--light-blue);
+  color: var(--ocean);
+}
+.bookings-page .row-heading > b.cancelled,
+.bookings-page .row-heading > b.expired {
+  background: var(--surface-soft);
+  color: var(--muted);
+}
+.bookings-page .row-heading > b.refund_pending {
+  background: #fff0d5;
+  color: #8a5100;
+}
+.bookings-page .booking-meta {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 10px;
+  margin: 16px 0;
+}
+.bookings-page .booking-meta span {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  min-width: 0;
+  color: var(--muted);
+  font-size: var(--text-caption);
+  line-height: 1.7;
+  overflow-wrap: anywhere;
+}
+.bookings-page .booking-meta .app-icon {
+  flex: none;
+  margin-top: 3px;
+  color: var(--ocean);
+  font-size: 15px;
+}
+.bookings-page .booking-fare-panel {
+  padding: 13px 14px;
+  border: 1px solid var(--line);
+  border-radius: 11px;
+  background: var(--surface-soft);
+}
+.bookings-page .booking-total {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+}
+.bookings-page .booking-total span {
+  color: var(--muted);
+  font-size: var(--text-label);
+}
+.bookings-page .booking-total strong {
+  color: var(--ink);
+  font-size: 21px;
+  line-height: 1.4;
+  white-space: nowrap;
+}
+.bookings-page .booking-accommodation {
+  margin: 8px 0 0;
+  color: var(--muted);
+  font-size: var(--text-caption);
+  line-height: 1.7;
+}
+.bookings-page .booking-reference {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  margin: 16px 0;
+  color: var(--muted);
+}
+.bookings-page .booking-reference span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  font-size: var(--text-caption);
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+.bookings-page .booking-reference .app-icon {
+  flex: none;
+  color: var(--ocean);
+  font-size: 15px;
+}
+.bookings-page .booking-card :deep(.deadline) {
+  display: grid;
+  grid-template-columns: 22px minmax(0, 1fr);
+  gap: 8px 10px;
+  margin: 16px 0;
+  padding: 14px;
+}
+.bookings-page .booking-card :deep(.deadline > .app-icon) {
+  align-self: start;
+  font-size: 21px;
+}
+.bookings-page .booking-card :deep(.deadline strong) {
+  font-size: var(--text-label);
+  line-height: 1.5;
+}
+.bookings-page .booking-card :deep(.deadline small) {
+  font-size: var(--text-caption);
+  line-height: 1.6;
+}
+.bookings-page .booking-card :deep(.deadline > b) {
+  grid-column: 2;
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.5;
+}
+.bookings-page .booking-card :deep(.deadline > b)::before {
+  content: 'Time left · ';
+  font-size: var(--text-caption);
+  font-weight: 400;
+}
+.bookings-page .booking-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+}
+.bookings-page .booking-actions a,
+.bookings-page .booking-actions button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-height: 44px;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: var(--surface);
+  color: var(--ocean);
+  font-size: var(--text-label);
+  font-weight: 600;
+  line-height: 1.5;
+  text-align: center;
+}
+.bookings-page .booking-actions a .app-icon {
+  font-size: 17px;
+  flex: none;
+}
+.bookings-page .booking-actions .booking-ticket-link {
+  background: var(--action);
+  color: #fff;
+  border-color: transparent;
+}
+.bookings-page .booking-actions .booking-cancel-link {
+  color: var(--danger);
+  font-size: var(--text-caption);
+}
+.bookings-page .booking-actions > :only-child {
+  grid-column: 1 / -1;
+}
 @container passenger (max-width: 380px) {
-  .bookings-page .booking-card .row-heading h2 { font-size: 16px; }
-  .bookings-page .booking-results { flex-wrap: wrap; }
-  .bookings-page .tabs button { min-height: 90px; }
-  .bookings-page .booking-schedule { grid-template-columns: minmax(0, 1fr) 44px minmax(0, 1fr); }
-  .bookings-page .booking-schedule strong { font-size: 14px; }
+  .bookings-page .booking-card {
+    padding: 16px;
+  }
+  .bookings-page .booking-meta {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 8px;
+  }
+  .bookings-page .tabs button {
+    font-size: var(--text-caption);
+  }
+  .bookings-page .booking-card .row-heading h2 {
+    font-size: 17px;
+  }
+  .bookings-page .booking-actions {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+.bookings-page {
+  font-family: var(--ion-font-family);
+  padding-bottom: calc(120px + env(safe-area-inset-bottom));
+}
+.bookings-page .page-title h1 {
+  letter-spacing: -0.7px;
+}
+.bookings-page .booking-filter-panel {
+  padding: 16px;
+  margin-bottom: 18px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--surface);
+}
+.bookings-page .filter-panel-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+.bookings-page .filter-panel-heading > span {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 650;
+}
+.bookings-page .filter-panel-heading .app-icon {
+  color: var(--ocean);
+  font-size: 18px;
+}
+.bookings-page .filter-panel-heading small {
+  color: var(--muted);
+  font-size: var(--text-caption);
+}
+.bookings-page .booking-filters {
+  margin-bottom: 0;
+}
+.bookings-page .booking-filters label > span {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.bookings-page .booking-filters label .app-icon {
+  color: var(--ocean);
+  font-size: 15px;
+}
+.bookings-page .booking-filters select {
+  background-color: var(--surface-soft);
+}
+.bookings-page .tabs {
+  gap: 6px;
+  padding: 6px;
+  margin-bottom: 14px;
+  border-radius: 14px;
+}
+.bookings-page .tabs button {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 10px 3px;
+  border-radius: 10px;
+  min-height: 88px;
+  line-height: 1.35;
+  transition:
+    background 0.18s,
+    color 0.18s;
+}
+.bookings-page .tabs button > .app-icon {
+  font-size: 19px;
+  color: var(--ocean);
+}
+.bookings-page .tabs button:nth-child(3) > .app-icon {
+  color: #e47d86;
+}
+.bookings-page .tabs button:nth-child(4) > .app-icon {
+  color: #dca948;
+}
+.bookings-page .tabs button small {
+  display: grid;
+  place-items: center;
+  min-width: 22px;
+  padding: 1px 6px;
+  border-radius: 6px;
+  background: var(--surface);
+  font-size: var(--text-caption);
+}
+.bookings-page .tabs button.selected > .app-icon {
+  color: #fff;
+}
+.bookings-page .tabs button.selected small {
+  color: #fff;
+  background: #ffffff24;
+}
+.bookings-page .tabs button:hover:not(.selected) {
+  background: var(--light-blue);
+}
+.bookings-page .booking-results {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 14px;
+  font-size: var(--text-label);
+  color: var(--muted);
+}
+.bookings-page .booking-results strong {
+  color: var(--ink);
+}
+.bookings-page .booking-results small {
+  font-size: var(--text-caption);
+}
+.bookings-page .booking-results button {
+  padding: 8px 0 8px 8px;
+  border: 0;
+  background: transparent;
+  color: var(--ocean);
+  font-size: var(--text-caption);
+}
+.bookings-page .booking-card {
+  border-radius: 18px;
+  border-top: 3px solid color-mix(in srgb, var(--ocean) 55%, var(--line));
+}
+.bookings-page .booking-card .row-heading h2 {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 22px minmax(0, 1fr);
+  gap: 8px;
+  width: 100%;
+  align-items: center;
+  font-family: inherit;
+  font-size: 18px;
+  line-height: 1.4;
+}
+.bookings-page .booking-card .row-heading h2 span {
+  margin: 0;
+}
+.bookings-page .booking-card .row-heading h2 .booking-port {
+  color: var(--ink);
+}
+.bookings-page .booking-card .row-heading > .booking-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  text-transform: none;
+  letter-spacing: 0;
+  font-family: inherit;
+  font-size: var(--text-caption);
+  font-weight: 600;
+}
+.bookings-page .booking-status .app-icon {
+  font-size: 15px;
+  flex: none;
+}
+.bookings-page .booking-status.warning {
+  color: #895500;
+  background: #fff0d3;
+}
+.bookings-page .booking-status.success {
+  color: #13724e;
+  background: #e2f6ec;
+}
+.bookings-page .booking-status.cancelled {
+  color: #a13e4b;
+  background: #ffebee;
+}
+.bookings-page .booking-status.neutral {
+  color: var(--muted);
+  background: var(--surface-soft);
+}
+.bookings-page .booking-schedule {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 70px minmax(0, 1fr);
+  gap: 10px;
+  align-items: center;
+  margin: 0 0 16px;
+  padding: 14px 0;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+}
+.bookings-page .booking-schedule > div:last-child {
+  text-align: right;
+}
+.bookings-page .booking-schedule small {
+  display: block;
+  margin-bottom: 5px;
+  color: var(--muted);
+  font-size: var(--text-caption);
+}
+.bookings-page .booking-schedule strong {
+  font-size: 16px;
+  font-weight: 650;
+}
+.bookings-page .schedule-track {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--ocean);
+}
+.bookings-page .schedule-track::before,
+.bookings-page .schedule-track::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--line);
+}
+.bookings-page .schedule-track .app-icon {
+  font-size: 20px;
+}
+.bookings-page .booking-card .payment-hint {
+  padding: 12px;
+  border-radius: 10px;
+  background: var(--light-blue);
+  color: var(--ink);
+  font-size: var(--text-caption);
+  line-height: 1.7;
+  font-weight: 400;
+}
+.bookings-page .empty-state {
+  margin-top: 0;
+  padding: 32px 20px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: radial-gradient(ellipse at top, var(--light-blue), var(--surface) 75%);
+}
+.bookings-page .empty-state h2 {
+  font-family: inherit;
+  font-size: 21px;
+}
+.bookings-page .empty-state p {
+  max-width: 320px;
+  margin: 12px auto 20px;
+  font-size: 13px;
+  line-height: 1.8;
+}
+.bookings-page .empty-state .empty-icon {
+  width: 60px;
+  height: 60px;
+  border-radius: 18px;
+}
+.bookings-page button:focus-visible,
+.bookings-page a:focus-visible {
+  outline: 2px solid var(--ocean);
+  outline-offset: 3px;
+}
+:global(:root[data-theme='dark']) .bookings-page .booking-status.warning {
+  background: #392b13;
+  color: #ffd17b;
+}
+:global(:root[data-theme='dark']) .bookings-page .booking-status.success {
+  background: #15362c;
+  color: #80dfb2;
+}
+:global(:root[data-theme='dark']) .bookings-page .booking-status.cancelled {
+  background: #3b222b;
+  color: #ffabb6;
+}
+@container passenger (max-width: 380px) {
+  .bookings-page .booking-card .row-heading h2 {
+    font-size: 16px;
+  }
+  .bookings-page .booking-results {
+    flex-wrap: wrap;
+  }
+  .bookings-page .tabs button {
+    min-height: 90px;
+  }
+  .bookings-page .booking-schedule {
+    grid-template-columns: minmax(0, 1fr) 44px minmax(0, 1fr);
+  }
+  .bookings-page .booking-schedule strong {
+    font-size: 14px;
+  }
 }
 /* Notification inbox uses the same passenger canvas and theme. */
-.notifications-page { font-family: var(--ion-font-family); padding-bottom: calc(120px + env(safe-area-inset-bottom)); }
-.notifications-page .page-title { margin: 24px 0 20px; }
-.notifications-page .page-title h1 { font-size: 28px; letter-spacing: -.7px; }
-.notifications-page .notification-toolbar { display: grid; grid-template-columns: 44px minmax(0, 1fr); gap: 10px 12px; margin: 0 0 18px; padding: 18px; border: 1px solid var(--line); border-radius: 16px; background: linear-gradient(120deg, var(--light-blue), var(--surface)); }
-.notifications-page .inbox-icon { display: grid; place-items: center; width: 44px; height: 44px; border-radius: 13px; background: var(--surface); color: var(--ocean); font-size: 24px; }
-.notifications-page .notification-toolbar strong { font-size: 15px; line-height: 1.5; }
-.notifications-page .notification-toolbar p { margin: 4px 0 0; color: var(--muted); font-size: var(--text-caption); line-height: 1.7; }
-.notifications-page .notification-toolbar button { grid-column: 2; justify-self: start; display: inline-flex; align-items: center; gap: 6px; min-height: 44px; padding: 9px 12px; background: var(--surface); color: var(--ocean); border: 1px solid var(--line); border-radius: 9px; font: inherit; font-size: var(--text-label); font-weight: 600; }
-.notifications-page .notification-view { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 5px; padding: 5px; margin-bottom: 14px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface-soft); }
-.notifications-page .notification-view button { display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px; border: 0; border-radius: 8px; background: transparent; color: var(--muted); font: inherit; font-size: var(--text-label); font-weight: 600; }
-.notifications-page .notification-view button.selected { background: var(--action); color: #fff; }
-.notifications-page .notification-view small { display: grid; place-items: center; min-width: 22px; padding: 2px 5px; border-radius: 5px; background: var(--surface); font-size: var(--text-caption); }
-.notifications-page .notification-view .selected small { background: #ffffff26; }
-.notifications-page .notification-filters { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 18px; }
-.notifications-page .notification-filters button { display: inline-flex; align-items: center; gap: 6px; min-height: 40px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 9px; background: var(--surface); color: var(--muted); font: inherit; font-size: var(--text-caption); font-weight: 500; }
-.notifications-page .notification-filters .app-icon { font-size: 15px; color: var(--ocean); }
-.notifications-page .notification-filters small { font-size: var(--text-caption); color: inherit; }
-.notifications-page .notification-filters .active { background: var(--light-blue); color: var(--ocean); border-color: var(--ocean); }
-.notifications-page .notification-results { display: flex; align-items: center; justify-content: space-between; margin: 0 0 12px; color: var(--muted); font-size: var(--text-caption); }
-.notifications-page .notification-results span { font-size: var(--text-caption); }
-.notifications-page .notifications { max-width: none; gap: 12px; }
-.notifications-page .notifications article { display: grid; grid-template-columns: 40px minmax(0, 1fr); align-items: start; gap: 12px; padding: 18px; border: 1px solid var(--line); border-radius: 16px; background: var(--surface); box-shadow: none; }
-.notifications-page .notifications article.unread { border-left: 3px solid var(--ocean); background: color-mix(in srgb, var(--light-blue) 25%, var(--surface)); }
-.notifications-page .notice-icon { width: 40px; height: 40px; border-radius: 11px; background: var(--light-blue); color: var(--ocean); }
-.notifications-page .notice-icon.promo { color: #937100; background: #fff2c9; }
-.notifications-page .notice-icon.general, .notifications-page .notice-icon.system { color: #197767; background: #e1f4ed; }
-.notifications-page .notice-icon.trips { color: #8455bb; background: #f1e8ff; }
-.notifications-page .notice-eyebrow { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 6px; font-size: var(--text-caption); color: var(--muted); }
-.notifications-page .notice-eyebrow b { display: inline-flex; align-items: center; gap: 5px; color: var(--ocean); font-size: var(--text-caption); font-weight: 600; }
-.notifications-page .notice-eyebrow i { width: 5px; height: 5px; border-radius: 50%; background: var(--ocean); }
-.notifications-page .notice-copy h2 { margin: 0; font-size: 14px; line-height: 1.6; font-weight: 650; overflow-wrap: anywhere; }
-.notifications-page .notice-copy p { margin: 7px 0 12px; font-size: var(--text-label); line-height: 1.8; }
-.notifications-page .notice-footer { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 12px; padding-top: 10px; border-top: 1px solid var(--line); }
-.notifications-page .notice-footer time, .notifications-page .notice-read { display: inline-flex; align-items: center; gap: 5px; color: var(--muted); font-size: var(--text-caption); line-height: 1.7; }
-.notifications-page .notice-footer .app-icon { flex: none; font-size: 14px; }
-.notifications-page .notice-footer button { margin: 0; min-height: 40px; padding: 8px 10px; font-size: var(--text-caption); font-weight: 600; }
-.notifications-page .notice-read { margin-left: auto; }
-.notifications-page button { cursor: pointer; }
-.notifications-page button:disabled { opacity: .5; cursor: default; }
-.notifications-page button:focus-visible { outline: 2px solid var(--ocean); outline-offset: 3px; }
-.notifications-page .notice-error { padding: 12px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface); color: var(--danger); font-size: var(--text-label); line-height: 1.7; }
-.notifications-page .empty-state { padding: 32px 20px; border: 1px solid var(--line); border-radius: 16px; background: var(--surface); }
-.notifications-page .empty-state h2 { font-family: inherit; font-size: 21px; }
-.notifications-page .empty-state p { font-size: var(--text-label); line-height: 1.8; }
-.notifications-page .reset-notices { min-height: 44px; padding: 10px 14px; border: 1px solid var(--line); border-radius: 9px; background: var(--light-blue); color: var(--ocean); font: inherit; font-size: var(--text-label); }
-:global(:root[data-theme="dark"]) .notifications-page .notice-icon.promo { color: #f0ce75; background: #352d1a; }
-:global(:root[data-theme="dark"]) .notifications-page .notice-icon.general, :global(:root[data-theme="dark"]) .notifications-page .notice-icon.system { color: #74d7bd; background: #17372e; }
-:global(:root[data-theme="dark"]) .notifications-page .notice-icon.trips { color: #c6a3f4; background: #30213e; }
+.notifications-page {
+  font-family: var(--ion-font-family);
+  padding-bottom: calc(120px + env(safe-area-inset-bottom));
+}
+.notifications-page .page-title {
+  margin: 24px 0 20px;
+}
+.notifications-page .page-title h1 {
+  font-size: 28px;
+  letter-spacing: -0.7px;
+}
+.notifications-page .notification-toolbar {
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr);
+  gap: 10px 12px;
+  margin: 0 0 18px;
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: linear-gradient(120deg, var(--light-blue), var(--surface));
+}
+.notifications-page .inbox-icon {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 13px;
+  background: var(--surface);
+  color: var(--ocean);
+  font-size: 24px;
+}
+.notifications-page .notification-toolbar strong {
+  font-size: 15px;
+  line-height: 1.5;
+}
+.notifications-page .notification-toolbar p {
+  margin: 4px 0 0;
+  color: var(--muted);
+  font-size: var(--text-caption);
+  line-height: 1.7;
+}
+.notifications-page .notification-toolbar button {
+  grid-column: 2;
+  justify-self: start;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  padding: 9px 12px;
+  background: var(--surface);
+  color: var(--ocean);
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  font: inherit;
+  font-size: var(--text-label);
+  font-weight: 600;
+}
+.notifications-page .notification-view {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 5px;
+  padding: 5px;
+  margin-bottom: 14px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface-soft);
+}
+.notifications-page .notification-view button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 44px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-size: var(--text-label);
+  font-weight: 600;
+}
+.notifications-page .notification-view button.selected {
+  background: var(--action);
+  color: #fff;
+}
+.notifications-page .notification-view small {
+  display: grid;
+  place-items: center;
+  min-width: 22px;
+  padding: 2px 5px;
+  border-radius: 5px;
+  background: var(--surface);
+  font-size: var(--text-caption);
+}
+.notifications-page .notification-view .selected small {
+  background: #ffffff26;
+}
+.notifications-page .notification-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0 0 18px;
+}
+.notifications-page .notification-filters button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 40px;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: var(--surface);
+  color: var(--muted);
+  font: inherit;
+  font-size: var(--text-caption);
+  font-weight: 500;
+}
+.notifications-page .notification-filters .app-icon {
+  font-size: 15px;
+  color: var(--ocean);
+}
+.notifications-page .notification-filters small {
+  font-size: var(--text-caption);
+  color: inherit;
+}
+.notifications-page .notification-filters .active {
+  background: var(--light-blue);
+  color: var(--ocean);
+  border-color: var(--ocean);
+}
+.notifications-page .notification-results {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 0 0 12px;
+  color: var(--muted);
+  font-size: var(--text-caption);
+}
+.notifications-page .notification-results span {
+  font-size: var(--text-caption);
+}
+.notifications-page .notifications {
+  max-width: none;
+  gap: 12px;
+}
+.notifications-page .notifications article {
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr);
+  align-items: start;
+  gap: 12px;
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--surface);
+  box-shadow: none;
+}
+.notifications-page .notifications article.unread {
+  border-left: 3px solid var(--ocean);
+  background: color-mix(in srgb, var(--light-blue) 25%, var(--surface));
+}
+.notifications-page .notice-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 11px;
+  background: var(--light-blue);
+  color: var(--ocean);
+}
+.notifications-page .notice-icon.promo {
+  color: #937100;
+  background: #fff2c9;
+}
+.notifications-page .notice-icon.general,
+.notifications-page .notice-icon.system {
+  color: #197767;
+  background: #e1f4ed;
+}
+.notifications-page .notice-icon.trips {
+  color: #8455bb;
+  background: #f1e8ff;
+}
+.notifications-page .notice-eyebrow {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 6px;
+  font-size: var(--text-caption);
+  color: var(--muted);
+}
+.notifications-page .notice-eyebrow b {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--ocean);
+  font-size: var(--text-caption);
+  font-weight: 600;
+}
+.notifications-page .notice-eyebrow i {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--ocean);
+}
+.notifications-page .notice-copy h2 {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.6;
+  font-weight: 650;
+  overflow-wrap: anywhere;
+}
+.notifications-page .notice-copy p {
+  margin: 7px 0 12px;
+  font-size: var(--text-label);
+  line-height: 1.8;
+}
+.notifications-page .notice-footer {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  padding-top: 10px;
+  border-top: 1px solid var(--line);
+}
+.notifications-page .notice-footer time,
+.notifications-page .notice-read {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--muted);
+  font-size: var(--text-caption);
+  line-height: 1.7;
+}
+.notifications-page .notice-footer .app-icon {
+  flex: none;
+  font-size: 14px;
+}
+.notifications-page .notice-footer button {
+  margin: 0;
+  min-height: 40px;
+  padding: 8px 10px;
+  font-size: var(--text-caption);
+  font-weight: 600;
+}
+.notifications-page .notice-read {
+  margin-left: auto;
+}
+.notifications-page button {
+  cursor: pointer;
+}
+.notifications-page button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.notifications-page button:focus-visible {
+  outline: 2px solid var(--ocean);
+  outline-offset: 3px;
+}
+.notifications-page .notice-error {
+  padding: 12px;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--danger);
+  font-size: var(--text-label);
+  line-height: 1.7;
+}
+.notifications-page .empty-state {
+  padding: 32px 20px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--surface);
+}
+.notifications-page .empty-state h2 {
+  font-family: inherit;
+  font-size: 21px;
+}
+.notifications-page .empty-state p {
+  font-size: var(--text-label);
+  line-height: 1.8;
+}
+.notifications-page .reset-notices {
+  min-height: 44px;
+  padding: 10px 14px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: var(--light-blue);
+  color: var(--ocean);
+  font: inherit;
+  font-size: var(--text-label);
+}
+:global(:root[data-theme='dark']) .notifications-page .notice-icon.promo {
+  color: #f0ce75;
+  background: #352d1a;
+}
+:global(:root[data-theme='dark']) .notifications-page .notice-icon.general,
+:global(:root[data-theme='dark']) .notifications-page .notice-icon.system {
+  color: #74d7bd;
+  background: #17372e;
+}
+:global(:root[data-theme='dark']) .notifications-page .notice-icon.trips {
+  color: #c6a3f4;
+  background: #30213e;
+}
 @container passenger (max-width: 380px) {
-  .notifications-page .notification-toolbar { padding: 14px; }
-  .notifications-page .notifications article { padding: 14px; gap: 10px; grid-template-columns: 34px minmax(0,1fr); }
-  .notifications-page .notice-icon { width: 34px; height: 34px; }
+  .notifications-page .notification-toolbar {
+    padding: 14px;
+  }
+  .notifications-page .notifications article {
+    padding: 14px;
+    gap: 10px;
+    grid-template-columns: 34px minmax(0, 1fr);
+  }
+  .notifications-page .notice-icon {
+    width: 34px;
+    height: 34px;
+  }
 }
 /* E-ticket content stays within the passenger canvas at every screen size. */
-.ticket-page { font-family: var(--ion-font-family); padding-bottom: calc(120px + env(safe-area-inset-bottom)); }
-.ticket-page .page-title { margin: 28px 0 20px; }
-.ticket-page .page-title h1 { font-size: 28px; letter-spacing: -.7px; }
-.ticket-page .ticket-actions { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); align-items: stretch; gap: 8px; margin: 0 0 18px; }
-.ticket-page .ticket-actions button { display: flex; flex-direction: column; align-items: center; justify-content: center; align-self: stretch; width: 100%; min-width: 0; min-height: 64px; height: 100%; padding: 10px 4px; gap: 6px; font-family: inherit; font-size: var(--text-caption); line-height: 1.4; white-space: normal; }
-.ticket-page .ticket-actions button > span { max-width: 100%; overflow-wrap: anywhere; text-align: center; }
-.ticket-page .ticket-actions .app-icon { flex: none; font-size: 16px; }
-.ticket-page .ticket-picker { display: grid; gap: 9px; margin: 0 0 20px; overflow: visible; padding: 14px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); }
-.ticket-picker > span { display: flex; justify-content: space-between; gap: 10px; font-size: var(--text-label); font-weight: 600; }
-.ticket-page .ticket-picker small { margin: 0; color: var(--muted); font-size: var(--text-caption); font-weight: 400; }
-.ticket-picker select { width: 100%; min-width: 0; min-height: 44px; padding: 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface-soft); color: var(--ink); font-family: inherit; font-size: var(--text-label); text-overflow: ellipsis; }
-.ticket-page .ticket { width: 100%; border-radius: 18px; background: var(--surface); }
-.ticket-page .ticket-head { position: relative; display: block; padding: 22px 20px; }
-.ticket-page .ticket-title { min-width: 0; }
-.ticket-page .ticket-title small { padding-right: 65px; font-size: var(--text-caption); line-height: 1.6; letter-spacing: .06em; flex-wrap: wrap; }
-.ticket-page .ticket-head h2 { display: grid; grid-template-columns: minmax(0, 1fr) 22px minmax(0, 1fr); align-items: center; gap: 10px; margin-top: 18px; font-family: inherit; font-size: 20px; line-height: 1.5; font-weight: 700; overflow-wrap: anywhere; }
-.ticket-page .ticket-head h2 .route-port { color: inherit; }
-.ticket-page .ticket-head h2 .route-arrow { display: grid; place-items: center; }
-.ticket-page .ticket-head > b { position: absolute; top: 20px; right: 20px; display: inline-flex; align-items: center; gap: 4px; margin-top: 1px; padding: 6px 8px; font-size: var(--text-caption); font-weight: 600; white-space: nowrap; }
-.ticket-page .ticket-head > b .app-icon { font-size: 14px; }
-.ticket-page .ticket-meta { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px 14px; padding: 20px; }
-.ticket-page .ticket-meta > div { min-width: 0; }
-.ticket-page .ticket-meta > div:last-child { grid-column: 1 / -1; }
-.ticket-page .ticket-meta small { font-size: var(--text-caption); letter-spacing: .04em; }
-.ticket-page .ticket-meta strong { font-family: inherit; font-size: var(--text-label); line-height: 1.7; }
-.ticket-page .ticket-passengers { padding: 20px; }
-.ticket-page .ticket-passengers h3 { font-size: 14px; margin-bottom: 14px; }
-.ticket-page .ticket-pass { margin-top: 16px; padding-top: 4px; }
-.ticket-page .ticket-person { gap: 9px; padding: 14px 0; }
-.ticket-page .ticket-person strong { font-family: inherit; font-size: 13px; line-height: 1.6; }
-.ticket-page .ticket-person small { font-size: var(--text-caption); line-height: 1.6; text-transform: capitalize; }
-.ticket-page .ticket-person > b { font-size: var(--text-caption); }
-.ticket-page .qr-block { display: grid; grid-template-columns: minmax(0, 1fr); justify-items: center; gap: 16px; margin-top: 4px; padding: 20px 14px; border: 1px solid var(--line); border-radius: 14px; background: var(--surface-soft); text-align: center; }
-.ticket-page .qr-block img { width: 280px; height: 280px; max-width: 100%; padding: 10px; border-radius: 12px; background: white; object-fit: contain; }
-.ticket-page .qr-block > div { width: 100%; min-width: 0; }
-.ticket-page .qr-block small { color: var(--ocean); font-size: var(--text-caption); letter-spacing: .08em; font-weight: 600; }
-.ticket-page .qr-block code { display: block; margin: 10px 0; padding: 9px; border: 1px dashed var(--line); border-radius: 7px; color: var(--ink); font-size: var(--text-caption); line-height: 1.6; overflow-wrap: anywhere; }
-.ticket-page .qr-block p { max-width: 280px; margin: 0 auto; font-size: var(--text-label); line-height: 1.7; color: var(--muted); }
+.ticket-page {
+  font-family: var(--ion-font-family);
+  padding-bottom: calc(120px + env(safe-area-inset-bottom));
+}
+.ticket-page .page-title {
+  margin: 28px 0 20px;
+}
+.ticket-page .page-title h1 {
+  font-size: 28px;
+  letter-spacing: -0.7px;
+}
+.ticket-page .ticket-actions {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-items: stretch;
+  gap: 8px;
+  margin: 0 0 18px;
+}
+.ticket-page .ticket-actions button {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  align-self: stretch;
+  width: 100%;
+  min-width: 0;
+  min-height: 64px;
+  height: 100%;
+  padding: 10px 4px;
+  gap: 6px;
+  font-family: inherit;
+  font-size: var(--text-caption);
+  line-height: 1.4;
+  white-space: normal;
+}
+.ticket-page .ticket-actions button > span {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  text-align: center;
+}
+.ticket-page .ticket-actions .app-icon {
+  flex: none;
+  font-size: 16px;
+}
+.ticket-page .ticket-picker {
+  display: grid;
+  gap: 9px;
+  margin: 0 0 20px;
+  overflow: visible;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+}
+.ticket-picker > span {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: var(--text-label);
+  font-weight: 600;
+}
+.ticket-page .ticket-picker small {
+  margin: 0;
+  color: var(--muted);
+  font-size: var(--text-caption);
+  font-weight: 400;
+}
+.ticket-picker select {
+  width: 100%;
+  min-width: 0;
+  min-height: 44px;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface-soft);
+  color: var(--ink);
+  font-family: inherit;
+  font-size: var(--text-label);
+  text-overflow: ellipsis;
+}
+.ticket-page .ticket {
+  width: 100%;
+  border-radius: 18px;
+  background: var(--surface);
+}
+.ticket-page .ticket-head {
+  position: relative;
+  display: block;
+  padding: 22px 20px;
+}
+.ticket-page .ticket-title {
+  min-width: 0;
+}
+.ticket-page .ticket-title small {
+  padding-right: 65px;
+  font-size: var(--text-caption);
+  line-height: 1.6;
+  letter-spacing: 0.06em;
+  flex-wrap: wrap;
+}
+.ticket-page .ticket-head h2 {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 22px minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+  margin-top: 18px;
+  font-family: inherit;
+  font-size: 20px;
+  line-height: 1.5;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+.ticket-page .ticket-head h2 .route-port {
+  color: inherit;
+}
+.ticket-page .ticket-head h2 .route-arrow {
+  display: grid;
+  place-items: center;
+}
+.ticket-page .ticket-head > b {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 1px;
+  padding: 6px 8px;
+  font-size: var(--text-caption);
+  font-weight: 600;
+  white-space: nowrap;
+}
+.ticket-page .ticket-head > b .app-icon {
+  font-size: 14px;
+}
+.ticket-page .ticket-meta {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px 14px;
+  padding: 20px;
+}
+.ticket-page .ticket-meta > div {
+  min-width: 0;
+}
+.ticket-page .ticket-meta > div:last-child {
+  grid-column: 1 / -1;
+}
+.ticket-page .ticket-meta small {
+  font-size: var(--text-caption);
+  letter-spacing: 0.04em;
+}
+.ticket-page .ticket-meta strong {
+  font-family: inherit;
+  font-size: var(--text-label);
+  line-height: 1.7;
+}
+.ticket-page .ticket-passengers {
+  padding: 20px;
+}
+.ticket-page .ticket-passengers h3 {
+  font-size: 14px;
+  margin-bottom: 14px;
+}
+.ticket-page .ticket-pass {
+  margin-top: 16px;
+  padding-top: 4px;
+}
+.ticket-page .ticket-person {
+  gap: 9px;
+  padding: 14px 0;
+}
+.ticket-page .ticket-person strong {
+  font-family: inherit;
+  font-size: 13px;
+  line-height: 1.6;
+}
+.ticket-page .ticket-person small {
+  font-size: var(--text-caption);
+  line-height: 1.6;
+  text-transform: capitalize;
+}
+.ticket-page .ticket-person > b {
+  font-size: var(--text-caption);
+}
+.ticket-page .qr-block {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  justify-items: center;
+  gap: 16px;
+  margin-top: 4px;
+  padding: 20px 14px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--surface-soft);
+  text-align: center;
+}
+.ticket-page .qr-block img {
+  width: 280px;
+  height: 280px;
+  max-width: 100%;
+  padding: 10px;
+  border-radius: 12px;
+  background: white;
+  object-fit: contain;
+}
+.ticket-page .qr-block > div {
+  width: 100%;
+  min-width: 0;
+}
+.ticket-page .qr-block small {
+  color: var(--ocean);
+  font-size: var(--text-caption);
+  letter-spacing: 0.08em;
+  font-weight: 600;
+}
+.ticket-page .qr-block code {
+  display: block;
+  margin: 10px 0;
+  padding: 9px;
+  border: 1px dashed var(--line);
+  border-radius: 7px;
+  color: var(--ink);
+  font-size: var(--text-caption);
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+.ticket-page .qr-block p {
+  max-width: 280px;
+  margin: 0 auto;
+  font-size: var(--text-label);
+  line-height: 1.7;
+  color: var(--muted);
+}
 @container passenger (max-width: 380px) {
-  .ticket-page .ticket-head { padding: 18px 16px; gap: 8px; }
-  .ticket-page .ticket-head h2 { font-size: 18px; }
-  .ticket-page .ticket-head > b { right: 16px; top: 16px; }
-  .ticket-page .ticket-title small { font-size: 8px; }
-  .ticket-page .ticket-meta, .ticket-page .ticket-passengers { padding: 16px; }
-  .ticket-page .ticket-person { flex-wrap: wrap; }
-  .ticket-page .ticket-person > b { margin-left: 45px; }
+  .ticket-page .ticket-head {
+    padding: 18px 16px;
+    gap: 8px;
+  }
+  .ticket-page .ticket-head h2 {
+    font-size: 18px;
+  }
+  .ticket-page .ticket-head > b {
+    right: 16px;
+    top: 16px;
+  }
+  .ticket-page .ticket-title small {
+    font-size: 8px;
+  }
+  .ticket-page .ticket-meta,
+  .ticket-page .ticket-passengers {
+    padding: 16px;
+  }
+  .ticket-page .ticket-person {
+    flex-wrap: wrap;
+  }
+  .ticket-page .ticket-person > b {
+    margin-left: 45px;
+  }
 }
 
-.ticket-record-banner { display:flex; align-items:flex-start; gap:12px; margin:20px 0; padding:16px; border:1px solid var(--line); border-radius:12px; background:var(--surface-soft); color:var(--ink); }
-.ticket-record-banner .app-icon { flex:none; font-size:22px; color:var(--ocean); }
-.ticket-record-banner p { margin:6px 0 0; color:var(--muted); font-size:13px; line-height:1.6; }
-.ticket-record-state { display:flex; flex-direction:column; align-items:center; gap:12px; padding:24px 16px; border:1px dashed var(--line); border-radius:12px; background:var(--surface-soft); text-align:center; }
-.ticket-record-state .app-icon { font-size:32px; color:var(--ocean); }
-.ticket-record-state p { margin:0; color:var(--muted); line-height:1.7; font-size:13px; }
-.ticket-record-state code { max-width:100%; overflow-wrap:anywhere; font-size:12px; color:var(--muted); }
-.ticket-page .ticket-person b.past-ticket { color:var(--muted); background:var(--surface-soft); }
-
+.ticket-record-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin: 20px 0;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface-soft);
+  color: var(--ink);
+}
+.ticket-record-banner .app-icon {
+  flex: none;
+  font-size: 22px;
+  color: var(--ocean);
+}
+.ticket-record-banner p {
+  margin: 6px 0 0;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.6;
+}
+.ticket-record-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 24px 16px;
+  border: 1px dashed var(--line);
+  border-radius: 12px;
+  background: var(--surface-soft);
+  text-align: center;
+}
+.ticket-record-state .app-icon {
+  font-size: 32px;
+  color: var(--ocean);
+}
+.ticket-record-state p {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.7;
+  font-size: 13px;
+}
+.ticket-record-state code {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  font-size: 12px;
+  color: var(--muted);
+}
+.ticket-page .ticket-person b.past-ticket {
+  color: var(--muted);
+  background: var(--surface-soft);
+}
 </style>
 
 <style scoped src="@/theme/notification-inbox.css"></style>

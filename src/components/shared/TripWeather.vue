@@ -1,15 +1,30 @@
 <template>
   <section class="trip-weather" :class="{ 'compact-weather': compact }" aria-label="Trip weather">
-    <div v-if="!compact" class="weather-heading"><div><small>PLAN YOUR JOURNEY</small><h2><AppIcon :icon="partlySunnyOutline" aria-hidden="true" /> Port weather</h2></div><button v-if="error" :disabled="loading" @click="load">Try again</button></div>
+    <div v-if="!compact" class="weather-heading">
+      <div>
+        <small>PLAN YOUR JOURNEY</small>
+        <h2><AppIcon :icon="partlySunnyOutline" aria-hidden="true" /> Port weather</h2>
+      </div>
+      <button v-if="error" :disabled="loading" @click="load">Try again</button>
+    </div>
     <p v-if="loading" role="status" class="weather-message">Checking the latest port weather…</p>
-    <p v-else-if="error || !data?.configured" role="status" class="weather-message">Weather updates are currently unavailable. Check your trip advisories for sailing updates.</p>
+    <p v-else-if="error || !data?.configured" role="status" class="weather-message">
+      Weather updates are currently unavailable. Check your trip advisories for sailing updates.
+    </p>
     <div v-else class="weather-ports">
       <article v-for="port in data.ports" :key="port.id" class="weather-port">
-        <small>{{ port.role }}</small><h3>{{ port.name }}</h3>
+        <small>{{ port.role }}</small>
+        <h3>{{ port.name }}</h3>
         <p v-if="!port.available" class="weather-message">Weather unavailable for this port.</p>
         <template v-else>
-          <SmartWeatherCard v-if="port.forecast || port.current" :reading="(port.forecast || port.current)!" :label="port.forecast ? 'Forecast at departure time' : 'Current weather'" />
-          <p v-if="!port.forecast" class="forecast-notice">Departure forecast is not available yet. Check again closer to your trip.</p>
+          <SmartWeatherCard
+            v-if="port.forecast || port.current"
+            :reading="(port.forecast || port.current)!"
+            :label="port.forecast ? 'Forecast at departure time' : 'Current weather'"
+          />
+          <p v-if="!port.forecast" class="forecast-notice">
+            Departure forecast is not available yet. Check again closer to your trip.
+          </p>
           <p v-if="port.stale" class="weather-delayed" role="status">Weather updates delayed.</p>
         </template>
       </article>
@@ -18,68 +33,287 @@
   </section>
 </template>
 <script setup lang="ts">
-import { ref,watch } from 'vue';
-import AppIcon from "@/components/ui/icon/AppIcon.vue";
+import { ref, watch } from 'vue';
+import AppIcon from '@/components/ui/icon/AppIcon.vue';
 import { partlySunnyOutline } from 'ionicons/icons';
-import { tripWeather,type TripWeatherData } from '../../services/weather';
+import { tripWeather, type TripWeatherData } from '../../services/weather';
 import SmartWeatherCard from './SmartWeatherCard.vue';
 import WeatherSource from './WeatherSource.vue';
 
-const props=withDefaults(defineProps<{sailingCode:string;compact?:boolean}>(), {compact:false});
-const data=ref<TripWeatherData|null>(null),loading=ref(false),error=ref(false);
-let requestId=0;
-async function load(){
-  const id=++requestId;data.value=null;error.value=false;
-  if(!props.sailingCode){loading.value=false;return;}
-  loading.value=true;
-  try{const result=await tripWeather(props.sailingCode);if(id===requestId)data.value=result;}
-  catch{if(id===requestId)error.value=true;}
-  finally{if(id===requestId)loading.value=false;}
+const props = withDefaults(defineProps<{ sailingCode: string; compact?: boolean }>(), {
+  compact: false,
+});
+const data = ref<TripWeatherData | null>(null),
+  loading = ref(false),
+  error = ref(false);
+let requestId = 0;
+async function load() {
+  const id = ++requestId;
+  data.value = null;
+  error.value = false;
+  if (!props.sailingCode) {
+    loading.value = false;
+    return;
+  }
+  loading.value = true;
+  try {
+    const result = await tripWeather(props.sailingCode);
+    if (id === requestId) data.value = result;
+  } catch {
+    if (id === requestId) error.value = true;
+  } finally {
+    if (id === requestId) loading.value = false;
+  }
 }
-watch(()=>props.sailingCode,load,{immediate:true});
+watch(() => props.sailingCode, load, { immediate: true });
 </script>
 <style scoped>
-.trip-weather { margin: 20px 0; padding: 20px; border: 1px solid var(--line); border-radius: 16px; background: var(--surface); color: var(--ink); min-width: 0; }
-.weather-heading { display: flex; justify-content: space-between; gap: 12px; align-items: center; margin-bottom: 16px; }
-.weather-heading small { font-size: var(--text-caption); letter-spacing: .1em; color: var(--ocean); font-weight: 700; }
-.weather-heading h2 { display: flex; gap: 8px; align-items: center; font-size: 19px; margin: 6px 0 0; }
-.weather-heading .app-icon { color: var(--ocean); }
-.weather-heading button { border: 1px solid var(--line); border-radius: 8px; padding: 10px; color: var(--ocean); background: var(--surface-soft); font: inherit; font-size: var(--text-label); cursor: pointer; }
-.weather-ports { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 12px; }
-.weather-port { min-width: 0; padding: 16px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface-soft); }
-.weather-port > small { color: var(--muted); font-size: var(--text-caption); }
-.weather-port h3 { font-size: 14px; line-height: 1.5; margin: 5px 0 16px; overflow-wrap: anywhere; }
-.weather-conditions { display: flex; align-items: center; gap: 12px; }
-.weather-conditions strong { font-size: 32px; white-space: nowrap; }
-.weather-conditions strong span { font-size: 16px; font-weight: 500; }
-.weather-conditions b { display: block; font-size: var(--text-label); line-height: 1.5; }
-.weather-conditions small { display: block; color: var(--muted); font-size: var(--text-caption); margin-top: 4px; }
-dl { display: flex; flex-wrap: wrap; gap: 16px; border-top: 1px solid var(--line); padding-top: 14px; margin: 16px 0 0; }
-dt { font-size: var(--text-caption); color: var(--muted); } dd { margin: 5px 0 0; font-size: var(--text-label); font-weight: 600; }
-.forecast-notice,.weather-delayed,.weather-message { color: var(--muted); font-size: var(--text-caption); line-height: 1.7; margin: 12px 0 0; }
-.forecast-notice { padding: 9px; border-radius: 7px; background: var(--surface); }
-@media(max-width:600px){.weather-ports{grid-template-columns:minmax(0,1fr)}.trip-weather{padding:16px}}
-.trip-weather { font-family: var(--ion-font-family); }
-.weather-heading h2 { font-size: 18px; }
-.weather-ports { grid-template-columns: minmax(0, 1fr); }
-.weather-port { border-radius: 14px; padding: 16px; }
-.weather-port > small { display: inline-block; padding: 4px 7px; border-radius: 5px; color: var(--ocean); background: var(--light-blue); }
-.weather-port h3 { margin: 8px 0 14px; font-size: 15px; }
-.weather-conditions { display: grid; grid-template-columns: 42px auto minmax(0, 1fr); gap: 10px; }
-.condition-icon { display: block; width: 42px; height: 42px; padding: 5px; border-radius: 12px; background: var(--light-blue); }
-.weather-conditions strong { font-size: 29px; }
-.condition-copy { min-width: 0; overflow-wrap: anywhere; }
-dl { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 8px; }
-@container passenger (min-width: 780px) { .weather-ports { grid-template-columns: repeat(2, minmax(0,1fr)); } }
+.trip-weather {
+  margin: 20px 0;
+  padding: 20px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--surface);
+  color: var(--ink);
+  min-width: 0;
+}
+.weather-heading {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+  margin-bottom: 16px;
+}
+.weather-heading small {
+  font-size: var(--text-caption);
+  letter-spacing: 0.1em;
+  color: var(--ocean);
+  font-weight: 700;
+}
+.weather-heading h2 {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  font-size: 19px;
+  margin: 6px 0 0;
+}
+.weather-heading .app-icon {
+  color: var(--ocean);
+}
+.weather-heading button {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 10px;
+  color: var(--ocean);
+  background: var(--surface-soft);
+  font: inherit;
+  font-size: var(--text-label);
+  cursor: pointer;
+}
+.weather-ports {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+.weather-port {
+  min-width: 0;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface-soft);
+}
+.weather-port > small {
+  color: var(--muted);
+  font-size: var(--text-caption);
+}
+.weather-port h3 {
+  font-size: 14px;
+  line-height: 1.5;
+  margin: 5px 0 16px;
+  overflow-wrap: anywhere;
+}
+.weather-conditions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.weather-conditions strong {
+  font-size: 32px;
+  white-space: nowrap;
+}
+.weather-conditions strong span {
+  font-size: 16px;
+  font-weight: 500;
+}
+.weather-conditions b {
+  display: block;
+  font-size: var(--text-label);
+  line-height: 1.5;
+}
+.weather-conditions small {
+  display: block;
+  color: var(--muted);
+  font-size: var(--text-caption);
+  margin-top: 4px;
+}
+dl {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  border-top: 1px solid var(--line);
+  padding-top: 14px;
+  margin: 16px 0 0;
+}
+dt {
+  font-size: var(--text-caption);
+  color: var(--muted);
+}
+dd {
+  margin: 5px 0 0;
+  font-size: var(--text-label);
+  font-weight: 600;
+}
+.forecast-notice,
+.weather-delayed,
+.weather-message {
+  color: var(--muted);
+  font-size: var(--text-caption);
+  line-height: 1.7;
+  margin: 12px 0 0;
+}
+.forecast-notice {
+  padding: 9px;
+  border-radius: 7px;
+  background: var(--surface);
+}
+@media (max-width: 600px) {
+  .weather-ports {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .trip-weather {
+    padding: 16px;
+  }
+}
+.trip-weather {
+  font-family: var(--ion-font-family);
+}
+.weather-heading h2 {
+  font-size: 18px;
+}
+.weather-ports {
+  grid-template-columns: minmax(0, 1fr);
+}
+.weather-port {
+  border-radius: 14px;
+  padding: 16px;
+}
+.weather-port > small {
+  display: inline-block;
+  padding: 4px 7px;
+  border-radius: 5px;
+  color: var(--ocean);
+  background: var(--light-blue);
+}
+.weather-port h3 {
+  margin: 8px 0 14px;
+  font-size: 15px;
+}
+.weather-conditions {
+  display: grid;
+  grid-template-columns: 42px auto minmax(0, 1fr);
+  gap: 10px;
+}
+.condition-icon {
+  display: block;
+  width: 42px;
+  height: 42px;
+  padding: 5px;
+  border-radius: 12px;
+  background: var(--light-blue);
+}
+.weather-conditions strong {
+  font-size: 29px;
+}
+.condition-copy {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+dl {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+@container passenger (min-width: 780px) {
+  .weather-ports {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
 </style>
 
 <style scoped>
-.compact-weather .weather-ports { gap: 8px; }
-.compact-weather .weather-port { padding: 10px; border-radius: 9px; background: var(--surface-soft); }
-.compact-weather .weather-port > small { padding: 0; background: transparent; border-radius: 0; font-size: var(--text-caption); }
-.compact-weather .weather-port h3 { font-size: var(--text-label); margin: 3px 0 7px; line-height: 1.4; }
-.compact-weather .weather-conditions { grid-template-columns: 28px auto minmax(0, 1fr); gap: 7px; }.compact-weather .condition-icon { width: 28px; height: 28px; padding: 3px; border-radius: 8px; }
-.compact-weather .weather-conditions strong { font-size: 22px; }.compact-weather .weather-conditions strong span { font-size: var(--text-label); }.compact-weather .weather-conditions b { font-size: var(--text-caption); line-height: 1.4; }.compact-weather .weather-conditions small { font-size: var(--text-caption); margin-top: 2px; }
-.compact-weather dl { gap: 6px; padding-top: 7px; margin-top: 7px; }.compact-weather dt { font-size: var(--text-caption); }.compact-weather dd { font-size: var(--text-caption); margin-top: 3px; }
-.compact-weather .weather-delayed { font-size: var(--text-caption); margin: 5px 0 0; line-height: 1.4; }.compact-weather .forecast-notice { padding: 6px; font-size: var(--text-caption); margin-top: 6px; }
+.compact-weather .weather-ports {
+  gap: 8px;
+}
+.compact-weather .weather-port {
+  padding: 10px;
+  border-radius: 9px;
+  background: var(--surface-soft);
+}
+.compact-weather .weather-port > small {
+  padding: 0;
+  background: transparent;
+  border-radius: 0;
+  font-size: var(--text-caption);
+}
+.compact-weather .weather-port h3 {
+  font-size: var(--text-label);
+  margin: 3px 0 7px;
+  line-height: 1.4;
+}
+.compact-weather .weather-conditions {
+  grid-template-columns: 28px auto minmax(0, 1fr);
+  gap: 7px;
+}
+.compact-weather .condition-icon {
+  width: 28px;
+  height: 28px;
+  padding: 3px;
+  border-radius: 8px;
+}
+.compact-weather .weather-conditions strong {
+  font-size: 22px;
+}
+.compact-weather .weather-conditions strong span {
+  font-size: var(--text-label);
+}
+.compact-weather .weather-conditions b {
+  font-size: var(--text-caption);
+  line-height: 1.4;
+}
+.compact-weather .weather-conditions small {
+  font-size: var(--text-caption);
+  margin-top: 2px;
+}
+.compact-weather dl {
+  gap: 6px;
+  padding-top: 7px;
+  margin-top: 7px;
+}
+.compact-weather dt {
+  font-size: var(--text-caption);
+}
+.compact-weather dd {
+  font-size: var(--text-caption);
+  margin-top: 3px;
+}
+.compact-weather .weather-delayed {
+  font-size: var(--text-caption);
+  margin: 5px 0 0;
+  line-height: 1.4;
+}
+.compact-weather .forecast-notice {
+  padding: 6px;
+  font-size: var(--text-caption);
+  margin-top: 6px;
+}
 </style>

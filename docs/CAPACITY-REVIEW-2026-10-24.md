@@ -10,13 +10,13 @@ Migration 012's existing `accommodation_vessel_capacity` trigger rejects a vesse
 
 Read-only inspection of the connected project found no overallocated Starlite vessels:
 
-| Vessel | Capacity | Active allocation | Unallocated |
-| --- | ---: | ---: | ---: |
-| Annapolis | 712 | 534 | 178 |
-| Jupiter | 307 | 231 | 76 |
-| Pacific | 350 | 263 | 87 |
-| Sprint 1 | 182 | 137 | 45 |
-| Stella del Mar | 977 | 733 | 244 |
+| Vessel         | Capacity | Active allocation | Unallocated |
+| -------------- | -------: | ----------------: | ----------: |
+| Annapolis      |      712 |               534 |         178 |
+| Jupiter        |      307 |               231 |          76 |
+| Pacific        |      350 |               263 |          87 |
+| Sprint 1       |      182 |               137 |          45 |
+| Stella del Mar |      977 |               733 |         244 |
 
 The unallocated seats reflect the prior removal of unused Premium Economy classes; they have not been automatically reassigned to Tourist or Business. Capacity allocations should follow the vessel's actual seating arrangements.
 

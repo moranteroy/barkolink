@@ -4,5 +4,5 @@ export function manilaDate(now: number): string {
 }
 export function remainingDepartures(times: readonly string[], date: string, now: number): string[] {
   if (!date) return [];
-  return times.filter(time => new Date(`${date}T${time}:00+08:00`).getTime() > now).sort();
+  return times.filter((time) => new Date(`${date}T${time}:00+08:00`).getTime() > now).sort();
 }

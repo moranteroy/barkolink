@@ -17,12 +17,10 @@
   </div>
 </template>
 <script setup lang="ts">
-import { computed } from "vue";
+import { computed } from 'vue';
 const props = defineProps<{ boarded: number; total: number }>();
 const percent = computed(() =>
-  props.total
-    ? Math.min(100, Math.round((props.boarded / props.total) * 100))
-    : 0,
+  props.total ? Math.min(100, Math.round((props.boarded / props.total) * 100)) : 0,
 );
 </script>
 <style scoped>

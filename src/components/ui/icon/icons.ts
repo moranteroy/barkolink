@@ -1,4 +1,4 @@
-import type { Component } from "vue";
+import type { Component } from 'vue';
 import {
   addOutline,
   alertCircleOutline,
@@ -84,7 +84,7 @@ import {
   walkOutline,
   walletOutline,
   warningOutline,
-} from "ionicons/icons";
+} from 'ionicons/icons';
 import {
   ContactRound,
   Plus,
@@ -167,7 +167,7 @@ import {
   PersonStanding,
   Wallet,
   TriangleAlert,
-} from "@lucide/vue";
+} from '@lucide/vue';
 
 const artwork = new Map<string, Component>([
   [addOutline, Plus],

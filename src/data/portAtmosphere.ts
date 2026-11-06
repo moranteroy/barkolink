@@ -8,10 +8,18 @@ export function currentPortWeather(weather: DisplayWeather | null, now: Date) {
 }
 export function portAtmosphere(weather: DisplayWeather | null, now: Date) {
   if (!weather || !currentPortWeather(weather, now)) return null;
-  const instant = now.getTime(), sunrise = Date.parse(weather.sunriseAt), sunset = Date.parse(weather.sunsetAt);
+  const instant = now.getTime(),
+    sunrise = Date.parse(weather.sunriseAt),
+    sunset = Date.parse(weather.sunsetAt);
   if (!Number.isFinite(sunrise) || !Number.isFinite(sunset) || sunrise >= sunset) return null;
   const isDay = instant >= sunrise && instant < sunset;
-  const hour = Number(new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Manila', hour: '2-digit', hourCycle: 'h23' }).format(now));
+  const hour = Number(
+    new Intl.DateTimeFormat('en-GB', {
+      timeZone: 'Asia/Manila',
+      hour: '2-digit',
+      hourCycle: 'h23',
+    }).format(now),
+  );
   let phase: HarborPhase;
   if (instant >= sunrise - 30 * 60000 && instant < sunrise + 45 * 60000) phase = 'dawn';
   else if (instant >= sunset - 45 * 60000 && instant < sunset + 30 * 60000) phase = 'dusk';
@@ -28,16 +36,36 @@ export function portAtmosphere(weather: DisplayWeather | null, now: Date) {
     dusk: ['#665c87', '#d8a383', '#34546f', '#b47b5540'],
     night: ['#06162d', '#193751', '#0a263e', '#29467730'],
   }[phase] as [string, string, string, string];
-  if (isDay && ['cloudy','rain','storm','fog','snow'].includes(weather.scene)) {
-    colors = weather.scene === 'cloudy' ? ['#708c9e','#bcc9d0','#3e647f','#869ca43d']
-      : weather.scene === 'storm' ? ['#283f55','#6e7e8c','#263f57','#526e8538']
-      : weather.scene === 'fog' ? ['#83969f','#c4ced0','#607984','#a2b1b13d']
-      : weather.scene === 'snow' ? ['#7b96a8','#d3dfe4','#5b8098','#9bbdce38']
-      : ['#4c667b','#96a8b2','#345368','#73879840'];
+  if (isDay && ['cloudy', 'rain', 'storm', 'fog', 'snow'].includes(weather.scene)) {
+    colors =
+      weather.scene === 'cloudy'
+        ? ['#708c9e', '#bcc9d0', '#3e647f', '#869ca43d']
+        : weather.scene === 'storm'
+          ? ['#283f55', '#6e7e8c', '#263f57', '#526e8538']
+          : weather.scene === 'fog'
+            ? ['#83969f', '#c4ced0', '#607984', '#a2b1b13d']
+            : weather.scene === 'snow'
+              ? ['#7b96a8', '#d3dfe4', '#5b8098', '#9bbdce38']
+              : ['#4c667b', '#96a8b2', '#345368', '#73879840'];
   }
-  return { phase, isDay, style: {
-    '--harbor-sky-top': colors[0], '--harbor-sky-horizon': colors[1], '--harbor-sea': colors[2], '--harbor-glow': colors[3],
-    '--sun-x': `${22 + progress * 52}%`, '--sun-y': `${60 - Math.sin(progress * Math.PI) * 52}%`,
-  } };
+  return {
+    phase,
+    isDay,
+    style: {
+      '--harbor-sky-top': colors[0],
+      '--harbor-sky-horizon': colors[1],
+      '--harbor-sea': colors[2],
+      '--harbor-glow': colors[3],
+      '--sun-x': `${22 + progress * 52}%`,
+      '--sun-y': `${60 - Math.sin(progress * Math.PI) * 52}%`,
+    },
+  };
 }
-export const harborPhaseLabel: Record<HarborPhase, string> = { dawn: 'Sunrise', morning: 'Morning', midday: 'Midday', afternoon: 'Afternoon', dusk: 'Sunset', night: 'Night' };
+export const harborPhaseLabel: Record<HarborPhase, string> = {
+  dawn: 'Sunrise',
+  morning: 'Morning',
+  midday: 'Midday',
+  afternoon: 'Afternoon',
+  dusk: 'Sunset',
+  night: 'Night',
+};

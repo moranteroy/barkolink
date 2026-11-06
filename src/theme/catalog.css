@@ -54,7 +54,7 @@
   font-weight: 600;
   min-width: 0;
 }
-.catalog-form input:not([type="checkbox"]),
+.catalog-form input:not([type='checkbox']),
 .catalog-form select,
 .catalog-form textarea,
 .catalog-search {

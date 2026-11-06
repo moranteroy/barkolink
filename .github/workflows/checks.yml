@@ -32,6 +32,9 @@ jobs:
       - run: node scripts/check-publish-safety.mjs index --git-only
       - run: node scripts/build-sql.mjs --check
       - run: npm run lint
+      - run: npm run format:check
+      - run: npm run lint:edge
+      - run: npm run check:edge
       - run: npm run test:unit -- --maxWorkers=4
       - run: npm run test:database
       - run: npm run build -- --configLoader native
@@ -48,3 +51,4 @@ jobs:
             .audit/ticket-history/
             .audit/ticket-qr/
             .audit/mobile-ticket-actions/
+            .audit/walk-in-ticket/

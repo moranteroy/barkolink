@@ -4,10 +4,10 @@ Updated 6 October 2026. The earlier TEST-labeled dataset has been replaced in th
 
 ## Passenger logins
 
-| Name | Email |
-| --- | --- |
-| Ana Santos | `ana.santos@example.com` |
-| Miguel Reyes | `miguel.reyes@example.com` |
+| Name              | Email                          |
+| ----------------- | ------------------------------ |
+| Ana Santos        | `ana.santos@example.com`       |
+| Miguel Reyes      | `miguel.reyes@example.com`     |
 | Camille Dela Cruz | `camille.delacruz@example.com` |
 
 The three new accounts use the shared password supplied by the owner in chat. The password is not stored in source or this guide. Each account is confirmed and has the Passenger role. Real sign-in and access to their own bookings and three saved travelers were verified: Ana has 19 bookings, Camille has 19, and Miguel has 18. The other existing passenger has 18 bookings; the remaining booking belongs to the existing walk-in user. Existing account passwords and profiles were preserved during the operational reset.
@@ -27,22 +27,22 @@ The ports shown are Batangas, Calapan and Puerto Galera, with routes in both dir
 
 ## Core workflow records
 
-| Task | Reference / sailing | Steps |
-| --- | --- | --- |
-| Reserve a new trip | `TRP2026-1006006` | Browse the sailing, select Economy or Premium, choose saved travelers or enter passengers, review totals, then reserve. |
-| Pay an unpaid reservation | `BK-610001` | Find it in Ticketing, collect a simulated cash payment once, then view the issued ticket and receipt. |
-| Verify discounts before payment | `BK-610002` | Verify the six discounted passengers, including Resident, then collect payment. Premium surcharges are included in the total. |
-| Cancel an unpaid reservation | `BK-610003` | Log in as its owner, Miguel Reyes, and cancel from My Bookings. Confirm that seats return. |
-| Check in and board | `BK-610004`, sailing `TRP2026-1006001` | Review an issued ticket, check in, then board; repeated scans must not add another event. |
-| Board a checked-in passenger | `BK-610005` | Board from the existing checked-in state. `BK-610006` shows an already-boarded example. |
-| View a walk-in sale | `BK-610007` | Inspect the paid counter booking and ticket. Create a new sale through the Walk-in form to exercise that workflow. |
-| Reschedule a delayed trip | `TRP2026-1006003`, booking `BK-610008` | Use Admin Trip operations to set a valid future schedule and inspect the booking afterward. |
-| Check sold-out behavior | `TRP2026-1006004`, booking `BK-610009` | Its eight seats are reserved; the app must reject another reservation. |
-| Record a refund | `BK-610010` | Record a simulated cash refund in Ticketing. `BK-610011` is already refunded. |
-| View cancellation/expiry | `BK-610012` / `BK-610013` | Confirm separate history states and unavailable payment actions. |
-| View completed/no-show history | `BK-610014` / `BK-610015` | Compare completed boarded passengers with two recorded no-shows. |
-| Search and export all passengers | `TRP2026-1006005`, `BK-62001` through `BK-62012` | Its 36 paid passengers span two pages. Search must find later-page matches. Admin manifest export includes all 36. |
-| Review history and charts | `TRP2026-1006010` through `TRP2026-1006015` | Choose a report range covering the previous six months. Each historic sailing has eight bookings with varied party sizes. |
+| Task                             | Reference / sailing                              | Steps                                                                                                                         |
+| -------------------------------- | ------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------- |
+| Reserve a new trip               | `TRP2026-1006006`                                | Browse the sailing, select Economy or Premium, choose saved travelers or enter passengers, review totals, then reserve.       |
+| Pay an unpaid reservation        | `BK-610001`                                      | Find it in Ticketing, collect a simulated cash payment once, then view the issued ticket and receipt.                         |
+| Verify discounts before payment  | `BK-610002`                                      | Verify the six discounted passengers, including Resident, then collect payment. Premium surcharges are included in the total. |
+| Cancel an unpaid reservation     | `BK-610003`                                      | Log in as its owner, Miguel Reyes, and cancel from My Bookings. Confirm that seats return.                                    |
+| Check in and board               | `BK-610004`, sailing `TRP2026-1006001`           | Review an issued ticket, check in, then board; repeated scans must not add another event.                                     |
+| Board a checked-in passenger     | `BK-610005`                                      | Board from the existing checked-in state. `BK-610006` shows an already-boarded example.                                       |
+| View a walk-in sale              | `BK-610007`                                      | Inspect the paid counter booking and ticket. Create a new sale through the Walk-in form to exercise that workflow.            |
+| Reschedule a delayed trip        | `TRP2026-1006003`, booking `BK-610008`           | Use Admin Trip operations to set a valid future schedule and inspect the booking afterward.                                   |
+| Check sold-out behavior          | `TRP2026-1006004`, booking `BK-610009`           | Its eight seats are reserved; the app must reject another reservation.                                                        |
+| Record a refund                  | `BK-610010`                                      | Record a simulated cash refund in Ticketing. `BK-610011` is already refunded.                                                 |
+| View cancellation/expiry         | `BK-610012` / `BK-610013`                        | Confirm separate history states and unavailable payment actions.                                                              |
+| View completed/no-show history   | `BK-610014` / `BK-610015`                        | Compare completed boarded passengers with two recorded no-shows.                                                              |
+| Search and export all passengers | `TRP2026-1006005`, `BK-62001` through `BK-62012` | Its 36 paid passengers span two pages. Search must find later-page matches. Admin manifest export includes all 36.            |
+| Review history and charts        | `TRP2026-1006010` through `TRP2026-1006015`      | Choose a report range covering the previous six months. Each historic sailing has eight bookings with varied party sizes.     |
 
 References stay the same while dates are scheduled relative to the reset time. Near-term board/payment trips depart in two/six hours; pending reservations age normally and can expire. Use the sailing's displayed date/time rather than interpreting its identifier as its departure date. Testing consumes normal workflow states, so processed bookings will no longer be pending examples.
 

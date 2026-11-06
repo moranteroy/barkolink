@@ -2,7 +2,8 @@
 export function weatherPresentation(condition: string) {
   const text = condition.toLowerCase();
   if (/thunder/.test(text)) return { kind: 'storm', label: 'Thunderstorms' } as const;
-  if (/snow|sleet|blizzard|ice pellet/.test(text)) return { kind: 'snow', label: 'Snow / sleet' } as const;
+  if (/snow|sleet|blizzard|ice pellet/.test(text))
+    return { kind: 'snow', label: 'Snow / sleet' } as const;
   if (/fog|mist/.test(text)) return { kind: 'fog', label: 'Foggy' } as const;
   if (/rain|drizzle|shower/.test(text)) return { kind: 'rain', label: 'Rainy' } as const;
   if (/wind/.test(text)) return { kind: 'wind', label: 'Windy' } as const;

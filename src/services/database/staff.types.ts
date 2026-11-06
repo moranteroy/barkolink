@@ -1,8 +1,5 @@
-import type {
-  CustomDiscount,
-  CustomDiscountFare,
-} from "../../data/fareSettings";
-import type { Accommodation } from "./workspaces";
+import type { CustomDiscount, CustomDiscountFare } from '../../data/fareSettings';
+import type { Accommodation } from './workspaces';
 import type { ReferenceMetadata, VesselRouteReference } from '../../data/ferryReferences';
 // Application data contracts retained during the PostgreSQL migration.
 export type TimestampString = string;
@@ -475,7 +472,7 @@ export interface BoardingActivityVariables {
 
 export interface BoardingEvent_Key {
   id: UUIDString;
-  __typename?: "BoardingEvent_Key";
+  __typename?: 'BoardingEvent_Key';
 }
 
 export interface BoardingManifestData {
@@ -488,6 +485,8 @@ export interface BoardingManifestData {
     sailing: {
       code: string;
       departureAt: TimestampString;
+      arrivalAt?: TimestampString;
+      status?: string;
     } & Sailing_Key;
     bookingPassengers_on_booking: ({
       fullName: string;
@@ -533,12 +532,12 @@ export interface BoardingSailingsData {
 
 export interface BookingPassenger_Key {
   id: UUIDString;
-  __typename?: "BookingPassenger_Key";
+  __typename?: 'BookingPassenger_Key';
 }
 
 export interface Booking_Key {
   id: UUIDString;
-  __typename?: "Booking_Key";
+  __typename?: 'Booking_Key';
 }
 
 export interface CheckInTicketData {
@@ -584,22 +583,22 @@ export interface CollectBookingPaymentVariables {
 
 export interface FareSettings_Key {
   code: string;
-  __typename?: "FareSettings_Key";
+  __typename?: 'FareSettings_Key';
 }
 
 export interface Notification_Key {
   id: UUIDString;
-  __typename?: "Notification_Key";
+  __typename?: 'Notification_Key';
 }
 
 export interface Port_Key {
   id: UUIDString;
-  __typename?: "Port_Key";
+  __typename?: 'Port_Key';
 }
 
 export interface Sailing_Key {
   code: string;
-  __typename?: "Sailing_Key";
+  __typename?: 'Sailing_Key';
 }
 
 export interface StaffBookingsData {
@@ -635,6 +634,8 @@ export interface StaffBookingsData {
     sailing: {
       code: string;
       departureAt: TimestampString;
+      arrivalAt?: TimestampString;
+      status?: string;
       origin: {
         name: string;
       };
@@ -650,6 +651,7 @@ export interface StaffBookingsData {
       passengerType: string;
       fare: number;
       ticketCode: UUIDString;
+      ticketQrPayload?: string | null;
       ticketStatus: string;
       discountVerifiedAt?: string | null;
       discountVerificationNote?: string | null;
@@ -766,10 +768,10 @@ export interface TicketingSailingsData {
 
 export interface User_Key {
   uid: string;
-  __typename?: "User_Key";
+  __typename?: 'User_Key';
 }
 
 export interface Vessel_Key {
   id: UUIDString;
-  __typename?: "Vessel_Key";
+  __typename?: 'Vessel_Key';
 }

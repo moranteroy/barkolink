@@ -17,31 +17,35 @@
           :checked="modelValue === item.id"
           :disabled="(item.availableSeats ?? item.capacity) < passengerCount"
           @change="$emit('update:modelValue', item.id)"
-        /><span class="seat-icon"><AppIcon :icon="modelValue === item.id ? checkmarkCircleOutline : bedOutline" aria-hidden="true" /></span><span
+        /><span class="seat-icon"
+          ><AppIcon
+            :icon="modelValue === item.id ? checkmarkCircleOutline : bedOutline"
+            aria-hidden="true" /></span
+        ><span
           ><strong>{{ item.name }}</strong
           ><small>{{ item.description }}</small
-          ><small
-            >{{ (item.availableSeats ?? item.capacity) < passengerCount ? 'Not enough seats for your group' : `${item.availableSeats ?? item.capacity} seats available` }}</small
-          ></span
+          ><small>{{
+            (item.availableSeats ?? item.capacity) < passengerCount
+              ? 'Not enough seats for your group'
+              : `${item.availableSeats ?? item.capacity} seats available`
+          }}</small></span
         ><b>{{
-          item.surcharge
-            ? `+ PHP ${item.surcharge.toLocaleString()}`
-            : "Included"
+          item.surcharge ? `+ PHP ${item.surcharge.toLocaleString()}` : 'Included'
         }}</b></label
       >
     </div>
   </section>
 </template>
 <script setup lang="ts">
-import type { Accommodation } from "../../services/database/workspaces";
-import AppIcon from "@/components/ui/icon/AppIcon.vue";
+import type { Accommodation } from '../../services/database/workspaces';
+import AppIcon from '@/components/ui/icon/AppIcon.vue';
 import { bedOutline, checkmarkCircleOutline } from 'ionicons/icons';
 defineProps<{
   options: Accommodation[];
   modelValue: string;
   passengerCount: number;
 }>();
-defineEmits<{ "update:modelValue": [id: string] }>();
+defineEmits<{ 'update:modelValue': [id: string] }>();
 </script>
 <style scoped>
 .accommodation-picker {
@@ -104,13 +108,62 @@ b {
   color: #1676c5;
   white-space: nowrap;
 }
-.accommodation-picker { font-family: var(--ion-font-family); }
-label { display: grid; grid-template-columns: 18px 36px minmax(0, 1fr) auto; gap: 10px; padding: 16px; border-radius: 14px; transition: border-color .18s, background .18s; }
-label:hover:not(.unavailable) { border-color: var(--ocean); }
-label:focus-within { outline: 2px solid var(--ocean); outline-offset: 3px; }
-.seat-icon { display: grid; place-items: center; width: 36px; height: 36px; border-radius: 10px; background: var(--light-blue); color: var(--ocean); font-size: 20px; }
-strong { font-size: 14px; }
-small { font-size: var(--text-caption); line-height: 1.5; }
-b { color: var(--ocean); padding: 5px 7px; border-radius: 6px; background: var(--light-blue); }
-@container passenger (max-width: 380px) { label { grid-template-columns: 18px 30px minmax(0, 1fr); padding: 14px; gap: 8px; } .seat-icon { width: 30px; height: 30px; } b { grid-column: 3; justify-self: start; } }
+.accommodation-picker {
+  font-family: var(--ion-font-family);
+}
+label {
+  display: grid;
+  grid-template-columns: 18px 36px minmax(0, 1fr) auto;
+  gap: 10px;
+  padding: 16px;
+  border-radius: 14px;
+  transition:
+    border-color 0.18s,
+    background 0.18s;
+}
+label:hover:not(.unavailable) {
+  border-color: var(--ocean);
+}
+label:focus-within {
+  outline: 2px solid var(--ocean);
+  outline-offset: 3px;
+}
+.seat-icon {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: var(--light-blue);
+  color: var(--ocean);
+  font-size: 20px;
+}
+strong {
+  font-size: 14px;
+}
+small {
+  font-size: var(--text-caption);
+  line-height: 1.5;
+}
+b {
+  color: var(--ocean);
+  padding: 5px 7px;
+  border-radius: 6px;
+  background: var(--light-blue);
+}
+@container passenger (max-width: 380px) {
+  label {
+    grid-template-columns: 18px 30px minmax(0, 1fr);
+    padding: 14px;
+    gap: 8px;
+  }
+  .seat-icon {
+    width: 30px;
+    height: 30px;
+  }
+  b {
+    grid-column: 3;
+    justify-self: start;
+  }
+}
 </style>

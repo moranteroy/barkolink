@@ -2,8 +2,11 @@ import { philippineDateKey } from './travelDate';
 
 export type ScheduleEvent = 'departure' | 'arrival';
 export type CalendarSailing = {
-  code: string; departureAt: string; arrivalAt: string;
-  origin: { city: string; name: string }; destination: { city: string; name: string };
+  code: string;
+  departureAt: string;
+  arrivalAt: string;
+  origin: { city: string; name: string };
+  destination: { city: string; name: string };
   vessel: { name: string };
 };
 export function sailingDays(sailings: CalendarSailing[], event: ScheduleEvent) {
@@ -13,9 +16,15 @@ export function sailingDays(sailings: CalendarSailing[], event: ScheduleEvent) {
     if (!Number.isFinite(instant.valueOf())) continue;
     const date = philippineDateKey(instant);
     const items = days.get(date) || [];
-    items.push(sailing); days.set(date, items);
+    items.push(sailing);
+    days.set(date, items);
   }
-  for (const items of days.values()) items.sort((a, b) => Date.parse(event === 'arrival' ? a.arrivalAt : a.departureAt) - Date.parse(event === 'arrival' ? b.arrivalAt : b.departureAt));
+  for (const items of days.values())
+    items.sort(
+      (a, b) =>
+        Date.parse(event === 'arrival' ? a.arrivalAt : a.departureAt) -
+        Date.parse(event === 'arrival' ? b.arrivalAt : b.departureAt),
+    );
   return days;
 }
 export function calendarMonth(month: string) {

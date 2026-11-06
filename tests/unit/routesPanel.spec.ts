@@ -3,30 +3,67 @@ import { flushPromises, mount } from '@vue/test-utils';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import RoutesPanel from '../../src/components/admin/RoutesPanel.vue';
 
-const mocks = vi.hoisted(() => ({ routes: vi.fn(), ports: vi.fn(), save: vi.fn(), confirm: vi.fn() }));
+const mocks = vi.hoisted(() => ({
+  routes: vi.fn(),
+  ports: vi.fn(),
+  save: vi.fn(),
+  confirm: vi.fn(),
+}));
 vi.mock('../../src/services/session', () => ({ staffDatabase: {} }));
-vi.mock('../../src/services/database/workspaces', () => ({ routes: mocks.routes, saveRoute: mocks.save }));
+vi.mock('../../src/services/database/workspaces', () => ({
+  routes: mocks.routes,
+  saveRoute: mocks.save,
+}));
 vi.mock('../../src/services/database/staff', () => ({ adminPorts: mocks.ports }));
 vi.mock('../../src/composables/unsavedChanges', () => ({ useUnsavedChanges: vi.fn() }));
 vi.mock('../../src/composables/confirmation', () => ({ confirmAction: mocks.confirm }));
-vi.mock('../../src/components/shared/RecordsGrid.vue', () => ({ default: {
-  props: ['rows', 'columns', 'density', 'maxGridHeight', 'actionWidth'],
-  template: '<div class="records-grid"><div v-for="row in rows" :key="row.key" class="test-grid-row"><slot name="cell" v-for="(value, index) in row.cells" :row="row" :value="value" :index="index" /><slot name="actions" :row="row" /></div></div>',
-} }));
+vi.mock('../../src/components/shared/RecordsGrid.vue', () => ({
+  default: {
+    props: ['rows', 'columns', 'density', 'maxGridHeight', 'actionWidth'],
+    template:
+      '<div class="records-grid"><div v-for="row in rows" :key="row.key" class="test-grid-row"><slot name="cell" v-for="(value, index) in row.cells" :row="row" :value="value" :index="index" /><slot name="actions" :row="row" /></div></div>',
+  },
+}));
 vi.mock('@ionic/vue', () => ({
   IonIcon: { template: '<span />' },
-  IonModal: { props: ['isOpen', 'canDismiss'], template: '<div v-if="isOpen" role="dialog"><slot /></div>' },
+  IonModal: {
+    props: ['isOpen', 'canDismiss'],
+    template: '<div v-if="isOpen" role="dialog"><slot /></div>',
+  },
 }));
 const ports = [
   { id: 'btg', name: 'Batangas Port', isActive: true },
   { id: 'cal', name: 'Calapan Port', isActive: true },
 ];
 beforeEach(() => {
-  clearToasts(); vi.clearAllMocks();
-  mocks.routes.mockResolvedValue({ data: { routes: [
-    { id: 'r1', code: 'BTG-CAL', originPortId: 'btg', destinationPortId: 'cal', origin: ports[0], destination: ports[1], durationMinutes: 90, isActive: true },
-    { id: 'r2', code: 'CAL-BTG', originPortId: 'cal', destinationPortId: 'btg', origin: ports[1], destination: ports[0], durationMinutes: 120, isActive: false },
-  ] } });
+  clearToasts();
+  vi.clearAllMocks();
+  mocks.routes.mockResolvedValue({
+    data: {
+      routes: [
+        {
+          id: 'r1',
+          code: 'BTG-CAL',
+          originPortId: 'btg',
+          destinationPortId: 'cal',
+          origin: ports[0],
+          destination: ports[1],
+          durationMinutes: 90,
+          isActive: true,
+        },
+        {
+          id: 'r2',
+          code: 'CAL-BTG',
+          originPortId: 'cal',
+          destinationPortId: 'btg',
+          origin: ports[1],
+          destination: ports[0],
+          durationMinutes: 120,
+          isActive: false,
+        },
+      ],
+    },
+  });
   mocks.ports.mockResolvedValue({ data: { ports } });
   mocks.save.mockResolvedValue({});
   mocks.confirm.mockResolvedValue(true);
@@ -47,7 +84,15 @@ describe('route directory and modal', () => {
     await wrapper.find('#new-route-duration').setValue('1:30');
     await wrapper.find('.route-form').trigger('submit');
     await flushPromises();
-    expect(mocks.save).toHaveBeenCalledWith({}, expect.objectContaining({ code: 'BTG-CAL-NEW', originPortId: 'btg', destinationPortId: 'cal', durationMinutes: 90 }));
+    expect(mocks.save).toHaveBeenCalledWith(
+      {},
+      expect.objectContaining({
+        code: 'BTG-CAL-NEW',
+        originPortId: 'btg',
+        destinationPortId: 'cal',
+        durationMinutes: 90,
+      }),
+    );
     expect(wrapper.find('[role="dialog"]').exists()).toBe(false);
     wrapper.unmount();
   });
@@ -60,7 +105,7 @@ describe('route directory and modal', () => {
     await wrapper.find('.route-form').trigger('submit');
     await flushPromises();
     expect(wrapper.find('.route-form-error[role="alert"]').exists()).toBe(false);
-    expect(toastMessages.value.some(toast => toast.tone === 'error')).toBe(true);
+    expect(toastMessages.value.some((toast) => toast.tone === 'error')).toBe(true);
     expect((wrapper.find('#new-route-code').element as HTMLInputElement).value).toBe('BTG-CAL-NEW');
     wrapper.unmount();
   });
@@ -87,7 +132,10 @@ describe('route directory and modal', () => {
     await wrapper.find('#route-filter-status').setValue('INACTIVE');
     expect(wrapper.findAll('.test-grid-row')).toHaveLength(1);
     expect(wrapper.find('.records-grid').text()).toContain('CAL-BTG');
-    await wrapper.findAll('button').find(button => button.text() === 'Reset filters')!.trigger('click');
+    await wrapper
+      .findAll('button')
+      .find((button) => button.text() === 'Reset filters')!
+      .trigger('click');
     expect(wrapper.findAll('.test-grid-row')).toHaveLength(2);
     wrapper.unmount();
   });

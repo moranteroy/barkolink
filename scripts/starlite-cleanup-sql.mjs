@@ -18,18 +18,35 @@ where n.campaign_id in(select id from public.notification_campaign where sailing
 
 // Hash every retained row, not just counts. Temp target IDs remain after deletion.
 const guards = {
-  port:'true',vessel:'id not in(select id from fleet_remove_vessels)',
-  fare_settings:'code not in(select id::text from fleet_remove_vessels) and code not in(select code from fleet_remove_vessels)',
-  sailing:'code not in(select code from fleet_remove_trips)',booking:'id not in(select id from fleet_remove_bookings)',
-  booking_passenger:'id not in(select id from fleet_remove_passengers)',online_payment:'booking_id not in(select id from fleet_remove_bookings)',
-  boarding_event:'passenger_id not in(select id from fleet_remove_passengers)',passenger_no_show:'passenger_id not in(select id from fleet_remove_passengers)',
-  notification:'id not in(select id from fleet_remove_notifications)',
-  accommodation:'vessel_id not in(select id from fleet_remove_vessels)',vessel_route:'vessel_id not in(select id from fleet_remove_vessels)',
-  travel_advisory:'sailing_code is null or sailing_code not in(select code from fleet_remove_trips)',
-  notification_campaign:'sailing_code is null or sailing_code not in(select code from fleet_remove_trips)',
-  voucher:'true',saved_traveler:'true',operation_settings:'true',ferry_route:'true',port_weather_cache:'true',
+  port: 'true',
+  vessel: 'id not in(select id from fleet_remove_vessels)',
+  fare_settings:
+    'code not in(select id::text from fleet_remove_vessels) and code not in(select code from fleet_remove_vessels)',
+  sailing: 'code not in(select code from fleet_remove_trips)',
+  booking: 'id not in(select id from fleet_remove_bookings)',
+  booking_passenger: 'id not in(select id from fleet_remove_passengers)',
+  online_payment: 'booking_id not in(select id from fleet_remove_bookings)',
+  boarding_event: 'passenger_id not in(select id from fleet_remove_passengers)',
+  passenger_no_show: 'passenger_id not in(select id from fleet_remove_passengers)',
+  notification: 'id not in(select id from fleet_remove_notifications)',
+  accommodation: 'vessel_id not in(select id from fleet_remove_vessels)',
+  vessel_route: 'vessel_id not in(select id from fleet_remove_vessels)',
+  travel_advisory:
+    'sailing_code is null or sailing_code not in(select code from fleet_remove_trips)',
+  notification_campaign:
+    'sailing_code is null or sailing_code not in(select code from fleet_remove_trips)',
+  voucher: 'true',
+  saved_traveler: 'true',
+  operation_settings: 'true',
+  ferry_route: 'true',
+  port_weather_cache: 'true',
 };
-export const retainedFleetExpression = `jsonb_build_object(${Object.entries(guards).map(([table,where])=>`'${table}',(select coalesce(jsonb_agg(to_jsonb(x) order by to_jsonb(x)::text),'[]'::jsonb) from public.${table} x where ${where})`).join(',')},
+export const retainedFleetExpression = `jsonb_build_object(${Object.entries(guards)
+  .map(
+    ([table, where]) =>
+      `'${table}',(select coalesce(jsonb_agg(to_jsonb(x) order by to_jsonb(x)::text),'[]'::jsonb) from public.${table} x where ${where})`,
+  )
+  .join(',')},
   'positions',(select coalesce(jsonb_agg(to_jsonb(x) order by id),'[]') from barkolink_private.vessel_port_observation x where vessel_id not in(select id from fleet_remove_vessels)),
   'schedules',(select coalesce(jsonb_agg(to_jsonb(x) order by id),'[]') from barkolink_private.daily_schedule x where operator='Starlite Ferries'),
   'policies',(select coalesce(jsonb_agg(to_jsonb(x) order by operator),'[]') from barkolink_private.sailing_status_policy x where operator='Starlite Ferries'),

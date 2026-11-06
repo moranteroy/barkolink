@@ -34,4 +34,4 @@ update public.saved_traveler t set
   birth_date=case when t.birth_date in (date '1990-01-01',date '2020-01-01',date '1995-01-01') then
     ((now() at time zone 'Asia/Manila')::date-make_interval(years=>(p.min_age+p.salt%p.age_span)::integer,days=>((p.salt/31)%365)::integer))::date else t.birth_date end
 from people p where p.id=t.id;
-`
+`;

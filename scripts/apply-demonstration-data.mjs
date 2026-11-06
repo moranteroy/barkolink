@@ -1,28 +1,47 @@
 import fs from 'node:fs';
 import crypto from 'node:crypto';
-import {queryLive,projectRef,dataTables,usersExpression} from './test-data-database.mjs';
-import {demonstrationSql,demonstrationChecks,batchId} from './demonstration-data.mjs';
+import { queryLive, projectRef, dataTables, usersExpression } from './test-data-database.mjs';
+import { demonstrationSql, demonstrationChecks, batchId } from './demonstration-data.mjs';
 
-const rows=table=>`(select coalesce(jsonb_agg(to_jsonb(t) order by to_jsonb(t)::text),'[]'::jsonb) from ${table} t)`;
-const backupSql=`select jsonb_build_object(${[...dataTables,'vessel_route'].map(t=>`'${t}',${rows('public.'+t)}`).join(',')},'daily_schedule',${rows('barkolink_private.daily_schedule')},'sailing_status_policy',${rows('barkolink_private.sailing_status_policy')}) as data,${usersExpression} as users,now() as captured_at`;
-if(!process.argv.includes('--apply')){
- console.log('Ready: corridor restriction, legacy fee repair, sixty departures and realistic demonstration bookings. Run with --apply to add them.');
- process.exit(0);
+const rows = (table) =>
+  `(select coalesce(jsonb_agg(to_jsonb(t) order by to_jsonb(t)::text),'[]'::jsonb) from ${table} t)`;
+const backupSql = `select jsonb_build_object(${[...dataTables, 'vessel_route'].map((t) => `'${t}',${rows('public.' + t)}`).join(',')},'daily_schedule',${rows('barkolink_private.daily_schedule')},'sailing_status_policy',${rows('barkolink_private.sailing_status_policy')}) as data,${usersExpression} as users,now() as captured_at`;
+if (!process.argv.includes('--apply')) {
+  console.log(
+    'Ready: corridor restriction, legacy fee repair, sixty departures and realistic demonstration bookings. Run with --apply to add them.',
+  );
+  process.exit(0);
 }
-const alreadyInstalled=(await queryLive("select to_regclass('barkolink_private.demonstration_batch') is not null as installed"))[0].installed;
-if(alreadyInstalled && (await queryLive(`select exists(select 1 from barkolink_private.demonstration_batch where id='${batchId}') as done`))[0].done){
- console.log('Demonstration batch is already present; no duplicate records added.');process.exit(0);
+const alreadyInstalled = (
+  await queryLive(
+    "select to_regclass('barkolink_private.demonstration_batch') is not null as installed",
+  )
+)[0].installed;
+if (
+  alreadyInstalled &&
+  (
+    await queryLive(
+      `select exists(select 1 from barkolink_private.demonstration_batch where id='${batchId}') as done`,
+    )
+  )[0].done
+) {
+  console.log('Demonstration batch is already present; no duplicate records added.');
+  process.exit(0);
 }
-fs.mkdirSync('.backups',{recursive:true});
-const backup=(await queryLive(backupSql))[0];
-const file=`.backups/before-corridor-demonstration-${Date.now()}.json`;
-fs.writeFileSync(file,JSON.stringify({projectRef,...backup}),{flag:'wx',mode:0o600});
-const digest=crypto.createHash('sha256').update(fs.readFileSync(file)).digest('hex');
-fs.writeFileSync(`${file}.sha256`,digest,{flag:'wx'});
+fs.mkdirSync('.backups', { recursive: true });
+const backup = (await queryLive(backupSql))[0];
+const file = `.backups/before-corridor-demonstration-${Date.now()}.json`;
+fs.writeFileSync(file, JSON.stringify({ projectRef, ...backup }), { flag: 'wx', mode: 0o600 });
+const digest = crypto.createHash('sha256').update(fs.readFileSync(file)).digest('hex');
+fs.writeFileSync(`${file}.sha256`, digest, { flag: 'wx' });
 console.log(`Verified database backup saved to ${file}.`);
 
-const migration=fs.readFileSync('supabase/migrations/039_batangas_calapan_service_area.sql','utf8');
-await queryLive(`begin;
+const migration = fs.readFileSync(
+  'supabase/migrations/039_batangas_calapan_service_area.sql',
+  'utf8',
+);
+await queryLive(
+  `begin;
 set local lock_timeout='10s';set local statement_timeout='55s';
 select pg_advisory_xact_lock(hashtext('barkolink-corridor-demonstration'));
 lock table public.booking,public.booking_passenger,public.sailing,public.voucher,public.app_user in share row exclusive mode;
@@ -55,14 +74,20 @@ do $$ declare original record; begin
  or original.auth_users is distinct from (select md5(coalesce(jsonb_agg(to_jsonb(u) order by id),'[]'::jsonb)::text) from auth.users u)
  then raise exception 'Existing account, booking, payment, QR or trip changed; entire batch rolled back'; end if;
 end $$;
-commit;`,false);
-console.log('Applied corridor configuration and additive demonstration dataset. Original accounts, totals and QR credentials preserved.');
-const counts=(await queryLive(`select
+commit;`,
+  false,
+);
+console.log(
+  'Applied corridor configuration and additive demonstration dataset. Original accounts, totals and QR credentials preserved.',
+);
+const counts = (
+  await queryLive(`select
  (select count(*)::int from public.port where is_active) active_ports,
  (select count(*)::int from public.vessel where is_active) active_vessels,
  (select count(*)::int from public.ferry_route where is_active) active_routes,
  (select count(*)::int from public.sailing) sailings,
  (select count(*)::int from public.booking) bookings,
  (select count(*)::int from public.booking_passenger) passengers,
- (select manifest->'sailings' from barkolink_private.demonstration_batch where id='${batchId}') new_sailings`))[0];
+ (select manifest->'sailings' from barkolink_private.demonstration_batch where id='${batchId}') new_sailings`)
+)[0];
 console.log(JSON.stringify(counts));

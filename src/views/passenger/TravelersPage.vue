@@ -7,14 +7,14 @@
           <p>SAVE TIME ON YOUR NEXT TRIP</p>
           <h1>Saved travelers</h1>
           <span
-            >Save passenger details for your account. Fare categories are
-            selected and verified for each booking.</span
+            >Save passenger details for your account. Fare categories are selected and verified for
+            each booking.</span
           >
         </div>
         <p v-if="error" class="error" role="alert">{{ error }}</p>
         <p v-if="notice" role="status">{{ notice }}</p>
         <form novalidate @submit.prevent="save">
-          <h2>{{ form.id ? "Edit traveler" : "Add a traveler" }}</h2>
+          <h2>{{ form.id ? 'Edit traveler' : 'Add a traveler' }}</h2>
           <label
             >Full name<input
               v-model.trim="form.fullName"
@@ -61,24 +61,20 @@
           </div>
           <div class="actions">
             <button :disabled="busy">
-              {{ busy ? "Saving…" : "Save traveler" }}</button
-            ><button
-              v-if="form.id"
-              type="button"
-              :disabled="busy"
-              @click="reset"
-            >
+              {{ busy ? 'Saving…' : 'Save traveler' }}</button
+            ><button v-if="form.id" type="button" :disabled="busy" @click="reset">
               Cancel edit
             </button>
           </div>
           <small
-            >Only save details you have permission to use. You can delete them
-            at any time.</small
+            >Only save details you have permission to use. You can delete them at any time.</small
           >
         </form>
         <section class="traveler-list" aria-label="Your travelers">
           <p v-if="loading" role="status">Loading travelers…</p>
-          <p v-else-if="loadError" class="error" role="alert">{{ loadError }} <button type="button" @click="load">Retry</button></p>
+          <p v-else-if="loadError" class="error" role="alert">
+            {{ loadError }} <button type="button" @click="load">Retry</button>
+          </p>
           <p v-else-if="!items.length">No saved travelers yet.</p>
           <article v-for="person in items" :key="person.id">
             <AppIcon :icon="personOutline" aria-hidden="true" />
@@ -95,39 +91,44 @@
   ></ion-page>
 </template>
 <script setup lang="ts">
-import { validName, validPhone, validNationality, mobileNumberError } from '../../data/securityValidation';
+import {
+  validName,
+  validPhone,
+  validNationality,
+  mobileNumberError,
+} from '../../data/securityValidation';
 import { validBirthDate } from '../../data/travelDate';
 import { notifyError, notifySuccess, notifyValidationError } from '@/composables/toast';
-import { confirmAction } from "../../composables/confirmation";
+import { confirmAction } from '../../composables/confirmation';
 import { useFieldErrors } from '../../composables/fieldErrors';
-import { onMounted, reactive, ref, watch } from "vue";
-import { IonPage, IonContent, onIonViewWillEnter } from "@ionic/vue";
-import AppIcon from "@/components/ui/icon/AppIcon.vue";
-import { personOutline } from "ionicons/icons";
-import PassengerHeader from "../../components/passenger/PassengerHeader.vue";
-import PassengerBottomNav from "../../components/passenger/PassengerBottomNav.vue";
+import { onMounted, reactive, ref, watch } from 'vue';
+import { IonPage, IonContent, onIonViewWillEnter } from '@ionic/vue';
+import AppIcon from '@/components/ui/icon/AppIcon.vue';
+import { personOutline } from 'ionicons/icons';
+import PassengerHeader from '../../components/passenger/PassengerHeader.vue';
+import PassengerBottomNav from '../../components/passenger/PassengerBottomNav.vue';
 import {
   deleteTraveler,
   savedTravelers,
   saveTraveler,
   type SavedTraveler,
-} from "../../services/database/experience";
-import { database } from "../../services/session";
-import { databaseRequestError } from "../../data/databaseErrors";
-import { manilaDay } from "../../data/reportAnalytics";
+} from '../../services/database/experience';
+import { database } from '../../services/session';
+import { databaseRequestError } from '../../data/databaseErrors';
+import { manilaDay } from '../../data/reportAnalytics';
 const today = manilaDay(),
   items = ref<SavedTraveler[]>([]),
   loading = ref(false),
   busy = ref(false),
-  error = ref(""),
-  notice = ref("");
+  error = ref(''),
+  notice = ref('');
 const empty = () => ({
-  id: "",
-  fullName: "",
-  birthDate: "",
-  sex: "",
-  phone: "",
-  nationality: "Filipino",
+  id: '',
+  fullName: '',
+  birthDate: '',
+  sex: '',
+  phone: '',
+  nationality: 'Filipino',
 });
 const form = reactive(empty());
 const loadError = ref('');
@@ -140,7 +141,7 @@ function reset() {
 function edit(person: SavedTraveler) {
   clearErrors();
   Object.assign(form, person);
-  notice.value = "";
+  notice.value = '';
   void contentRef.value?.$el.scrollToTop(250).then(() => {
     contentRef.value?.$el.querySelector('form input')?.focus({ preventScroll: true });
   });
@@ -152,21 +153,24 @@ async function load() {
   try {
     items.value = (await savedTravelers(database)).data.travelers;
   } catch (cause) {
-    loadError.value = databaseRequestError(
-      cause,
-      "Could not load saved travelers.",
-    );
+    loadError.value = databaseRequestError(cause, 'Could not load saved travelers.');
   } finally {
     loading.value = false;
   }
 }
 function travelerErrors() {
   const errors: Record<string, string> = {};
-  if (!validName(form.fullName)) errors['traveler-name'] = 'Enter a full name using letters, spaces, apostrophes, periods or hyphens (up to 120 characters).';
-  if (!validBirthDate(form.birthDate)) errors['traveler-birth'] = 'Enter a valid birth date that is not in the future.';
-  if (!['MALE', 'FEMALE', 'OTHER'].includes(form.sex)) errors['traveler-sex'] = 'Select the traveler’s sex.';
+  if (!validName(form.fullName))
+    errors['traveler-name'] =
+      'Enter a full name using letters, spaces, apostrophes, periods or hyphens (up to 120 characters).';
+  if (!validBirthDate(form.birthDate))
+    errors['traveler-birth'] = 'Enter a valid birth date that is not in the future.';
+  if (!['MALE', 'FEMALE', 'OTHER'].includes(form.sex))
+    errors['traveler-sex'] = 'Select the traveler’s sex.';
   if (!validPhone(form.phone)) errors['traveler-phone'] = mobileNumberError;
-  if (!validNationality(form.nationality)) errors['traveler-nationality'] = 'Enter a nationality using letters, spaces, apostrophes or hyphens (up to 60 characters).';
+  if (!validNationality(form.nationality))
+    errors['traveler-nationality'] =
+      'Enter a nationality using letters, spaces, apostrophes or hyphens (up to 60 characters).';
   return errors;
 }
 function fieldAttrs(key: string) {
@@ -187,23 +191,26 @@ async function save() {
     return;
   }
   busy.value = true;
-  error.value = "";
-  notice.value = "";
+  error.value = '';
+  notice.value = '';
   const passenger = { ...form, id: form.id || undefined };
   try {
-    if (!(await confirmAction({
-      title: passenger.id ? 'Save passenger changes?' : 'Save this passenger?',
-      message: passenger.id
-        ? `Would you like to save the updated details for ${passenger.fullName}?`
-        : `Would you like to add ${passenger.fullName} to your saved passengers for future bookings?`,
-      confirmText: passenger.id ? 'Save changes' : 'Save passenger',
-    }))) return;
+    if (
+      !(await confirmAction({
+        title: passenger.id ? 'Save passenger changes?' : 'Save this passenger?',
+        message: passenger.id
+          ? `Would you like to save the updated details for ${passenger.fullName}?`
+          : `Would you like to add ${passenger.fullName} to your saved passengers for future bookings?`,
+        confirmText: passenger.id ? 'Save changes' : 'Save passenger',
+      }))
+    )
+      return;
     await saveTraveler(database, passenger);
     reset();
     await load();
-    notifySuccess("Traveler saved.");
+    notifySuccess('Traveler saved.');
   } catch (cause) {
-    notifyError(databaseRequestError(cause, "Could not save traveler."));
+    notifyError(databaseRequestError(cause, 'Could not save traveler.'));
   } finally {
     busy.value = false;
   }
@@ -212,22 +219,22 @@ async function remove(person: SavedTraveler) {
   if (!database || busy.value) return;
   if (
     !(await confirmAction({
-      title: "Delete saved traveler?",
+      title: 'Delete saved traveler?',
       message: `Remove ${person.fullName} from your saved list? Existing bookings keep their passenger details.`,
-      confirmText: "Delete traveler",
+      confirmText: 'Delete traveler',
       danger: true,
     }))
   )
     return;
   busy.value = true;
-  error.value = "";
+  error.value = '';
   try {
     await deleteTraveler(database, person.id);
     if (form.id === person.id) reset();
     await load();
-    notifySuccess("Traveler deleted.");
+    notifySuccess('Traveler deleted.');
   } catch (cause) {
-    notifyError(databaseRequestError(cause, "Could not delete traveler."));
+    notifyError(databaseRequestError(cause, 'Could not delete traveler.'));
   } finally {
     busy.value = false;
   }
@@ -343,8 +350,14 @@ small {
 .error {
   color: var(--danger);
 }
-.field-error { color: var(--danger); font-weight: 400; }
-input[aria-invalid="true"], select[aria-invalid="true"] { border-color: var(--danger); }
+.field-error {
+  color: var(--danger);
+  font-weight: 400;
+}
+input[aria-invalid='true'],
+select[aria-invalid='true'] {
+  border-color: var(--danger);
+}
 @container passenger (max-width: 600px) {
   .travelers-page {
     padding: 20px 16px 110px;

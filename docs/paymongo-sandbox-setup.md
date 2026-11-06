@@ -26,11 +26,11 @@ supabase functions deploy paymongo
 
 In Supabase Dashboard → Edge Functions → Secrets, set:
 
-| Secret | Value |
-| --- | --- |
-| `PAYMONGO_SECRET_KEY` | Your `sk_test_...` key |
-| `PAYMONGO_RETURN_ORIGIN` | Your website origin, e.g. `https://your-barkolink.vercel.app` |
-| `PAYMONGO_WEBHOOK_SECRET` | The signing secret from step 4 |
+| Secret                    | Value                                                         |
+| ------------------------- | ------------------------------------------------------------- |
+| `PAYMONGO_SECRET_KEY`     | Your `sk_test_...` key                                        |
+| `PAYMONGO_RETURN_ORIGIN`  | Your website origin, e.g. `https://your-barkolink.vercel.app` |
+| `PAYMONGO_WEBHOOK_SECRET` | The signing secret from step 4                                |
 
 `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` are supplied by Supabase to the hosted function. Do not copy them into frontend environment variables. For a local browser demo, the return origin can be `http://localhost:5173` if that is where Vite is running. Use the exact port from your dev server.
 

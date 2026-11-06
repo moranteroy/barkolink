@@ -13,7 +13,12 @@
     "lint": "eslint .",
     "test:database": "node scripts/test-database.mjs",
     "test:browser": "node scripts/test-browser-fixtures.mjs",
-    "android:build": "node scripts/android-build.mjs"
+    "android:build": "node scripts/android-build.mjs",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "setup:editor": "node scripts/configure-editor.mjs",
+    "check:edge": "deno check --config supabase/functions/deno.json supabase/functions/chatbot/index.ts supabase/functions/weather/index.ts supabase/functions/paymongo/index.ts supabase/functions/manage-account/index.ts",
+    "lint:edge": "deno lint --config supabase/functions/deno.json supabase/functions"
   },
   "dependencies": {
     "@capacitor/android": "^8.5.2",
@@ -54,10 +59,12 @@
     "@vue/eslint-config-typescript": "^12.0.0",
     "@vue/test-utils": "^2.3.0",
     "cypress": "^13.5.0",
+    "deno": "2.9.6",
     "eslint": "^8.35.0",
     "eslint-plugin-vue": "^9.9.0",
     "jsdom": "^22.1.0",
     "playwright-core": "^1.63.0",
+    "prettier": "3.9.10",
     "terser": "^5.16.0",
     "typescript": "~5.9.0",
     "vite": "^8.0.0",

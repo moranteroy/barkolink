@@ -10,7 +10,6 @@ Only administrators can update the **Require 2FA for staff** toggle. It saves im
 
 Migration `046_optional_account_mfa.sql` adds the private policy and restricted settings RPCs without removing existing factors or modifying accounts. Deploy the updated `manage-account` function as well. The `my_mfa_settings` endpoint is readable by the signed-in account before step-up so login can distinguish optional and required MFA. The service-only `admin_mfa_requirement` endpoint is restricted to trusted account-management code.
 
-
 Migration `047_preserve_authenticator_on_toggle.sql` separates the application requirement from the linked Auth factor. It does not remove or recreate factors. Previously unenrolled authenticators cannot be recovered from their old app entry; they must be linked once again through QR setup. Policy-required staff accounts cannot pause 2FA; policy takes precedence over a paused preference. A code is verified in Supabase Auth before the preference RPC. The backend checks the signed JWT's recent TOTP AMR timestamp and rejects reuse. Authenticator secrets remain solely in Supabase Auth.
 
 Authenticator setup QR images are generated from the exact Auth enrollment URI with black modules, a white background, a four-module quiet zone, and an integral display scale. Short laptop layouts retain the larger QR. The browser audit decodes the displayed QR at laptop and mobile sizes in both themes; manual setup instructions specify a Time-based key.

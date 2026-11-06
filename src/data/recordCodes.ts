@@ -11,12 +11,19 @@ function randomToken(length: number, characters: string): string {
   return result;
 }
 export function bookingReference(now = new Date()): string {
-  const parts = new Intl.DateTimeFormat('en', { timeZone: 'Asia/Manila', year: 'numeric', month: '2-digit', day: '2-digit' }).formatToParts(now);
-  const part = (type: string) => parts.find(p => p.type === type)!.value;
+  const parts = new Intl.DateTimeFormat('en', {
+    timeZone: 'Asia/Manila',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).formatToParts(now);
+  const part = (type: string) => parts.find((p) => p.type === type)!.value;
   return `BKG${part('year')}-${part('month')}${part('day')}${randomToken(12, '0123456789')}`;
 }
 export function voucherCode(): string {
   let token: string;
-  do { token = randomToken(16, alphabet); } while (!/[A-Z]/.test(token) || !/[0-9]/.test(token));
+  do {
+    token = randomToken(16, alphabet);
+  } while (!/[A-Z]/.test(token) || !/[0-9]/.test(token));
   return `VCH-${token}`;
 }

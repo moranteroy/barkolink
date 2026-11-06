@@ -1,12 +1,26 @@
 <template>
   <section class="audit-panel" aria-label="Audit records">
-    <form class="audit-filters" @submit.prevent="applyFilters"><div class="filter-heading"><div><p class="eyebrow">ACTIVITY SEARCH</p><h2>Filter audit history</h2></div><span class="filter-time-note">Dates use Philippine time</span><div class="filter-actions"><Button type="submit" :disabled="loading">Apply filters</Button><Button variant="outline" type="button" :disabled="loading" @click="reset">Reset</Button></div></div>
+    <form class="audit-filters" @submit.prevent="applyFilters">
+      <div class="filter-heading">
+        <div>
+          <p class="eyebrow">ACTIVITY SEARCH</p>
+          <h2>Filter audit history</h2>
+        </div>
+        <span class="filter-time-note">Dates use Philippine time</span>
+        <div class="filter-actions">
+          <Button type="submit" :disabled="loading">Apply filters</Button
+          ><Button variant="outline" type="button" :disabled="loading" @click="reset">Reset</Button>
+        </div>
+      </div>
       <label class="audit-search"
-        >Search activity<div class="search-field"><AppIcon :icon="searchOutline" aria-hidden="true" /><input
-          v-model.trim="search"
-          type="search"
-          maxlength="120"
-          placeholder="Person, action, or record" /></div></label
+        >Search activity
+        <div class="search-field">
+          <AppIcon :icon="searchOutline" aria-hidden="true" /><input
+            v-model.trim="search"
+            type="search"
+            maxlength="120"
+            placeholder="Person, action, or record"
+          /></div></label
       ><label
         >Action<select v-model="action" aria-label="Action">
           <option value="">All actions</option>
@@ -17,124 +31,209 @@
       ><label
         >Record type<select v-model="entityType" aria-label="Record type">
           <option value="">All records</option>
-          <option v-for="type in entityTypes" :key="type" :value="type">{{ humanize(type) }}</option>
+          <option v-for="type in entityTypes" :key="type" :value="type">
+            {{ humanize(type) }}
+          </option>
         </select></label
       ><label>From date<input v-model="fromDate" type="date" /></label
-      ><label>To date<input v-model="toDate" type="date" /></label
-      >
+      ><label>To date<input v-model="toDate" type="date" /></label>
     </form>
-    <div v-if="error" class="audit-error" role="alert"><AppIcon :icon="alertCircleOutline" aria-hidden="true" /><p>{{ error }}</p><Button variant="outline" :disabled="loading" @click="load">Retry loading</Button></div><div class="audit-directory">
-    <div class="audit-summary">
-      <div>
-        <p class="eyebrow">ACCOUNTABILITY</p>
-        <h2>System activity</h2>
+    <div v-if="error" class="audit-error" role="alert">
+      <AppIcon :icon="alertCircleOutline" aria-hidden="true" />
+      <p>{{ error }}</p>
+      <Button variant="outline" :disabled="loading" @click="load">Retry loading</Button>
+    </div>
+    <div class="audit-directory">
+      <div class="audit-summary">
+        <div>
+          <p class="eyebrow">ACCOUNTABILITY</p>
+          <h2>System activity</h2>
+        </div>
+        <Badge>{{ total.toLocaleString() }} matching records</Badge>
       </div>
-      <Badge>{{ total.toLocaleString() }} matching records</Badge>
-    </div>
-    <p v-if="loading" role="status" class="audit-empty">Loading activity…</p>
-    <RecordsGrid
-      v-else-if="records.length"
-      title="Audit records table"
-      :columns="['When', 'Who', 'Action', 'Record', 'Details']"
-      :display-only-columns="[4]"
-      :column-types="['date', 'text', 'text', 'text', 'text']"
-      density="compact"
-      :column-min-widths="[180, 200, 160, 210, 160]"
-      :column-flex="[1, 1.1, 1, 1.1, .9]"
-      :max-grid-height="360"
-      :rows="gridRows"
-    >
-      <template #cell="{ row, index }">
-        <time v-if="index === 0" :datetime="row.source.createdAt">{{
-          date(row.source.createdAt)
-        }}</time>
-        <span v-else-if="index === 1" class="actor"
-          ><span class="actor-avatar" aria-hidden="true">{{
-            row.source.actorName.slice(0, 1).toUpperCase()
-          }}</span
-          ><span class="actor-info"
-            ><strong>{{ row.source.actorName }}</strong
-            ><small
-              class="actor-role"
-              :title="isLegacyRole(row.source) ? legacyRoleNote : undefined"
-              >{{ roleName(row.source.actorRole) }}</small
+      <p v-if="loading" role="status" class="audit-empty">Loading activity…</p>
+      <RecordsGrid
+        v-else-if="records.length"
+        title="Audit records table"
+        :columns="['When', 'Who', 'Action', 'Record', 'Details']"
+        :display-only-columns="[4]"
+        :column-types="['date', 'text', 'text', 'text', 'text']"
+        density="compact"
+        :column-min-widths="[180, 200, 160, 210, 160]"
+        :column-flex="[1, 1.1, 1, 1.1, 0.9]"
+        :max-grid-height="360"
+        :rows="gridRows"
+      >
+        <template #cell="{ row, index }">
+          <time v-if="index === 0" :datetime="row.source.createdAt">{{
+            date(row.source.createdAt)
+          }}</time>
+          <span v-else-if="index === 1" class="actor"
+            ><span class="actor-avatar" aria-hidden="true">{{
+              row.source.actorName.slice(0, 1).toUpperCase()
+            }}</span
+            ><span class="actor-info"
+              ><strong>{{ row.source.actorName }}</strong
+              ><small
+                class="actor-role"
+                :title="isLegacyRole(row.source) ? legacyRoleNote : undefined"
+                >{{ roleName(row.source.actorRole) }}</small
+              ></span
             ></span
-          ></span
-        >
-        <Badge v-else-if="index === 2" :variant="actionVariant(row.source.action)">{{ auditAction(row.source.action) }}</Badge>
-        <span v-else-if="index === 3" class="audit-record"
-          ><strong>{{ humanize(row.source.entityType) }}</strong
-          ><small :title="row.source.entityId">{{ shortRecordId(row.source.entityId) }}</small></span
-        >
-        <template v-else><Button v-if="Object.keys(row.source.details || {}).length" variant="outline" size="sm" class="view-changes" :aria-label="`View changes: ${auditAction(row.source.action)}, ${row.source.actorName}, ${date(row.source.createdAt)}`" @click="selectedRecord = row.source"><AppIcon :icon="documentTextOutline" aria-hidden="true" />View changes</Button><span v-else class="muted">No additional details</span></template>
-      </template>
-    </RecordsGrid>
-    <div v-else-if="!error" class="audit-empty"><AppIcon :icon="listOutline" aria-hidden="true" />
-      <h3>No matching activity</h3>
-      <p>Try another person, action, or date range.</p>
+          >
+          <Badge v-else-if="index === 2" :variant="actionVariant(row.source.action)">{{
+            auditAction(row.source.action)
+          }}</Badge>
+          <span v-else-if="index === 3" class="audit-record"
+            ><strong>{{ humanize(row.source.entityType) }}</strong
+            ><small :title="row.source.entityId">{{
+              shortRecordId(row.source.entityId)
+            }}</small></span
+          >
+          <template v-else
+            ><Button
+              v-if="Object.keys(row.source.details || {}).length"
+              variant="outline"
+              size="sm"
+              class="view-changes"
+              :aria-label="`View changes: ${auditAction(row.source.action)}, ${row.source.actorName}, ${date(row.source.createdAt)}`"
+              @click="selectedRecord = row.source"
+              ><AppIcon :icon="documentTextOutline" aria-hidden="true" />View changes</Button
+            ><span v-else class="muted">No additional details</span></template
+          >
+        </template>
+      </RecordsGrid>
+      <div v-else-if="!error" class="audit-empty">
+        <AppIcon :icon="listOutline" aria-hidden="true" />
+        <h3>No matching activity</h3>
+        <p>Try another person, action, or date range.</p>
+      </div>
+      <details v-if="hasLegacyRoles" class="legacy-role-help">
+        <summary>About roles in older records</summary>
+        <p>{{ legacyRoleNote }}</p>
+      </details>
+      <WorkspacePagination
+        :page="page"
+        :total="total"
+        :disabled="loading"
+        @change="move($event - page)"
+        >{{ records.length ? page * 30 + 1 : 0 }}–{{
+          records.length ? page * 30 + records.length : 0
+        }}
+        of {{ total.toLocaleString() }} records</WorkspacePagination
+      >
     </div>
-    <details v-if="hasLegacyRoles" class="legacy-role-help">
-      <summary>About roles in older records</summary>
-      <p>{{ legacyRoleNote }}</p>
-    </details>
-<WorkspacePagination :page="page" :total="total" :disabled="loading" @change="move($event - page)">{{ records.length ? page * 30 + 1 : 0 }}–{{ records.length ? page * 30 + records.length : 0 }} of {{ total.toLocaleString() }} records</WorkspacePagination></div>
-    <IonModal :is-open="!!selectedRecord" class="audit-details-modal" @didDismiss="selectedRecord = null"><section v-if="selectedRecord" class="audit-dialog"><header><div><p class="eyebrow">AUDIT ENTRY</p><h2>{{ auditAction(selectedRecord.action) }}</h2></div><Button variant="ghost" size="icon" aria-label="Close audit details" @click="selectedRecord = null"><AppIcon :icon="closeOutline" aria-hidden="true" /></Button></header><div class="audit-dialog-scroll"><dl class="entry-context"><div><dt>When</dt><dd>{{ date(selectedRecord.createdAt) }} (PH)</dd></div><div><dt>Who</dt><dd>{{ selectedRecord.actorName }}<small>{{ roleName(selectedRecord.actorRole) }}</small></dd></div><div><dt>Record</dt><dd>{{ humanize(selectedRecord.entityType) }}<small>{{ selectedRecord.entityId }}</small></dd></div></dl><p v-if="isLegacyRole(selectedRecord)" class="legacy-note">{{ legacyRoleNote }}</p><h3>Recorded changes</h3><AuditChanges :details="selectedRecord.details" /></div><footer><Button variant="outline" @click="selectedRecord = null">Close</Button></footer></section></IonModal>
+    <IonModal
+      :is-open="!!selectedRecord"
+      class="audit-details-modal"
+      @didDismiss="selectedRecord = null"
+      ><section v-if="selectedRecord" class="audit-dialog">
+        <header>
+          <div>
+            <p class="eyebrow">AUDIT ENTRY</p>
+            <h2>{{ auditAction(selectedRecord.action) }}</h2>
+          </div>
+          <Button
+            variant="ghost"
+            size="icon"
+            aria-label="Close audit details"
+            @click="selectedRecord = null"
+            ><AppIcon :icon="closeOutline" aria-hidden="true"
+          /></Button>
+        </header>
+        <div class="audit-dialog-scroll">
+          <dl class="entry-context">
+            <div>
+              <dt>When</dt>
+              <dd>{{ date(selectedRecord.createdAt) }} (PH)</dd>
+            </div>
+            <div>
+              <dt>Who</dt>
+              <dd>
+                {{ selectedRecord.actorName
+                }}<small>{{ roleName(selectedRecord.actorRole) }}</small>
+              </dd>
+            </div>
+            <div>
+              <dt>Record</dt>
+              <dd>
+                {{ humanize(selectedRecord.entityType)
+                }}<small>{{ selectedRecord.entityId }}</small>
+              </dd>
+            </div>
+          </dl>
+          <p v-if="isLegacyRole(selectedRecord)" class="legacy-note">{{ legacyRoleNote }}</p>
+          <h3>Recorded changes</h3>
+          <AuditChanges :details="selectedRecord.details" />
+        </div>
+        <footer><Button variant="outline" @click="selectedRecord = null">Close</Button></footer>
+      </section></IonModal
+    >
   </section>
 </template>
 <script setup lang="ts">
-import WorkspacePagination from "../shared/WorkspacePagination.vue";
-import { computed, onMounted, ref, watch } from "vue";
-import { useRoute } from "vue-router";
+import WorkspacePagination from '../shared/WorkspacePagination.vue';
+import { computed, onMounted, ref, watch } from 'vue';
+import { useRoute } from 'vue-router';
 import { IonModal } from '@ionic/vue';
-import AppIcon from "@/components/ui/icon/AppIcon.vue";
-import { alertCircleOutline, closeOutline, documentTextOutline, listOutline, searchOutline } from 'ionicons/icons';
+import AppIcon from '@/components/ui/icon/AppIcon.vue';
+import {
+  alertCircleOutline,
+  closeOutline,
+  documentTextOutline,
+  listOutline,
+  searchOutline,
+} from 'ionicons/icons';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import RecordsGrid from "../shared/RecordsGrid.vue";
-import AuditChanges from "./AuditChanges.vue";
-import {
-  auditLabel as humanize,
-  auditAction,
-} from "../../data/auditPresentation";
-import { staffDatabase } from "../../services/session";
+import RecordsGrid from '../shared/RecordsGrid.vue';
+import AuditChanges from './AuditChanges.vue';
+import { auditLabel as humanize, auditAction } from '../../data/auditPresentation';
+import { staffDatabase } from '../../services/session';
 import {
   auditLog,
   type ActivityRecord,
   type AuditFilters,
-} from "../../services/database/operations";
-import { databaseRequestError } from "../../data/databaseErrors";
-const shortRecordId = (value: string) => value.length > 20 ? `${value.slice(0, 8)}…${value.slice(-4)}` : value;
+} from '../../services/database/operations';
+import { databaseRequestError } from '../../data/databaseErrors';
+const shortRecordId = (value: string) =>
+  value.length > 20 ? `${value.slice(0, 8)}…${value.slice(-4)}` : value;
 const selectedRecord = ref<ActivityRecord | null>(null);
-const actionVariant = (value: string): 'default' | 'warning' | 'destructive' | 'success' => /DELETE|CANCEL/.test(value) ? 'destructive' : /EXPIRE|REFUND/.test(value) ? 'warning' : /CREATE|INSERT|SAVED|PAYMENT_RECEIVED/.test(value) ? 'success' : 'default';
+const actionVariant = (value: string): 'default' | 'warning' | 'destructive' | 'success' =>
+  /DELETE|CANCEL/.test(value)
+    ? 'destructive'
+    : /EXPIRE|REFUND/.test(value)
+      ? 'warning'
+      : /CREATE|INSERT|SAVED|PAYMENT_RECEIVED/.test(value)
+        ? 'success'
+        : 'default';
 const route = useRoute();
-const entityType = ref(
-  typeof route.query.entityType === "string" ? route.query.entityType : "",
-);
+const entityType = ref(typeof route.query.entityType === 'string' ? route.query.entityType : '');
 const roleName = (role?: string) =>
   ({
-    ADMIN: "Administrator",
-    TICKETING: "Ticketing staff",
-    BOARDING: "Boarding staff",
-    PASSENGER: "Passenger",
-    SYSTEM: "System",
-    UNKNOWN: "Role unavailable",
-  })[role || "UNKNOWN"] || "Role unavailable";
-const search = ref(""),
-  action = ref(""),
-  fromDate = ref(""),
-  toDate = ref("");
+    ADMIN: 'Administrator',
+    TICKETING: 'Ticketing staff',
+    BOARDING: 'Boarding staff',
+    PASSENGER: 'Passenger',
+    SYSTEM: 'System',
+    UNKNOWN: 'Role unavailable',
+  })[role || 'UNKNOWN'] || 'Role unavailable';
+const search = ref(''),
+  action = ref(''),
+  fromDate = ref(''),
+  toDate = ref('');
 const records = ref<ActivityRecord[]>([]),
   actions = ref<string[]>([]),
   page = ref(0),
   total = ref(0),
   loading = ref(false),
-  error = ref("");
+  error = ref('');
 const legacyRoleNote =
   "Older records did not save the role at the time of the action. The role shown is the account's present role.";
 const isLegacyRole = (record: ActivityRecord) =>
   record.actorRoleRecorded === false &&
   !!record.actorRole &&
-  !["SYSTEM", "UNKNOWN"].includes(record.actorRole);
+  !['SYSTEM', 'UNKNOWN'].includes(record.actorRole);
 const gridRows = computed(() =>
   records.value.map((record) => ({
     key: record.id,
@@ -142,27 +241,40 @@ const gridRows = computed(() =>
     sortValues: [new Date(record.createdAt).getTime()],
     cells: [
       date(record.createdAt),
-      record.actorName + " " + roleName(record.actorRole),
+      record.actorName + ' ' + roleName(record.actorRole),
       auditAction(record.action),
-      humanize(record.entityType) + " " + record.entityId,
-      "",
+      humanize(record.entityType) + ' ' + record.entityId,
+      '',
     ],
   })),
 );
-const entityTypes = computed(() => [...new Set(['operation_settings', 'booking', 'sailing', 'booking_passenger', 'accommodation', 'travel_advisory', 'ferry_route', 'notification_campaign', ...records.value.map(record => record.entityType), ...(entityType.value ? [entityType.value] : [])])]);
+const entityTypes = computed(() => [
+  ...new Set([
+    'operation_settings',
+    'booking',
+    'sailing',
+    'booking_passenger',
+    'accommodation',
+    'travel_advisory',
+    'ferry_route',
+    'notification_campaign',
+    ...records.value.map((record) => record.entityType),
+    ...(entityType.value ? [entityType.value] : []),
+  ]),
+]);
 const hasLegacyRoles = computed(() => records.value.some(isLegacyRole));
-let applied: Omit<AuditFilters, "page"> = { entityType: entityType.value };
+let applied: Omit<AuditFilters, 'page'> = { entityType: entityType.value };
 
 const date = (value: string) =>
-  new Intl.DateTimeFormat("en-PH", {
-    timeZone: "Asia/Manila",
-    dateStyle: "medium",
-    timeStyle: "short",
+  new Intl.DateTimeFormat('en-PH', {
+    timeZone: 'Asia/Manila',
+    dateStyle: 'medium',
+    timeStyle: 'short',
   }).format(new Date(value));
 async function load() {
   if (!staffDatabase || loading.value) return;
   loading.value = true;
-  error.value = "";
+  error.value = '';
   records.value = [];
   try {
     const result = await auditLog(staffDatabase, {
@@ -173,7 +285,7 @@ async function load() {
     total.value = result.data.totalCount;
     actions.value = result.data.actions;
   } catch (cause) {
-    error.value = databaseRequestError(cause, "Could not load audit records.");
+    error.value = databaseRequestError(cause, 'Could not load audit records.');
     total.value = 0;
   } finally {
     loading.value = false;
@@ -182,7 +294,7 @@ async function load() {
 function applyFilters() {
   if (loading.value) return;
   if (fromDate.value && toDate.value && fromDate.value > toDate.value) {
-    error.value = "From date must be on or before To date.";
+    error.value = 'From date must be on or before To date.';
     return;
   }
   applied = {
@@ -196,88 +308,432 @@ function applyFilters() {
   void load();
 }
 function reset() {
-  entityType.value = "";
-  search.value = "";
-  action.value = "";
-  fromDate.value = "";
-  toDate.value = "";
+  entityType.value = '';
+  search.value = '';
+  action.value = '';
+  fromDate.value = '';
+  toDate.value = '';
   applyFilters();
 }
 function move(delta: number) {
-  if (loading.value || page.value + delta < 0 || (page.value + delta) * 30 >= Math.max(total.value, 1)) return;
+  if (
+    loading.value ||
+    page.value + delta < 0 ||
+    (page.value + delta) * 30 >= Math.max(total.value, 1)
+  )
+    return;
   page.value += delta;
   void load();
 }
 watch(
   () => route.query.entityType,
   (value) => {
-    entityType.value = typeof value === "string" ? value : "";
+    entityType.value = typeof value === 'string' ? value : '';
     applyFilters();
   },
 );
 onMounted(load);
 </script>
 <style scoped>
-.audit-panel { display:grid; gap:14px; min-width:0; font-family:var(--ion-font-family); }
-.audit-filters,.audit-directory { border:1px solid var(--line); border-radius:14px; background:var(--surface); min-width:0; }
-.audit-directory { overflow:hidden; }
-.audit-filters { display:grid; grid-template-columns:minmax(200px,2fr) repeat(4,minmax(120px,1fr)); gap:10px 12px; padding:14px 16px; }
-.filter-heading { grid-column:1/-1; display:flex; justify-content:space-between; align-items:center; gap:14px; padding-bottom:10px; border-bottom:1px solid var(--line); }
-.filter-heading > span { font-size: var(--text-caption); color:var(--muted); }
-label { display:grid; align-content:start; gap:8px; font-size: var(--text-label); font-weight:600; min-width:0; color:var(--muted); }
-input,select { width:100%; min-width:0; height:40px; padding:0 12px; border:1px solid var(--line); border-radius:9px; background:var(--surface-soft); color:var(--ink); font:inherit; font-size: var(--text-label); }
-.search-field { position:relative; }
-.search-field input { padding-left:36px; }
-.search-field .app-icon { position:absolute; left:12px; top:13px; font-size:16px; pointer-events:none; color:var(--muted); }
-.filter-actions { display:flex; gap:8px; justify-content:flex-end; margin-left:auto; }
-.audit-summary { display:flex; justify-content:space-between; align-items:center; gap:10px 12px; padding:14px 16px; border-bottom:1px solid var(--line); }
-.eyebrow { font-size: var(--text-caption); letter-spacing:.1em; font-weight:800; color:var(--ocean); margin:0 0 7px; }
-h2 { margin:0; font-size:17px; color:var(--ink); }
-.directory-note { font-size: var(--text-label); line-height:1.6; color:var(--muted); margin:7px 0 0; }
-.muted { font-size: var(--text-caption); color:var(--muted); }
-.actor { display:flex; align-items:center; gap:10px; }
-.actor-info { display:grid; gap:2px; min-width:0; }
-.actor-info strong { font-weight:600; color:var(--ink); }
-.actor-role { margin:0; font-size: var(--text-caption); color:var(--muted); }
-.actor-avatar { display:grid; place-items:center; width:28px; height:28px; flex:none; border-radius:50%; background:var(--light-blue); color:var(--ocean); font-weight:700; }
-.audit-record { display:grid; gap:2px; min-width:0; }
-.audit-record small { color:var(--muted); font-size: var(--text-caption); overflow-wrap:anywhere; }
-time { font-size: var(--text-caption); }
-.audit-empty { text-align:center; padding:24px 16px; color:var(--muted); font-size: var(--text-label); }
-.audit-empty > .app-icon { font-size:30px; color:var(--ocean); }
-.audit-empty h3 { color:var(--ink); margin:12px 0 8px; }
-.audit-error { display:flex; align-items:center; gap:12px; padding:16px 20px; color:#bd3b45; border:1px solid #bd3b4533; background:var(--surface); border-radius:12px; font-size: var(--text-label); }
-.audit-error p { flex:1; margin:0; }
-.audit-error .app-icon { font-size:22px; flex:none; }
-.legacy-role-help { margin:10px 16px; padding:10px 12px; border:1px solid var(--line); border-radius:10px; background:var(--surface-soft); }
-.legacy-role-help summary { cursor:pointer; font-size: var(--text-caption); color:var(--muted); }
-.legacy-role-help p,.legacy-note { max-width:650px; font-size: var(--text-label); line-height:1.6; color:var(--muted); margin:10px 0 0; }
-.audit-details-modal { --width:min(600px, calc(100vw - 32px)); --height:auto; --max-height:calc(100dvh - 32px); --border-radius:16px; --background:var(--surface); }
-.audit-dialog { display:flex; flex-direction:column; max-height:calc(100dvh - 32px); overflow:hidden; background:var(--surface); color:var(--ink); }
-.audit-dialog header { display:flex; align-items:center; justify-content:space-between; gap:10px 12px; padding:14px 16px; border-bottom:1px solid var(--line); flex:none; }
-.audit-dialog-scroll { padding:14px 20px; scrollbar-width:thin; overflow-y:auto; min-height:0; flex:1; overscroll-behavior:contain; }
-.entry-context { display:grid; grid-template-columns:1fr 1fr; gap:12px; padding:12px 14px; margin:0 0 14px; border:1px solid var(--line); border-radius:12px; background:var(--surface-soft); }
-.entry-context > div:last-child { grid-column:1/-1; }
-.entry-context dt { color:var(--muted); font-size: var(--text-caption); margin-bottom:6px; }
-.entry-context dd { margin:0; font-size: var(--text-label); overflow-wrap:anywhere; }
-.entry-context small { display:block; color:var(--muted); font-size: var(--text-caption); margin-top:5px; }
-.audit-dialog h3 { font-size:14px; margin:14px 0 0; }
-.audit-dialog :deep(.readable-changes) { max-width:none; }
-.audit-dialog footer { display:flex; justify-content:flex-end; padding:12px 20px; background:var(--surface-soft); border-top:1px solid var(--line); flex:none; }
-@media(max-width:1000px) { .audit-filters { grid-template-columns:repeat(3,minmax(0,1fr)); } .audit-search { grid-column:span 2; } }
-@media(max-width:600px) { .filter-heading { flex-wrap:wrap; } .filter-actions { width:100%; margin:0; } .audit-filters input,.audit-filters select { height:44px; font-size:16px; } .audit-directory :deep(.grid-tools) { flex-wrap:wrap; } .audit-dialog footer button { min-height:44px; width:100%; }  .audit-filters { padding:16px; grid-template-columns:repeat(2,minmax(0,1fr)); gap:14px; } .audit-search { grid-column:1/-1; } .filter-heading,.audit-summary { align-items:start; flex-direction:column; } .filter-actions > button { flex:1; } .audit-summary { padding:18px; } .audit-details-modal { --width:calc(100vw - 24px); } .audit-dialog header,.audit-dialog-scroll { padding:16px; } .entry-context { grid-template-columns:1fr; } .audit-error { flex-wrap:wrap; } }
-.audit-directory :deep(.grid-tools) { padding:8px 16px; border-bottom:1px solid var(--line); }
-.audit-directory :deep(.grid-tools button) { min-height:34px; padding:6px 8px; }
-.audit-directory :deep(.desktop-grid) { padding:8px; }
-.audit-directory :deep(.grid-cell-content) { font-size: var(--text-label); line-height:1.5; padding:7px 0; }
-.audit-directory :deep(.workspace-pagination) { padding:12px 16px; }
-.audit-directory :deep(.workspace-pagination button) { min-height:34px; }
-.audit-directory .view-changes { min-height:32px; padding:5px 8px; font-size: var(--text-caption); }
-.audit-dialog { font-family:var(--ion-font-family); }
-.audit-dialog header > button { width:44px; height:44px; padding:0; flex:none; }
-.audit-dialog header > button .app-icon { font-size:20px; }
-.audit-dialog :deep(.readable-changes) { gap:10px; }
-.filter-time-note { white-space:nowrap; }
-input:focus-visible, select:focus-visible { outline:2px solid var(--ocean); outline-offset:2px; }
-@media(max-width:700px) { .filter-heading { flex-wrap:wrap; } .filter-time-note { white-space:normal; } .audit-directory .view-changes { min-height:44px; } }
+.audit-panel {
+  display: grid;
+  gap: 14px;
+  min-width: 0;
+  font-family: var(--ion-font-family);
+}
+.audit-filters,
+.audit-directory {
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--surface);
+  min-width: 0;
+}
+.audit-directory {
+  overflow: hidden;
+}
+.audit-filters {
+  display: grid;
+  grid-template-columns: minmax(200px, 2fr) repeat(4, minmax(120px, 1fr));
+  gap: 10px 12px;
+  padding: 14px 16px;
+}
+.filter-heading {
+  grid-column: 1/-1;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 14px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--line);
+}
+.filter-heading > span {
+  font-size: var(--text-caption);
+  color: var(--muted);
+}
+label {
+  display: grid;
+  align-content: start;
+  gap: 8px;
+  font-size: var(--text-label);
+  font-weight: 600;
+  min-width: 0;
+  color: var(--muted);
+}
+input,
+select {
+  width: 100%;
+  min-width: 0;
+  height: 40px;
+  padding: 0 12px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: var(--surface-soft);
+  color: var(--ink);
+  font: inherit;
+  font-size: var(--text-label);
+}
+.search-field {
+  position: relative;
+}
+.search-field input {
+  padding-left: 36px;
+}
+.search-field .app-icon {
+  position: absolute;
+  left: 12px;
+  top: 13px;
+  font-size: 16px;
+  pointer-events: none;
+  color: var(--muted);
+}
+.filter-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  margin-left: auto;
+}
+.audit-summary {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px 12px;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--line);
+}
+.eyebrow {
+  font-size: var(--text-caption);
+  letter-spacing: 0.1em;
+  font-weight: 800;
+  color: var(--ocean);
+  margin: 0 0 7px;
+}
+h2 {
+  margin: 0;
+  font-size: 17px;
+  color: var(--ink);
+}
+.directory-note {
+  font-size: var(--text-label);
+  line-height: 1.6;
+  color: var(--muted);
+  margin: 7px 0 0;
+}
+.muted {
+  font-size: var(--text-caption);
+  color: var(--muted);
+}
+.actor {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.actor-info {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+.actor-info strong {
+  font-weight: 600;
+  color: var(--ink);
+}
+.actor-role {
+  margin: 0;
+  font-size: var(--text-caption);
+  color: var(--muted);
+}
+.actor-avatar {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  flex: none;
+  border-radius: 50%;
+  background: var(--light-blue);
+  color: var(--ocean);
+  font-weight: 700;
+}
+.audit-record {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+.audit-record small {
+  color: var(--muted);
+  font-size: var(--text-caption);
+  overflow-wrap: anywhere;
+}
+time {
+  font-size: var(--text-caption);
+}
+.audit-empty {
+  text-align: center;
+  padding: 24px 16px;
+  color: var(--muted);
+  font-size: var(--text-label);
+}
+.audit-empty > .app-icon {
+  font-size: 30px;
+  color: var(--ocean);
+}
+.audit-empty h3 {
+  color: var(--ink);
+  margin: 12px 0 8px;
+}
+.audit-error {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 20px;
+  color: #bd3b45;
+  border: 1px solid #bd3b4533;
+  background: var(--surface);
+  border-radius: 12px;
+  font-size: var(--text-label);
+}
+.audit-error p {
+  flex: 1;
+  margin: 0;
+}
+.audit-error .app-icon {
+  font-size: 22px;
+  flex: none;
+}
+.legacy-role-help {
+  margin: 10px 16px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface-soft);
+}
+.legacy-role-help summary {
+  cursor: pointer;
+  font-size: var(--text-caption);
+  color: var(--muted);
+}
+.legacy-role-help p,
+.legacy-note {
+  max-width: 650px;
+  font-size: var(--text-label);
+  line-height: 1.6;
+  color: var(--muted);
+  margin: 10px 0 0;
+}
+.audit-details-modal {
+  --width: min(600px, calc(100vw - 32px));
+  --height: auto;
+  --max-height: calc(100dvh - 32px);
+  --border-radius: 16px;
+  --background: var(--surface);
+}
+.audit-dialog {
+  display: flex;
+  flex-direction: column;
+  max-height: calc(100dvh - 32px);
+  overflow: hidden;
+  background: var(--surface);
+  color: var(--ink);
+}
+.audit-dialog header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px 12px;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--line);
+  flex: none;
+}
+.audit-dialog-scroll {
+  padding: 14px 20px;
+  scrollbar-width: thin;
+  overflow-y: auto;
+  min-height: 0;
+  flex: 1;
+  overscroll-behavior: contain;
+}
+.entry-context {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  padding: 12px 14px;
+  margin: 0 0 14px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface-soft);
+}
+.entry-context > div:last-child {
+  grid-column: 1/-1;
+}
+.entry-context dt {
+  color: var(--muted);
+  font-size: var(--text-caption);
+  margin-bottom: 6px;
+}
+.entry-context dd {
+  margin: 0;
+  font-size: var(--text-label);
+  overflow-wrap: anywhere;
+}
+.entry-context small {
+  display: block;
+  color: var(--muted);
+  font-size: var(--text-caption);
+  margin-top: 5px;
+}
+.audit-dialog h3 {
+  font-size: 14px;
+  margin: 14px 0 0;
+}
+.audit-dialog :deep(.readable-changes) {
+  max-width: none;
+}
+.audit-dialog footer {
+  display: flex;
+  justify-content: flex-end;
+  padding: 12px 20px;
+  background: var(--surface-soft);
+  border-top: 1px solid var(--line);
+  flex: none;
+}
+@media (max-width: 1000px) {
+  .audit-filters {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .audit-search {
+    grid-column: span 2;
+  }
+}
+@media (max-width: 600px) {
+  .filter-heading {
+    flex-wrap: wrap;
+  }
+  .filter-actions {
+    width: 100%;
+    margin: 0;
+  }
+  .audit-filters input,
+  .audit-filters select {
+    height: 44px;
+    font-size: 16px;
+  }
+  .audit-directory :deep(.grid-tools) {
+    flex-wrap: wrap;
+  }
+  .audit-dialog footer button {
+    min-height: 44px;
+    width: 100%;
+  }
+  .audit-filters {
+    padding: 16px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px;
+  }
+  .audit-search {
+    grid-column: 1/-1;
+  }
+  .filter-heading,
+  .audit-summary {
+    align-items: start;
+    flex-direction: column;
+  }
+  .filter-actions > button {
+    flex: 1;
+  }
+  .audit-summary {
+    padding: 18px;
+  }
+  .audit-details-modal {
+    --width: calc(100vw - 24px);
+  }
+  .audit-dialog header,
+  .audit-dialog-scroll {
+    padding: 16px;
+  }
+  .entry-context {
+    grid-template-columns: 1fr;
+  }
+  .audit-error {
+    flex-wrap: wrap;
+  }
+}
+.audit-directory :deep(.grid-tools) {
+  padding: 8px 16px;
+  border-bottom: 1px solid var(--line);
+}
+.audit-directory :deep(.grid-tools button) {
+  min-height: 34px;
+  padding: 6px 8px;
+}
+.audit-directory :deep(.desktop-grid) {
+  padding: 8px;
+}
+.audit-directory :deep(.grid-cell-content) {
+  font-size: var(--text-label);
+  line-height: 1.5;
+  padding: 7px 0;
+}
+.audit-directory :deep(.workspace-pagination) {
+  padding: 12px 16px;
+}
+.audit-directory :deep(.workspace-pagination button) {
+  min-height: 34px;
+}
+.audit-directory .view-changes {
+  min-height: 32px;
+  padding: 5px 8px;
+  font-size: var(--text-caption);
+}
+.audit-dialog {
+  font-family: var(--ion-font-family);
+}
+.audit-dialog header > button {
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  flex: none;
+}
+.audit-dialog header > button .app-icon {
+  font-size: 20px;
+}
+.audit-dialog :deep(.readable-changes) {
+  gap: 10px;
+}
+.filter-time-note {
+  white-space: nowrap;
+}
+input:focus-visible,
+select:focus-visible {
+  outline: 2px solid var(--ocean);
+  outline-offset: 2px;
+}
+@media (max-width: 700px) {
+  .filter-heading {
+    flex-wrap: wrap;
+  }
+  .filter-time-note {
+    white-space: normal;
+  }
+  .audit-directory .view-changes {
+    min-height: 44px;
+  }
+}
 </style>

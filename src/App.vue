@@ -1,81 +1,87 @@
 <template>
   <ion-app :class="{ 'passenger-preview': isPassengerRoute }">
-    <ion-router-outlet
-      :key="sessionViewsKey"
-      @ionRouteDidChange="refreshPassengerLayout"
-    />
+    <ion-router-outlet :key="sessionViewsKey" @ionRouteDidChange="refreshPassengerLayout" />
     <ToastHost />
   </ion-app>
 </template>
 
 <script setup lang="ts">
-import { IonApp, IonRouterOutlet } from "@ionic/vue";
-import { computed, nextTick, watch, onMounted, onUnmounted } from "vue";
-import { useRoute, useRouter } from "vue-router";
-import { initializeTheme } from "./composables/useTheme";
-import { sessionViewsKey, clearSessionViews } from "./composables/sessionViews";
-import { auth } from "./services/session";
-import { refreshNotificationUnread } from "./composables/notificationUnread";
-import ToastHost from "./components/shared/ToastHost.vue";
-import { clearToasts } from "./composables/toast";
+import { IonApp, IonRouterOutlet } from '@ionic/vue';
+import { computed, nextTick, watch, onMounted, onUnmounted } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
+import { initializeTheme } from './composables/useTheme';
+import { sessionViewsKey, clearSessionViews } from './composables/sessionViews';
+import { auth } from './services/session';
+import { refreshNotificationUnread } from './composables/notificationUnread';
+import ToastHost from './components/shared/ToastHost.vue';
+import { clearToasts } from './composables/toast';
 
 initializeTheme();
 const route = useRoute();
 const router = useRouter();
-watch(() => auth?.currentUser?.uid, async (uid, previousUid) => {
-  if (!previousUid || uid === previousUid) return;
-  clearToasts();
-  // A logout/account change in another tab must also clear cached private pages.
-  sessionStorage.removeItem('barkolink-booking-draft');
-  sessionStorage.removeItem('barkolink-booking-intent');
-  if (route.path === '/port-display') return;
-  await router.replace(uid ? '/home' : '/login');
-  clearSessionViews();
-});
-watch(() => [auth?.currentUser?.uid, route.fullPath], () => {
-  void refreshNotificationUnread();
-}, { immediate: true });
+watch(
+  () => auth?.currentUser?.uid,
+  async (uid, previousUid) => {
+    if (!previousUid || uid === previousUid) return;
+    clearToasts();
+    // A logout/account change in another tab must also clear cached private pages.
+    sessionStorage.removeItem('barkolink-booking-draft');
+    sessionStorage.removeItem('barkolink-booking-intent');
+    if (route.path === '/port-display') return;
+    await router.replace(uid ? '/home' : '/login');
+    clearSessionViews();
+  },
+);
+watch(
+  () => [auth?.currentUser?.uid, route.fullPath],
+  () => {
+    void refreshNotificationUnread();
+  },
+  { immediate: true },
+);
 let notificationTimer: ReturnType<typeof setInterval>;
 function refreshVisibleNotifications() {
-  if (document.visibilityState === "visible") void refreshNotificationUnread();
+  if (document.visibilityState === 'visible') void refreshNotificationUnread();
 }
 onMounted(() => {
   notificationTimer = setInterval(refreshVisibleNotifications, 15000);
-  window.addEventListener("focus", refreshVisibleNotifications);
-  document.addEventListener("visibilitychange", refreshVisibleNotifications);
+  window.addEventListener('focus', refreshVisibleNotifications);
+  document.addEventListener('visibilitychange', refreshVisibleNotifications);
 });
 onUnmounted(() => {
   clearInterval(notificationTimer);
-  window.removeEventListener("focus", refreshVisibleNotifications);
-  document.removeEventListener("visibilitychange", refreshVisibleNotifications);
+  window.removeEventListener('focus', refreshVisibleNotifications);
+  document.removeEventListener('visibilitychange', refreshVisibleNotifications);
 });
 const passengerPaths = new Set([
-  "/vouchers",
-  "/assistant",
-  "/home",
-  "/trips",
-  "/trip-details",
-  "/passenger-info",
-  "/booking-summary",
-  "/booking-confirmed",
-  "/bookings",
-  "/booking-details",
-  "/ticket",
-  "/notifications",
-  "/profile",
-  "/travelers",
-  "/help",
-  "/settings",
-  "/settings/appearance",
-  "/settings/profile",
-  "/settings/password",
+  '/vouchers',
+  '/assistant',
+  '/home',
+  '/trips',
+  '/trip-details',
+  '/passenger-info',
+  '/booking-summary',
+  '/booking-confirmed',
+  '/bookings',
+  '/booking-details',
+  '/ticket',
+  '/notifications',
+  '/profile',
+  '/travelers',
+  '/help',
+  '/settings',
+  '/settings/appearance',
+  '/settings/profile',
+  '/settings/password',
 ]);
-const isPassengerRoute = computed(() => passengerPaths.has(route.path) ||
-  (route.path === "/privacy" && route.query.from === "profile"));
+const isPassengerRoute = computed(
+  () =>
+    passengerPaths.has(route.path) || (route.path === '/privacy' && route.query.from === 'profile'),
+);
 function refreshPassengerLayout() {
   if (!isPassengerRoute.value) return;
   requestAnimationFrame(() =>
-    requestAnimationFrame(() => window.dispatchEvent(new Event("resize"))),
+    requestAnimationFrame(() => window.dispatchEvent(new Event('resize'))),
   );
 }
 watch(isPassengerRoute, async () => {

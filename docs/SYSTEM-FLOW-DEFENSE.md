@@ -10,13 +10,13 @@ Main story: **Admin prepares the sailing → Passenger reserves seats → Ticket
 
 ## 2. Actors and responsibilities
 
-| Actor | Responsibilities | Workspace |
-| --- | --- | --- |
-| Guest | Browse landing page, schedules, port information, help and privacy; register or sign in | `/`, `/search`, `/help`, `/privacy` |
-| Passenger | Reserve trips, review own bookings, view issued tickets, maintain profile and saved travelers, read notifications | `/home` |
-| Ticketing staff | Find reservations, verify discount eligibility, record cash payment, issue walk-in tickets, record eligible cash refunds | `/staff/ticketing` |
-| Boarding staff | Select a sailing, find/scan tickets, check in passengers, record boarding, inspect manifest/activity | `/staff/boarding` |
-| Admin | Manage operational reference data, trips, fares, accounts, advisories, broadcasts, manifests, no-shows, reports and audit records | `/admin` |
+| Actor           | Responsibilities                                                                                                                  | Workspace                           |
+| --------------- | --------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------- |
+| Guest           | Browse landing page, schedules, port information, help and privacy; register or sign in                                           | `/`, `/search`, `/help`, `/privacy` |
+| Passenger       | Reserve trips, review own bookings, view issued tickets, maintain profile and saved travelers, read notifications                 | `/home`                             |
+| Ticketing staff | Find reservations, verify discount eligibility, record cash payment, issue walk-in tickets, record eligible cash refunds          | `/staff/ticketing`                  |
+| Boarding staff  | Select a sailing, find/scan tickets, check in passengers, record boarding, inspect manifest/activity                              | `/staff/boarding`                   |
+| Admin           | Manage operational reference data, trips, fares, accounts, advisories, broadcasts, manifests, no-shows, reports and audit records | `/admin`                            |
 
 Guest is an access state, not another authenticated account role. `WALK_IN` is a backend guest-record classification; it is not a fifth login workspace. Admin also has access to authorized staff operations.
 
@@ -63,16 +63,16 @@ Passenger navigation: Home, Trips, Bookings and Profile in the bottom navbar; No
 
 ## 5. Three different status lifecycles
 
-| Moment | Booking status | Payment status | Individual ticket status |
-| --- | --- | --- | --- |
-| Online reservation created | `PENDING` | `UNPAID` | `PENDING` |
-| Cash payment recorded | `CONFIRMED` | `PAID` | `ISSUED` |
-| Passenger checked in | `CONFIRMED` | `PAID` | `CHECKED_IN` |
-| Passenger boarded | `CONFIRMED` | `PAID` | `BOARDED` |
-| Eligible unpaid booking cancelled | `CANCELLED` | `UNPAID` | Remains pending/ineligible for terminal actions |
-| Unpaid reservation expires | `EXPIRED` | `UNPAID` | Ineligible for terminal actions |
-| Paid sailing cancelled by operator | `CANCELLED` | `REFUND_PENDING` | Ineligible for terminal actions |
-| Staff records returned cash | `CANCELLED` | `REFUNDED` | Ineligible for terminal actions |
+| Moment                             | Booking status | Payment status   | Individual ticket status                        |
+| ---------------------------------- | -------------- | ---------------- | ----------------------------------------------- |
+| Online reservation created         | `PENDING`      | `UNPAID`         | `PENDING`                                       |
+| Cash payment recorded              | `CONFIRMED`    | `PAID`           | `ISSUED`                                        |
+| Passenger checked in               | `CONFIRMED`    | `PAID`           | `CHECKED_IN`                                    |
+| Passenger boarded                  | `CONFIRMED`    | `PAID`           | `BOARDED`                                       |
+| Eligible unpaid booking cancelled  | `CANCELLED`    | `UNPAID`         | Remains pending/ineligible for terminal actions |
+| Unpaid reservation expires         | `EXPIRED`      | `UNPAID`         | Ineligible for terminal actions                 |
+| Paid sailing cancelled by operator | `CANCELLED`    | `REFUND_PENDING` | Ineligible for terminal actions                 |
+| Staff records returned cash        | `CANCELLED`    | `REFUNDED`       | Ineligible for terminal actions                 |
 
 Ticketing walk-in sales enter directly as **CONFIRMED / PAID / ISSUED** after the cash-received action succeeds. One booking can contain several passengers, each with their own ticket and attendance status.
 
@@ -94,17 +94,17 @@ Admin monitors bookings/passengers, adjusts permitted schedules and sailing stat
 
 ## 8. Controls to explain during defense
 
-| Situation | Implemented control |
-| --- | --- |
-| Two people request the last seats | Database transactions and locks recheck capacity before committing; class inventory is also checked |
-| Browser sends a changed price | Backend computes the applicable fare and surcharge |
-| Someone opens an admin URL | Router checks session/role; backend separately enforces permission |
-| Passenger requests someone else's records | Owner-scoped backend operations use authenticated identity |
+| Situation                                   | Implemented control                                                                                                             |
+| ------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| Two people request the last seats           | Database transactions and locks recheck capacity before committing; class inventory is also checked                             |
+| Browser sends a changed price               | Backend computes the applicable fare and surcharge                                                                              |
+| Someone opens an admin URL                  | Router checks session/role; backend separately enforces permission                                                              |
+| Passenger requests someone else's records   | Owner-scoped backend operations use authenticated identity                                                                      |
 | Request is retried after uncertain response | Booking references and transaction checks prevent another seat allocation for the same valid request; UI preserves retry intent |
-| Ticket is scanned twice | Ticket lifecycle checks block another check-in/boarding transition |
-| An unpaid booking expires | Backend expiry releases reserved seats; the displayed countdown reflects the stored deadline |
-| Operator cancels a paid sailing | Paid bookings become refund pending; staff records returned cash |
-| Vessel has overlapping active schedules | Database schedule validation rejects conflicts |
+| Ticket is scanned twice                     | Ticket lifecycle checks block another check-in/boarding transition                                                              |
+| An unpaid booking expires                   | Backend expiry releases reserved seats; the displayed countdown reflects the stored deadline                                    |
+| Operator cancels a paid sailing             | Paid bookings become refund pending; staff records returned cash                                                                |
+| Vessel has overlapping active schedules     | Database schedule validation rejects conflicts                                                                                  |
 
 Default reservation duration is 24 hours, capped at departure. Admin can configure the duration for new reservations. Backend expiry is implemented through scheduled processing and normal API requests; the browser countdown alone does not release seats.
 
@@ -136,18 +136,18 @@ Browser requests use the typed service layer and PostgreSQL RPC. Tables have RLS
 
 ## 10. Suggested 10-slide presentation
 
-| Slide | What to show | What to explain |
-| --- | --- | --- |
-| 1 | Title and landing page | Purpose: connect ferry booking with terminal passenger management |
-| 2 | Problem and objectives | Reduce repeated passenger entry; keep reservation, payment and attendance records connected |
-| 3 | Four roles | Responsibility and restricted access of each workspace |
-| 4 | Overall flowchart | Follow one booking from sailing setup to boarding |
-| 5 | Passenger search and booking | Account defaults, saved travelers, accommodation and editable review |
-| 6 | Ticketing | Cash collection, discount verification and walk-in sale |
-| 7 | QR ticket and boarding | One ticket per passenger; check-in precedes boarding |
-| 8 | Admin | Reference data, schedules, manifest, reports, communication and audit |
-| 9 | Architecture and controls | Shared web/Android backend, role checks, owner isolation and capacity transactions |
-| 10 | Validation, scope and conclusion | Demonstrate tested behavior and state the deployment/device acceptance actually completed |
+| Slide | What to show                     | What to explain                                                                             |
+| ----- | -------------------------------- | ------------------------------------------------------------------------------------------- |
+| 1     | Title and landing page           | Purpose: connect ferry booking with terminal passenger management                           |
+| 2     | Problem and objectives           | Reduce repeated passenger entry; keep reservation, payment and attendance records connected |
+| 3     | Four roles                       | Responsibility and restricted access of each workspace                                      |
+| 4     | Overall flowchart                | Follow one booking from sailing setup to boarding                                           |
+| 5     | Passenger search and booking     | Account defaults, saved travelers, accommodation and editable review                        |
+| 6     | Ticketing                        | Cash collection, discount verification and walk-in sale                                     |
+| 7     | QR ticket and boarding           | One ticket per passenger; check-in precedes boarding                                        |
+| 8     | Admin                            | Reference data, schedules, manifest, reports, communication and audit                       |
+| 9     | Architecture and controls        | Shared web/Android backend, role checks, owner isolation and capacity transactions          |
+| 10    | Validation, scope and conclusion | Demonstrate tested behavior and state the deployment/device acceptance actually completed   |
 
 Describe expected operational benefits as objectives unless you have measured user-test results. Test counts recorded in old docs are historical; quote a specific test run and date if the panel asks for numbers.
 
@@ -196,19 +196,19 @@ Choose dates from the actual UI before presenting. Historical demo references an
 
 ## 13. Implementation references
 
-| Topic | Source |
-| --- | --- |
-| Role routes and guards | `src/router/index.ts`, `src/data/sessionRole.ts` |
-| Account access/privacy detour | `src/views/auth/AuthPage.vue`, `src/views/auth/PrivacyNoticePage.vue` |
-| Booking and owner defaults | `src/views/passenger/BookingFlowPage.vue`, `src/data/bookingPassenger.ts` |
-| Saved Travelers | `src/views/passenger/TravelersPage.vue`, `src/components/passenger/SavedTravelerPicker.vue` |
-| Cash ticketing and walk-in | `src/views/staff/ticketing/TicketingPage.vue`, `TicketingWalkInPage.vue` |
-| QR/check-in/boarding | `src/views/staff/boarding/StaffBoardingPage.vue`, `src/data/ticketExport.ts` |
-| Admin modules | `src/views/admin/AdminWorkspacePage.vue`, `src/components/admin/` |
-| Secured data calls | `src/services/database/client.ts`, passenger/staff/operations/experience/workspace services |
-| Data, inventory and authorization | `supabase/migrations/001_schema.sql` through `018_admin_directory_filters.sql` |
-| Account-management permissions | `supabase/functions/manage-account/index.ts` |
-| Guided transactions | `docs/MANUAL-FLOW-TEST.md`, `docs/DEMO-WORKFLOWS.md` |
-| Hosting/native setup | `vercel.json`, `capacitor.config.ts`, `docs/VERCEL-DEPLOYMENT.md`, `docs/ANDROID.md` |
+| Topic                             | Source                                                                                      |
+| --------------------------------- | ------------------------------------------------------------------------------------------- |
+| Role routes and guards            | `src/router/index.ts`, `src/data/sessionRole.ts`                                            |
+| Account access/privacy detour     | `src/views/auth/AuthPage.vue`, `src/views/auth/PrivacyNoticePage.vue`                       |
+| Booking and owner defaults        | `src/views/passenger/BookingFlowPage.vue`, `src/data/bookingPassenger.ts`                   |
+| Saved Travelers                   | `src/views/passenger/TravelersPage.vue`, `src/components/passenger/SavedTravelerPicker.vue` |
+| Cash ticketing and walk-in        | `src/views/staff/ticketing/TicketingPage.vue`, `TicketingWalkInPage.vue`                    |
+| QR/check-in/boarding              | `src/views/staff/boarding/StaffBoardingPage.vue`, `src/data/ticketExport.ts`                |
+| Admin modules                     | `src/views/admin/AdminWorkspacePage.vue`, `src/components/admin/`                           |
+| Secured data calls                | `src/services/database/client.ts`, passenger/staff/operations/experience/workspace services |
+| Data, inventory and authorization | `supabase/migrations/001_schema.sql` through `018_admin_directory_filters.sql`              |
+| Account-management permissions    | `supabase/functions/manage-account/index.ts`                                                |
+| Guided transactions               | `docs/MANUAL-FLOW-TEST.md`, `docs/DEMO-WORKFLOWS.md`                                        |
+| Hosting/native setup              | `vercel.json`, `capacitor.config.ts`, `docs/VERCEL-DEPLOYMENT.md`, `docs/ANDROID.md`        |
 
 Read migrations in numeric order: later migrations extend earlier schema/operations. Older upgrade documents describe the features available at their writing date and may omit later accommodation, discount, filtering and UI changes.

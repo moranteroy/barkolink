@@ -41,15 +41,15 @@ Local private credentials were found in the expected ignored environment files. 
 
 **Validation results and an outstanding test problem**
 
-| Check | Result |
-| --- | --- |
-| `npm audit --json --ignore-scripts` | Zero reported advisories across 851 reported dependency entries |
-| PostgreSQL migrations/business-rule tests | 62 passed |
-| Account Edge Function tests | 5 passed |
-| PayMongo Edge Function tests | 5 passed |
-| Chatbot Edge Function tests | 11 passed |
-| Weather Edge Function tests | 2 passed, 5 failed |
-| Isolated unpaid-seat accumulation check | Two bookings held 16 seats; zero remaining |
+| Check                                     | Result                                                          |
+| ----------------------------------------- | --------------------------------------------------------------- |
+| `npm audit --json --ignore-scripts`       | Zero reported advisories across 851 reported dependency entries |
+| PostgreSQL migrations/business-rule tests | 62 passed                                                       |
+| Account Edge Function tests               | 5 passed                                                        |
+| PayMongo Edge Function tests              | 5 passed                                                        |
+| Chatbot Edge Function tests               | 11 passed                                                       |
+| Weather Edge Function tests               | 2 passed, 5 failed                                              |
+| Isolated unpaid-seat accumulation check   | Two bookings held 16 seats; zero remaining                      |
 
 The five weather failures are explained by tests still mocking WeatherAPI responses, query parameters, plan fallback, and API-key configuration while the current handler uses Open-Meteo. Authentication and invalid-input checks passed. Update those tests and revalidate caching, provider failure, and stale-data behavior; the failures do not themselves establish a security exploit. Total executed existing tests: 85 passed, 5 failed.
 

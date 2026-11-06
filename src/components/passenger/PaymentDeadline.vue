@@ -1,27 +1,21 @@
 <template>
-  <div
-    v-if="valid"
-    class="deadline"
-    :class="{ urgent: seconds <= 3600 }"
-  >
+  <div v-if="valid" class="deadline" :class="{ urgent: seconds <= 3600 }">
     <AppIcon :icon="timeOutline" aria-hidden="true" />
     <div role="status" aria-live="polite" aria-atomic="true">
-      <strong>{{
-        seconds > 0 ? "Pay before the deadline" : "Payment deadline reached"
-      }}</strong
+      <strong>{{ seconds > 0 ? 'Pay before the deadline' : 'Payment deadline reached' }}</strong
       ><small>{{
-        seconds > 0
-          ? `Reservation expires ${formatted}`
-          : "Checking your reservation status…"
+        seconds > 0 ? `Reservation expires ${formatted}` : 'Checking your reservation status…'
       }}</small>
     </div>
-    <b v-if="seconds > 0" aria-live="off" :aria-label="`Time remaining: ${remaining}`">{{ remaining }}</b>
+    <b v-if="seconds > 0" aria-live="off" :aria-label="`Time remaining: ${remaining}`">{{
+      remaining
+    }}</b>
   </div>
 </template>
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref, watch } from "vue";
-import AppIcon from "@/components/ui/icon/AppIcon.vue";
-import { timeOutline } from "ionicons/icons";
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
+import AppIcon from '@/components/ui/icon/AppIcon.vue';
+import { timeOutline } from 'ionicons/icons';
 const props = defineProps<{ deadline: string }>();
 const emit = defineEmits<{ expired: [] }>();
 const now = ref(Date.now());
@@ -30,17 +24,17 @@ const seconds = computed(() =>
   Math.max(0, Math.ceil((Date.parse(props.deadline) - now.value) / 1000)),
 );
 const formatted = computed(() =>
-  new Intl.DateTimeFormat("en-PH", {
-    timeZone: "Asia/Manila",
-    month: "short",
-    day: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
+  new Intl.DateTimeFormat('en-PH', {
+    timeZone: 'Asia/Manila',
+    month: 'short',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
   }).format(new Date(props.deadline)),
 );
 const remaining = computed(
   () =>
-    `${Math.floor(seconds.value / 3600)}h ${String(Math.floor((seconds.value % 3600) / 60)).padStart(2, "0")}m ${String(seconds.value % 60).padStart(2, "0")}s`,
+    `${Math.floor(seconds.value / 3600)}h ${String(Math.floor((seconds.value % 3600) / 60)).padStart(2, '0')}m ${String(seconds.value % 60).padStart(2, '0')}s`,
 );
 let timer: ReturnType<typeof setInterval> | undefined;
 let notified = false;
@@ -53,7 +47,7 @@ watch(
 function checkDeadline() {
   if (valid.value && seconds.value === 0 && !notified) {
     notified = true;
-    emit("expired");
+    emit('expired');
   }
 }
 watch(seconds, checkDeadline);

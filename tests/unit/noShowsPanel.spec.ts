@@ -2,19 +2,43 @@ import { clearToasts, toastMessages } from '../../src/composables/toast';
 import { flushPromises, mount } from '@vue/test-utils';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import NoShowsPanel from '../../src/components/admin/NoShowsPanel.vue';
-const mocks = vi.hoisted(() => ({ trips: vi.fn(), list: vi.fn(), mark: vi.fn(), confirm: vi.fn() }));
+const mocks = vi.hoisted(() => ({
+  trips: vi.fn(),
+  list: vi.fn(),
+  mark: vi.fn(),
+  confirm: vi.fn(),
+}));
 vi.mock('vue-router', () => ({ useRoute: () => ({ query: {} }) }));
 vi.mock('@ionic/vue', () => ({ IonIcon: { template: '<span />' } }));
 vi.mock('../../src/services/session', () => ({ staffDatabase: {} }));
-vi.mock('../../src/services/database/workspaces', () => ({ staffTrips: mocks.trips, noShows: mocks.list, markNoShow: mocks.mark }));
+vi.mock('../../src/services/database/workspaces', () => ({
+  staffTrips: mocks.trips,
+  noShows: mocks.list,
+  markNoShow: mocks.mark,
+}));
 vi.mock('../../src/composables/confirmation', () => ({ confirmAction: mocks.confirm }));
-vi.mock('../../src/components/shared/RecordsGrid.vue', () => ({ default: {
-  props: ['rows', 'columns', 'density', 'maxGridHeight', 'actionWidth'],
-  template: '<div class="records-grid"><div v-for="row in rows" :key="row.key" class="test-grid-row"><slot name="cell" v-for="(value, index) in row.cells" :row="row" :value="value" :index="index" /><slot name="actions" :row="row" /></div></div>',
-} }));
-const sailing = { code: 'TRP1', status: 'COMPLETED', origin: { name: 'Batangas' }, destination: { name: 'Calapan' } };
-const passenger = { id: 'p1', fullName: 'Test Passenger', ticketStatus: 'CHECKED_IN', noShow: false, booking: { reference: 'BOOK1' } };
-beforeEach(() => { clearToasts();
+vi.mock('../../src/components/shared/RecordsGrid.vue', () => ({
+  default: {
+    props: ['rows', 'columns', 'density', 'maxGridHeight', 'actionWidth'],
+    template:
+      '<div class="records-grid"><div v-for="row in rows" :key="row.key" class="test-grid-row"><slot name="cell" v-for="(value, index) in row.cells" :row="row" :value="value" :index="index" /><slot name="actions" :row="row" /></div></div>',
+  },
+}));
+const sailing = {
+  code: 'TRP1',
+  status: 'COMPLETED',
+  origin: { name: 'Batangas' },
+  destination: { name: 'Calapan' },
+};
+const passenger = {
+  id: 'p1',
+  fullName: 'Test Passenger',
+  ticketStatus: 'CHECKED_IN',
+  noShow: false,
+  booking: { reference: 'BOOK1' },
+};
+beforeEach(() => {
+  clearToasts();
   vi.clearAllMocks();
   mocks.trips.mockResolvedValue({ data: { sailings: [sailing], totalCount: 1 } });
   mocks.list.mockResolvedValue({ data: { sailing, passengers: [passenger] } });
@@ -43,12 +67,16 @@ describe('no-show attendance review', () => {
     await flushPromises();
     expect(mocks.confirm).toHaveBeenCalled();
     expect(mocks.mark).toHaveBeenCalledWith({}, 'TRP1', undefined);
-    expect(toastMessages.value.filter(toast => toast.message === '1 no-show records added.')).toHaveLength(1);
+    expect(
+      toastMessages.value.filter((toast) => toast.message === '1 no-show records added.'),
+    ).toHaveLength(1);
     expect(wrapper.text()).not.toContain('1 no-show records added.');
     wrapper.unmount();
   });
   it('keeps recording disabled for an incomplete trip', async () => {
-    mocks.list.mockResolvedValue({ data: { sailing: { ...sailing, status: 'SCHEDULED' }, passengers: [passenger] } });
+    mocks.list.mockResolvedValue({
+      data: { sailing: { ...sailing, status: 'SCHEDULED' }, passengers: [passenger] },
+    });
     const wrapper = mount(NoShowsPanel);
     await flushPromises();
     expect(wrapper.find('.primary-button').attributes('disabled')).toBeDefined();

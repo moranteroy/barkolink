@@ -1,5 +1,8 @@
 {
-    "recommendations": [
-        "Webnative.webnative"
-    ]
+  "recommendations": [
+    "Webnative.webnative",
+    "Vue.volar",
+    "denoland.vscode-deno",
+    "esbenp.prettier-vscode"
+  ]
 }

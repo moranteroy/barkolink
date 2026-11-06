@@ -1,4 +1,4 @@
-import { onBeforeUnmount, onMounted } from "vue";
+import { onBeforeUnmount, onMounted } from 'vue';
 
 // Polling uses the secured RPC; no direct-table Realtime grants are needed.
 export function useQueueRefresh(

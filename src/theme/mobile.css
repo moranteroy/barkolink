@@ -14,60 +14,162 @@
   width: auto;
   height: auto;
 }
-:root.native-android .landing-page .landing-nav { padding-top: 0; }
-:root.native-android.keyboard-visible .bottom-nav { display: none; }
-:root.native-android.keyboard-visible body ion-app.passenger-preview main { padding-bottom: 24px; }
+:root.native-android .landing-page .landing-nav {
+  padding-top: 0;
+}
+:root.native-android.keyboard-visible .bottom-nav {
+  display: none;
+}
+:root.native-android.keyboard-visible body ion-app.passenger-preview main {
+  padding-bottom: 24px;
+}
 
 /* Viewport-scoped: the passenger canvas on a laptop keeps its desktop styling. */
 @media screen and (max-width: 600px) {
-  :root { --text-caption: 12px; --text-label: 13px; --text-body: 14px; }
-  html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+  :root {
+    --text-caption: 12px;
+    --text-label: 13px;
+    --text-body: 14px;
+  }
+  html {
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+  }
   :root body ion-app.passenger-preview main {
     padding-inline: 12px;
     padding-top: 12px;
     padding-bottom: calc(84px + var(--app-safe-bottom));
   }
-  :root body .passenger-header.glass-toolbar { padding: 8px 10px; border-radius: 14px; }
+  :root body .passenger-header.glass-toolbar {
+    padding: 8px 10px;
+    border-radius: 14px;
+  }
   :root body ion-app.passenger-preview .bottom-nav {
     gap: 4px;
     padding: 5px 8px calc(5px + var(--app-safe-bottom));
     border-radius: 14px 14px 0 0;
   }
-  :root body ion-app.passenger-preview .bottom-nav a { min-height: 46px; gap: 2px; font-size: 11px; }
-  :root body ion-app.passenger-preview .bottom-nav .app-icon { width: 26px; height: 26px; font-size: 20px; padding: 3px; }
-  :root body ion-app.passenger-preview .page-title { margin-block: 18px 16px; }
-  :root body ion-app.passenger-preview .page-title h1 { font-size: 24px; line-height: 1.25; }
-  :root body ion-app.passenger-preview .page-title p { line-height: 1.5; }
-  :root body ion-app.passenger-preview .passenger-home .welcome-section { margin: 18px 0 16px; }
-  :root body ion-app.passenger-preview .passenger-home .welcome-section h1 { font-size: 22px; }
-  :root body ion-app.passenger-preview .topbar { margin-bottom: 16px; }
-  :root body ion-app.passenger-preview .section-block { margin-block: 20px 0; }
-  :root body ion-app.passenger-preview .section-heading { margin-bottom: 12px; }
-  :root body ion-app.passenger-preview .upcoming-block { margin-bottom: 16px; }
-  :root body ion-app.passenger-preview .upcoming-empty { min-height: 88px; padding: 12px; gap: 10px; }
-  :root body ion-app.passenger-preview .upcoming-empty p { margin-top: 4px; line-height: 1.5; }
+  :root body ion-app.passenger-preview .bottom-nav a {
+    min-height: 46px;
+    gap: 2px;
+    font-size: 11px;
+  }
+  :root body ion-app.passenger-preview .bottom-nav .app-icon {
+    width: 26px;
+    height: 26px;
+    font-size: 20px;
+    padding: 3px;
+  }
+  :root body ion-app.passenger-preview .page-title {
+    margin-block: 18px 16px;
+  }
+  :root body ion-app.passenger-preview .page-title h1 {
+    font-size: 24px;
+    line-height: 1.25;
+  }
+  :root body ion-app.passenger-preview .page-title p {
+    line-height: 1.5;
+  }
+  :root body ion-app.passenger-preview .passenger-home .welcome-section {
+    margin: 18px 0 16px;
+  }
+  :root body ion-app.passenger-preview .passenger-home .welcome-section h1 {
+    font-size: 22px;
+  }
+  :root body ion-app.passenger-preview .topbar {
+    margin-bottom: 16px;
+  }
+  :root body ion-app.passenger-preview .section-block {
+    margin-block: 20px 0;
+  }
+  :root body ion-app.passenger-preview .section-heading {
+    margin-bottom: 12px;
+  }
+  :root body ion-app.passenger-preview .upcoming-block {
+    margin-bottom: 16px;
+  }
+  :root body ion-app.passenger-preview .upcoming-empty {
+    min-height: 88px;
+    padding: 12px;
+    gap: 10px;
+  }
+  :root body ion-app.passenger-preview .upcoming-empty p {
+    margin-top: 4px;
+    line-height: 1.5;
+  }
   :root body ion-app.passenger-preview .journey-banner,
-  :root body ion-app.passenger-preview .journey-footer { padding: 14px; }
-  :root body ion-app.passenger-preview .upcoming-route { margin-top: 12px; }
-  :root body ion-app.passenger-preview .home-search { padding: 14px; }
-  :root body ion-app.passenger-preview .home-search .card-heading { margin-bottom: 12px; }
-  :root body ion-app.passenger-preview .home-search .route-fields { grid-template-columns: minmax(0,1fr); gap: 10px; }
-  :root body ion-app.passenger-preview .home-search .card-subtitle { display: none; }
-  :root body ion-app.passenger-preview .home-search .detail-fields { grid-template-columns: minmax(0,1fr) 144px; gap: 10px; margin-top: 12px; }
-  :root body ion-app.passenger-preview .empty-state { padding: 28px 14px; }
-  :root body ion-app.passenger-preview .bookings-page .tabs button { min-height: 64px; gap: 3px; padding-block: 7px; }
-  :root body ion-app.passenger-preview .bookings-page .booking-card { padding: 14px; border-radius: 14px; }
-  :root body ion-app.passenger-preview .bookings-page .booking-card .row-heading h2 { font-size: 16px; }
-  :root body ion-app.passenger-preview .bookings-page .booking-schedule { margin-block: 10px; padding-block: 10px; }
-  :root body ion-app.passenger-preview .bookings-page .booking-meta { grid-template-columns: repeat(2,minmax(0,1fr)); margin-block: 10px; gap: 6px; }
-  :root body ion-app.passenger-preview .bookings-page .booking-reference { margin-block: 10px; }
-  :root body ion-app.passenger-preview .bookings-page .booking-actions { grid-template-columns: repeat(2, minmax(0, 1fr)); margin-top: 12px; padding-top: 12px; gap: 8px; }
-  :root body ion-app.passenger-preview .bookings-page .booking-fare-panel { padding: 10px 12px; }
-  :root body ion-app.passenger-preview .bookings-page .booking-card .payment-hint { padding: 10px; line-height: 1.5; }
+  :root body ion-app.passenger-preview .journey-footer {
+    padding: 14px;
+  }
+  :root body ion-app.passenger-preview .upcoming-route {
+    margin-top: 12px;
+  }
+  :root body ion-app.passenger-preview .home-search {
+    padding: 14px;
+  }
+  :root body ion-app.passenger-preview .home-search .card-heading {
+    margin-bottom: 12px;
+  }
+  :root body ion-app.passenger-preview .home-search .route-fields {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 10px;
+  }
+  :root body ion-app.passenger-preview .home-search .card-subtitle {
+    display: none;
+  }
+  :root body ion-app.passenger-preview .home-search .detail-fields {
+    grid-template-columns: minmax(0, 1fr) 144px;
+    gap: 10px;
+    margin-top: 12px;
+  }
+  :root body ion-app.passenger-preview .empty-state {
+    padding: 28px 14px;
+  }
+  :root body ion-app.passenger-preview .bookings-page .tabs button {
+    min-height: 64px;
+    gap: 3px;
+    padding-block: 7px;
+  }
+  :root body ion-app.passenger-preview .bookings-page .booking-card {
+    padding: 14px;
+    border-radius: 14px;
+  }
+  :root body ion-app.passenger-preview .bookings-page .booking-card .row-heading h2 {
+    font-size: 16px;
+  }
+  :root body ion-app.passenger-preview .bookings-page .booking-schedule {
+    margin-block: 10px;
+    padding-block: 10px;
+  }
+  :root body ion-app.passenger-preview .bookings-page .booking-meta {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    margin-block: 10px;
+    gap: 6px;
+  }
+  :root body ion-app.passenger-preview .bookings-page .booking-reference {
+    margin-block: 10px;
+  }
+  :root body ion-app.passenger-preview .bookings-page .booking-actions {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    margin-top: 12px;
+    padding-top: 12px;
+    gap: 8px;
+  }
+  :root body ion-app.passenger-preview .bookings-page .booking-fare-panel {
+    padding: 10px 12px;
+  }
+  :root body ion-app.passenger-preview .bookings-page .booking-card .payment-hint {
+    padding: 10px;
+    line-height: 1.5;
+  }
   :root body ion-app.passenger-preview .booking-reference,
-  :root body ion-app.passenger-preview code { overflow-wrap: anywhere; }
+  :root body ion-app.passenger-preview code {
+    overflow-wrap: anywhere;
+  }
 }
-@media screen and (max-width:359px) {
+@media screen and (max-width: 359px) {
   :root body ion-app.passenger-preview .home-search .detail-fields,
-  :root body ion-app.passenger-preview .bookings-page .booking-actions { grid-template-columns: minmax(0,1fr); }
+  :root body ion-app.passenger-preview .bookings-page .booking-actions {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }

@@ -12,17 +12,17 @@ Reviewed the project inventory, application configuration, authentication/sessio
 
 ## Validation
 
-| Check | Result |
-| --- | --- |
-| Unit tests | 299 passed across 57 test files |
-| Isolated database and Edge Function tests | 125 passed across 11 test files |
-| Production build | Passed, including Vue/TypeScript checking |
-| Production dependency audit | Zero known vulnerabilities reported by `npm audit --omit=dev` |
-| Reservation browser checks | Passed duplicate notices, edit recovery, unpaid retry, and new reservation scenarios |
-| ESLint | Passed |
-| Workspace browser layouts | All four roles passed at 1440, 768, and 390 pixels in Light and Dark themes; no captured page errors or horizontal overflow |
-| Payment browser checks | Passed at 390, 560, and 1440 pixels in both themes, including QR display, checkout closure, return status, and staff verification |
-| Authentication browser checks | Passed login/registration validation, confirmation dialogs, cancellation, and accommodation selection at desktop, tablet, and mobile widths |
+| Check                                     | Result                                                                                                                                      |
+| ----------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| Unit tests                                | 299 passed across 57 test files                                                                                                             |
+| Isolated database and Edge Function tests | 125 passed across 11 test files                                                                                                             |
+| Production build                          | Passed, including Vue/TypeScript checking                                                                                                   |
+| Production dependency audit               | Zero known vulnerabilities reported by `npm audit --omit=dev`                                                                               |
+| Reservation browser checks                | Passed duplicate notices, edit recovery, unpaid retry, and new reservation scenarios                                                        |
+| ESLint                                    | Passed                                                                                                                                      |
+| Workspace browser layouts                 | All four roles passed at 1440, 768, and 390 pixels in Light and Dark themes; no captured page errors or horizontal overflow                 |
+| Payment browser checks                    | Passed at 390, 560, and 1440 pixels in both themes, including QR display, checkout closure, return status, and staff verification           |
+| Authentication browser checks             | Passed login/registration validation, confirmation dialogs, cancellation, and accommodation selection at desktop, tablet, and mobile widths |
 
 The database tests apply migrations to isolated PGlite databases and exercise authorization, ownership, seat inventory, duplicate reservations, payment verification, boarding, refunds, daily schedules, automation, vessel tracking, and demo-data integrity. Browser checks intercept Supabase and payment requests with fixtures; they do not charge accounts or modify hosted records.
 

@@ -1,8 +1,8 @@
 /* Tailwind utilities without Preflight: Ionic owns the document reset. */
 @layer theme, base, components, utilities;
-@import "tailwindcss/theme.css" layer(theme);
-@import "tailwindcss/utilities.css" layer(utilities);
-@import "tw-animate-css";
+@import 'tailwindcss/theme.css' layer(theme);
+@import 'tailwindcss/utilities.css' layer(utilities);
+@import 'tw-animate-css';
 @custom-variant dark (&:where(.dark, .dark *));
 
 @theme inline {
@@ -39,7 +39,7 @@
   --danger-soft: #fff0f2;
   --ring: var(--ocean);
 }
-:root[data-theme="dark"] {
+:root[data-theme='dark'] {
   --success: #63e3b4;
   --success-soft: #083e39;
   --warning: #edcb82;
@@ -50,7 +50,7 @@
 
 /* Source-owned shadcn components share the existing system tokens. */
 /* Native switch inputs retain label, keyboard, form and disabled-fieldset behavior. */
-:root body input.ui-switch[type="checkbox"][role="switch"] {
+:root body input.ui-switch[type='checkbox'][role='switch'] {
   appearance: none;
   -webkit-appearance: none;
   display: inline-block;
@@ -69,10 +69,12 @@
   vertical-align: middle;
   cursor: pointer;
   box-shadow: none;
-  transition: background-color 150ms, border-color 150ms;
+  transition:
+    background-color 150ms,
+    border-color 150ms;
 }
-:root body input.ui-switch[type="checkbox"][role="switch"]::before {
-  content: "";
+:root body input.ui-switch[type='checkbox'][role='switch']::before {
+  content: '';
   position: absolute;
   top: 2px;
   left: 2px;
@@ -83,20 +85,42 @@
   box-shadow: 0 1px 3px #0003;
   transition: transform 150ms;
 }
-:root body input.ui-switch[type="checkbox"][role="switch"]:checked { background: var(--action); border-color: var(--action); }
-:root body input.ui-switch[type="checkbox"][role="switch"]:checked::before { transform: translateX(18px); }
-:root body input.ui-switch[type="checkbox"][role="switch"]:focus-visible { outline: 3px solid var(--ocean); outline-offset: 3px; }
-:root body input.ui-switch[type="checkbox"][role="switch"]:disabled { cursor: not-allowed; opacity: .5; }
+:root body input.ui-switch[type='checkbox'][role='switch']:checked {
+  background: var(--action);
+  border-color: var(--action);
+}
+:root body input.ui-switch[type='checkbox'][role='switch']:checked::before {
+  transform: translateX(18px);
+}
+:root body input.ui-switch[type='checkbox'][role='switch']:focus-visible {
+  outline: 3px solid var(--ocean);
+  outline-offset: 3px;
+}
+:root body input.ui-switch[type='checkbox'][role='switch']:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
 @media (prefers-reduced-motion: reduce) {
-  :root body input.ui-switch[type="checkbox"][role="switch"],
-  :root body input.ui-switch[type="checkbox"][role="switch"]::before { transition: none; }
+  :root body input.ui-switch[type='checkbox'][role='switch'],
+  :root body input.ui-switch[type='checkbox'][role='switch']::before {
+    transition: none;
+  }
 }
 @media (forced-colors: active) {
-  :root body input.ui-switch[type="checkbox"][role="switch"] { forced-color-adjust: none; background: GrayText; border-color: ButtonText; }
-  :root body input.ui-switch[type="checkbox"][role="switch"]:checked { background: Highlight; border-color: Highlight; }
-  :root body input.ui-switch[type="checkbox"][role="switch"]::before { background: ButtonFace; }
+  :root body input.ui-switch[type='checkbox'][role='switch'] {
+    forced-color-adjust: none;
+    background: GrayText;
+    border-color: ButtonText;
+  }
+  :root body input.ui-switch[type='checkbox'][role='switch']:checked {
+    background: Highlight;
+    border-color: Highlight;
+  }
+  :root body input.ui-switch[type='checkbox'][role='switch']::before {
+    background: ButtonFace;
+  }
 }
-[data-slot="button"] {
+[data-slot='button'] {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -112,26 +136,31 @@
   font-weight: 600;
   cursor: pointer;
   text-decoration: none;
-  transition: background-color 150ms, border-color 150ms;
+  transition:
+    background-color 150ms,
+    border-color 150ms;
 }
-[data-slot="button"][data-variant="outline"] {
+[data-slot='button'][data-variant='outline'] {
   background: var(--surface);
   color: var(--ink);
   border-color: var(--line);
 }
-[data-slot="button"][data-variant="ghost"] {
+[data-slot='button'][data-variant='ghost'] {
   background: transparent;
   color: var(--muted);
 }
-[data-slot="button"]:hover:not(:disabled) {
+[data-slot='button']:hover:not(:disabled) {
   filter: brightness(0.95);
 }
-[data-slot="button"]:disabled {
+[data-slot='button']:disabled {
   opacity: 0.5;
   cursor: not-allowed;
 }
-[data-slot="button"] svg { width: 16px; height: 16px; }
-[data-slot="badge"] {
+[data-slot='button'] svg {
+  width: 16px;
+  height: 16px;
+}
+[data-slot='badge'] {
   display: inline-flex;
   align-items: center;
   gap: 5px;
@@ -144,10 +173,19 @@
   font-weight: 650;
   line-height: 1.5;
 }
-[data-slot="badge"][data-variant="success"] { background: var(--success-soft); color: var(--success); }
-[data-slot="badge"][data-variant="warning"] { background: var(--warning-soft); color: var(--warning); }
-[data-slot="badge"][data-variant="destructive"] { background: var(--danger-soft); color: var(--danger); }
-[data-slot="card"] {
+[data-slot='badge'][data-variant='success'] {
+  background: var(--success-soft);
+  color: var(--success);
+}
+[data-slot='badge'][data-variant='warning'] {
+  background: var(--warning-soft);
+  color: var(--warning);
+}
+[data-slot='badge'][data-variant='destructive'] {
+  background: var(--danger-soft);
+  color: var(--danger);
+}
+[data-slot='card'] {
   min-width: 0;
   border: 1px solid var(--line);
   border-radius: 14px;
@@ -155,8 +193,16 @@
   color: var(--ink);
   box-shadow: var(--card-shadow);
 }
-[data-slot="skeleton"] { border-radius: 8px; background: var(--line); animation: skeleton-pulse 1.8s ease-in-out infinite; }
-@keyframes skeleton-pulse { 50% { opacity: 0.4; } }
+[data-slot='skeleton'] {
+  border-radius: 8px;
+  background: var(--line);
+  animation: skeleton-pulse 1.8s ease-in-out infinite;
+}
+@keyframes skeleton-pulse {
+  50% {
+    opacity: 0.4;
+  }
+}
 
 .ui-menu {
   z-index: 10000;
@@ -170,56 +216,130 @@
   color: var(--ink);
   box-shadow: 0 12px 36px #0002;
 }
-.ui-menu-item { display: flex; align-items: center; gap: 9px; padding: 10px; border-radius: 7px; font-size: var(--text-label); cursor: pointer; outline: none; }
-.ui-menu-item[data-highlighted] { background: var(--light-blue); }
-.ui-menu-item svg { width: 16px; height: 16px; }
-.ui-menu-label { padding: 8px 10px; font-size: var(--text-caption); color: var(--muted); font-weight: 600; }
+.ui-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 10px;
+  border-radius: 7px;
+  font-size: var(--text-label);
+  cursor: pointer;
+  outline: none;
+}
+.ui-menu-item[data-highlighted] {
+  background: var(--light-blue);
+}
+.ui-menu-item svg {
+  width: 16px;
+  height: 16px;
+}
+.ui-menu-label {
+  padding: 8px 10px;
+  font-size: var(--text-caption);
+  color: var(--muted);
+  font-weight: 600;
+}
 
 /* All passenger browser routes use the same compact app canvas. */
 :root body ion-app.passenger-preview > ion-router-outlet {
-  left: 50%; right: auto; transform: translateX(-50%);
+  left: 50%;
+  right: auto;
+  transform: translateX(-50%);
   width: min(100%, 560px);
-  box-shadow: 0 0 0 1px var(--line), 0 20px 80px #102c4a12;
+  box-shadow:
+    0 0 0 1px var(--line),
+    0 20px 80px #102c4a12;
 }
 :root body ion-app.passenger-preview .bottom-nav {
-  left: 0; right: 0; bottom: 0; width: 100%; transform: none;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: 100%;
+  transform: none;
   padding: 8px 10px calc(8px + env(safe-area-inset-bottom));
   border-radius: 18px 18px 0 0;
   box-shadow: 0 -4px 24px #102c4a08;
 }
-:root body ion-app.passenger-preview .bottom-nav a { min-height: 48px; color: var(--muted); }
-:root body ion-app.passenger-preview .bottom-nav a.active { color: var(--ocean); }
-.trip-loading { padding: 22px; display: grid; gap: 18px; }
+:root body ion-app.passenger-preview .bottom-nav a {
+  min-height: 48px;
+  color: var(--muted);
+}
+:root body ion-app.passenger-preview .bottom-nav a.active {
+  color: var(--ocean);
+}
+.trip-loading {
+  padding: 22px;
+  display: grid;
+  gap: 18px;
+}
 :root body ion-app.passenger-preview main {
-  width: 100%; min-width: 0; margin-inline: auto;
+  width: 100%;
+  min-width: 0;
+  margin-inline: auto;
   padding-inline: 16px;
   padding-bottom: calc(104px + env(safe-area-inset-bottom));
 }
-:root body ion-app.passenger-preview main.assistant-page { padding-bottom: 24px; }
-:root body ion-app.passenger-preview .passenger-header { gap: 8px; }
-:root body ion-app.passenger-preview .design-passenger-home .quick-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
-:root body ion-app.passenger-preview .design-passenger-home .quick-grid a { min-height: 110px; padding: 16px; }
-:root body ion-app.passenger-preview .design-passenger-home .welcome-section { margin: 24px 0 18px; }
-:root body ion-app.passenger-preview .design-passenger-home .welcome-section h1 { font-size: 26px; }
-:root body ion-app.passenger-preview .design-passenger-home .passenger-welcome-banner { display: none; }
-:root body ion-app.passenger-preview input:not([type="checkbox"]):not([type="radio"]),
+:root body ion-app.passenger-preview main.assistant-page {
+  padding-bottom: 24px;
+}
+:root body ion-app.passenger-preview .passenger-header {
+  gap: 8px;
+}
+:root body ion-app.passenger-preview .design-passenger-home .quick-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+:root body ion-app.passenger-preview .design-passenger-home .quick-grid a {
+  min-height: 110px;
+  padding: 16px;
+}
+:root body ion-app.passenger-preview .design-passenger-home .welcome-section {
+  margin: 24px 0 18px;
+}
+:root body ion-app.passenger-preview .design-passenger-home .welcome-section h1 {
+  font-size: 26px;
+}
+:root body ion-app.passenger-preview .design-passenger-home .passenger-welcome-banner {
+  display: none;
+}
+:root body ion-app.passenger-preview input:not([type='checkbox']):not([type='radio']),
 :root body ion-app.passenger-preview select,
-:root body ion-app.passenger-preview textarea { font-size: 16px; min-height: 44px; }
-:root body ion-app.passenger-preview button { min-height: 44px; }
-:root body ion-app.passenger-preview .counter button { width: 44px; }
+:root body ion-app.passenger-preview textarea {
+  font-size: 16px;
+  min-height: 44px;
+}
+:root body ion-app.passenger-preview button {
+  min-height: 44px;
+}
+:root body ion-app.passenger-preview .counter button {
+  width: 44px;
+}
 
 /* Shared surfaces also cover pages with local styles in both palettes. */
-:root[data-theme="dark"] body .setting-card,
-:root[data-theme="dark"] body .settings-card,
-:root[data-theme="dark"] body .booking-card,
-:root[data-theme="dark"] body .identity-card,
-:root[data-theme="dark"] body .upcoming-empty {
-  background: var(--surface); color: var(--ink); border-color: var(--line);
+:root[data-theme='dark'] body .setting-card,
+:root[data-theme='dark'] body .settings-card,
+:root[data-theme='dark'] body .booking-card,
+:root[data-theme='dark'] body .identity-card,
+:root[data-theme='dark'] body .upcoming-empty {
+  background: var(--surface);
+  color: var(--ink);
+  border-color: var(--line);
 }
-:root[data-theme="dark"] body textarea { background: var(--surface-soft); color: var(--ink); border-color: var(--line); }
+:root[data-theme='dark'] body textarea {
+  background: var(--surface-soft);
+  color: var(--ink);
+  border-color: var(--line);
+}
 @media (prefers-reduced-motion: reduce) {
-  [data-slot="skeleton"] { animation: none; }
+  [data-slot='skeleton'] {
+    animation: none;
+  }
 }
 @media print {
-  :root body ion-app.passenger-preview > ion-router-outlet { width: 100%; left: 0; transform: none; box-shadow: none; }
+  :root body ion-app.passenger-preview > ion-router-outlet {
+    width: 100%;
+    left: 0;
+    transform: none;
+    box-shadow: none;
+  }
 }

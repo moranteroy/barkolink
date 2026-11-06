@@ -1,14 +1,20 @@
 /** Sailing times always belong to Philippine terminals, not the device timezone. */
 export function philippineDateTime(value: string | number | Date): string {
   const date = new Date(value);
-  return Number.isFinite(date.getTime()) ? new Intl.DateTimeFormat('en-PH', {
-    timeZone: 'Asia/Manila', dateStyle: 'medium', timeStyle: 'short',
-  }).format(date) : 'Time unavailable';
+  return Number.isFinite(date.getTime())
+    ? new Intl.DateTimeFormat('en-PH', {
+        timeZone: 'Asia/Manila',
+        dateStyle: 'medium',
+        timeStyle: 'short',
+      }).format(date)
+    : 'Time unavailable';
 }
 
 export function philippineInput(value: string | number | Date): string {
   const date = new Date(value);
-  return Number.isFinite(date.getTime()) ? new Date(date.getTime() + 8 * 3600000).toISOString().slice(0, 16) : '';
+  return Number.isFinite(date.getTime())
+    ? new Date(date.getTime() + 8 * 3600000).toISOString().slice(0, 16)
+    : '';
 }
 
 export function parsePhilippineInput(value: string): Date {
@@ -16,8 +22,17 @@ export function parsePhilippineInput(value: string): Date {
   return philippineInput(date) === value ? date : new Date(NaN);
 }
 
-export function routeArrivalInput(departure: string, durationMinutes: number | null | undefined): string {
+export function routeArrivalInput(
+  departure: string,
+  durationMinutes: number | null | undefined,
+): string {
   const start = parsePhilippineInput(departure).getTime();
-  if (!Number.isFinite(start) || durationMinutes == null || !Number.isFinite(durationMinutes) || durationMinutes <= 0) return '';
+  if (
+    !Number.isFinite(start) ||
+    durationMinutes == null ||
+    !Number.isFinite(durationMinutes) ||
+    durationMinutes <= 0
+  )
+    return '';
   return philippineInput(start + durationMinutes * 60000);
 }

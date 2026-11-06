@@ -1,8 +1,5 @@
-import type {
-  CustomDiscount,
-  CustomDiscountFare,
-} from "../../data/fareSettings";
-import { executeDatabase, type DatabaseClient } from "./client";
+import type { CustomDiscount, CustomDiscountFare } from '../../data/fareSettings';
+import { executeDatabase, type DatabaseClient } from './client';
 import type { ReferenceMetadata } from '../../data/ferryReferences';
 export type Accommodation = {
   id: string;
@@ -88,46 +85,36 @@ export type VesselFares = {
   customDiscounts?: CustomDiscount[];
   accommodations: Accommodation[];
 };
-export const overview = (dc: DatabaseClient) =>
-  executeDatabase<Overview>(dc, "AdminOverview", {});
+export const overview = (dc: DatabaseClient) => executeDatabase<Overview>(dc, 'AdminOverview', {});
 export const accommodations = (dc: DatabaseClient) =>
-  executeDatabase<{ accommodations: Accommodation[] }>(
-    dc,
-    "AdminAccommodations",
-    {},
-  );
+  executeDatabase<{ accommodations: Accommodation[] }>(dc, 'AdminAccommodations', {});
 export const saveAccommodation = (
   dc: DatabaseClient,
-  args: Omit<Accommodation, "id" | "vesselName" | "availableSeats"> & {
+  args: Omit<Accommodation, 'id' | 'vesselName' | 'availableSeats'> & {
     id?: string;
   },
-) => executeDatabase(dc, "AdminSaveAccommodation", args);
+) => executeDatabase(dc, 'AdminSaveAccommodation', args);
 export const routes = (dc: DatabaseClient) =>
-  executeDatabase<{ routes: FerryRoute[] }>(dc, "AdminRoutes", {});
+  executeDatabase<{ routes: FerryRoute[] }>(dc, 'AdminRoutes', {});
 export const saveRoute = (
   dc: DatabaseClient,
-  args: Omit<FerryRoute, "id" | "origin" | "destination"> & { id?: string },
-) => executeDatabase(dc, "AdminSaveRoute", args);
+  args: Omit<FerryRoute, 'id' | 'origin' | 'destination'> & { id?: string },
+) => executeDatabase(dc, 'AdminSaveRoute', args);
 export const staffTrips = (
   dc: DatabaseClient,
   args: { page?: number; search?: string; status?: string } = {},
-) =>
-  executeDatabase<{ sailings: WorkspaceTrip[]; totalCount: number }>(
-    dc,
-    "StaffSailings",
-    args,
-  );
+) => executeDatabase<{ sailings: WorkspaceTrip[]; totalCount: number }>(dc, 'StaffSailings', args);
 export const staffPassengers = (
   dc: DatabaseClient,
   args: { page?: number; search?: string; sailingCode?: string } = {},
 ) =>
   executeDatabase<{ passengers: WorkspacePassenger[]; totalCount: number }>(
     dc,
-    "StaffPassengers",
+    'StaffPassengers',
     args,
   );
 export const staffFares = (dc: DatabaseClient) =>
-  executeDatabase<{ fares: VesselFares[] }>(dc, "StaffFares", {});
+  executeDatabase<{ fares: VesselFares[] }>(dc, 'StaffFares', {});
 export const staffDashboard = (dc: DatabaseClient) =>
   executeDatabase<{
     bookings: number;
@@ -135,43 +122,35 @@ export const staffDashboard = (dc: DatabaseClient) =>
     unpaid: number;
     awaitingVerification?: number;
     trips: number;
-  }>(dc, "StaffDashboard", {});
+  }>(dc, 'StaffDashboard', {});
 export const noShows = (dc: DatabaseClient, sailingCode: string) =>
   executeDatabase<{
     passengers: WorkspacePassenger[];
     sailing: WorkspaceTrip | null;
-  }>(dc, "StaffNoShows", { sailingCode });
-export const markNoShow = (
-  dc: DatabaseClient,
-  sailingCode: string,
-  passengerId?: string,
-) =>
-  executeDatabase<{ marked: number }>(dc, "StaffMarkNoShow", {
+  }>(dc, 'StaffNoShows', { sailingCode });
+export const markNoShow = (dc: DatabaseClient, sailingCode: string, passengerId?: string) =>
+  executeDatabase<{ marked: number }>(dc, 'StaffMarkNoShow', {
     sailingCode,
     passengerId,
   });
-export const campaigns = (dc: DatabaseClient, page = 0, options:{search?:string;sort?:string} = {}) =>
-  executeDatabase<{ campaigns: Campaign[]; totalCount: number }>(
-    dc,
-    "AdminNotificationCampaigns",
-    { page, ...options },
-  );
+export const campaigns = (
+  dc: DatabaseClient,
+  page = 0,
+  options: { search?: string; sort?: string } = {},
+) =>
+  executeDatabase<{ campaigns: Campaign[]; totalCount: number }>(dc, 'AdminNotificationCampaigns', {
+    page,
+    ...options,
+  });
 export type NotificationDraft = {
   title: string;
   message: string;
   audience: string;
   sailingCode?: string;
 };
-export const notificationRecipients = (
-  dc: DatabaseClient,
-  args: NotificationDraft,
-) =>
-  executeDatabase<{ recipients: number }>(
-    dc,
-    "AdminNotificationRecipients",
-    args,
-  );
+export const notificationRecipients = (dc: DatabaseClient, args: NotificationDraft) =>
+  executeDatabase<{ recipients: number }>(dc, 'AdminNotificationRecipients', args);
 export const sendNotification = (
   dc: DatabaseClient,
   args: NotificationDraft & { requestId: string },
-) => executeDatabase<{ sent: number }>(dc, "AdminSendNotification", args);
+) => executeDatabase<{ sent: number }>(dc, 'AdminSendNotification', args);

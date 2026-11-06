@@ -16,12 +16,12 @@ The server was left running at the end of the rehearsal. Start the command again
 
 Each browser profile uses one signed-in account. For a simultaneous four-role demonstration, use separate browser profiles. Otherwise sign out before changing roles. Do not attempt to sign four accounts into four ordinary tabs of the same profile; account/session isolation intentionally prevents that.
 
-| Role | Account | Name | Port |
-| --- | --- | --- | --- |
-| Admin | roymorante@barkolink.com | Roy Morante | All authorized ports |
+| Role      | Account                   | Name         | Port                    |
+| --------- | ------------------------- | ------------ | ----------------------- |
+| Admin     | roymorante@barkolink.com  | Roy Morante  | All authorized ports    |
 | Ticketing | mariasantos@barkolink.com | Maria Santos | Calapan Port departures |
-| Boarding | johndoe@barkolink.com | John Doe | Calapan Port departures |
-| Passenger | carlobiado@barkolink.com | Carlo Biado | Personal bookings |
+| Boarding  | johndoe@barkolink.com     | John Doe     | Calapan Port departures |
+| Passenger | carlobiado@barkolink.com  | Carlo Biado  | Personal bookings       |
 
 Use the shared demo password supplied in the conversation; it is not stored in this guide or audit receipts.
 
@@ -29,12 +29,12 @@ Use the shared demo password supplied in the conversation; it is not stored in t
 
 All departure dates/times below are **Philippine time**. These records are time-bound; use fresh future sailings if presenting on a later date. Do not try to check in or board historical tickets.
 
-| Purpose | Booking reference | Sailing | Departure | State after rehearsal |
-| --- | --- | --- | --- | --- |
-| Completed cash and attendance rehearsal | BKG20261105-1793877527369 | TRP2026-1030396 | Nov 5, 2026, 11:00 PM | Cash paid, checked in, boarded |
-| Ready ticket for presentation | BKG20261105-1793877533051 | TRP2026-1031414 | Nov 6, 2026, 9:00 AM | Paid by cash, issued ticket; not checked in/boarded |
-| Unpaid payment-deadline example | BKG20261105-1793877534033 | TRP2026-1031417 | Nov 6, 2026, 11:00 AM | Unpaid active reservation |
-| Completed online sandbox rehearsal | BKG20261105-1793877558280 | TRP2026-1031420 | Nov 6, 2026, 1:00 PM | GCash test paid, staff verified, ticket issued |
+| Purpose                                 | Booking reference         | Sailing         | Departure             | State after rehearsal                               |
+| --------------------------------------- | ------------------------- | --------------- | --------------------- | --------------------------------------------------- |
+| Completed cash and attendance rehearsal | BKG20261105-1793877527369 | TRP2026-1030396 | Nov 5, 2026, 11:00 PM | Cash paid, checked in, boarded                      |
+| Ready ticket for presentation           | BKG20261105-1793877533051 | TRP2026-1031414 | Nov 6, 2026, 9:00 AM  | Paid by cash, issued ticket; not checked in/boarded |
+| Unpaid payment-deadline example         | BKG20261105-1793877534033 | TRP2026-1031417 | Nov 6, 2026, 11:00 AM | Unpaid active reservation                           |
+| Completed online sandbox rehearsal      | BKG20261105-1793877558280 | TRP2026-1031420 | Nov 6, 2026, 1:00 PM  | GCash test paid, staff verified, ticket issued      |
 
 The configured reservation window is **24 hours**, capped at departure time. The unpaid example's deadline is therefore no later than **November 6, 2026, 11:00 AM**. These prepared examples do not extend ticket validity or bypass server rules.
 

@@ -4,16 +4,20 @@
     class="advisories"
     aria-label="Travel advisories"
   >
-    <h2 v-if="showHeading" class="advisory-heading"><AppIcon :icon="megaphoneOutline" aria-hidden="true" /> Travel advisories</h2>
-    <div v-if="showEmpty && !items.length && !error" class="advisory-empty" role="status"><span><ShieldCheck :size="20" aria-hidden="true" /></span><div><strong>{{ loading ? 'Checking travel advisories…' : 'No active travel advisories.' }}</strong><p v-if="!loading">Check operator updates again before departure.</p></div></div>
-    <p v-if="error" role="alert">
-      {{ error }} <button @click="load">Retry</button>
-    </p>
-    <article
-      v-for="item in items"
-      :key="item.id"
-      :class="item.priority.toLowerCase()"
-    >
+    <h2 v-if="showHeading" class="advisory-heading">
+      <AppIcon :icon="megaphoneOutline" aria-hidden="true" /> Travel advisories
+    </h2>
+    <div v-if="showEmpty && !items.length && !error" class="advisory-empty" role="status">
+      <span><ShieldCheck :size="20" aria-hidden="true" /></span>
+      <div>
+        <strong>{{
+          loading ? 'Checking travel advisories…' : 'No active travel advisories.'
+        }}</strong>
+        <p v-if="!loading">Check operator updates again before departure.</p>
+      </div>
+    </div>
+    <p v-if="error" role="alert">{{ error }} <button @click="load">Retry</button></p>
+    <article v-for="item in items" :key="item.id" :class="item.priority.toLowerCase()">
       <AppIcon
         :icon="
           item.category === 'WEATHER' || item.category === 'SAFETY'
@@ -31,41 +35,40 @@
   </section>
 </template>
 <script setup lang="ts">
-import { onMounted, ref, watch } from "vue";
-import { onIonViewWillEnter } from "@ionic/vue";
-import AppIcon from "@/components/ui/icon/AppIcon.vue";
-import { megaphoneOutline, warningOutline } from "ionicons/icons";
+import { onMounted, ref, watch } from 'vue';
+import { onIonViewWillEnter } from '@ionic/vue';
+import AppIcon from '@/components/ui/icon/AppIcon.vue';
+import { megaphoneOutline, warningOutline } from 'ionicons/icons';
 import { ShieldCheck } from '@lucide/vue';
-import {
-  activeAdvisories,
-  type Advisory,
-} from "../../services/database/experience";
-import { database } from "../../services/session";
-import { databaseRequestError } from "../../data/databaseErrors";
+import { activeAdvisories, type Advisory } from '../../services/database/experience';
+import { database } from '../../services/session';
+import { databaseRequestError } from '../../data/databaseErrors';
 const props = defineProps<{ sailingCode?: string; showHeading?: boolean; showEmpty?: boolean }>();
 const loading = ref(true);
 const items = ref<Advisory[]>([]),
-  error = ref("");
+  error = ref('');
 let request = 0;
 async function load() {
-  if (!database) { loading.value = false; return; }
+  if (!database) {
+    loading.value = false;
+    return;
+  }
   const token = ++request;
   loading.value = true;
   try {
     const result = await activeAdvisories(database, props.sailingCode);
     if (token === request) {
       items.value = result.data.advisories;
-      error.value = "";
+      error.value = '';
     }
   } catch (cause) {
     if (token === request) {
       items.value = [];
-      error.value = databaseRequestError(
-        cause,
-        "Travel advisories are unavailable.",
-      );
+      error.value = databaseRequestError(cause, 'Travel advisories are unavailable.');
     }
-  } finally { if (token === request) loading.value = false; }
+  } finally {
+    if (token === request) loading.value = false;
+  }
 }
 onMounted(load);
 onIonViewWillEnter(load);
@@ -77,12 +80,46 @@ watch(() => props.sailingCode, load);
   gap: 10px;
   margin: 20px 0;
 }
-.advisory-heading { display: flex; align-items: center; gap: 8px; margin: 0 0 4px; color: var(--ink); font-size: 14px; font-weight: 650; }
-.advisory-heading .app-icon { font-size: 17px; }
-.advisory-empty { display:flex; align-items:center; gap:12px; padding:15px; border:1px solid var(--line); border-radius:13px; background:var(--surface); }
-.advisory-empty > span { display:grid; place-items:center; width:34px; height:34px; flex-shrink:0; border-radius:10px; background:color-mix(in srgb,#299e91 12%,var(--surface)); color:#299e91; }
-.advisory-empty strong { color:var(--ink); font-size: var(--text-label); font-weight:650; }
-.advisory-empty p { margin-top:4px; font-size: var(--text-caption); }
+.advisory-heading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 4px;
+  color: var(--ink);
+  font-size: 14px;
+  font-weight: 650;
+}
+.advisory-heading .app-icon {
+  font-size: 17px;
+}
+.advisory-empty {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 15px;
+  border: 1px solid var(--line);
+  border-radius: 13px;
+  background: var(--surface);
+}
+.advisory-empty > span {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  flex-shrink: 0;
+  border-radius: 10px;
+  background: color-mix(in srgb, #299e91 12%, var(--surface));
+  color: #299e91;
+}
+.advisory-empty strong {
+  color: var(--ink);
+  font-size: var(--text-label);
+  font-weight: 650;
+}
+.advisory-empty p {
+  margin-top: 4px;
+  font-size: var(--text-caption);
+}
 .advisories article {
   display: flex;
   align-items: flex-start;

@@ -2,8 +2,7 @@
   <div class="brand-mark" aria-label="BarkoLink home">
     <span class="brand-symbol"><img :src="brandMarkSrc" alt="" width="38" height="38" /></span>
     <span class="brand-copy"
-      ><strong>Barko</strong><b>Link</b
-      ><small>Travel smarter. Sail easier.</small></span
+      ><strong>Barko</strong><b>Link</b><small>Travel smarter. Sail easier.</small></span
     >
   </div>
 </template>

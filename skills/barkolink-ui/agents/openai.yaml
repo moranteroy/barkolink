@@ -1,4 +1,4 @@
 interface:
-  display_name: "BarkoLink UI"
-  short_description: "Improve role screens, AG Grid tables, and mobile UI"
-  default_prompt: "Use $barkolink-ui to improve the requested BarkoLink screens and shared AG Grid experience while preserving role workflows."
+  display_name: 'BarkoLink UI'
+  short_description: 'Improve role screens, AG Grid tables, and mobile UI'
+  default_prompt: 'Use $barkolink-ui to improve the requested BarkoLink screens and shared AG Grid experience while preserving role workflows.'

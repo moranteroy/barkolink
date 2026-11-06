@@ -8,8 +8,8 @@
   <span v-else class="no-changes">No additional details</span>
 </template>
 <script setup lang="ts">
-import { computed } from "vue";
-import { auditChanges } from "../../data/auditPresentation";
+import { computed } from 'vue';
+import { auditChanges } from '../../data/auditPresentation';
 const props = defineProps<{ details?: Record<string, unknown> | null }>();
 const changes = computed(() => auditChanges(props.details));
 </script>

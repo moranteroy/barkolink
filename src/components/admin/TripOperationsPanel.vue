@@ -18,12 +18,27 @@
           <h3>{{ code ? 'Manage your sailing' : 'Select a trip to manage' }}</h3>
         </div>
       </div>
-      <label class="picker" for="operations-sailing">Choose sailing<select id="operations-sailing" v-model="code" :disabled="loading || busy" @change="selectTrip">
+      <label class="picker" for="operations-sailing"
+        >Choose sailing<select
+          id="operations-sailing"
+          v-model="code"
+          :disabled="loading || busy"
+          @change="selectTrip"
+        >
           <option value="">Select a sailing to open its workspace</option>
-          <option v-for="s in sailings" :key="s.code" :value="s.code">{{ s.code }} | {{ s.origin.name }} | {{ s.destination.name }} | {{ date(s.departureAt) }}</option>
+          <option v-for="s in sailings" :key="s.code" :value="s.code">
+            {{ s.code }} | {{ s.origin.name }} | {{ s.destination.name }} |
+            {{ date(s.departureAt) }}
+          </option>
         </select>
       </label>
-      <button v-if="sailings.length < sailingTotal" :disabled="moreLoading || busy" @click="loadMoreSailings">{{ moreLoading ? 'Loading...' : 'Load older sailings' }}</button>
+      <button
+        v-if="sailings.length < sailingTotal"
+        :disabled="moreLoading || busy"
+        @click="loadMoreSailings"
+      >
+        {{ moreLoading ? 'Loading...' : 'Load older sailings' }}
+      </button>
     </div>
     <p v-if="error" class="error message" role="alert">{{ error }}</p>
     <p v-if="notice" class="message" role="status">{{ notice }}</p>
@@ -34,11 +49,24 @@
           <AppIcon :icon="boatOutline" aria-hidden="true" />
         </span>
         <div>
-          <h3>{{ sailings.length ? 'Everything for one sailing, in one place' : 'No sailings available yet' }}</h3>
-          <p>{{ sailings.length ? 'Choose a sailing above to review reservations, arrival and boarding progress.' : 'Create a trip in Trips & schedules to get started.' }}</p>
+          <h3>
+            {{
+              sailings.length
+                ? 'Everything for one sailing, in one place'
+                : 'No sailings available yet'
+            }}
+          </h3>
+          <p>
+            {{
+              sailings.length
+                ? 'Choose a sailing above to review reservations, arrival and boarding progress.'
+                : 'Create a trip in Trips & schedules to get started.'
+            }}
+          </p>
         </div>
       </div>
-      <router-link v-if="!sailings.length" class="schedule-link" to="/admin/trips">Open Trips & schedules <AppIcon :icon="calendarOutline" aria-hidden="true" />
+      <router-link v-if="!sailings.length" class="schedule-link" to="/admin/trips"
+        >Open Trips & schedules <AppIcon :icon="calendarOutline" aria-hidden="true" />
       </router-link>
       <div class="workspace-features">
         <div>
@@ -64,23 +92,62 @@
           <div>
             <div class="sailing-identity">
               <small>{{ data.sailing.code }}</small>
-              <Badge :class="statusClass(data.sailing.status)" :variant="statusVariant(data.sailing.status)">{{ label(data.sailing.status) }}</Badge>
+              <Badge
+                :class="statusClass(data.sailing.status)"
+                :variant="statusVariant(data.sailing.status)"
+                >{{ label(data.sailing.status) }}</Badge
+              >
             </div>
-            <h3>{{ data.sailing.origin.name }} <span class="route-arrow">&rarr;</span> {{ data.sailing.destination.name }}</h3>
-            <p>{{ data.sailing.vessel.name }} <span>&middot;</span> {{ date(data.sailing.departureAt) }} <small>PH time</small>
+            <h3>
+              {{ data.sailing.origin.name }} <span class="route-arrow">&rarr;</span>
+              {{ data.sailing.destination.name }}
+            </h3>
+            <p>
+              {{ data.sailing.vessel.name }} <span>&middot;</span>
+              {{ date(data.sailing.departureAt) }} <small>PH time</small>
             </p>
           </div>
           <router-link to="/admin/trips">
-            <AppIcon :icon="calendarOutline" aria-hidden="true" /> Manage schedule</router-link>
+            <AppIcon :icon="calendarOutline" aria-hidden="true" /> Manage schedule</router-link
+          >
         </div>
         <section class="sailing-status-controls" aria-label="Manual sailing status">
-          <div><strong>Trip status</strong><p>Scheduled, Boarding and Completed follow the saved timing. Mark Delayed or Cancelled when operations change.</p></div>
-          <div class="status-actions" v-if="['SCHEDULED', 'BOARDING', 'DELAYED'].includes(data.sailing.status)">
-            <button v-if="['SCHEDULED', 'BOARDING'].includes(data.sailing.status)" :disabled="loading || busy" @click="setTripStatus('DELAYED')">Mark Delayed</button>
-            <button class="cancel-trip" :disabled="loading || busy" @click="setTripStatus('CANCELLED')">Cancel trip</button>
-            <router-link v-if="data.sailing.status === 'DELAYED'" to="/admin/trips">Update schedule to resume</router-link>
+          <div>
+            <strong>Trip status</strong>
+            <p>
+              Scheduled, Boarding and Completed follow the saved timing. Mark Delayed or Cancelled
+              when operations change.
+            </p>
           </div>
-          <p v-else class="status-final">{{ data.sailing.status === 'CANCELLED' ? 'This trip is cancelled.' : 'This trip is completed.' }}</p>
+          <div
+            class="status-actions"
+            v-if="['SCHEDULED', 'BOARDING', 'DELAYED'].includes(data.sailing.status)"
+          >
+            <button
+              v-if="['SCHEDULED', 'BOARDING'].includes(data.sailing.status)"
+              :disabled="loading || busy"
+              @click="setTripStatus('DELAYED')"
+            >
+              Mark Delayed
+            </button>
+            <button
+              class="cancel-trip"
+              :disabled="loading || busy"
+              @click="setTripStatus('CANCELLED')"
+            >
+              Cancel trip
+            </button>
+            <router-link v-if="data.sailing.status === 'DELAYED'" to="/admin/trips"
+              >Update schedule to resume</router-link
+            >
+          </div>
+          <p v-else class="status-final">
+            {{
+              data.sailing.status === 'CANCELLED'
+                ? 'This trip is cancelled.'
+                : 'This trip is completed.'
+            }}
+          </p>
         </section>
         <div class="metrics">
           <article v-for="metric in metrics" :key="metric.label">
@@ -90,7 +157,14 @@
         </div>
       </div>
       <nav aria-label="Sailing operation tabs">
-        <button v-for="name in tabs" :key="name" :class="{ active: tab === name }" :aria-pressed="tab === name" @click="tab = name">{{ name }}<span v-if="tabCount(name) !== null">{{ tabCount(name) }}</span>
+        <button
+          v-for="name in tabs"
+          :key="name"
+          :class="{ active: tab === name }"
+          :aria-pressed="tab === name"
+          @click="tab = name"
+        >
+          {{ name }}<span v-if="tabCount(name) !== null">{{ tabCount(name) }}</span>
         </button>
       </nav>
       <div v-if="tab === 'Overview'" class="overview">
@@ -99,10 +173,16 @@
             <p class="eyebrow">TERMINAL OVERVIEW</p>
             <h3>Passenger progress</h3>
           </div>
-          <strong class="progress-value">{{ paid.length ? Math.round(boarded / paid.length * 100) : 0 }}<small>% boarded</small>
+          <strong class="progress-value"
+            >{{ paid.length ? Math.round((boarded / paid.length) * 100) : 0
+            }}<small>% boarded</small>
           </strong>
         </div>
-        <progress aria-label="Paid passengers boarded" :value="boarded" :max="Math.max(1, paid.length)" />
+        <progress
+          aria-label="Paid passengers boarded"
+          :value="boarded"
+          :max="Math.max(1, paid.length)"
+        />
         <p>{{ boarded }} of {{ paid.length }} paid passengers boarded.</p>
         <div class="stage-grid">
           <div>
@@ -142,7 +222,10 @@
             </div>
           </router-link>
         </div>
-        <p class="footnote">Reserved seats include unpaid bookings. Terminal queues include paid, confirmed reservations only.</p>
+        <p class="footnote">
+          Reserved seats include unpaid bookings. Terminal queues include paid, confirmed
+          reservations only.
+        </p>
       </div>
       <section v-else-if="tab === 'Activity'" class="activity">
         <div class="content-heading">
@@ -164,22 +247,40 @@
             </span>
             <div>
               <strong>{{ activityLabel(event.action) }}</strong>
-              <small v-if="['INSERT', 'UPDATE', 'DELETE'].includes(event.action)">Audit action: {{ event.action }}</small>
+              <small v-if="['INSERT', 'UPDATE', 'DELETE'].includes(event.action)"
+                >Audit action: {{ event.action }}</small
+              >
             </div>
             <time :datetime="event.createdAt">{{ date(event.createdAt) }}</time>
           </article>
         </div>
       </section>
       <template v-else>
-        <AdminManifestExport v-if="tab === 'Manifest'" :sailing-code="code" :sailings="[{ code, origin: data.sailing.origin.name, destination: data.sailing.destination.name, vessel: data.sailing.vessel.name }]" />
+        <AdminManifestExport
+          v-if="tab === 'Manifest'"
+          :sailing-code="code"
+          :sailings="[
+            {
+              code,
+              origin: data.sailing.origin.name,
+              destination: data.sailing.destination.name,
+              vessel: data.sailing.vessel.name,
+            },
+          ]"
+        />
         <div v-if="tab === 'No-shows'" class="reconcile">
           <div>
             <p class="eyebrow">ATTENDANCE RECONCILIATION</p>
             <h3>Record passengers who did not board</h3>
             <p>{{ reconcileHint }}</p>
-            <small>{{ noShowCandidates }} eligible passengers | {{ paid.filter(p => p.noShow).length }} recorded</small>
+            <small
+              >{{ noShowCandidates }} eligible passengers |
+              {{ paid.filter((p) => p.noShow).length }} recorded</small
+            >
           </div>
-          <button :disabled="busy || !canReconcile || !noShowCandidates" @click="reconcile">{{ busy ? 'Reconciling...' : 'Reconcile no-shows' }}</button>
+          <button :disabled="busy || !canReconcile || !noShowCandidates" @click="reconcile">
+            {{ busy ? 'Reconciling...' : 'Reconcile no-shows' }}
+          </button>
         </div>
         <section class="records-panel">
           <div class="content-heading">
@@ -192,7 +293,16 @@
           </div>
           <label class="record-search">
             <AppIcon :icon="searchOutline" aria-hidden="true" />
-            <input v-model="search" :placeholder="tab === 'Bookings' ? 'Search booking reference' : 'Search passenger, booking or category'" :aria-label="tab === 'Bookings' ? 'Search bookings' : 'Search passengers'" type="search" />
+            <input
+              v-model="search"
+              :placeholder="
+                tab === 'Bookings'
+                  ? 'Search booking reference'
+                  : 'Search passenger, booking or category'
+              "
+              :aria-label="tab === 'Bookings' ? 'Search bookings' : 'Search passengers'"
+              type="search"
+            />
           </label>
           <div v-if="filteredRecordsCount" class="table-wrap">
             <table v-if="tab === 'Bookings'">
@@ -213,10 +323,18 @@
                   <td data-label="Passengers">{{ booking.passengerCount }}</td>
                   <td data-label="Total" class="numeric">{{ money(booking.total) }}</td>
                   <td data-label="Booking status">
-                    <Badge :class="statusClass(booking.status)" :variant="statusVariant(booking.status)">{{ label(booking.status) }}</Badge>
+                    <Badge
+                      :class="statusClass(booking.status)"
+                      :variant="statusVariant(booking.status)"
+                      >{{ label(booking.status) }}</Badge
+                    >
                   </td>
                   <td data-label="Payment">
-                    <Badge :class="statusClass(booking.paymentStatus)" :variant="statusVariant(booking.paymentStatus)">{{ label(booking.paymentStatus) }}</Badge>
+                    <Badge
+                      :class="statusClass(booking.paymentStatus)"
+                      :variant="statusVariant(booking.paymentStatus)"
+                      >{{ label(booking.paymentStatus) }}</Badge
+                    >
                   </td>
                 </tr>
               </tbody>
@@ -239,20 +357,49 @@
                   <td data-label="Booking">{{ person.booking.reference }}</td>
                   <td data-label="Category">{{ label(person.passengerType) }}</td>
                   <td data-label="Ticket status">
-                    <Badge :class="statusClass(person.ticketStatus)" :variant="statusVariant(person.ticketStatus)">{{ label(person.ticketStatus) }}</Badge>
+                    <Badge
+                      :class="statusClass(person.ticketStatus)"
+                      :variant="statusVariant(person.ticketStatus)"
+                      >{{ label(person.ticketStatus) }}</Badge
+                    >
                   </td>
                   <td data-label="Attendance">
-                    <span :class="['attendance', { recorded: person.boardedAt || person.checkedInAt, absent: person.noShow }]">{{ person.noShow ? 'No-show recorded' : person.boardedAt ? 'Boarded' : person.checkedInAt ? 'Checked in' : 'Awaiting arrival' }}</span>
-                    <small v-if="person.boardedAt || person.checkedInAt" class="attendance-time">{{ date((person.boardedAt || person.checkedInAt)!) }}</small>
+                    <span
+                      :class="[
+                        'attendance',
+                        { recorded: person.boardedAt || person.checkedInAt, absent: person.noShow },
+                      ]"
+                      >{{
+                        person.noShow
+                          ? 'No-show recorded'
+                          : person.boardedAt
+                            ? 'Boarded'
+                            : person.checkedInAt
+                              ? 'Checked in'
+                              : 'Awaiting arrival'
+                      }}</span
+                    >
+                    <small v-if="person.boardedAt || person.checkedInAt" class="attendance-time">{{
+                      date((person.boardedAt || person.checkedInAt)!)
+                    }}</small>
                   </td>
                 </tr>
               </tbody>
             </table>
           </div>
           <div v-else class="record-empty">
-            <AppIcon :icon="search ? searchOutline : tab === 'Bookings' ? ticketOutline : peopleOutline" aria-hidden="true" />
+            <AppIcon
+              :icon="search ? searchOutline : tab === 'Bookings' ? ticketOutline : peopleOutline"
+              aria-hidden="true"
+            />
             <strong>{{ search ? 'No matching records' : emptyTitle }}</strong>
-            <p>{{ search ? 'Try a different name or reference, or clear your search.' : emptyDescription }}</p>
+            <p>
+              {{
+                search
+                  ? 'Try a different name or reference, or clear your search.'
+                  : emptyDescription
+              }}
+            </p>
             <button v-if="search" @click="search = ''">Clear search</button>
           </div>
         </section>
@@ -262,36 +409,45 @@
 </template>
 <script setup lang="ts">
 import { notifyError, notifySuccess } from '@/composables/toast';
-import { confirmAction, requestReason } from "../../composables/confirmation";
-import { Badge } from "@/components/ui/badge";
+import { confirmAction, requestReason } from '../../composables/confirmation';
+import { Badge } from '@/components/ui/badge';
 defineProps<{ embedded?: boolean }>();
-import AdminManifestExport from "./AdminManifestExport.vue";
-import { computed, onMounted, ref, watch } from "vue";
-import { useRoute, useRouter } from "vue-router";
-import AppIcon from "@/components/ui/icon/AppIcon.vue";
-import { timeOutline, calendarOutline, scanOutline, boatOutline, documentTextOutline, ticketOutline, searchOutline, peopleOutline } from "ionicons/icons";
-import { adminSailings, adminUpdateSailingStatus } from "../../services/database/staff";
+import AdminManifestExport from './AdminManifestExport.vue';
+import { computed, onMounted, ref, watch } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
+import AppIcon from '@/components/ui/icon/AppIcon.vue';
+import {
+  timeOutline,
+  calendarOutline,
+  scanOutline,
+  boatOutline,
+  documentTextOutline,
+  ticketOutline,
+  searchOutline,
+  peopleOutline,
+} from 'ionicons/icons';
+import { adminSailings, adminUpdateSailingStatus } from '../../services/database/staff';
 import {
   tripOperations,
   reconcileNoShows,
   type TripOperations,
-} from "../../services/database/experience";
-import { staffDatabase } from "../../services/session";
-import { databaseRequestError } from "../../data/databaseErrors";
+} from '../../services/database/experience';
+import { staffDatabase } from '../../services/session';
+import { databaseRequestError } from '../../data/databaseErrors';
 const route = useRoute(),
   router = useRouter();
 const tabs = [
-  "Overview",
-  "Bookings",
-  "Passengers",
-  "Check-in",
-  "Boarding",
-  "Manifest",
-  "No-shows",
-  "Activity",
+  'Overview',
+  'Bookings',
+  'Passengers',
+  'Check-in',
+  'Boarding',
+  'Manifest',
+  'No-shows',
+  'Activity',
 ];
-const tab = ref("Overview"),
-  code = ref(String(route.query.sailing || "")),
+const tab = ref('Overview'),
+  code = ref(String(route.query.sailing || '')),
   data = ref<TripOperations | null>(null);
 const sailings = ref<
   Array<{
@@ -313,23 +469,25 @@ async function loadMoreSailings() {
       pageSize: 100,
     });
     const seen = new Set(sailings.value.map((s) => s.code));
-    sailings.value.push(
-      ...result.data.sailings.filter((s) => !seen.has(s.code)),
-    );
+    sailings.value.push(...result.data.sailings.filter((s) => !seen.has(s.code)));
     sailingPage.value++;
     sailingTotal.value = result.data.totalCount || sailings.value.length;
   } catch (cause) {
-    error.value = databaseRequestError(cause, "Could not load more sailings.");
+    error.value = databaseRequestError(cause, 'Could not load more sailings.');
   } finally {
     moreLoading.value = false;
   }
 }
 const loading = ref(false),
   busy = ref(false),
-  error = ref(""),
-  notice = ref("");
+  error = ref(''),
+  notice = ref('');
 const date = (value: string) =>
-  new Date(value).toLocaleString("en-PH", { timeZone: "Asia/Manila", dateStyle: "medium", timeStyle: "short" });
+  new Date(value).toLocaleString('en-PH', {
+    timeZone: 'Asia/Manila',
+    dateStyle: 'medium',
+    timeStyle: 'short',
+  });
 function statusVariant(value: string): 'default' | 'success' | 'warning' | 'destructive' {
   if (['CANCELLED', 'EXPIRED', 'NO_SHOW', 'REFUNDED'].includes(value)) return 'destructive';
   if (['PENDING', 'UNPAID', 'DELAYED', 'REFUND_PENDING'].includes(value)) return 'warning';
@@ -339,8 +497,7 @@ function statusVariant(value: string): 'default' | 'success' | 'warning' | 'dest
 const paid = computed(
   () =>
     data.value?.passengers.filter(
-      (p) =>
-        p.booking.status === "CONFIRMED" && p.booking.paymentStatus === "PAID",
+      (p) => p.booking.status === 'CONFIRMED' && p.booking.paymentStatus === 'PAID',
     ) || [],
 );
 const activityEvents = computed(() =>
@@ -350,8 +507,8 @@ const activityEvents = computed(() =>
       ...(person.checkedInAt
         ? [
             {
-              id: "check-in-" + person.id,
-              action: "CHECKED IN · " + person.fullName,
+              id: 'check-in-' + person.id,
+              action: 'CHECKED IN · ' + person.fullName,
               createdAt: person.checkedInAt,
             },
           ]
@@ -359,8 +516,8 @@ const activityEvents = computed(() =>
       ...(person.boardedAt
         ? [
             {
-              id: "boarded-" + person.id,
-              action: "BOARDED · " + person.fullName,
+              id: 'boarded-' + person.id,
+              action: 'BOARDED · ' + person.fullName,
               createdAt: person.boardedAt,
             },
           ]
@@ -368,102 +525,206 @@ const activityEvents = computed(() =>
     ]),
   ].sort((a, b) => b.createdAt.localeCompare(a.createdAt)),
 );
-const boarded = computed(
-  () => paid.value.filter((p) => p.ticketStatus === "BOARDED").length,
-);
-const search = ref("");
-watch(tab, () => { search.value = ""; });
-const label = (value: string) => value === 'PWD' ? value : value.toLowerCase().replaceAll('_', ' ').replace(/\b\w/g, c => c.toUpperCase());
-const money = (value: number) => new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP' }).format(value);
+const boarded = computed(() => paid.value.filter((p) => p.ticketStatus === 'BOARDED').length);
+const search = ref('');
+watch(tab, () => {
+  search.value = '';
+});
+const label = (value: string) =>
+  value === 'PWD'
+    ? value
+    : value
+        .toLowerCase()
+        .replaceAll('_', ' ')
+        .replace(/\b\w/g, (c) => c.toUpperCase());
+const money = (value: number) =>
+  new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP' }).format(value);
 const statusClass = (value: string) => ({
   'status-blue': ['ISSUED', 'SCHEDULED', 'CONFIRMED'].includes(value),
   'status-purple': ['CHECKED_IN', 'BOARDING'].includes(value),
 });
-const activityLabel = (value: string) => ({ INSERT: 'Record created', UPDATE: 'Record updated', DELETE: 'Record deleted' }[value]
-  || (value.startsWith('CHECKED IN') ? value.replace('CHECKED IN', 'Checked in')
-    : value.startsWith('BOARDED') ? value.replace('BOARDED', 'Boarded') : label(value)));
-const arrivalQueue = computed(() => paid.value.filter(p => p.ticketStatus === 'ISSUED' && !p.noShow));
-const boardingQueue = computed(() => paid.value.filter(p => p.ticketStatus === 'CHECKED_IN' && !p.noShow));
+const activityLabel = (value: string) =>
+  ({ INSERT: 'Record created', UPDATE: 'Record updated', DELETE: 'Record deleted' })[value] ||
+  (value.startsWith('CHECKED IN')
+    ? value.replace('CHECKED IN', 'Checked in')
+    : value.startsWith('BOARDED')
+      ? value.replace('BOARDED', 'Boarded')
+      : label(value));
+const arrivalQueue = computed(() =>
+  paid.value.filter((p) => p.ticketStatus === 'ISSUED' && !p.noShow),
+);
+const boardingQueue = computed(() =>
+  paid.value.filter((p) => p.ticketStatus === 'CHECKED_IN' && !p.noShow),
+);
 const noShowCandidates = computed(() => arrivalQueue.value.length + boardingQueue.value.length);
-const canReconcile = computed(() => data.value?.sailing.status === 'COMPLETED' && Date.parse(data.value.sailing.departureAt) <= Date.now());
-const terminalNote = computed(() => data.value?.sailing.status === 'CANCELLED'
-  ? 'This sailing is cancelled. Reservations and attendance remain available for review.'
-  : data.value?.sailing.status === 'COMPLETED' ? 'This sailing is completed. Review the manifest and reconcile any remaining no-shows.'
-  : 'Check-in records passenger arrival. Boarding confirms that a checked-in passenger has entered the vessel.');
-const reconcileHint = computed(() => data.value?.sailing.status === 'CANCELLED'
-  ? 'No-show reconciliation is unavailable for cancelled sailings.'
-  : !canReconcile.value ? 'Available after the sailing automatically becomes Completed at its scheduled arrival. Delayed sailings require an updated schedule and admin approval to resume.'
-  : noShowCandidates.value ? 'Record paid passengers who did not board. Booking history and fares are preserved.'
-  : 'All eligible passengers have been boarded or already recorded as no-shows.');
-const viewTitle = computed(() => ({ Bookings: 'Sailing bookings', Passengers: 'Passenger directory', 'Check-in': 'Awaiting check-in', Boarding: 'Ready to board', Manifest: 'Paid passenger manifest', 'No-shows': 'Recorded no-shows' }[tab.value] || 'Passengers'));
-const viewDescription = computed(() => ({ Bookings: 'All reservations for this sailing, including cancelled bookings.', Passengers: 'Tickets and attendance across all booking statuses.', 'Check-in': 'Step 1 · Paid passengers with issued tickets awaiting arrival verification.', Boarding: 'Step 2 · Checked-in passengers awaiting confirmation at the vessel.', Manifest: 'Passengers on paid, confirmed reservations.', 'No-shows': 'Paid passengers whose no-show attendance has been recorded.' }[tab.value] || ''));
-const emptyTitle = computed(() => ({ Bookings: 'No bookings yet', 'Check-in': 'No passengers awaiting check-in', Boarding: 'No passengers ready to board', Manifest: 'No paid passengers to include', 'No-shows': 'No recorded no-shows' }[tab.value] || 'No passengers yet'));
-const emptyDescription = computed(() => data.value?.sailing.status === 'CANCELLED' && ['Check-in', 'Boarding', 'Manifest', 'No-shows'].includes(tab.value)
-  ? 'This sailing is cancelled. View Bookings or Passengers for its reservation history.'
-  : ({ Bookings: 'Reservations will appear here when passengers book this sailing.', 'Check-in': 'Only paid, confirmed passengers with issued tickets appear in this queue.', Boarding: 'Passengers appear here after their tickets are checked in at the arrival desk.', Manifest: 'The manifest includes paid, confirmed reservations only.', 'No-shows': 'Recorded attendance will appear here after reconciliation.' }[tab.value] || 'Passenger records will appear when reservations are created.'));
+const canReconcile = computed(
+  () =>
+    data.value?.sailing.status === 'COMPLETED' &&
+    Date.parse(data.value.sailing.departureAt) <= Date.now(),
+);
+const terminalNote = computed(() =>
+  data.value?.sailing.status === 'CANCELLED'
+    ? 'This sailing is cancelled. Reservations and attendance remain available for review.'
+    : data.value?.sailing.status === 'COMPLETED'
+      ? 'This sailing is completed. Review the manifest and reconcile any remaining no-shows.'
+      : 'Check-in records passenger arrival. Boarding confirms that a checked-in passenger has entered the vessel.',
+);
+const reconcileHint = computed(() =>
+  data.value?.sailing.status === 'CANCELLED'
+    ? 'No-show reconciliation is unavailable for cancelled sailings.'
+    : !canReconcile.value
+      ? 'Available after the sailing automatically becomes Completed at its scheduled arrival. Delayed sailings require an updated schedule and admin approval to resume.'
+      : noShowCandidates.value
+        ? 'Record paid passengers who did not board. Booking history and fares are preserved.'
+        : 'All eligible passengers have been boarded or already recorded as no-shows.',
+);
+const viewTitle = computed(
+  () =>
+    ({
+      Bookings: 'Sailing bookings',
+      Passengers: 'Passenger directory',
+      'Check-in': 'Awaiting check-in',
+      Boarding: 'Ready to board',
+      Manifest: 'Paid passenger manifest',
+      'No-shows': 'Recorded no-shows',
+    })[tab.value] || 'Passengers',
+);
+const viewDescription = computed(
+  () =>
+    ({
+      Bookings: 'All reservations for this sailing, including cancelled bookings.',
+      Passengers: 'Tickets and attendance across all booking statuses.',
+      'Check-in': 'Step 1 · Paid passengers with issued tickets awaiting arrival verification.',
+      Boarding: 'Step 2 · Checked-in passengers awaiting confirmation at the vessel.',
+      Manifest: 'Passengers on paid, confirmed reservations.',
+      'No-shows': 'Paid passengers whose no-show attendance has been recorded.',
+    })[tab.value] || '',
+);
+const emptyTitle = computed(
+  () =>
+    ({
+      Bookings: 'No bookings yet',
+      'Check-in': 'No passengers awaiting check-in',
+      Boarding: 'No passengers ready to board',
+      Manifest: 'No paid passengers to include',
+      'No-shows': 'No recorded no-shows',
+    })[tab.value] || 'No passengers yet',
+);
+const emptyDescription = computed(() =>
+  data.value?.sailing.status === 'CANCELLED' &&
+  ['Check-in', 'Boarding', 'Manifest', 'No-shows'].includes(tab.value)
+    ? 'This sailing is cancelled. View Bookings or Passengers for its reservation history.'
+    : {
+        Bookings: 'Reservations will appear here when passengers book this sailing.',
+        'Check-in': 'Only paid, confirmed passengers with issued tickets appear in this queue.',
+        Boarding: 'Passengers appear here after their tickets are checked in at the arrival desk.',
+        Manifest: 'The manifest includes paid, confirmed reservations only.',
+        'No-shows': 'Recorded attendance will appear here after reconciliation.',
+      }[tab.value] || 'Passenger records will appear when reservations are created.',
+);
 function tabCount(name: string): number | null {
-  return ({ Bookings: data.value?.bookings.length || 0, Passengers: data.value?.passengers.length || 0, 'Check-in': arrivalQueue.value.length, Boarding: boardingQueue.value.length, 'No-shows': paid.value.filter(p => p.noShow).length } as Record<string, number>)[name] ?? null;
+  return (
+    (
+      {
+        Bookings: data.value?.bookings.length || 0,
+        Passengers: data.value?.passengers.length || 0,
+        'Check-in': arrivalQueue.value.length,
+        Boarding: boardingQueue.value.length,
+        'No-shows': paid.value.filter((p) => p.noShow).length,
+      } as Record<string, number>
+    )[name] ?? null
+  );
 }
 const metrics = computed(() => [
   {
-    label: "Capacity",
+    label: 'Capacity',
     value: data.value?.sailing.vessel.passengerCapacity || 0,
   },
   {
-    label: "Reserved seats",
+    label: 'Reserved seats',
     value:
       (data.value?.sailing.vessel.passengerCapacity || 0) -
       (data.value?.sailing.availableSeats || 0),
   },
-  { label: "Available", value: data.value?.sailing.availableSeats || 0 },
+  { label: 'Available', value: data.value?.sailing.availableSeats || 0 },
   {
-    label: "Checked in",
-    value: paid.value.filter((p) =>
-      ["CHECKED_IN", "BOARDED"].includes(p.ticketStatus),
-    ).length,
+    label: 'Checked in',
+    value: paid.value.filter((p) => ['CHECKED_IN', 'BOARDED'].includes(p.ticketStatus)).length,
   },
-  { label: "Boarded", value: boarded.value },
-  { label: "No-shows", value: paid.value.filter((p) => p.noShow).length },
+  { label: 'Boarded', value: boarded.value },
+  { label: 'No-shows', value: paid.value.filter((p) => p.noShow).length },
 ]);
 const visiblePassengers = computed(() =>
-  tab.value === "Passengers"
+  tab.value === 'Passengers'
     ? data.value?.passengers || []
-    : tab.value === "No-shows"
+    : tab.value === 'No-shows'
       ? paid.value.filter((p) => p.noShow)
-      : tab.value === "Check-in"
-        ? paid.value.filter((p) => p.ticketStatus === "ISSUED" && !p.noShow)
-        : tab.value === "Boarding"
-          ? paid.value.filter(
-              (p) => p.ticketStatus === "CHECKED_IN" && !p.noShow,
-            )
+      : tab.value === 'Check-in'
+        ? paid.value.filter((p) => p.ticketStatus === 'ISSUED' && !p.noShow)
+        : tab.value === 'Boarding'
+          ? paid.value.filter((p) => p.ticketStatus === 'CHECKED_IN' && !p.noShow)
           : paid.value,
 );
-const matchesSearch = (value: string) => value.toLowerCase().includes(search.value.trim().toLowerCase());
+const matchesSearch = (value: string) =>
+  value.toLowerCase().includes(search.value.trim().toLowerCase());
 async function setTripStatus(status: 'DELAYED' | 'CANCELLED') {
   if (!staffDatabase || !data.value || busy.value || loading.value) return;
   const trip = data.value.sailing;
-  if (!['SCHEDULED', 'BOARDING', 'DELAYED'].includes(trip.status) || (status === 'DELAYED' && trip.status === 'DELAYED')) return;
+  if (
+    !['SCHEDULED', 'BOARDING', 'DELAYED'].includes(trip.status) ||
+    (status === 'DELAYED' && trip.status === 'DELAYED')
+  )
+    return;
   let reason: string | undefined;
   if (status === 'CANCELLED') {
-    reason = (await requestReason({ title: 'Cancel trip?', message: 'Enter the cancellation reason. Paid bookings will require a refund.' })) || undefined;
+    reason =
+      (await requestReason({
+        title: 'Cancel trip?',
+        message: 'Enter the cancellation reason. Paid bookings will require a refund.',
+      })) || undefined;
     if (!reason) return;
   }
-  if (!(await confirmAction({ title: status === 'CANCELLED' ? 'Cancel trip?' : 'Mark trip Delayed?', message: `Update ${trip.code}? Account holders with active bookings will be notified. Contact walk-in passengers directly.`, confirmText: status === 'CANCELLED' ? 'Cancel trip' : 'Mark Delayed', danger: status === 'CANCELLED' }))) return;
-  busy.value = true; error.value = ''; notice.value = '';
+  if (
+    !(await confirmAction({
+      title: status === 'CANCELLED' ? 'Cancel trip?' : 'Mark trip Delayed?',
+      message: `Update ${trip.code}? Account holders with active bookings will be notified. Contact walk-in passengers directly.`,
+      confirmText: status === 'CANCELLED' ? 'Cancel trip' : 'Mark Delayed',
+      danger: status === 'CANCELLED',
+    }))
+  )
+    return;
+  busy.value = true;
+  error.value = '';
+  notice.value = '';
   try {
     await adminUpdateSailingStatus(staffDatabase, { code: trip.code, status, reason });
     await load();
-    notifySuccess(status === 'CANCELLED' ? 'Trip cancelled. Review paid bookings for refunds.' : 'Trip marked Delayed. Automatic status changes are paused until the schedule is updated and resumed.');
-  } catch (cause) { notifyError(databaseRequestError(cause, 'Could not update trip status.')); }
-  finally { busy.value = false; }
+    notifySuccess(
+      status === 'CANCELLED'
+        ? 'Trip cancelled. Review paid bookings for refunds.'
+        : 'Trip marked Delayed. Automatic status changes are paused until the schedule is updated and resumed.',
+    );
+  } catch (cause) {
+    notifyError(databaseRequestError(cause, 'Could not update trip status.'));
+  } finally {
+    busy.value = false;
+  }
 }
-const filteredBookings = computed(() => (data.value?.bookings || []).filter(b => matchesSearch(b.reference)));
-const filteredPassengers = computed(() => visiblePassengers.value.filter(p => matchesSearch(`${p.fullName} ${p.booking.reference} ${label(p.passengerType)}`)));
-const filteredRecordsCount = computed(() => tab.value === 'Bookings' ? filteredBookings.value.length : filteredPassengers.value.length);
+const filteredBookings = computed(() =>
+  (data.value?.bookings || []).filter((b) => matchesSearch(b.reference)),
+);
+const filteredPassengers = computed(() =>
+  visiblePassengers.value.filter((p) =>
+    matchesSearch(`${p.fullName} ${p.booking.reference} ${label(p.passengerType)}`),
+  ),
+);
+const filteredRecordsCount = computed(() =>
+  tab.value === 'Bookings' ? filteredBookings.value.length : filteredPassengers.value.length,
+);
 async function load() {
   if (!staffDatabase || loading.value) return;
   loading.value = true;
-  error.value = "";
+  error.value = '';
   data.value = null;
   try {
     if (code.value) {
@@ -472,43 +733,41 @@ async function load() {
         sailings.value.push(data.value.sailing);
     }
   } catch (cause) {
-    error.value = databaseRequestError(
-      cause,
-      "Could not load trip operations.",
-    );
+    error.value = databaseRequestError(cause, 'Could not load trip operations.');
   } finally {
     loading.value = false;
   }
 }
 async function selectTrip() {
-  notice.value = "";
-  search.value = "";
+  notice.value = '';
+  search.value = '';
   await router.replace({
     query: { ...route.query, sailing: code.value || undefined },
   });
   await load();
 }
 async function reconcile() {
-  if (!staffDatabase || busy.value || !data.value || !canReconcile.value || !noShowCandidates.value) return;
+  if (!staffDatabase || busy.value || !data.value || !canReconcile.value || !noShowCandidates.value)
+    return;
   const eligible = paid.value.filter(
-    (p) => ["ISSUED", "CHECKED_IN"].includes(p.ticketStatus) && !p.noShow,
+    (p) => ['ISSUED', 'CHECKED_IN'].includes(p.ticketStatus) && !p.noShow,
   ).length;
   if (
     !(await confirmAction({
-      title: "Record no-show attendance?",
+      title: 'Record no-show attendance?',
       message: `Record ${eligible} paid, non-boarded passengers as no-shows for ${code.value}? Booking history and fares will be preserved.`,
-      confirmText: "Record no-shows",
+      confirmText: 'Record no-shows',
     }))
   )
     return;
   busy.value = true;
-  error.value = "";
+  error.value = '';
   try {
     const result = await reconcileNoShows(staffDatabase, code.value);
     await load();
     notifySuccess(`${result.data.marked} no-show records added.`);
   } catch (cause) {
-    notifyError(databaseRequestError(cause, "Could not reconcile no-shows."));
+    notifyError(databaseRequestError(cause, 'Could not reconcile no-shows.'));
   } finally {
     busy.value = false;
   }
@@ -522,7 +781,7 @@ onMounted(async () => {
     sailingPage.value = 0;
     sailingTotal.value = result.data.totalCount || sailings.value.length;
   } catch (cause) {
-    error.value = databaseRequestError(cause, "Could not load sailings.");
+    error.value = databaseRequestError(cause, 'Could not load sailings.');
   } finally {
     loading.value = false;
   }
@@ -530,130 +789,735 @@ onMounted(async () => {
 });
 </script>
 <style scoped>
-.sailing-status-controls { display: grid; gap: 12px; padding: 16px; margin: 16px 0; border: 1px solid var(--line); border-radius: 12px; background: var(--surface-soft); }
-.sailing-status-controls strong { font-size: 13px; }
-.sailing-status-controls p { margin-top: 6px; font-size: var(--text-label); line-height: 1.6; color: var(--muted); }
-.status-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
-.status-actions button { min-height: 40px; padding: 8px 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); color: var(--ink); cursor: pointer; }
-.status-actions .cancel-trip { color: var(--danger); border-color: var(--danger); }
-.status-actions a { color: var(--ocean); font-size: var(--text-label); }
-.trip-operations { display: grid; gap: 14px; color: var(--ink); }
-.trip-operations, .trip-operations > *, .picker { min-width: 0; }
-header, .trip-header, .content-heading, .picker-heading, .sailing-identity, .reconcile { display: flex; align-items: center; justify-content: space-between; gap: 14px; }
-h2, h3, p { margin: 0; }
-h3 { font-size: 16px; font-weight: 700; }
-p, small { color: var(--muted); font-size: var(--text-label); line-height: 1.6; }
-.eyebrow { color: var(--ocean); font-size: var(--text-caption); font-weight: 800; letter-spacing: .1em; margin-bottom: 4px; }
-button, select, input { font: inherit; font-size: var(--text-label); }
-button, select, .schedule-link, .trip-header > a { min-height: 38px; border: 1px solid var(--line); border-radius: 8px; padding: 9px 12px; }
-select, input { color: var(--ink); background: var(--surface-soft); min-width: 0; }
-button { color: var(--ocean); background: var(--light-blue); cursor: pointer; font-weight: 600; }
-button:disabled { opacity: .5; cursor: default; }
-button:focus-visible, select:focus-visible, input:focus-visible, a:focus-visible { outline: 2px solid var(--ocean); outline-offset: 3px; }
-.sailing-picker-card, .sailing-summary, .workspace-empty, .overview, .records-panel, .activity, .reconcile { border: 1px solid var(--line); border-radius: 12px; background: var(--surface); }
-.sailing-picker-card { display: grid; grid-template-columns: minmax(180px, .65fr) minmax(0, 1.6fr); align-items: center; gap: 14px 20px; padding: 14px 18px; }
-.sailing-picker-card > button { grid-column: 2; justify-self: end; }
-.picker-heading { justify-content: flex-start; gap: 10px; }
-.picker-heading h3 { font-size: 14px; }
-.workspace-symbol, .empty-symbol, .event-icon { display: grid; place-items: center; flex: none; color: var(--ocean); background: var(--light-blue); border-radius: 10px; }
-.workspace-symbol { width: 38px; height: 38px; font-size: 22px; }
-.picker { display: grid; gap: 5px; color: var(--muted); font-size: var(--text-caption); font-weight: 600; }
-.picker select { width: 100%; min-height: 40px; }
-.workspace-empty { padding: 24px; }
-.empty-heading { display: flex; align-items: center; gap: 16px; }
-.empty-symbol { width: 52px; height: 52px; font-size: 29px; }
-.empty-heading p { margin-top: 6px; }
-.workspace-features { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; margin-top: 24px; padding-top: 20px; border-top: 1px solid var(--line); }
-.workspace-features > div { display: grid; grid-template-columns: 24px 1fr; gap: 3px 10px; }
-.workspace-features .app-icon { grid-row: span 2; color: var(--ocean); font-size: 21px; }
-.workspace-features strong { font-size: var(--text-label); }
-.workspace-features small { font-size: var(--text-caption); }
-.schedule-link { display: inline-flex; align-items: center; gap: 8px; margin-top: 16px; color: var(--ocean); text-decoration: none; font-size: var(--text-label); }
-.trip-header { padding: 18px; }
-.sailing-identity { justify-content: flex-start; gap: 10px; }
-.sailing-identity small { font-size: var(--text-caption); color: var(--ocean); font-weight: 700; }
-.trip-header h3 { margin: 8px 0 6px; font-size: 20px; line-height: 1.4; }
-.route-arrow { color: var(--ocean); }
-.trip-header p { display: flex; flex-wrap: wrap; gap: 6px; }
-.trip-header p small { font-size: var(--text-caption); }
-.trip-header > a { display: inline-flex; align-items: center; gap: 7px; color: var(--ocean); background: var(--surface-soft); text-decoration: none; font-size: var(--text-caption); flex: none; }
-.trip-header > a .app-icon { font-size: 16px; }
-.metrics { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); border-top: 1px solid var(--line); padding: 14px 4px; background: var(--surface-soft); border-radius: 0 0 12px 12px; }
-.metrics article { display: grid; gap: 5px; padding: 0 14px; border-right: 1px solid var(--line); }
-.metrics article:last-child { border-right: 0; }
-.metrics small { font-size: var(--text-caption); }
-.metrics strong { font-size: 23px; font-variant-numeric: tabular-nums; line-height: 1.1; }
-nav { display: flex; gap: 3px; overflow-x: auto; border-bottom: 1px solid var(--line); padding-bottom: 5px; }
-nav button { white-space: nowrap; display: inline-flex; align-items: center; gap: 6px; border: 0; background: transparent; color: var(--muted); font-size: var(--text-caption); min-height: 38px; padding: 9px 11px; }
-nav button:hover { color: var(--ink); background: var(--surface-soft); }
-nav button.active { color: var(--ocean); background: var(--light-blue); }
-nav button span { font-size: var(--text-caption); padding: 1px 5px; border-radius: 5px; background: var(--surface-soft); color: var(--muted); font-variant-numeric: tabular-nums; }
-.overview { padding: 18px; }
-.progress-value { color: var(--ocean); font-size: 25px; font-variant-numeric: tabular-nums; }
-.progress-value small { font-size: var(--text-caption); margin-left: 4px; }
-progress { display: block; width: 100%; height: 8px; appearance: none; margin: 16px 0 8px; border: 0; border-radius: 8px; overflow: hidden; background: var(--line); }
-progress::-webkit-progress-bar { background: var(--line); border-radius: 8px; }
-progress::-webkit-progress-value { background: var(--ocean); border-radius: 8px; }
-progress::-moz-progress-bar { background: var(--ocean); border-radius: 8px; }
-.stage-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin: 18px 0; }
-.stage-grid > div { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 12px; border: 1px solid var(--line); border-radius: 8px; }
-.stage-grid strong { font-size: 20px; font-variant-numeric: tabular-nums; }
-.operational-note { padding: 10px 12px; border-left: 3px solid var(--ocean); background: var(--surface-soft); border-radius: 0 6px 6px 0; }
-.links { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 16px; }
-.links a { display: flex; align-items: center; gap: 10px; text-decoration: none; border: 1px solid var(--line); border-radius: 8px; padding: 12px; color: var(--ocean); }
-.links a:hover { background: var(--surface-soft); }
-.links .app-icon { flex: none; font-size: 22px; }
-.links strong, .links small { display: block; font-size: var(--text-caption); }
-.links small { margin-top: 4px; font-size: var(--text-caption); }
-.footnote { margin-top: 14px; font-size: var(--text-caption); }
-.content-heading { padding: 16px 18px; }
-.overview > .content-heading { padding: 0; }
-.content-heading p:not(.eyebrow) { margin-top: 5px; font-size: var(--text-caption); }
-.record-count { color: var(--ocean); background: var(--light-blue); padding: 4px 8px; border-radius: 6px; font-size: var(--text-caption); white-space: nowrap; }
-.record-search { display: flex; align-items: center; gap: 8px; margin: 0 18px 14px; padding: 0 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface-soft); }
-.record-search .app-icon { color: var(--muted); font-size: 17px; flex: none; }
-.record-search input { width: 100%; min-height: 38px; background: transparent; border: 0; }
-.table-wrap { overflow: auto; max-height: 420px; border-top: 1px solid var(--line); border-radius: 0 0 12px 12px; }
-table { width: 100%; min-width: 820px; table-layout: fixed; border-collapse: separate; border-spacing: 0; }
-th:first-child { width: 30%; }
-td { overflow-wrap: anywhere; }
-th, td { text-align: left; padding: 12px 16px; border-bottom: 1px solid var(--line); font-size: var(--text-label); }
-th { position: sticky; top: 0; z-index: 1; background: var(--surface-soft); color: var(--muted); font-size: var(--text-caption); letter-spacing: .04em; text-transform: uppercase; padding-block: 13px; }
-tbody tr:last-child td { border-bottom: 0; }
-tbody tr:hover { background: var(--surface-soft); }
-td strong { font-size: var(--text-label); font-weight: 600; }
-.numeric { font-variant-numeric: tabular-nums; white-space: nowrap; }
-.attendance { color: var(--muted); font-size: var(--text-caption); }
-.attendance.recorded { color: var(--ocean); }
-.attendance.absent { color: var(--danger); }
-.attendance-time { display: block; font-size: var(--text-caption); margin-top: 3px; }
-.record-empty { display: grid; justify-items: center; text-align: center; padding: 30px 18px; gap: 8px; border-top: 1px solid var(--line); }
-.record-empty > .app-icon { color: var(--ocean); font-size: 27px; margin-bottom: 2px; }
-.record-empty strong { font-size: 14px; }
-.record-empty p { max-width: 460px; font-size: var(--text-caption); }
-.reconcile { padding: 18px; }
-.reconcile p:not(.eyebrow) { margin: 7px 0; max-width: 630px; font-size: var(--text-caption); }
-.reconcile small { font-size: var(--text-caption); }
-.reconcile > button { flex: none; }
-.activity-list { max-height: 420px; overflow: auto; border-top: 1px solid var(--line); }
-.activity article { display: flex; align-items: center; gap: 12px; padding: 13px 18px; border-bottom: 1px solid var(--line); }
-.activity article:last-child { border-bottom: 0; }
-.event-icon { width: 32px; height: 32px; font-size: 18px; border-radius: 8px; }
-.activity article strong { font-size: var(--text-label); }
-.activity article small { display: block; font-size: var(--text-caption); margin-top: 3px; }
-.activity time { margin-left: auto; color: var(--muted); font-size: var(--text-caption); text-align: right; }
-.message, .loading-state { padding: 12px 16px; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; }
-.error { color: var(--danger); }
-.status-blue { color: #246fba; background: #e8f2fc; border-color: #b7d7f7; }
-.status-purple { color: #7445b8; background: #f0eafa; border-color: #d6c5f0; }
-:global(:root[data-theme="dark"]) .status-blue { color: #86c8ff; background: #173b59; border-color: #285478; }
-:global(:root[data-theme="dark"]) .status-purple { color: #cfb2ff; background: #342748; border-color: #55406f; }
-@media (max-width: 1000px) { .sailing-picker-card { grid-template-columns: 1fr; gap: 12px; } .sailing-picker-card > button { grid-column: 1; } .trip-header { align-items: flex-start; } .links small { display: none; } }
+.sailing-status-controls {
+  display: grid;
+  gap: 12px;
+  padding: 16px;
+  margin: 16px 0;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface-soft);
+}
+.sailing-status-controls strong {
+  font-size: 13px;
+}
+.sailing-status-controls p {
+  margin-top: 6px;
+  font-size: var(--text-label);
+  line-height: 1.6;
+  color: var(--muted);
+}
+.status-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+.status-actions button {
+  min-height: 40px;
+  padding: 8px 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--ink);
+  cursor: pointer;
+}
+.status-actions .cancel-trip {
+  color: var(--danger);
+  border-color: var(--danger);
+}
+.status-actions a {
+  color: var(--ocean);
+  font-size: var(--text-label);
+}
+.trip-operations {
+  display: grid;
+  gap: 14px;
+  color: var(--ink);
+}
+.trip-operations,
+.trip-operations > *,
+.picker {
+  min-width: 0;
+}
+header,
+.trip-header,
+.content-heading,
+.picker-heading,
+.sailing-identity,
+.reconcile {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+}
+h2,
+h3,
+p {
+  margin: 0;
+}
+h3 {
+  font-size: 16px;
+  font-weight: 700;
+}
+p,
+small {
+  color: var(--muted);
+  font-size: var(--text-label);
+  line-height: 1.6;
+}
+.eyebrow {
+  color: var(--ocean);
+  font-size: var(--text-caption);
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  margin-bottom: 4px;
+}
+button,
+select,
+input {
+  font: inherit;
+  font-size: var(--text-label);
+}
+button,
+select,
+.schedule-link,
+.trip-header > a {
+  min-height: 38px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 9px 12px;
+}
+select,
+input {
+  color: var(--ink);
+  background: var(--surface-soft);
+  min-width: 0;
+}
+button {
+  color: var(--ocean);
+  background: var(--light-blue);
+  cursor: pointer;
+  font-weight: 600;
+}
+button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+button:focus-visible,
+select:focus-visible,
+input:focus-visible,
+a:focus-visible {
+  outline: 2px solid var(--ocean);
+  outline-offset: 3px;
+}
+.sailing-picker-card,
+.sailing-summary,
+.workspace-empty,
+.overview,
+.records-panel,
+.activity,
+.reconcile {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+}
+.sailing-picker-card {
+  display: grid;
+  grid-template-columns: minmax(180px, 0.65fr) minmax(0, 1.6fr);
+  align-items: center;
+  gap: 14px 20px;
+  padding: 14px 18px;
+}
+.sailing-picker-card > button {
+  grid-column: 2;
+  justify-self: end;
+}
+.picker-heading {
+  justify-content: flex-start;
+  gap: 10px;
+}
+.picker-heading h3 {
+  font-size: 14px;
+}
+.workspace-symbol,
+.empty-symbol,
+.event-icon {
+  display: grid;
+  place-items: center;
+  flex: none;
+  color: var(--ocean);
+  background: var(--light-blue);
+  border-radius: 10px;
+}
+.workspace-symbol {
+  width: 38px;
+  height: 38px;
+  font-size: 22px;
+}
+.picker {
+  display: grid;
+  gap: 5px;
+  color: var(--muted);
+  font-size: var(--text-caption);
+  font-weight: 600;
+}
+.picker select {
+  width: 100%;
+  min-height: 40px;
+}
+.workspace-empty {
+  padding: 24px;
+}
+.empty-heading {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+.empty-symbol {
+  width: 52px;
+  height: 52px;
+  font-size: 29px;
+}
+.empty-heading p {
+  margin-top: 6px;
+}
+.workspace-features {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 20px;
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid var(--line);
+}
+.workspace-features > div {
+  display: grid;
+  grid-template-columns: 24px 1fr;
+  gap: 3px 10px;
+}
+.workspace-features .app-icon {
+  grid-row: span 2;
+  color: var(--ocean);
+  font-size: 21px;
+}
+.workspace-features strong {
+  font-size: var(--text-label);
+}
+.workspace-features small {
+  font-size: var(--text-caption);
+}
+.schedule-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 16px;
+  color: var(--ocean);
+  text-decoration: none;
+  font-size: var(--text-label);
+}
+.trip-header {
+  padding: 18px;
+}
+.sailing-identity {
+  justify-content: flex-start;
+  gap: 10px;
+}
+.sailing-identity small {
+  font-size: var(--text-caption);
+  color: var(--ocean);
+  font-weight: 700;
+}
+.trip-header h3 {
+  margin: 8px 0 6px;
+  font-size: 20px;
+  line-height: 1.4;
+}
+.route-arrow {
+  color: var(--ocean);
+}
+.trip-header p {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.trip-header p small {
+  font-size: var(--text-caption);
+}
+.trip-header > a {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--ocean);
+  background: var(--surface-soft);
+  text-decoration: none;
+  font-size: var(--text-caption);
+  flex: none;
+}
+.trip-header > a .app-icon {
+  font-size: 16px;
+}
+.metrics {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  border-top: 1px solid var(--line);
+  padding: 14px 4px;
+  background: var(--surface-soft);
+  border-radius: 0 0 12px 12px;
+}
+.metrics article {
+  display: grid;
+  gap: 5px;
+  padding: 0 14px;
+  border-right: 1px solid var(--line);
+}
+.metrics article:last-child {
+  border-right: 0;
+}
+.metrics small {
+  font-size: var(--text-caption);
+}
+.metrics strong {
+  font-size: 23px;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.1;
+}
+nav {
+  display: flex;
+  gap: 3px;
+  overflow-x: auto;
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 5px;
+}
+nav button {
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  font-size: var(--text-caption);
+  min-height: 38px;
+  padding: 9px 11px;
+}
+nav button:hover {
+  color: var(--ink);
+  background: var(--surface-soft);
+}
+nav button.active {
+  color: var(--ocean);
+  background: var(--light-blue);
+}
+nav button span {
+  font-size: var(--text-caption);
+  padding: 1px 5px;
+  border-radius: 5px;
+  background: var(--surface-soft);
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+.overview {
+  padding: 18px;
+}
+.progress-value {
+  color: var(--ocean);
+  font-size: 25px;
+  font-variant-numeric: tabular-nums;
+}
+.progress-value small {
+  font-size: var(--text-caption);
+  margin-left: 4px;
+}
+progress {
+  display: block;
+  width: 100%;
+  height: 8px;
+  appearance: none;
+  margin: 16px 0 8px;
+  border: 0;
+  border-radius: 8px;
+  overflow: hidden;
+  background: var(--line);
+}
+progress::-webkit-progress-bar {
+  background: var(--line);
+  border-radius: 8px;
+}
+progress::-webkit-progress-value {
+  background: var(--ocean);
+  border-radius: 8px;
+}
+progress::-moz-progress-bar {
+  background: var(--ocean);
+  border-radius: 8px;
+}
+.stage-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin: 18px 0;
+}
+.stage-grid > div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+.stage-grid strong {
+  font-size: 20px;
+  font-variant-numeric: tabular-nums;
+}
+.operational-note {
+  padding: 10px 12px;
+  border-left: 3px solid var(--ocean);
+  background: var(--surface-soft);
+  border-radius: 0 6px 6px 0;
+}
+.links {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-top: 16px;
+}
+.links a {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-decoration: none;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 12px;
+  color: var(--ocean);
+}
+.links a:hover {
+  background: var(--surface-soft);
+}
+.links .app-icon {
+  flex: none;
+  font-size: 22px;
+}
+.links strong,
+.links small {
+  display: block;
+  font-size: var(--text-caption);
+}
+.links small {
+  margin-top: 4px;
+  font-size: var(--text-caption);
+}
+.footnote {
+  margin-top: 14px;
+  font-size: var(--text-caption);
+}
+.content-heading {
+  padding: 16px 18px;
+}
+.overview > .content-heading {
+  padding: 0;
+}
+.content-heading p:not(.eyebrow) {
+  margin-top: 5px;
+  font-size: var(--text-caption);
+}
+.record-count {
+  color: var(--ocean);
+  background: var(--light-blue);
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: var(--text-caption);
+  white-space: nowrap;
+}
+.record-search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 18px 14px;
+  padding: 0 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface-soft);
+}
+.record-search .app-icon {
+  color: var(--muted);
+  font-size: 17px;
+  flex: none;
+}
+.record-search input {
+  width: 100%;
+  min-height: 38px;
+  background: transparent;
+  border: 0;
+}
+.table-wrap {
+  overflow: auto;
+  max-height: 420px;
+  border-top: 1px solid var(--line);
+  border-radius: 0 0 12px 12px;
+}
+table {
+  width: 100%;
+  min-width: 820px;
+  table-layout: fixed;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+th:first-child {
+  width: 30%;
+}
+td {
+  overflow-wrap: anywhere;
+}
+th,
+td {
+  text-align: left;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--line);
+  font-size: var(--text-label);
+}
+th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: var(--surface-soft);
+  color: var(--muted);
+  font-size: var(--text-caption);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding-block: 13px;
+}
+tbody tr:last-child td {
+  border-bottom: 0;
+}
+tbody tr:hover {
+  background: var(--surface-soft);
+}
+td strong {
+  font-size: var(--text-label);
+  font-weight: 600;
+}
+.numeric {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.attendance {
+  color: var(--muted);
+  font-size: var(--text-caption);
+}
+.attendance.recorded {
+  color: var(--ocean);
+}
+.attendance.absent {
+  color: var(--danger);
+}
+.attendance-time {
+  display: block;
+  font-size: var(--text-caption);
+  margin-top: 3px;
+}
+.record-empty {
+  display: grid;
+  justify-items: center;
+  text-align: center;
+  padding: 30px 18px;
+  gap: 8px;
+  border-top: 1px solid var(--line);
+}
+.record-empty > .app-icon {
+  color: var(--ocean);
+  font-size: 27px;
+  margin-bottom: 2px;
+}
+.record-empty strong {
+  font-size: 14px;
+}
+.record-empty p {
+  max-width: 460px;
+  font-size: var(--text-caption);
+}
+.reconcile {
+  padding: 18px;
+}
+.reconcile p:not(.eyebrow) {
+  margin: 7px 0;
+  max-width: 630px;
+  font-size: var(--text-caption);
+}
+.reconcile small {
+  font-size: var(--text-caption);
+}
+.reconcile > button {
+  flex: none;
+}
+.activity-list {
+  max-height: 420px;
+  overflow: auto;
+  border-top: 1px solid var(--line);
+}
+.activity article {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 13px 18px;
+  border-bottom: 1px solid var(--line);
+}
+.activity article:last-child {
+  border-bottom: 0;
+}
+.event-icon {
+  width: 32px;
+  height: 32px;
+  font-size: 18px;
+  border-radius: 8px;
+}
+.activity article strong {
+  font-size: var(--text-label);
+}
+.activity article small {
+  display: block;
+  font-size: var(--text-caption);
+  margin-top: 3px;
+}
+.activity time {
+  margin-left: auto;
+  color: var(--muted);
+  font-size: var(--text-caption);
+  text-align: right;
+}
+.message,
+.loading-state {
+  padding: 12px 16px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+.error {
+  color: var(--danger);
+}
+.status-blue {
+  color: #246fba;
+  background: #e8f2fc;
+  border-color: #b7d7f7;
+}
+.status-purple {
+  color: #7445b8;
+  background: #f0eafa;
+  border-color: #d6c5f0;
+}
+:global(:root[data-theme='dark']) .status-blue {
+  color: #86c8ff;
+  background: #173b59;
+  border-color: #285478;
+}
+:global(:root[data-theme='dark']) .status-purple {
+  color: #cfb2ff;
+  background: #342748;
+  border-color: #55406f;
+}
+@media (max-width: 1000px) {
+  .sailing-picker-card {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+  .sailing-picker-card > button {
+    grid-column: 1;
+  }
+  .trip-header {
+    align-items: flex-start;
+  }
+  .links small {
+    display: none;
+  }
+}
 @media (max-width: 700px) {
-  .workspace-empty { padding: 18px; } .workspace-features, .links { grid-template-columns: 1fr; gap: 14px; } .trip-header { flex-direction: column; padding: 16px; } .trip-header h3 { font-size: 18px; }
-  .metrics { grid-template-columns: repeat(3, 1fr); gap: 16px 0; } .metrics article:nth-child(3) { border-right: 0; } .metrics strong { font-size: 21px; }
-  .stage-grid { gap: 6px; } .stage-grid > div { flex-direction: column; align-items: flex-start; padding: 10px; } .stage-grid small { font-size: var(--text-caption); }
-  .content-heading { align-items: flex-start; padding: 14px; } .record-search { margin-inline: 14px; } .reconcile { flex-direction: column; align-items: stretch; padding: 16px; } .activity time { max-width: 100px; }
-  table { min-width: 0; } table, tbody, tr, td { display: block; } thead { display: none; } tr { padding: 10px 14px; border-bottom: 1px solid var(--line); } td { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 5px 12px; padding: 6px 0; border: 0; overflow-wrap: anywhere; } td::before { content: attr(data-label); font-size: var(--text-caption); color: var(--muted); margin-right: auto; } .attendance-time { width: 100%; text-align: right; }
+  .workspace-empty {
+    padding: 18px;
+  }
+  .workspace-features,
+  .links {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+  .trip-header {
+    flex-direction: column;
+    padding: 16px;
+  }
+  .trip-header h3 {
+    font-size: 18px;
+  }
+  .metrics {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px 0;
+  }
+  .metrics article:nth-child(3) {
+    border-right: 0;
+  }
+  .metrics strong {
+    font-size: 21px;
+  }
+  .stage-grid {
+    gap: 6px;
+  }
+  .stage-grid > div {
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 10px;
+  }
+  .stage-grid small {
+    font-size: var(--text-caption);
+  }
+  .content-heading {
+    align-items: flex-start;
+    padding: 14px;
+  }
+  .record-search {
+    margin-inline: 14px;
+  }
+  .reconcile {
+    flex-direction: column;
+    align-items: stretch;
+    padding: 16px;
+  }
+  .activity time {
+    max-width: 100px;
+  }
+  table {
+    min-width: 0;
+  }
+  table,
+  tbody,
+  tr,
+  td {
+    display: block;
+  }
+  thead {
+    display: none;
+  }
+  tr {
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--line);
+  }
+  td {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 5px 12px;
+    padding: 6px 0;
+    border: 0;
+    overflow-wrap: anywhere;
+  }
+  td::before {
+    content: attr(data-label);
+    font-size: var(--text-caption);
+    color: var(--muted);
+    margin-right: auto;
+  }
+  .attendance-time {
+    width: 100%;
+    text-align: right;
+  }
 }
 </style>

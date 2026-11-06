@@ -1,4 +1,5 @@
-export type HarborWeather = 'clear' | 'partly-cloudy' | 'cloudy' | 'rain' | 'storm' | 'fog' | 'snow';
+export type HarborWeather =
+  'clear' | 'partly-cloudy' | 'cloudy' | 'rain' | 'storm' | 'fog' | 'snow';
 
 export function harborWeather(code: number): HarborWeather | null {
   if ([0, 1].includes(code)) return 'clear';

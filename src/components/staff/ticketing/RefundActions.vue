@@ -6,52 +6,47 @@
     </p>
     <label
       >Refund receipt / note
-      <input
-        v-model.trim="note"
-        minlength="3"
-        maxlength="160"
-        required
-        :disabled="busy"
+      <input v-model.trim="note" minlength="3" maxlength="160" required :disabled="busy"
     /></label>
     <button :disabled="busy || note.length < 3">
-      {{ busy ? "Recording..." : "Confirm cash returned" }}
+      {{ busy ? 'Recording...' : 'Confirm cash returned' }}
     </button>
     <p v-if="error" role="alert">{{ error }}</p>
   </form>
 </template>
 <script setup lang="ts">
 import { notifyError, notifySuccess } from '@/composables/toast';
-import { confirmAction } from "../../../composables/confirmation";
-import { ref } from "vue";
-import { staffDatabase } from "../../../services/session";
-import { refundBooking } from "../../../services/database/operations";
-import { databaseRequestError } from "../../../data/databaseErrors";
+import { confirmAction } from '../../../composables/confirmation';
+import { ref } from 'vue';
+import { staffDatabase } from '../../../services/session';
+import { refundBooking } from '../../../services/database/operations';
+import { databaseRequestError } from '../../../data/databaseErrors';
 const props = defineProps<{ bookingId: string; amount: number }>();
 const emit = defineEmits<{ refunded: [] }>();
-const note = ref(""),
+const note = ref(''),
   busy = ref(false),
-  error = ref("");
+  error = ref('');
 async function refund() {
   if (
     !staffDatabase ||
     busy.value ||
     note.value.length < 3 ||
     !(await confirmAction({
-      title: "Confirm cash refund?",
+      title: 'Confirm cash refund?',
       message: `Confirm you returned PHP ${props.amount.toLocaleString()} in cash?`,
-      confirmText: "Confirm cash returned",
+      confirmText: 'Confirm cash returned',
       danger: false,
     }))
   )
     return;
   busy.value = true;
-  error.value = "";
+  error.value = '';
   try {
     await refundBooking(staffDatabase, props.bookingId, note.value);
     notifySuccess('Cash refund recorded.');
-    emit("refunded");
+    emit('refunded');
   } catch (cause) {
-    notifyError(databaseRequestError(cause, "Could not record refund."));
+    notifyError(databaseRequestError(cause, 'Could not record refund.'));
   } finally {
     busy.value = false;
   }

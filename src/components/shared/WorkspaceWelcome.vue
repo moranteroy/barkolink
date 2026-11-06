@@ -1,9 +1,5 @@
 <template>
-  <section
-    class="workspace-welcome"
-    :class="tone"
-    :aria-label="`${title} workspace`"
-  >
+  <section class="workspace-welcome" :class="tone" :aria-label="`${title} workspace`">
     <div class="welcome-copy">
       <p class="welcome-eyebrow">{{ eyebrow }}</p>
       <h2>{{ title }}</h2>
@@ -14,8 +10,7 @@
           :key="link.to"
           :to="link.to"
           @click="jump($event, link.to)"
-          >{{ link.label }}
-          <AppIcon :icon="openOutline" aria-hidden="true"
+          >{{ link.label }} <AppIcon :icon="openOutline" aria-hidden="true"
         /></router-link>
       </div>
     </div>
@@ -28,27 +23,19 @@
   </section>
 </template>
 <script setup lang="ts">
-import AppIcon from "@/components/ui/icon/AppIcon.vue";
-import { openOutline, boatOutline } from "ionicons/icons";
+import AppIcon from '@/components/ui/icon/AppIcon.vue';
+import { openOutline, boatOutline } from 'ionicons/icons';
 function jump(event: MouseEvent, to: string) {
-  if (
-    event.button !== 0 ||
-    event.metaKey ||
-    event.ctrlKey ||
-    event.shiftKey ||
-    event.altKey
-  )
+  if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey)
     return;
-  const [path, hash] = to.split("#");
+  const [path, hash] = to.split('#');
   if (hash && path === window.location.pathname) {
     const target = document.getElementById(hash);
     if (target) {
       event.preventDefault();
       target.scrollIntoView({
-        behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches
-          ? "auto"
-          : "smooth",
-        block: "start",
+        behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth',
+        block: 'start',
       });
     }
   }
@@ -61,7 +48,7 @@ withDefaults(
     links: Array<{ label: string; to: string }>;
     tone?: string;
   }>(),
-  { tone: "ocean" },
+  { tone: 'ocean' },
 );
 </script>
 <style scoped>

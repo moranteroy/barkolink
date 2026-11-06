@@ -18,12 +18,22 @@ export function assistantDestination(link: { label: string; path: string }) {
 }
 
 export function assistantPath(path: string) {
-  return !/[\\\s]/.test(path) && /^\/(home|trips|search|trip-details|bookings|booking-details|ticket|help|travelers|notifications|profile)(?:[?#].*)?$/.test(path);
+  return (
+    !/[\\\s]/.test(path) &&
+    /^\/(home|trips|search|trip-details|bookings|booking-details|ticket|help|travelers|notifications|profile)(?:[?#].*)?$/.test(
+      path,
+    )
+  );
 }
 
 /** Render a small, safe subset of formatting as Vue text and router links. */
-export function assistantMessage(content: string, links: { path: string; label?: string }[] = []): MessagePart[] {
-  const approved = new Set(links.filter(link => assistantPath(link.path)).map(link => link.path));
+export function assistantMessage(
+  content: string,
+  links: { path: string; label?: string }[] = [],
+): MessagePart[] {
+  const approved = new Set(
+    links.filter((link) => assistantPath(link.path)).map((link) => link.path),
+  );
   const parts: MessagePart[] = [];
   const pattern = /\[([^\]\n]+)\]\(([^)\n]+)\)|\*\*([^*\n]+)\*\*/g;
   let cursor = 0;
@@ -31,12 +41,22 @@ export function assistantMessage(content: string, links: { path: string; label?:
     if (match.index > cursor) parts.push({ text: content.slice(cursor, match.index) });
     if (match[3]) parts.push({ text: match[3], bold: true });
     else {
-      const link = links.find(link => link.path === match[2]);
+      const link = links.find((link) => link.path === match[2]);
       const path = assistantDestination({ label: match[1], path: match[2] });
-      parts.push({ text: match[1], ...(approved.has(match[2]) ? { path: path !== match[2] ? path : assistantDestination({ label: link?.label || '', path: match[2] }) } : {}) });
+      parts.push({
+        text: match[1],
+        ...(approved.has(match[2])
+          ? {
+              path:
+                path !== match[2]
+                  ? path
+                  : assistantDestination({ label: link?.label || '', path: match[2] }),
+            }
+          : {}),
+      });
     }
     cursor = match.index + match[0].length;
   }
   if (cursor < content.length) parts.push({ text: content.slice(cursor) });
-  return parts.map(part => ({ ...part, text: formatAssistantTimes(part.text) }));
+  return parts.map((part) => ({ ...part, text: formatAssistantTimes(part.text) }));
 }

@@ -1,25 +1,37 @@
 import fs from 'node:fs';
 import { queryLive } from './test-data-database.mjs';
-async function main(){
-  const installed=async()=>(await queryLive("select to_regprocedure('barkolink_private.update_voucher_details(jsonb,text,text)') is not null installed"))[0].installed;
-  if(process.argv.includes('--apply') && !await installed()){
-    await queryLive(`begin;set local lock_timeout='10s';set local statement_timeout='45s';
+async function main() {
+  const installed = async () =>
+    (
+      await queryLive(
+        "select to_regprocedure('barkolink_private.update_voucher_details(jsonb,text,text)') is not null installed",
+      )
+    )[0].installed;
+  if (process.argv.includes('--apply') && !(await installed())) {
+    await queryLive(
+      `begin;set local lock_timeout='10s';set local statement_timeout='45s';
       select pg_advisory_xact_lock(hashtext('barkolink-voucher-details-057'));
       lock public.voucher,public.voucher_claim in share row exclusive mode;
       create temporary table voucher_terms_before as select id,to_jsonb(v)-'title'-'description'-'required_trips' terms from public.voucher v;
       create temporary table voucher_claims_before as select * from public.voucher_claim;
-      ${fs.readFileSync('supabase/migrations/057_edit_voucher_details.sql','utf8')}
-      ${fs.readFileSync('supabase/voucher-promo-details.sql','utf8')}
+      ${fs.readFileSync('supabase/migrations/057_edit_voucher_details.sql', 'utf8')}
+      ${fs.readFileSync('supabase/voucher-promo-details.sql', 'utf8')}
       do $$begin
         if exists(select 1 from public.voucher v full join voucher_terms_before b using(id) where b.terms is distinct from (to_jsonb(v)-'title'-'description'-'required_trips'))
           or exists((select * from public.voucher_claim except select * from voucher_claims_before) union all (select * from voucher_claims_before except select * from public.voucher_claim))
         then raise exception 'Voucher terms or claims changed unexpectedly.';end if;
       end $$;
-      commit;`,false);
+      commit;`,
+      false,
+    );
   }
-  if(!await installed()){console.log(JSON.stringify({installed:false}));return;}
-  if(process.argv.includes('--verify')){
-    await queryLive(`begin;set local statement_timeout='15s';
+  if (!(await installed())) {
+    console.log(JSON.stringify({ installed: false }));
+    return;
+  }
+  if (process.argv.includes('--verify')) {
+    await queryLive(
+      `begin;set local statement_timeout='15s';
       do $$declare actor text;offer public.voucher;claimed public.voucher;args jsonb;blocked boolean:=false;
       begin
         select uid into strict actor from public.app_user where role='ADMIN' order by uid limit 1;
@@ -39,12 +51,22 @@ async function main(){
           end;
           if not blocked then raise exception 'Claimed mission lock verification failed.';end if;
         end if;
-      end $$;rollback;`,false);
+      end $$;rollback;`,
+      false,
+    );
     console.log('Native PostgreSQL RPC checks passed; test edits rolled back.');
   }
-  console.log(JSON.stringify({installed:true,promos:await queryLive(`select title,required_trips,usage_limit,is_active,
+  console.log(
+    JSON.stringify({
+      installed: true,
+      promos: await queryLive(`select title,required_trips,usage_limit,is_active,
     (select count(*) from public.voucher_claim c where c.voucher_id=v.id) claimed,
     (select count(*) from public.booking b where b.voucher_id=v.id) used
-    from public.voucher v where owner_uid is null order by title,id`)}));
+    from public.voucher v where owner_uid is null order by title,id`),
+    }),
+  );
 }
-main().catch(error=>{console.error(error.message);process.exitCode=1;});
+main().catch((error) => {
+  console.error(error.message);
+  process.exitCode = 1;
+});

@@ -1,27 +1,28 @@
 export function databaseRequestError(error: unknown, fallback: string): string {
-  if (!error || typeof error !== "object") return fallback;
+  if (!error || typeof error !== 'object') return fallback;
   const { code, message } = error as { code?: string; message?: string };
-  const detail = `${code || ""} ${message || ""}`;
-  if (/STAFF_PORT_REQUIRED|no active port.*assigned|administrator to assign your (?:staff )?port/i.test(detail)) {
+  const detail = `${code || ''} ${message || ''}`;
+  if (
+    /STAFF_PORT_REQUIRED|no active port.*assigned|administrator to assign your (?:staff )?port/i.test(
+      detail,
+    )
+  ) {
     return 'Your staff account has no active port assignment. Ask your administrator to assign your departure port.';
   }
-  if (
-    /unauthenticated|requires a signed-in user|jwt expired|invalid jwt|PGRST301/i.test(
-      detail,
-    )
-  ) {
-    return "Your session has expired. Sign in again, then retry.";
+  if (/unauthenticated|requires a signed-in user|jwt expired|invalid jwt|PGRST301/i.test(detail)) {
+    return 'Your session has expired. Sign in again, then retry.';
   }
-  if (
-    /PERMISSION_DENIED|permission-denied|@auth rejected|unauthorized|42501/i.test(
-      detail,
-    )
-  ) {
-    return "Access was denied. Sign in again to refresh your session. If this continues, contact the administrator to check your account permissions.";
+  if (/PERMISSION_DENIED|permission-denied|@auth rejected|unauthorized|42501/i.test(detail)) {
+    return 'Access was denied. Sign in again to refresh your session. If this continues, contact the administrator to check your account permissions.';
   }
   if (/PGRST202|could not find the function.*barkolink_execute/i.test(detail)) {
-    return "This service is temporarily unavailable. Try again later or contact support.";
+    return 'This service is temporarily unavailable. Try again later or contact support.';
   }
-  if (/\.env|Supabase is not configured|migration|relation .* does not exist|column .* does not exist|SQL|constraint|syntax|PGRST|fetch failed|failed to fetch|networkerror/i.test(detail)) return fallback;
+  if (
+    /\.env|Supabase is not configured|migration|relation .* does not exist|column .* does not exist|SQL|constraint|syntax|PGRST|fetch failed|failed to fetch|networkerror/i.test(
+      detail,
+    )
+  )
+    return fallback;
   return message || fallback;
 }

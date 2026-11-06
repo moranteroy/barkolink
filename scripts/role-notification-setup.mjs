@@ -1,16 +1,28 @@
 ﻿import fs from 'node:fs';
-import {queryLive} from './test-data-database.mjs';
-async function main(){
- const installed=async()=>(await queryLive("select to_regprocedure('barkolink_private.booking_operational_notifications()') is not null installed"))[0].installed;
- if(process.argv.includes('--apply')&&!await installed()){
-  await queryLive(`begin;set local lock_timeout='10s';set local statement_timeout='45s';
+import { queryLive } from './test-data-database.mjs';
+async function main() {
+  const installed = async () =>
+    (
+      await queryLive(
+        "select to_regprocedure('barkolink_private.booking_operational_notifications()') is not null installed",
+      )
+    )[0].installed;
+  if (process.argv.includes('--apply') && !(await installed())) {
+    await queryLive(
+      `begin;set local lock_timeout='10s';set local statement_timeout='45s';
     select pg_advisory_xact_lock(hashtext('barkolink-notifications-060'));
-    ${fs.readFileSync('supabase/migrations/060_role_scoped_notifications.sql','utf8')}
-    commit;`,false);
- }
- if(!await installed()){console.log(JSON.stringify({installed:false}));return;}
- if(process.argv.includes('--verify')){
-  await queryLive(`begin;set local lock_timeout='10s';set local statement_timeout='30s';
+    ${fs.readFileSync('supabase/migrations/060_role_scoped_notifications.sql', 'utf8')}
+    commit;`,
+      false,
+    );
+  }
+  if (!(await installed())) {
+    console.log(JSON.stringify({ installed: false }));
+    return;
+  }
+  if (process.argv.includes('--verify')) {
+    await queryLive(
+      `begin;set local lock_timeout='10s';set local statement_timeout='30s';
    do $$declare actor text;trip public.sailing;b public.booking;expected integer;delivered integer;staff_note uuid;blocked boolean:=false;payload jsonb;
    begin
     select uid into strict actor from public.app_user where role='PASSENGER' order by uid limit 1;
@@ -31,12 +43,26 @@ async function main(){
     begin perform public.barkolink_execute('MarkNotificationRead',jsonb_build_object('id',staff_note));
     exception when insufficient_privilege then blocked:=true;end;
     if not blocked then raise exception 'A passenger could mark a staff notice as read.';end if;
-   end $$;rollback;`,false);
-  console.log('Native booking alerts and passenger/staff isolation passed; probe records rolled back.');
- }
- console.log(JSON.stringify({installed:true,...(await queryLive(`select
+   end $$;rollback;`,
+      false,
+    );
+    console.log(
+      'Native booking alerts and passenger/staff isolation passed; probe records rolled back.',
+    );
+  }
+  console.log(
+    JSON.stringify({
+      installed: true,
+      ...(
+        await queryLive(`select
    (select count(*) from pg_trigger where not tgisinternal and tgname in('booking_operational_notifications','sailing_operational_notifications','passenger_attendance_notification','advisory_notification_revision','advisory_notification_delivery')) active_triggers,
    has_function_privilege('authenticated','barkolink_private.notify_booking_staff(public.booking,text,text,text,text[])','EXECUTE') browser_can_send,
-   has_table_privilege('authenticated','public.notification','SELECT') browser_direct_read`))[0]}));
+   has_table_privilege('authenticated','public.notification','SELECT') browser_direct_read`)
+      )[0],
+    }),
+  );
 }
-main().catch(error=>{console.error(error.message);process.exitCode=1;});
+main().catch((error) => {
+  console.error(error.message);
+  process.exitCode = 1;
+});

@@ -1,22 +1,14 @@
 /* eslint @typescript-eslint/no-unused-vars: ["error", { "argsIgnorePattern": "^_" }] */
 // Legacy fetch-policy options are accepted for compatibility; list options reach PostgreSQL.
-import {
-  executeDatabase,
-  type DatabaseClient,
-  type QueryOptions,
-} from "./client";
-import type * as Types from "./staff.types";
-export type * from "./staff.types";
+import { executeDatabase, type DatabaseClient, type QueryOptions } from './client';
+import type * as Types from './staff.types';
+export type * from './staff.types';
 
 export function adminFareSettings(
   client: DatabaseClient,
   _options?: QueryOptions,
 ): Promise<{ data: Types.AdminFareSettingsData }> {
-  return executeDatabase<Types.AdminFareSettingsData>(
-    client,
-    "AdminFareSettings",
-    {},
-  );
+  return executeDatabase<Types.AdminFareSettingsData>(client, 'AdminFareSettings', {});
 }
 
 export function adminSaveFareSettings(
@@ -26,7 +18,7 @@ export function adminSaveFareSettings(
 ): Promise<{ data: Types.AdminSaveFareSettingsData }> {
   return executeDatabase<Types.AdminSaveFareSettingsData>(
     client,
-    "AdminSaveFareSettings",
+    'AdminSaveFareSettings',
     variables,
   );
 }
@@ -36,22 +28,14 @@ export function adminExportManifest(
   variables: Types.AdminExportManifestVariables,
   _options?: QueryOptions,
 ): Promise<{ data: Types.AdminExportManifestData }> {
-  return executeDatabase<Types.AdminExportManifestData>(
-    client,
-    "AdminExportManifest",
-    variables,
-  );
+  return executeDatabase<Types.AdminExportManifestData>(client, 'AdminExportManifest', variables);
 }
 
 export function staffBookings(
   client: DatabaseClient,
   _options?: QueryOptions,
 ): Promise<{ data: Types.StaffBookingsData }> {
-  return executeDatabase<Types.StaffBookingsData>(
-    client,
-    "StaffBookings",
-    _options || {},
-  );
+  return executeDatabase<Types.StaffBookingsData>(client, 'StaffBookings', _options || {});
 }
 
 export function ticketingPassengerAccounts(
@@ -60,7 +44,7 @@ export function ticketingPassengerAccounts(
 ): Promise<{ data: Types.TicketingPassengerAccountsData }> {
   return executeDatabase<Types.TicketingPassengerAccountsData>(
     client,
-    "TicketingPassengerAccounts",
+    'TicketingPassengerAccounts',
     {},
   );
 }
@@ -69,11 +53,7 @@ export function ticketingSailings(
   client: DatabaseClient,
   _options?: QueryOptions,
 ): Promise<{ data: Types.TicketingSailingsData }> {
-  return executeDatabase<Types.TicketingSailingsData>(
-    client,
-    "TicketingSailings",
-    {},
-  );
+  return executeDatabase<Types.TicketingSailingsData>(client, 'TicketingSailings', {});
 }
 
 export function collectBookingPayment(
@@ -83,7 +63,7 @@ export function collectBookingPayment(
 ): Promise<{ data: Types.CollectBookingPaymentData }> {
   return executeDatabase<Types.CollectBookingPaymentData>(
     client,
-    "CollectBookingPayment",
+    'CollectBookingPayment',
     variables,
   );
 }
@@ -95,7 +75,7 @@ export function ticketingCreateWalkIn(
 ): Promise<{ data: Types.TicketingCreateWalkInData }> {
   return executeDatabase<Types.TicketingCreateWalkInData>(
     client,
-    "TicketingCreateWalkIn",
+    'TicketingCreateWalkIn',
     variables,
   );
 }
@@ -107,7 +87,7 @@ export function ticketingCreateGuestWalkIn(
 ): Promise<{ data: Types.TicketingCreateGuestWalkInData }> {
   return executeDatabase<Types.TicketingCreateGuestWalkInData>(
     client,
-    "TicketingCreateGuestWalkIn",
+    'TicketingCreateGuestWalkIn',
     variables,
   );
 }
@@ -117,22 +97,14 @@ export function boardingManifest(
   variables: Types.BoardingManifestVariables,
   _options?: QueryOptions,
 ): Promise<{ data: Types.BoardingManifestData }> {
-  return executeDatabase<Types.BoardingManifestData>(
-    client,
-    "BoardingManifest",
-    variables,
-  );
+  return executeDatabase<Types.BoardingManifestData>(client, 'BoardingManifest', variables);
 }
 
 export function boardingSailings(
   client: DatabaseClient,
   _options?: QueryOptions,
 ): Promise<{ data: Types.BoardingSailingsData }> {
-  return executeDatabase<Types.BoardingSailingsData>(
-    client,
-    "BoardingSailings",
-    {},
-  );
+  return executeDatabase<Types.BoardingSailingsData>(client, 'BoardingSailings', {});
 }
 
 export function boardingActivity(
@@ -140,11 +112,7 @@ export function boardingActivity(
   variables: Types.BoardingActivityVariables,
   _options?: QueryOptions,
 ): Promise<{ data: Types.BoardingActivityData }> {
-  return executeDatabase<Types.BoardingActivityData>(
-    client,
-    "BoardingActivity",
-    variables,
-  );
+  return executeDatabase<Types.BoardingActivityData>(client, 'BoardingActivity', variables);
 }
 
 export function checkInTicket(
@@ -152,11 +120,7 @@ export function checkInTicket(
   variables: Types.CheckInTicketVariables,
   _options?: QueryOptions,
 ): Promise<{ data: Types.CheckInTicketData }> {
-  return executeDatabase<Types.CheckInTicketData>(
-    client,
-    "CheckInTicket",
-    variables,
-  );
+  return executeDatabase<Types.CheckInTicketData>(client, 'CheckInTicket', variables);
 }
 
 export function boardTicket(
@@ -164,22 +128,14 @@ export function boardTicket(
   variables: Types.BoardTicketVariables,
   _options?: QueryOptions,
 ): Promise<{ data: Types.BoardTicketData }> {
-  return executeDatabase<Types.BoardTicketData>(
-    client,
-    "BoardTicket",
-    variables,
-  );
+  return executeDatabase<Types.BoardTicketData>(client, 'BoardTicket', variables);
 }
 
 export function adminSailings(
   client: DatabaseClient,
   _options?: QueryOptions,
 ): Promise<{ data: Types.AdminSailingsData }> {
-  return executeDatabase<Types.AdminSailingsData>(
-    client,
-    "AdminSailings",
-    _options || {},
-  );
+  return executeDatabase<Types.AdminSailingsData>(client, 'AdminSailings', _options || {});
 }
 
 export function adminDashboardStats(
@@ -187,22 +143,20 @@ export function adminDashboardStats(
   variables: Types.AdminDashboardStatsVariables,
   _options?: QueryOptions,
 ): Promise<{ data: Types.AdminDashboardStatsData }> {
-  return executeDatabase<Types.AdminDashboardStatsData>(client, "AdminDashboardStats", variables);
+  return executeDatabase<Types.AdminDashboardStatsData>(client, 'AdminDashboardStats', variables);
 }
 
-export function adminSailingOptions(client: DatabaseClient): Promise<{ data: Types.AdminSailingsData }> {
-  return executeDatabase<Types.AdminSailingsData>(client, "AdminSailingOptions", {});
+export function adminSailingOptions(
+  client: DatabaseClient,
+): Promise<{ data: Types.AdminSailingsData }> {
+  return executeDatabase<Types.AdminSailingsData>(client, 'AdminSailingOptions', {});
 }
 
 export function adminUsers(
   client: DatabaseClient,
   _options?: QueryOptions,
 ): Promise<{ data: Types.AdminUsersData }> {
-  return executeDatabase<Types.AdminUsersData>(
-    client,
-    "AdminUsers",
-    _options || {},
-  );
+  return executeDatabase<Types.AdminUsersData>(client, 'AdminUsers', _options || {});
 }
 
 export function adminPassengerRecords(
@@ -211,7 +165,7 @@ export function adminPassengerRecords(
 ): Promise<{ data: Types.AdminPassengerRecordsData }> {
   return executeDatabase<Types.AdminPassengerRecordsData>(
     client,
-    "AdminPassengerRecords",
+    'AdminPassengerRecords',
     _options || {},
   );
 }
@@ -220,14 +174,14 @@ export function adminPorts(
   client: DatabaseClient,
   _options?: QueryOptions,
 ): Promise<{ data: Types.AdminPortsData }> {
-  return executeDatabase<Types.AdminPortsData>(client, "AdminPorts", {});
+  return executeDatabase<Types.AdminPortsData>(client, 'AdminPorts', {});
 }
 
 export function adminVessels(
   client: DatabaseClient,
   _options?: QueryOptions,
 ): Promise<{ data: Types.AdminVesselsData }> {
-  return executeDatabase<Types.AdminVesselsData>(client, "AdminVessels", {});
+  return executeDatabase<Types.AdminVesselsData>(client, 'AdminVessels', {});
 }
 
 export function adminCreatePort(
@@ -235,11 +189,7 @@ export function adminCreatePort(
   variables: Types.AdminCreatePortVariables,
   _options?: QueryOptions,
 ): Promise<{ data: Types.AdminCreatePortData }> {
-  return executeDatabase<Types.AdminCreatePortData>(
-    client,
-    "AdminCreatePort",
-    variables,
-  );
+  return executeDatabase<Types.AdminCreatePortData>(client, 'AdminCreatePort', variables);
 }
 
 export function adminUpdatePort(
@@ -247,11 +197,7 @@ export function adminUpdatePort(
   variables: Types.AdminUpdatePortVariables,
   _options?: QueryOptions,
 ): Promise<{ data: Types.AdminUpdatePortData }> {
-  return executeDatabase<Types.AdminUpdatePortData>(
-    client,
-    "AdminUpdatePort",
-    variables,
-  );
+  return executeDatabase<Types.AdminUpdatePortData>(client, 'AdminUpdatePort', variables);
 }
 
 export function adminCreateVessel(
@@ -259,11 +205,7 @@ export function adminCreateVessel(
   variables: Types.AdminCreateVesselVariables,
   _options?: QueryOptions,
 ): Promise<{ data: Types.AdminCreateVesselData }> {
-  return executeDatabase<Types.AdminCreateVesselData>(
-    client,
-    "AdminCreateVessel",
-    variables,
-  );
+  return executeDatabase<Types.AdminCreateVesselData>(client, 'AdminCreateVessel', variables);
 }
 
 export function adminUpdateVessel(
@@ -271,11 +213,7 @@ export function adminUpdateVessel(
   variables: Types.AdminUpdateVesselVariables,
   _options?: QueryOptions,
 ): Promise<{ data: Types.AdminUpdateVesselData }> {
-  return executeDatabase<Types.AdminUpdateVesselData>(
-    client,
-    "AdminUpdateVessel",
-    variables,
-  );
+  return executeDatabase<Types.AdminUpdateVesselData>(client, 'AdminUpdateVessel', variables);
 }
 
 export function adminCreateSailing(
@@ -283,11 +221,7 @@ export function adminCreateSailing(
   variables: Types.AdminCreateSailingVariables,
   _options?: QueryOptions,
 ): Promise<{ data: Types.AdminCreateSailingData }> {
-  return executeDatabase<Types.AdminCreateSailingData>(
-    client,
-    "AdminCreateSailing",
-    variables,
-  );
+  return executeDatabase<Types.AdminCreateSailingData>(client, 'AdminCreateSailing', variables);
 }
 
 export function adminUpdateSailingStatus(
@@ -297,7 +231,7 @@ export function adminUpdateSailingStatus(
 ): Promise<{ data: Types.AdminUpdateSailingStatusData }> {
   return executeDatabase<Types.AdminUpdateSailingStatusData>(
     client,
-    "AdminUpdateSailingStatus",
+    'AdminUpdateSailingStatus',
     variables,
   );
 }
@@ -307,11 +241,7 @@ export function adminSailingBookings(
   variables: Types.AdminSailingBookingsVariables,
   _options?: QueryOptions,
 ): Promise<{ data: Types.AdminSailingBookingsData }> {
-  return executeDatabase<Types.AdminSailingBookingsData>(
-    client,
-    "AdminSailingBookings",
-    variables,
-  );
+  return executeDatabase<Types.AdminSailingBookingsData>(client, 'AdminSailingBookings', variables);
 }
 
 export function adminUpdateUnbookedSailing(
@@ -321,7 +251,7 @@ export function adminUpdateUnbookedSailing(
 ): Promise<{ data: Types.AdminUpdateUnbookedSailingData }> {
   return executeDatabase<Types.AdminUpdateUnbookedSailingData>(
     client,
-    "AdminUpdateUnbookedSailing",
+    'AdminUpdateUnbookedSailing',
     variables,
   );
 }
@@ -333,7 +263,7 @@ export function adminRescheduleSailing(
 ): Promise<{ data: Types.AdminRescheduleSailingData }> {
   return executeDatabase<Types.AdminRescheduleSailingData>(
     client,
-    "AdminRescheduleSailing",
+    'AdminRescheduleSailing',
     variables,
   );
 }
@@ -343,11 +273,7 @@ export function adminCancelBooking(
   variables: Types.AdminCancelBookingVariables,
   _options?: QueryOptions,
 ): Promise<{ data: Types.AdminCancelBookingData }> {
-  return executeDatabase<Types.AdminCancelBookingData>(
-    client,
-    "AdminCancelBooking",
-    variables,
-  );
+  return executeDatabase<Types.AdminCancelBookingData>(client, 'AdminCancelBooking', variables);
 }
 
 export function adminReports(
@@ -355,20 +281,12 @@ export function adminReports(
   variables: Types.AdminReportsVariables,
   _options?: QueryOptions,
 ): Promise<{ data: Types.AdminReportsData }> {
-  return executeDatabase<Types.AdminReportsData>(
-    client,
-    "AdminReports",
-    variables,
-  );
+  return executeDatabase<Types.AdminReportsData>(client, 'AdminReports', variables);
 }
 
 export function adminNextTripCode(
   client: DatabaseClient,
   _options?: QueryOptions,
 ): Promise<{ data: Types.AdminNextTripCodeData }> {
-  return executeDatabase<Types.AdminNextTripCodeData>(
-    client,
-    "AdminNextTripCode",
-    {},
-  );
+  return executeDatabase<Types.AdminNextTripCodeData>(client, 'AdminNextTripCode', {});
 }

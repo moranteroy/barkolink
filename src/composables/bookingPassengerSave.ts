@@ -5,29 +5,54 @@ import type { DatabaseClient } from '../services/database/client';
 import { databaseRequestError } from '../data/databaseErrors';
 
 export type SaveableBookingPassenger = {
-  name: string; birthDate: string; sex: string; phone: string; nationality: string;
+  name: string;
+  birthDate: string;
+  sex: string;
+  phone: string;
+  nationality: string;
   savedPassengerDecision?: string;
   isAccountPassenger?: boolean;
 };
 function details(person: SaveableBookingPassenger): Omit<SavedTraveler, 'id'> {
-  return { fullName: person.name.trim(), birthDate: person.birthDate, sex: person.sex.toUpperCase(), phone: person.phone.trim(), nationality: person.nationality.trim() };
+  return {
+    fullName: person.name.trim(),
+    birthDate: person.birthDate,
+    sex: person.sex.toUpperCase(),
+    phone: person.phone.trim(),
+    nationality: person.nationality.trim(),
+  };
 }
-const identity = (person: Omit<SavedTraveler, 'id'>) => JSON.stringify([
-  person.fullName.trim().replace(/\s+/g, ' ').toLowerCase(), person.birthDate,
-  person.sex, person.phone.replace(/[^+\d]/g, ''), person.nationality.trim().toLowerCase(),
-]);
+const identity = (person: Omit<SavedTraveler, 'id'>) =>
+  JSON.stringify([
+    person.fullName.trim().replace(/\s+/g, ' ').toLowerCase(),
+    person.birthDate,
+    person.sex,
+    person.phone.replace(/[^+\d]/g, ''),
+    person.nationality.trim().toLowerCase(),
+  ]);
 
 // Saving is optional and must never prevent the passenger from booking.
-export async function offerToSaveBookingPassengers(client: DatabaseClient, people: SaveableBookingPassenger[], isCurrent: () => boolean) {
-  const candidates = people.filter(person => !person.isAccountPassenger && ['MALE','FEMALE','OTHER'].includes(person.sex.toUpperCase()) && person.nationality.trim().length <= 60 && person.savedPassengerDecision !== identity(details(person)));
+export async function offerToSaveBookingPassengers(
+  client: DatabaseClient,
+  people: SaveableBookingPassenger[],
+  isCurrent: () => boolean,
+) {
+  const candidates = people.filter(
+    (person) =>
+      !person.isAccountPassenger &&
+      ['MALE', 'FEMALE', 'OTHER'].includes(person.sex.toUpperCase()) &&
+      person.nationality.trim().length <= 60 &&
+      person.savedPassengerDecision !== identity(details(person)),
+  );
   if (!candidates.length || !isCurrent()) return 0;
   let saved = 0;
   try {
     const existing = (await savedTravelers(client)).data.travelers;
     for (const person of candidates) {
       if (!isCurrent()) break;
-      const passenger = details(person), snapshot = identity(passenger);
-      if (existing.some(item => identity(item) === snapshot)) {
+      const passenger = details(person),
+        snapshot = identity(passenger);
+      if (existing.some((item) => identity(item) === snapshot)) {
         person.savedPassengerDecision = snapshot;
         continue;
       }
@@ -38,7 +63,10 @@ export async function offerToSaveBookingPassengers(client: DatabaseClient, peopl
         cancelText: 'Not now',
       });
       if (!isCurrent() || identity(details(person)) !== snapshot) continue;
-      if (!approved) { person.savedPassengerDecision = snapshot; continue; }
+      if (!approved) {
+        person.savedPassengerDecision = snapshot;
+        continue;
+      }
       try {
         await saveTraveler(client, passenger);
         if (!isCurrent()) break;
@@ -47,7 +75,12 @@ export async function offerToSaveBookingPassengers(client: DatabaseClient, peopl
         saved++;
         notifySuccess(`${passenger.fullName} was added to your saved passengers.`);
       } catch (cause) {
-        notifyError(databaseRequestError(cause, 'Could not save this passenger. You can still continue with your booking.'));
+        notifyError(
+          databaseRequestError(
+            cause,
+            'Could not save this passenger. You can still continue with your booking.',
+          ),
+        );
       }
     }
   } catch {

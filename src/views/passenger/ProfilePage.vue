@@ -10,30 +10,22 @@
           <span class="avatar" aria-hidden="true">{{ initials }}</span>
           <p class="eyebrow">YOUR BARKOLINK ACCOUNT</p>
           <h1>
-            {{
-              loading
-                ? "Loading your profile…"
-                : profile.name || "Passenger profile"
-            }}
+            {{ loading ? 'Loading your profile…' : profile.name || 'Passenger profile' }}
           </h1>
           <p class="email">{{ profile.email }}</p>
           <span class="role">Passenger</span
           ><router-link class="edit" to="/settings/profile"
-            ><AppIcon :icon="createOutline" /> Edit personal
-            information</router-link
+            ><AppIcon :icon="createOutline" /> Edit personal information</router-link
           >
         </section>
         <section class="contact-summary">
           <AppIcon :icon="callOutline" />
           <div>
             <small>CONTACT NUMBER</small
-            ><strong>{{
-              profile.phone || "Add a contact number for trip assistance"
-            }}</strong>
+            ><strong>{{ profile.phone || 'Add a contact number for trip assistance' }}</strong>
           </div>
           <router-link to="/settings/profile"
-            >{{ profile.phone ? "Update" : "Add" }}
-            <AppIcon :icon="chevronForwardOutline"
+            >{{ profile.phone ? 'Update' : 'Add' }} <AppIcon :icon="chevronForwardOutline"
           /></router-link>
         </section>
         <div class="profile-sections">
@@ -45,9 +37,7 @@
                 :key="item.label"
                 :href="item.to"
                 @click="openMenu($event, item.to)"
-                ><span class="item-icon"
-                  ><AppIcon :icon="item.icon" aria-hidden="true"
-                /></span>
+                ><span class="item-icon"><AppIcon :icon="item.icon" aria-hidden="true" /></span>
                 <div>
                   <strong>{{ item.label }}</strong
                   ><small>{{ item.description }}</small>
@@ -58,9 +48,7 @@
           </section>
         </div>
         <button class="logout" :disabled="loggingOut" @click="logout">
-          <AppIcon :icon="logOutOutline" />{{
-            loggingOut ? "Signing out…" : "Log out"
-          }}
+          <AppIcon :icon="logOutOutline" />{{ loggingOut ? 'Signing out…' : 'Log out' }}
         </button>
       </main>
       <PassengerBottomNav /></ion-content
@@ -68,10 +56,10 @@
 </template>
 <script setup lang="ts">
 import { notifyError } from '@/composables/toast';
-import { computed, onMounted, reactive, ref } from "vue";
-import { useRouter } from "vue-router";
-import { IonPage, IonContent, onIonViewWillEnter, useIonRouter } from "@ionic/vue";
-import AppIcon from "@/components/ui/icon/AppIcon.vue";
+import { computed, onMounted, reactive, ref } from 'vue';
+import { useRouter } from 'vue-router';
+import { IonPage, IonContent, onIonViewWillEnter, useIonRouter } from '@ionic/vue';
+import AppIcon from '@/components/ui/icon/AppIcon.vue';
 import {
   callOutline,
   chevronForwardOutline,
@@ -85,25 +73,26 @@ import {
   shieldCheckmarkOutline,
   ticketOutline,
   documentTextOutline,
-} from "ionicons/icons";
-import PassengerHeader from "../../components/passenger/PassengerHeader.vue";
-import PassengerBottomNav from "../../components/passenger/PassengerBottomNav.vue";
-import { auth, database } from "../../services/session";
-import { myProfile } from "../../services/database/passenger";
-import { signOut } from "../../services/auth";
-import { clearSessionViews } from "../../composables/sessionViews";
-import { databaseRequestError } from "../../data/databaseErrors";
+} from 'ionicons/icons';
+import PassengerHeader from '../../components/passenger/PassengerHeader.vue';
+import PassengerBottomNav from '../../components/passenger/PassengerBottomNav.vue';
+import { auth, database } from '../../services/session';
+import { myProfile } from '../../services/database/passenger';
+import { signOut } from '../../services/auth';
+import { clearSessionViews } from '../../composables/sessionViews';
+import { databaseRequestError } from '../../data/databaseErrors';
 const router = useRouter(),
-  profile = reactive({ name: "", email: "", phone: "" });
+  profile = reactive({ name: '', email: '', phone: '' });
 const ionRouter = useIonRouter();
 function openMenu(event: MouseEvent, path: string) {
-  if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+  if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey)
+    return;
   event.preventDefault();
-  ionRouter.navigate(path, "forward", "push");
+  ionRouter.navigate(path, 'forward', 'push');
 }
 const loading = ref(false),
   loggingOut = ref(false),
-  error = ref("");
+  error = ref('');
 const initials = computed(
   () =>
     profile.name
@@ -111,71 +100,76 @@ const initials = computed(
       .filter(Boolean)
       .slice(0, 2)
       .map((part) => part[0])
-      .join("")
-      .toUpperCase() || "P",
+      .join('')
+      .toUpperCase() || 'P',
 );
 const groups = [
   {
-    title: "Account & travel",
+    title: 'Account & travel',
     items: [
-      { label: "Claim vouchers", description: "Discover promos and view your claimed codes", icon: ticketOutline, to: "/vouchers" },
       {
-        label: "Personal information",
-        description: "Edit your name and contact number",
-        icon: personOutline,
-        to: "/settings/profile",
-      },
-      {
-        label: "Saved passengers",
-        description: "Reuse traveler details in your next booking",
-        icon: peopleOutline,
-        to: "/travelers",
-      },
-      {
-        label: "My bookings",
-        description: "Reservations, payment deadlines and tickets",
+        label: 'Claim vouchers',
+        description: 'Discover promos and view your claimed codes',
         icon: ticketOutline,
-        to: "/bookings",
+        to: '/vouchers',
+      },
+      {
+        label: 'Personal information',
+        description: 'Edit your name and contact number',
+        icon: personOutline,
+        to: '/settings/profile',
+      },
+      {
+        label: 'Saved passengers',
+        description: 'Reuse traveler details in your next booking',
+        icon: peopleOutline,
+        to: '/travelers',
+      },
+      {
+        label: 'My bookings',
+        description: 'Reservations, payment deadlines and tickets',
+        icon: ticketOutline,
+        to: '/bookings',
       },
     ],
   },
   {
-    title: "Settings & security",
+    title: 'Settings & security',
     items: [
       {
-        label: "Password & security",
-        description: "Verify your current password before changing it",
+        label: 'Password & security',
+        description: 'Verify your current password before changing it',
         icon: shieldCheckmarkOutline,
-        to: "/settings/password",
+        to: '/settings/password',
       },
       {
-        label: "Notifications",
-        description: "Booking and sailing updates",
+        label: 'Notifications',
+        description: 'Booking and sailing updates',
         icon: notificationsOutline,
-        to: "/notifications",
+        to: '/notifications',
       },
       {
-        label: "Appearance",
-        description: "Light, dark or your device preference",
+        label: 'Appearance',
+        description: 'Light, dark or your device preference',
         icon: contrastOutline,
-        to: "/settings/appearance",
+        to: '/settings/appearance',
       },
     ],
   },
   {
-    title: "Help & privacy",
+    title: 'Help & privacy',
     items: [
       {
-        label: "Help & travel guide",
-        description: "Payment, check-in, boarding and refund guidance",
+        label: 'Help & travel guide',
+        description: 'Payment, check-in, boarding and refund guidance',
         icon: helpCircleOutline,
-        to: "/help",
+        to: '/help',
       },
       {
-        label: "Privacy notice",
-        description: "How your account and passenger details are used",
+        label: 'Privacy notice',
+        description: 'How your account and passenger details are used',
         icon: documentTextOutline,
-        to: "/privacy?from=profile",
+        to: '/privacy?from=profile',
       },
     ],
   },
@@ -185,25 +179,25 @@ async function load() {
   if (loading.value) return;
   const user = auth?.currentUser,
     token = ++request;
-  error.value = "";
+  error.value = '';
   loading.value = true;
   if (!database || !user) {
-    error.value = "Your account is unavailable. Please sign in again.";
+    error.value = 'Your account is unavailable. Please sign in again.';
     loading.value = false;
     return;
   }
   try {
-    const result = await myProfile(database, { fetchPolicy: "SERVER_ONLY" });
+    const result = await myProfile(database, { fetchPolicy: 'SERVER_ONLY' });
     if (token !== request || auth?.currentUser?.uid !== user.uid) return;
-    if (!result.data.user) throw new Error("Your profile could not be found.");
+    if (!result.data.user) throw new Error('Your profile could not be found.');
     Object.assign(profile, {
       name: result.data.user.fullName,
       email: result.data.user.email,
-      phone: result.data.user.phone || "",
+      phone: result.data.user.phone || '',
     });
   } catch (cause) {
     if (token === request)
-      error.value = databaseRequestError(cause, "Could not load your profile.");
+      error.value = databaseRequestError(cause, 'Could not load your profile.');
   } finally {
     if (token === request) loading.value = false;
   }
@@ -211,15 +205,15 @@ async function load() {
 async function logout() {
   if (!auth || loggingOut.value) return;
   loggingOut.value = true;
-  error.value = "";
+  error.value = '';
   try {
     await signOut(auth);
     request++;
-    Object.assign(profile, { name: "", email: "", phone: "" });
+    Object.assign(profile, { name: '', email: '', phone: '' });
     clearSessionViews();
-    await router.replace("/login");
+    await router.replace('/login');
   } catch (cause) {
-    notifyError(databaseRequestError(cause, "Could not sign out. Try again."));
+    notifyError(databaseRequestError(cause, 'Could not sign out. Try again.'));
   } finally {
     loggingOut.value = false;
   }

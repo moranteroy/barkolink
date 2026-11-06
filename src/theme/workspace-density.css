@@ -9,7 +9,16 @@
 :root body .admin-account-workspace .settings-page {
   padding: 20px 24px 32px;
 }
-:root body .design-workspace :is(.content > .heading, .content > .page-heading, .reference-heading, .page-intro, .staff-settings-page > .page-heading) {
+:root
+  body
+  .design-workspace
+  :is(
+    .content > .heading,
+    .content > .page-heading,
+    .reference-heading,
+    .page-intro,
+    .staff-settings-page > .page-heading
+  ) {
   margin-top: 0;
   margin-bottom: 16px;
   gap: 12px;
@@ -19,45 +28,103 @@
   font-size: 28px;
   line-height: 1.3;
 }
-:root body .design-workspace :is(.heading, .page-heading, .reference-heading, .page-intro) p:last-child {
+:root
+  body
+  .design-workspace
+  :is(.heading, .page-heading, .reference-heading, .page-intro)
+  p:last-child {
   margin-top: 0;
   margin-bottom: 0;
   font-size: 13px;
   line-height: 1.5;
 }
-:root body .design-workspace :is(.catalog-panel, .workspace-grid, .operations-overview, .analytics-grid) {
+:root
+  body
+  .design-workspace
+  :is(.catalog-panel, .workspace-grid, .operations-overview, .analytics-grid) {
   gap: var(--workspace-gap);
 }
-:root body .design-workspace :is(.panel, .insight-panel, .settings-card, .setting-card, .catalog-form, .sailing-card, .gate-actions-panel, .activity-panel) {
+:root
+  body
+  .design-workspace
+  :is(
+    .panel,
+    .insight-panel,
+    .settings-card,
+    .setting-card,
+    .catalog-form,
+    .sailing-card,
+    .gate-actions-panel,
+    .activity-panel
+  ) {
   padding: var(--workspace-card-padding);
   border-radius: var(--workspace-radius);
 }
 /* Record containers already space their heading, tools, and pagination. */
-:root body .design-workspace .panel:has(> .panel-head) { padding: 0; }
-:root body .design-workspace .panel > .panel-head { padding: 14px 16px 10px; }
-:root body .design-workspace .panel > .panel-head h2 { font-size: 17px; }
-:root body .design-workspace .staff-navigation { margin-top: 14px; gap: 3px; }
-:root body .design-workspace .staff-navigation p { margin: 6px 12px; }
-:root body .design-workspace .staff-navigation a { min-height: 38px; padding: 8px 12px; gap: 10px; }
-:root body .design-workspace .staff-navigation a.active { background: var(--nav-active); color: #fff; }
-:root body .design-workspace :is(.panel-heading, .insight-heading, .catalog-heading, .card-heading) {
+:root body .design-workspace .panel:has(> .panel-head) {
+  padding: 0;
+}
+:root body .design-workspace .panel > .panel-head {
+  padding: 14px 16px 10px;
+}
+:root body .design-workspace .panel > .panel-head h2 {
+  font-size: 17px;
+}
+:root body .design-workspace .staff-navigation {
+  margin-top: 14px;
+  gap: 3px;
+}
+:root body .design-workspace .staff-navigation p {
+  margin: 6px 12px;
+}
+:root body .design-workspace .staff-navigation a {
+  min-height: 38px;
+  padding: 8px 12px;
+  gap: 10px;
+}
+:root body .design-workspace .staff-navigation a.active {
+  background: var(--nav-active);
+  color: #fff;
+}
+:root
+  body
+  .design-workspace
+  :is(.panel-heading, .insight-heading, .catalog-heading, .card-heading) {
   gap: 12px;
   margin-bottom: 14px;
 }
-:root body .design-workspace :is(.panel-heading, .insight-heading, .catalog-heading, .card-heading) h2 {
+:root
+  body
+  .design-workspace
+  :is(.panel-heading, .insight-heading, .catalog-heading, .card-heading)
+  h2 {
   font-size: 17px;
   line-height: 1.4;
 }
-:root body .design-workspace :is(.reference-filters, .directory-filters, .queue-filters, .booking-filters) {
+:root
+  body
+  .design-workspace
+  :is(.reference-filters, .directory-filters, .queue-filters, .booking-filters) {
   gap: 12px;
   padding: 12px;
   margin-bottom: 14px;
 }
-:root body .design-workspace .workspace-tabs { margin: 12px 0; }
-:root body .design-workspace .trip-view-tools .workspace-tabs { margin: 0; }
-:root body .design-workspace .settings-nav { margin: 0; }
-:root body .design-workspace .settings-card.account-section { gap: 16px 24px; }
-:root body .design-workspace .account-section > .card-heading { margin-bottom: 0; padding-bottom: 14px; }
+:root body .design-workspace .workspace-tabs {
+  margin: 12px 0;
+}
+:root body .design-workspace .trip-view-tools .workspace-tabs {
+  margin: 0;
+}
+:root body .design-workspace .settings-nav {
+  margin: 0;
+}
+:root body .design-workspace .settings-card.account-section {
+  gap: 16px 24px;
+}
+:root body .design-workspace .account-section > .card-heading {
+  margin-bottom: 0;
+  padding-bottom: 14px;
+}
 :root body .design-workspace :is(.metric-grid, .stats, .metrics) {
   gap: 12px;
   margin-bottom: 14px;
@@ -67,56 +134,166 @@
   padding: 14px;
   border-radius: var(--workspace-radius);
 }
-:root body .design-workspace .queue-freshness { margin: 8px 0 12px; }
-:root body .design-workspace :is(.catalog-tools, .section-toolbar) { gap: 12px; }
-:root body .design-workspace :is(.catalog-form, .setting-form, .password-form) { gap: 14px; }
-:root body .design-workspace :is(.empty-state, .dashboard-empty, .reservation-empty) { padding: 24px 16px; }
+:root body .design-workspace .queue-freshness {
+  margin: 8px 0 12px;
+}
+:root body .design-workspace :is(.catalog-tools, .section-toolbar) {
+  gap: 12px;
+}
+:root body .design-workspace :is(.catalog-form, .setting-form, .password-form) {
+  gap: 14px;
+}
+:root body .design-workspace :is(.empty-state, .dashboard-empty, .reservation-empty) {
+  padding: 24px 16px;
+}
 
-:root body .design-workspace table :is(th, td) { padding: 10px 12px; }
+:root body .design-workspace table :is(th, td) {
+  padding: 10px 12px;
+}
 
 /* Staff summaries use the same card rhythm as the admin overview. */
-:root body .design-workspace :is(.metric-grid, .stats) strong { font-size: 26px; line-height: 1.2; margin: 3px 0; }
-:root body .design-workspace :is(.metric-grid article > span, .stat-icon) { width: 32px; height: 32px; font-size: 17px; }
-:root body .design-workspace .sailing-card { gap: 14px 20px; }
-:root body .design-workspace .sailing-copy h2 { font-size: 18px; }
-:root body .design-workspace .sailing-icon { width: 36px; height: 36px; font-size: 21px; }
-:root body .design-workspace .sailing-card > .boarding-progress { padding-top: 12px; }
-:root body .design-workspace .boarding-shortcuts { gap: 8px; margin-top: 12px; }
-:root body .design-workspace .boarding-shortcuts a { padding: 12px; }
-:root body .design-workspace .activity-list { margin-top: 12px; }
-:root body .design-workspace .activity-list article { padding-block: 10px; }
-:root body .boarding-dashboard .content { gap: 14px; }
-:root body .boarding-dashboard .content > :is(.page-heading, .queue-freshness, .stats) { margin: 0; }
-:root body .design-workspace :is(.metric-grid, .stats) :is(small, em, p) { font-size: 12px; line-height: 1.45; }
-:root body .design-workspace :is(.dashboard-empty, .reservation-empty) h3 { margin: 10px 0 6px; font-size: 16px; }
-:root body .design-workspace :is(.dashboard-empty, .reservation-empty) p { font-size: 13px; line-height: 1.5; }
-:root body .design-workspace .ticketing-guide .kicker { margin: 0 0 6px; font-size: 12px; }
-:root body .design-workspace .ticketing-guide h2 { font-size: 17px; margin: 0 0 6px; }
-:root body .design-workspace .ticketing-guide .guide-intro { margin-bottom: 12px; font-size: 13px; line-height: 1.5; }
-:root body .design-workspace .ticketing-guide ol { gap: 12px; margin: 0 0 16px; }
-:root body .design-workspace .ticketing-guide li strong { font-size: 13px; line-height: 1.45; }
-:root body .design-workspace .ticketing-guide li span { margin-top: 3px; font-size: 12px; line-height: 1.5; }
+:root body .design-workspace :is(.metric-grid, .stats) strong {
+  font-size: 26px;
+  line-height: 1.2;
+  margin: 3px 0;
+}
+:root body .design-workspace :is(.metric-grid article > span, .stat-icon) {
+  width: 32px;
+  height: 32px;
+  font-size: 17px;
+}
+:root body .design-workspace .sailing-card {
+  gap: 14px 20px;
+}
+:root body .design-workspace .sailing-copy h2 {
+  font-size: 18px;
+}
+:root body .design-workspace .sailing-icon {
+  width: 36px;
+  height: 36px;
+  font-size: 21px;
+}
+:root body .design-workspace .sailing-card > .boarding-progress {
+  padding-top: 12px;
+}
+:root body .design-workspace .boarding-shortcuts {
+  gap: 8px;
+  margin-top: 12px;
+}
+:root body .design-workspace .boarding-shortcuts a {
+  padding: 12px;
+}
+:root body .design-workspace .activity-list {
+  margin-top: 12px;
+}
+:root body .design-workspace .activity-list article {
+  padding-block: 10px;
+}
+:root body .boarding-dashboard .content {
+  gap: 14px;
+}
+:root body .boarding-dashboard .content > :is(.page-heading, .queue-freshness, .stats) {
+  margin: 0;
+}
+:root body .design-workspace :is(.metric-grid, .stats) :is(small, em, p) {
+  font-size: 12px;
+  line-height: 1.45;
+}
+:root body .design-workspace :is(.dashboard-empty, .reservation-empty) h3 {
+  margin: 10px 0 6px;
+  font-size: 16px;
+}
+:root body .design-workspace :is(.dashboard-empty, .reservation-empty) p {
+  font-size: 13px;
+  line-height: 1.5;
+}
+:root body .design-workspace .ticketing-guide .kicker {
+  margin: 0 0 6px;
+  font-size: 12px;
+}
+:root body .design-workspace .ticketing-guide h2 {
+  font-size: 17px;
+  margin: 0 0 6px;
+}
+:root body .design-workspace .ticketing-guide .guide-intro {
+  margin-bottom: 12px;
+  font-size: 13px;
+  line-height: 1.5;
+}
+:root body .design-workspace .ticketing-guide ol {
+  gap: 12px;
+  margin: 0 0 16px;
+}
+:root body .design-workspace .ticketing-guide li strong {
+  font-size: 13px;
+  line-height: 1.45;
+}
+:root body .design-workspace .ticketing-guide li span {
+  margin-top: 3px;
+  font-size: 12px;
+  line-height: 1.5;
+}
 
 @media (max-width: 580px) {
-  :root body .design-workspace .operations-overview .today-trips tbody td { padding: 0; }
+  :root body .design-workspace .operations-overview .today-trips tbody td {
+    padding: 0;
+  }
 }
 
 @media (max-width: 800px) {
-  :root body .design-workspace .staff-navigation a { min-height: 44px; }
+  :root body .design-workspace .staff-navigation a {
+    min-height: 44px;
+  }
 }
 @media (max-width: 700px) {
-  :root body .design-workspace { --workspace-card-padding: 14px; --workspace-gap: 12px; }
-  :root body .design-workspace :is(.content, .reference-content, .staff-settings-page, .walk-in-page),
-  :root body .admin-account-workspace .settings-page { padding: 16px 14px 28px; }
-  :root body .design-workspace :is(.heading, .page-heading, .reference-heading, .page-intro) h1 { font-size: 22px; }
-  :root body .design-workspace :is(.metric-grid, .stats, .metrics) { gap: 10px; }
-  :root body .design-workspace :is(.metric-grid, .stats, .metrics) > article { padding: 12px; }
-  :root body .design-workspace .attendance-strip > div { padding-inline: 12px; }
-  :root body .design-workspace .trend-canvas svg { max-height: none; }
-  :root body .design-workspace .sailing-control { grid-template-columns: minmax(0, 1fr) auto; }
-  :root body .design-workspace .sailing-control label { grid-column: 1; grid-row: 1; align-self: center; }
-  :root body .design-workspace .sailing-control .sailing-status { grid-column: 2; grid-row: 1; }
-  :root body .design-workspace .sailing-control > select { grid-column: 1 / -1; grid-row: 2; }
-  :root body .boarding-dashboard .stats article { flex-direction: row; align-items: flex-start; gap: 10px; }
-  :root body .boarding-dashboard .stats small { font-size: 11px; }
+  :root body .design-workspace {
+    --workspace-card-padding: 14px;
+    --workspace-gap: 12px;
+  }
+  :root
+    body
+    .design-workspace
+    :is(.content, .reference-content, .staff-settings-page, .walk-in-page),
+  :root body .admin-account-workspace .settings-page {
+    padding: 16px 14px 28px;
+  }
+  :root body .design-workspace :is(.heading, .page-heading, .reference-heading, .page-intro) h1 {
+    font-size: 22px;
+  }
+  :root body .design-workspace :is(.metric-grid, .stats, .metrics) {
+    gap: 10px;
+  }
+  :root body .design-workspace :is(.metric-grid, .stats, .metrics) > article {
+    padding: 12px;
+  }
+  :root body .design-workspace .attendance-strip > div {
+    padding-inline: 12px;
+  }
+  :root body .design-workspace .trend-canvas svg {
+    max-height: none;
+  }
+  :root body .design-workspace .sailing-control {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+  :root body .design-workspace .sailing-control label {
+    grid-column: 1;
+    grid-row: 1;
+    align-self: center;
+  }
+  :root body .design-workspace .sailing-control .sailing-status {
+    grid-column: 2;
+    grid-row: 1;
+  }
+  :root body .design-workspace .sailing-control > select {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+  :root body .boarding-dashboard .stats article {
+    flex-direction: row;
+    align-items: flex-start;
+    gap: 10px;
+  }
+  :root body .boarding-dashboard .stats small {
+    font-size: 11px;
+  }
 }
