@@ -28,6 +28,6 @@ export type TicketQrVerification = {
   alreadyBoarded: boolean;
   legacyCode: boolean;
 };
-export function verifyTicketQr(client: DatabaseClient, payload: string, sailingCode: string) {
+export function verifyTicketQr(client: DatabaseClient, payload: string, sailingCode?: string) {
   return executeDatabase<TicketQrVerification>(client, 'VerifyTicketQr', { payload, sailingCode });
 }

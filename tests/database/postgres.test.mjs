@@ -953,6 +953,7 @@ describe('Supabase PostgreSQL migrations and business rules', () => {
       ['boarding', 'CheckInTicket', { passengerId: person.id }],
       ['boarding', 'BoardTicket', { passengerId: person.id }],
       ['boarding', 'VerifyTicketQr', { sailingCode: 'TEST-TRIP', payload: person.ticketCode }],
+      ['boarding', 'VerifyTicketQr', { payload: person.ticketCode }],
     ];
     for (const [role, op, args] of blocked)
       await assert.rejects(call(role, op, args), /outside your assigned port/);
@@ -1309,6 +1310,19 @@ describe('Supabase PostgreSQL migrations and business rules', () => {
     assert.equal(verified.passenger.booking.paymentStatus, 'PAID');
     assert.equal(verified.legacyCode, false);
     assert.equal(verified.passenger.qrVerificationToken, undefined);
+    const detected = await call('boarding', 'VerifyTicketQr', { payload: ticket.ticketQrPayload });
+    assert.equal(detected.passenger.booking.sailing.code, 'TEST-TRIP');
+    assert.equal(detected.passenger.ticketStatus, 'ISSUED', 'Lookup must not record attendance');
+    assert.equal(
+      (await call('boarding', 'VerifyTicketQr', { payload: ticket.ticketCode })).legacyCode,
+      true,
+    );
+    await assert.rejects(
+      call('boarding', 'VerifyTicketQr', {
+        payload: JSON.stringify({ ...payload, Vessel: 'Fake ferry' }),
+      }),
+      /verification failed/,
+    );
     await assert.rejects(
       call('passenger', 'VerifyTicketQr', {
         payload: ticket.ticketQrPayload,
@@ -1371,6 +1385,31 @@ describe('Supabase PostgreSQL migrations and business rules', () => {
       /permission denied/,
     );
     await db.exec('reset role');
+  });
+
+  it('keeps a detected sailing reachable beyond the initial 100-trip directory without crossing ports', async () => {
+    await db.query(`insert into public.vessel(code,name,passenger_capacity)
+      select 'SCAN-EARLIER-'||n,'Scan fixture '||n,200 from generate_series(1,100) n`);
+    await db.query(
+      `insert into barkolink_private.vessel_port_observation(vessel_id,port_id,observed_at,confirmed_by_uid,note)
+      select id,$1,now()-interval '1 day',$2,'Scan fixture confirmed origin.' from public.vessel where code like 'SCAN-EARLIER-%'`,
+      [origin, ids.admin],
+    );
+    await db.query(`insert into public.sailing
+      select (jsonb_populate_record(null::public.sailing,to_jsonb(s)||jsonb_build_object(
+        'code',v.code,'vessel_id',v.id,'departure_at',s.departure_at-interval '15 minutes',
+        'arrival_at',s.arrival_at-interval '15 minutes'))).*
+      from public.sailing s cross join public.vessel v where s.code='TEST-TRIP' and v.code like 'SCAN-EARLIER-%'`);
+    const initial = await call('boarding', 'BoardingSailings');
+    assert.equal(initial.sailings.length, 100);
+    assert.ok(!initial.sailings.some((trip) => trip.code === 'TEST-TRIP'));
+    const detected = await call('boarding', 'BoardingSailings', { sailingCode: 'TEST-TRIP' });
+    assert.equal(detected.sailings[0].code, 'TEST-TRIP');
+    await call('admin', 'AdminAssignStaffPort', { uid: ids.boarding, portId: destination });
+    await assert.rejects(
+      call('boarding', 'BoardingSailings', { sailingCode: 'TEST-TRIP' }),
+      /outside your assigned port/,
+    );
   });
   it('shows repeat scans as already boarded and rejects duplicate boarding, cancelled and stale trip tickets', async () => {
     const b = await reserve();

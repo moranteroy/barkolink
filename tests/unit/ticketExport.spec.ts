@@ -1,15 +1,25 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import QRCode from 'qrcode';
 import jsQR from 'jsqr';
-import { ticketDocument, printTicketDocument } from '../../src/data/ticketExport';
-const native = vi.hoisted(() => ({ platform: 'web', print: vi.fn().mockResolvedValue(undefined) }));
+import { ticketDocument, printTicketDocument, downloadTicket } from '../../src/data/ticketExport';
+const native = vi.hoisted(() => ({
+  platform: 'web',
+  print: vi.fn().mockResolvedValue(undefined),
+  save: vi.fn(),
+  pdf: vi.fn(),
+}));
 vi.mock('@capacitor/core', () => ({
   Capacitor: { getPlatform: () => native.platform },
-  registerPlugin: () => ({ print: native.print }),
+  registerPlugin: () => ({ print: native.print, save: native.save }),
 }));
+vi.mock('../../src/data/ticketPdf', () => ({ createTicketPdf: native.pdf }));
 beforeEach(() => {
   native.platform = 'web';
   native.print.mockClear();
+  native.save.mockReset().mockResolvedValue({ saved: true });
+  native.pdf
+    .mockReset()
+    .mockResolvedValue({ output: () => 'data:application/pdf;base64,JVBERi0xLjQ=' });
 });
 const code = '11111111-1111-4111-8111-111111111111';
 const payload = JSON.stringify({
@@ -42,6 +52,35 @@ const booking = {
   ],
 };
 describe('Downloadable tickets', () => {
+  it('awaits Android file saving and reports cancellation or failure without claiming success', async () => {
+    native.platform = 'android';
+    let finish!: (value: { saved: boolean }) => void;
+    native.save.mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          finish = resolve;
+        }),
+    );
+    let complete = false;
+    const pending = downloadTicket(booking).then((value) => {
+      complete = true;
+      return value;
+    });
+    await vi.waitFor(() => expect(native.save).toHaveBeenCalledOnce());
+    expect(complete).toBe(false);
+    expect(native.save).toHaveBeenCalledWith({
+      data: 'JVBERi0xLjQ=',
+      name: 'BarkoLink-BL-TEST.pdf',
+    });
+    finish({ saved: true });
+    expect(await pending).toEqual({ status: 'saved' });
+    native.save.mockResolvedValueOnce({ cancelled: true });
+    expect(await downloadTicket(booking)).toEqual({ status: 'cancelled' });
+    native.save.mockResolvedValueOnce({});
+    await expect(downloadTicket(booking)).rejects.toThrow('not saved');
+    native.save.mockRejectedValueOnce(new Error('Storage is full'));
+    await expect(downloadTicket(booking)).rejects.toThrow('Storage is full');
+  });
   it('opens Android printing with only an eligible isolated ticket document', async () => {
     native.platform = 'android';
     await printTicketDocument(booking);

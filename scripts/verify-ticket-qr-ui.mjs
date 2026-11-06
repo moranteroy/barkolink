@@ -93,15 +93,22 @@ export async function verifyTicketQrUi({
           { project, session },
         );
         let actions = 0,
-          alreadyBoarded = false;
+          alreadyBoarded = false,
+          attendance = 'ISSUED';
         await context.route(`${project}/**`, (route) => {
           if (route.request().url().includes('/auth/')) return route.fulfill({ json: user });
           const { operation, args } = route.request().postDataJSON();
           if (['CheckInTicket', 'BoardTicket'].includes(operation)) {
             actions++;
+            attendance = operation === 'CheckInTicket' ? 'CHECKED_IN' : 'BOARDED';
+            alreadyBoarded = attendance === 'BOARDED';
             return route.fulfill({ json: {} });
           }
           if (operation === 'VerifyTicketQr') {
+            assert.ok(
+              !args.sailingCode,
+              'Boarding must detect the sailing without a staff selection',
+            );
             if (args.payload !== payload && args.payload !== code)
               return route.fulfill({
                 status: 400,
@@ -114,7 +121,7 @@ export async function verifyTicketQrUi({
               json: {
                 passenger: {
                   ...person,
-                  ticketStatus: alreadyBoarded ? 'BOARDED' : 'ISSUED',
+                  ticketStatus: alreadyBoarded ? 'BOARDED' : attendance,
                   booking,
                 },
                 alreadyBoarded,
@@ -135,8 +142,26 @@ export async function verifyTicketQrUi({
             },
             MyBookings: { bookings: [booking] },
             MyNotifications: { notifications: [] },
-            BoardingSailings: { sailings: [sailing] },
-            BoardingManifest: { bookings: [booking] },
+            BoardingSailings: {
+              sailings:
+                width === 390 && !args.sailingCode
+                  ? []
+                  : [
+                      { ...sailing, code: 'OTHER-SAILING', vessel: { name: 'Another ferry' } },
+                      sailing,
+                    ],
+            },
+            BoardingManifest: {
+              bookings:
+                args.sailingCode === sailing.code
+                  ? [
+                      {
+                        ...booking,
+                        bookingPassengers_on_booking: [{ ...person, ticketStatus: attendance }],
+                      },
+                    ]
+                  : [],
+            },
             BoardingActivity: { boardingEvents: [] },
           };
           return route.fulfill({
@@ -190,21 +215,43 @@ export async function verifyTicketQrUi({
           await modal.getByRole('button', { name: 'Verify ticket' }).click();
           const review = page.locator('.review-panel');
           await review.getByText('Carlo Reyes', { exact: true }).waitFor();
+          assert.equal(await page.locator('#boarding-sailing').inputValue(), sailing.code);
           assert.match(await review.textContent(), /MV Isla Verde/);
           assert.match(await review.textContent(), /2099/);
           assert.match(await review.textContent(), /Paid/);
           assert.equal(actions, 0);
           await review.screenshot({ path: `.audit/ticket-qr/staff-${width}.png` });
-          alreadyBoarded = true;
+          await review.getByRole('button', { name: 'Check in passenger', exact: true }).click();
+          assert.equal(actions, 0, 'Opening confirmation must not record attendance');
+          await page.locator('ion-alert .confirmation-proceed').click();
+          await page.locator('.app-toast.success').filter({ hasText: 'checked in' }).waitFor();
+          assert.equal(actions, 1);
+          await page.goto(`${baseUrl}/staff/boarding/boarding`, { waitUntil: 'networkidle' });
           await page
             .locator('.heading-actions')
-            .getByRole('button', { name: 'Find ticket' })
+            .getByRole('button', { name: 'Find boarding ticket' })
+            .click();
+          await modal.locator('input').fill(decoded);
+          await modal.getByRole('button', { name: 'Verify ticket' }).click();
+          await review.getByText('Carlo Reyes', { exact: true }).waitFor();
+          assert.equal(await page.locator('#boarding-sailing').inputValue(), sailing.code);
+          assert.equal(actions, 1, 'Boarding lookup must remain read-only');
+          await review.getByRole('button', { name: 'Mark as boarded', exact: true }).click();
+          await page.locator('ion-alert .confirmation-proceed').click();
+          await page
+            .locator('.app-toast.success')
+            .filter({ hasText: 'marked as boarded' })
+            .waitFor();
+          assert.equal(actions, 2);
+          await page
+            .locator('.heading-actions')
+            .getByRole('button', { name: 'Find boarding ticket' })
             .click();
           await modal.locator('input').fill(decoded);
           await modal.getByRole('button', { name: 'Verify ticket' }).click();
           await review.getByText('Boarded', { exact: true }).waitFor();
           assert.equal(await review.locator('.review-action').count(), 0);
-          assert.equal(actions, 0);
+          assert.equal(actions, 2);
         }
         assert.deepEqual(errors, []);
         await context.close();

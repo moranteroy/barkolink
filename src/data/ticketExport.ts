@@ -60,6 +60,9 @@ export async function ticketDocument(booking: TicketBooking) {
 const NativeTicketPrint = registerPlugin<{
   print(options: { html: string; jobName: string }): Promise<void>;
 }>('TicketPrint');
+const NativeTicketFiles = registerPlugin<{
+  save(options: { data: string; name: string }): Promise<{ saved?: boolean; cancelled?: boolean }>;
+}>('TicketFiles');
 /** Print the isolated ticket document, never the scrollable application screen. */
 export async function printTicketDocument(booking: TicketBooking) {
   if (Capacitor.getPlatform() === 'android') {
@@ -98,12 +101,25 @@ function saveFile(blob: Blob, name: string) {
 const filename = (reference: string) =>
   `BarkoLink-${reference.replace(/[^a-zA-Z0-9_-]/g, '-')}.html`;
 export async function downloadTicket(booking: TicketBooking) {
+  if (Capacitor.getPlatform() === 'android') {
+    const { createTicketPdf } = await import('./ticketPdf');
+    const pdf = await createTicketPdf(booking);
+    const data = pdf.output('datauristring').split(',')[1]!;
+    const result = await NativeTicketFiles.save({
+      data,
+      name: filename(booking.reference).replace(/\.html$/, '.pdf'),
+    });
+    if (result.cancelled) return { status: 'cancelled' as const };
+    if (!result.saved) throw new Error('The ticket was not saved. Choose a folder and try again.');
+    return { status: 'saved' as const };
+  }
   saveFile(
     new Blob([await ticketDocument(booking)], {
       type: 'text/html;charset=utf-8',
     }),
     filename(booking.reference),
   );
+  return { status: 'download-started' as const };
 }
 export async function shareTicket(booking: TicketBooking) {
   const file = new File([await ticketDocument(booking)], filename(booking.reference), {
@@ -112,7 +128,8 @@ export async function shareTicket(booking: TicketBooking) {
   if (navigator.canShare?.({ files: [file] }))
     await navigator.share({ title: 'BarkoLink e-ticket', files: [file] });
   else {
-    saveFile(file, file.name);
+    const result = await downloadTicket(booking);
+    if (result.status === 'cancelled') throw new Error('Ticket save cancelled.');
     throw new Error(
       'File sharing is unavailable in this browser. Your ticket was downloaded instead.',
     );

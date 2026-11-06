@@ -1,0 +1,13 @@
+# Android ticket save and scan-first gate lookup
+
+Android's Download button previously generated a browser blob link and immediately announced success. The APK had no native file-saving handler, so that message did not establish that a file had been saved.
+
+Android downloads now generate a self-contained PDF with embedded Unicode fonts and a separate ticket for each passenger. `TicketFilesPlugin` opens Android's Save dialog using `ACTION_CREATE_DOCUMENT` and writes the PDF to the user-selected document URI. No broad storage permission is requested. The JavaScript promise resolves with success only after the output stream closes successfully. Cancellation returns a neutral cancellation result; storage and picker errors remain errors. Browser downloads retain their HTML export. Android Print/PDF retains its existing native print path.
+
+QR eligibility remains unchanged: unpaid, cancelled, and unverified bookings cannot be exported as active tickets; missing server QR data is rejected; used or expired tickets remain records without a reusable QR. Ticket generation includes the warning that saved copies cannot override later server changes.
+
+Boarding staff can now open ticket lookup without choosing a sailing. QR and manually entered ticket codes are resolved against current server records; the verified response identifies the sailing, vessel, and passenger. The workspace switches to that sailing and loads its manifest before showing the review. The optional View sailing selector remains for browsing. Lookup does not record attendance: staff must still confirm Check in passenger or Mark as boarded, and boarding requires a checked-in passenger and an open boarding sailing.
+
+Migration 068 makes the verifier's sailing argument optional while retaining explicit mismatched-sailing rejection for existing callers. The outer dispatcher still derives the actual ticket's departure port and enforces the staff's active assignment. The detected sailing is prioritized in the bounded 100-row directory, so a valid ticket can be selected even when its trip was absent from the initial list. Apply to an existing database using `node scripts/apply-scan-first-boarding.mjs` with the existing local management configuration.
+
+Regression coverage includes Android save success/cancellation/rejection, real PDF and Unicode fonts, per-passenger server QR data, record-only tickets, actual QR decoding, automatic trip switching from an empty/wrong initial sailing, the 100-trip boundary, cross-port denial, tampering, and the existing payment/attendance rules. APK version is 1.0.3 (code 4). Native Save dialog behavior still requires acceptance on a physical Android phone; browser/bridge tests and an APK build do not replace that device check.

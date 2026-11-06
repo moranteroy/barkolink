@@ -1005,9 +1005,18 @@ async function exportTicket(mode: 'download' | 'share') {
   ticketBusy.value = true;
   ticketNotice.value = '';
   try {
-    await (mode === 'download' ? downloadTicket : shareTicket)(currentBooking.value);
-    ticketNotice.value =
-      mode === 'download' ? 'Ticket downloaded. Open the file to view or print.' : 'Ticket shared.';
+    if (mode === 'download') {
+      const result = await downloadTicket(currentBooking.value);
+      ticketNotice.value =
+        result.status === 'saved'
+          ? 'PDF ticket saved. Open it from the folder you selected.'
+          : result.status === 'cancelled'
+            ? 'Ticket save cancelled.'
+            : 'Ticket download started. Check your browser downloads.';
+    } else {
+      await shareTicket(currentBooking.value);
+      ticketNotice.value = 'Ticket shared.';
+    }
   } catch (cause) {
     ticketNotice.value = databaseRequestError(cause, 'Could not export ticket.');
   } finally {

@@ -54,7 +54,7 @@
                   v-if="!portBlocked && pageMode !== 'manifest'"
                   class="primary-button"
                   type="button"
-                  :disabled="!selectedSailingCode || loading || busy || !!error"
+                  :disabled="loading || busy"
                   @click="
                     pageMode === 'dashboard'
                       ? router.push(operationPath('check-in'))
@@ -108,11 +108,11 @@
                   </div>
                 </div>
                 <div class="sailing-control">
-                  <label for="boarding-sailing">Sailing</label
+                  <label for="boarding-sailing">View sailing</label
                   ><select
                     id="boarding-sailing"
                     v-model="selectedSailingCode"
-                    :disabled="loading || busy || !sailings.length"
+                    :disabled="loading || busy || scannerOpen || !sailings.length"
                   >
                     <option v-for="sailing in sailings" :key="sailing.code" :value="sailing.code">
                       {{ sailing.code }} · {{ sailing.origin.name }} to
@@ -584,7 +584,7 @@
                       <button
                         class="secondary-button"
                         type="button"
-                        :disabled="!selectedSailingCode || loading || busy || !!error"
+                        :disabled="loading || busy"
                         @click="openScanner"
                       >
                         <AppIcon :icon="scanOutline" /> Find ticket
@@ -653,8 +653,8 @@
           <p class="eyebrow">GATE TICKET LOOKUP</p>
           <h2 id="ticket-lookup-title">Find a passenger ticket</h2>
           <p>
-            Scan the QR code or enter the ticket code. You can review the record before changing its
-            status.
+            Scan the QR code or enter the ticket code. The correct sailing and vessel are detected
+            automatically. Review the passenger before confirming check-in or boarding.
           </p>
           <video
             ref="scannerVideo"
@@ -664,7 +664,12 @@
             playsinline
             muted
           ></video
-          ><button class="secondary-button camera-button" type="button" @click="startCamera">
+          ><button
+            class="secondary-button camera-button"
+            type="button"
+            :disabled="scanBusy"
+            @click="startCamera"
+          >
             <AppIcon :icon="cameraOutline" /> Scan QR with camera
           </button>
           <div class="lookup-divider"><span>or enter ticket code</span></div>
@@ -768,8 +773,8 @@ const pageDescription = computed(
   () =>
     ({
       dashboard: 'Monitor arrival, boarding progress and recent gate activity.',
-      'check-in': 'Verify issued tickets and record passenger arrival.',
-      boarding: 'Board checked-in passengers when the sailing is ready.',
+      'check-in': 'Scan a ticket to detect its sailing and record passenger arrival.',
+      boarding: 'Scan a ticket to detect its vessel and board checked-in passengers.',
       manifest: 'Review the paid passenger list and attendance for this sailing.',
     })[pageMode.value] || 'Manage gate operations.',
 );
@@ -822,6 +827,8 @@ const scanBusy = ref(false);
 let cameraStream: MediaStream | null = null;
 let scanFrame = 0;
 let requestNumber = 0;
+let switchingFromTicket = false;
+let lookupVersion = 0;
 
 const selectedSailing = computed(() =>
   sailings.value.find((item) => item.code === selectedSailingCode.value),
@@ -928,6 +935,7 @@ async function loadData() {
   try {
     const result = await boardingSailings(staffDatabase, {
       fetchPolicy: 'SERVER_ONLY',
+      sailingCode: selectedSailingCode.value || undefined,
     });
     if (request !== requestNumber) return;
     sailings.value = result.data.sailings.filter(
@@ -986,6 +994,7 @@ async function loadData() {
 }
 
 watch(selectedSailingCode, (code, previous) => {
+  if (switchingFromTicket) return;
   if (code === previous || !previous) return;
   selectedPassengerId.value = null;
   search.value = '';
@@ -1075,26 +1084,56 @@ async function updateSelectedTicket() {
 }
 
 function openScanner() {
+  lookupVersion++;
   ticketLookup.value = '';
   scanError.value = '';
   scannerOpen.value = true;
 }
 function closeScanner() {
+  lookupVersion++;
   stopCamera();
   scannerOpen.value = false;
   scanError.value = '';
 }
 async function findTicket() {
   if (!staffDatabase || scanBusy.value) return;
-  const code = selectedSailingCode.value,
-    raw = ticketLookup.value;
+  const raw = ticketLookup.value;
+  const version = ++lookupVersion;
+  const mode = pageMode.value;
   scanBusy.value = true;
   scanError.value = '';
   try {
-    const { data } = await verifyTicketQr(staffDatabase, raw, code);
-    if (code !== selectedSailingCode.value || !scannerOpen.value || raw !== ticketLookup.value)
+    const { data } = await verifyTicketQr(staffDatabase, raw);
+    if (
+      version !== lookupVersion ||
+      mode !== pageMode.value ||
+      !scannerOpen.value ||
+      raw !== ticketLookup.value
+    )
       return;
     const ticket = data.passenger;
+    const code = ticket.booking.sailing.code;
+    selectedPassengerId.value = null;
+    switchingFromTicket = true;
+    try {
+      selectedSailingCode.value = code;
+      await nextTick();
+    } finally {
+      switchingFromTicket = false;
+    }
+    await loadData();
+    if (
+      version !== lookupVersion ||
+      mode !== pageMode.value ||
+      !scannerOpen.value ||
+      raw !== ticketLookup.value
+    )
+      return;
+    if (error.value) throw new Error(error.value);
+    if (selectedSailingCode.value !== code || !selectedSailing.value)
+      throw new Error(
+        'This sailing is no longer available at your port. Refresh and verify the ticket again.',
+      );
     const person: Passenger = {
       id: ticket.id,
       name: ticket.fullName,

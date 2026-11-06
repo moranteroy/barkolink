@@ -10,6 +10,7 @@ public class MainActivity extends BridgeActivity {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         registerPlugin(TicketPrintPlugin.class);
+        registerPlugin(TicketFilesPlugin.class);
         super.onCreate(savedInstanceState);
         enterImmersiveMode();
     }

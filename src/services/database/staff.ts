@@ -104,7 +104,9 @@ export function boardingSailings(
   client: DatabaseClient,
   _options?: QueryOptions,
 ): Promise<{ data: Types.BoardingSailingsData }> {
-  return executeDatabase<Types.BoardingSailingsData>(client, 'BoardingSailings', {});
+  return executeDatabase<Types.BoardingSailingsData>(client, 'BoardingSailings', {
+    sailingCode: _options?.sailingCode,
+  });
 }
 
 export function boardingActivity(

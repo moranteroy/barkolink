@@ -42,6 +42,15 @@ function fontData() {
     throw error;
   }));
 }
+export async function installPdfFonts(doc: jsPDF) {
+  const data = await fontData();
+  for (const [index, style] of ['normal', 'bold'].entries()) {
+    const file = `NotoSans-${style}.ttf`;
+    doc.addFileToVFS(file, data[index]!);
+    doc.addFont(file, 'NotoSans', style);
+  }
+  doc.setFont('NotoSans');
+}
 export async function createReportPdf(input: PdfReport) {
   const orientation = input.headers.length > 6 ? 'landscape' : 'portrait';
   const doc = new jsPDF({
@@ -51,13 +60,7 @@ export async function createReportPdf(input: PdfReport) {
     compress: true,
     putOnlyUsedFonts: true,
   });
-  const [data, mark] = await Promise.all([fontData(), logoData()]);
-  for (const [index, style] of ['normal', 'bold'].entries()) {
-    const file = `NotoSans-${style}.ttf`;
-    doc.addFileToVFS(file, data[index]!);
-    doc.addFont(file, 'NotoSans', style);
-  }
-  doc.setFont('NotoSans');
+  const [, mark] = await Promise.all([installPdfFonts(doc), logoData()]);
   doc.setProperties({
     title: `BarkoLink | ${input.title}`,
     author: 'BarkoLink',
